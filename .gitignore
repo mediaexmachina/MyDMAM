@@ -1,0 +1,63 @@
+# Windows / macOS
+desktop.ini
+.DS_Store
+Thumbs.db
+
+# Maven
+target/
+!**/src/main/**
+!**/src/test/**
+
+# Compiled output
+src/main/resources/static/**
+src/main/resources/prerendered-routes.json
+
+#/tmp
+#/out-tsc
+#/bazel-out
+
+# Node / Javascript
+.*.swp
+._*
+npm-debug.log
+yarn-error.log
+/node_modules
+*.orig
+/.angular/cache
+.sass-cache/
+/connect.lock
+/coverage
+/libpeerconnection.log
+testem.log
+/typings
+
+# Java
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+.c9/
+*.launch
+*.sublime-workspace
+.idea
+*.iws
+*.iml
+*.ipr
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+# VS Code
+.vscode/*
+#!.vscode/settings.json
+#!.vscode/tasks.json
+#!.vscode/launch.json
+#!.vscode/extensions.json
+.history/*
+*.code-workspace

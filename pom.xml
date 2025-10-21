@@ -1,0 +1,83 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>media.mexm</groupId>
+    <artifactId>mydmam</artifactId>
+    <packaging>jar</packaging>
+    <version>0.0.1-SNAPSHOT</version>
+
+    <name>MyDMAM</name>
+    <url>https://github.com/mediaexmachina/MyDMAM</url>
+    <description>Another way of looking a Digital Media Asset Management</description>
+
+    <parent>
+        <groupId>tv.hd3g.commons</groupId>
+        <artifactId>app-web</artifactId>
+        <version>23.0.0</version>
+        <relativePath />
+    </parent>
+
+    <properties>
+        <prodlib.version>23.0.0</prodlib.version>
+        <medialib.version>20.0.0</medialib.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons.io.version}</version>
+        </dependency>
+        
+        <!--
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+         -->
+
+        <dependency>
+            <groupId>tv.hd3g.commons</groupId>
+            <artifactId>env-version</artifactId>
+            <version>${prodlib.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>tv.hd3g</groupId>
+            <artifactId>jobkit-watchfolder</artifactId>
+            <version>${prodlib.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>tv.hd3g.commons</groupId>
+            <artifactId>testtools</artifactId>
+            <version>${prodlib.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <scm>
+        <connection>scm:git:https://github.com/mediaexmachina/MyDMAM.git</connection>
+        <developerConnection>scm:git:https://github.com/mediaexmachina/MyDMAM.git</developerConnection>
+        <url>https://github.com/mediaexmachina/MyDMAM</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <url>https://github.com/mediaexmachina/MyDMAM/issues</url>
+        <system>GitHub</system>
+    </issueManagement>
+</project>
