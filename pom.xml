@@ -21,6 +21,7 @@
     <properties>
         <prodlib.version>23.0.0</prodlib.version>
         <medialib.version>20.0.0</medialib.version>
+        <sonar.organization>mediaexmachina</sonar.organization>
     </properties>
 
     <dependencies>
