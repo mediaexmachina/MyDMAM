@@ -14,6 +14,7 @@ src/main/resources/prerendered-routes.json
 
 # Working dir
 src/main/resources/application.yml
+/**/*proxy.conf.json
 
 # Node / Javascript
 .*.swp

@@ -58,7 +58,7 @@
                                     ],
                                     "output": "/"
                                 }
-                            ],
+                            ]
                         },
                         "development": {
                             "optimization": false,
@@ -75,7 +75,9 @@
                             "buildTarget": "mydmam:build:production"
                         },
                         "development": {
-                            "buildTarget": "mydmam:build:development"
+                            "buildTarget": "mydmam:build:development",
+                            "host": "127.0.0.1",
+                            "allowedHosts": true
                         }
                     },
                     "defaultConfiguration": "development"
@@ -101,8 +103,22 @@
                             "src/front/styles.css"
                         ]
                     }
+                },
+                "lint": {
+                    "builder": "@angular-eslint/builder:lint",
+                    "options": {
+                        "lintFilePatterns": [
+                            "src/front/**/*.ts",
+                            "src/front/**/*.html"
+                        ]
+                    }
                 }
             }
         }
+    },
+    "cli": {
+        "schematicCollections": [
+            "angular-eslint"
+        ]
     }
 }

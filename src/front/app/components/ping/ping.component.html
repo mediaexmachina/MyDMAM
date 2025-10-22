@@ -1,0 +1,12 @@
+<p>ping works!</p>
+
+@if (pingResponse0$ | async; as pingResponse) {
+<p>payload: {{ pingResponse.payload }}</p>
+}
+@else {
+<p>payload: <b>NOPE</b></p>
+}
+
+@if (pingResponse1$ | async; as pingResponse) {
+<p>payload: {{ pingResponse.payload }}</p>
+}
