@@ -12,9 +12,8 @@ target/
 src/main/resources/static/**
 src/main/resources/prerendered-routes.json
 
-#/tmp
-#/out-tsc
-#/bazel-out
+# Working dir
+src/main/resources/application.yml
 
 # Node / Javascript
 .*.swp
