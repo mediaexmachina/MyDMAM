@@ -1,0 +1,159 @@
+<!--
+    This file is part of MyDMAM.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    Copyright (C) Media ex Machina 2025
+
+-->
+@if (dirListResponse() != null) {
+@let dirList = dirListResponse();
+
+<article class="file-information">
+    @if (dirList?.currentItem != null) {
+        @let currentItem = dirList?.currentItem;
+        <h1>{{ currentItem?.name }}</h1>
+
+        <aside>
+            @if (currentItem?.directory) {
+                <div>
+                    @if (dirList?.total == 0) {
+                        Empty directory.
+                    } @else if (dirList?.total == 1) {
+                        Directory with 1 item.
+                    } @else {
+                        Directory with {{ dirList?.total }} items.
+                    }
+                </div>
+            } @else {
+                <div>File ({{ numberFormat.format(currentItem?.length || 0) }} bytes)</div>
+            }
+
+            <div>Modified the {{ currentItem?.modified | date:'medium' }}.</div>
+        </aside>
+
+    } @else if (dirList?.path == "/") {
+        <h1>{{ dirList?.storage }}</h1>
+        <aside>
+            <div>
+                @if (dirList?.total == 0) {
+                    Empty storage.
+                } @else if (dirList?.total == 1) {
+                    Storage with 1 item on root directory.
+                } @else {
+                    Storage with {{ dirList?.total }} items on root directory.
+                }
+            </div>
+        </aside>
+    }
+</article>
+
+<nav class="breadcrumb">
+    @if (dirList?.path != "/") {
+            <span class="navigateto">
+                <a [routerLink]="['/navigator', storage, dirList?.parentHashPath]"
+                    (click)="list(dirList?.parentHashPath || '')">Go to parent directory</a>:
+            </span>
+
+            <span class="storage">
+                <a [routerLink]="['/navigator', storage]"
+                    (click)="list(fileSystemService.hashPath(storage, '/'))">{{ dirList?.storage }}</a>
+            </span>
+            @for (item of breadcrumbSplitPath(); track item) {
+                <span class="item">
+                    <a [routerLink]="['/navigator', storage, item['hashPath']]"
+                        (click)="list(item['hashPath'])">
+                        {{ item['name'] }}
+                    </a>
+                </span>
+            } @empty {
+                <span class="item"></span>
+            }
+    } @else {
+        <div class="navigateto">
+            <a [routerLink]="['/navigator']">Change storage</a>
+        </div>
+    }
+</nav>
+
+<ul class="dirlist">
+    @for (fileItem of dirList?.list; track fileItem.hashPath) {
+    <li>
+        <span class="navigateto">
+            <a [class]="{'directory': fileItem.directory}" [routerLink]="['/navigator', storage, fileItem.hashPath]" (click)="list(fileItem.hashPath)">{{ fileItem.name }}</a>
+        </span>
+        @if (fileItem.directory) {
+            <span>Directory</span>
+            <span></span>
+        } @else {
+            <span>Regular file</span>
+            <span>{{ numberFormat.format(fileItem.length || 0) }} bytes</span>
+        }
+        <span>{{ fileItem.modified | date:'medium' }}</span>
+    </li>
+    }
+</ul>
+
+@if (dirList?.listSize != dirList?.total) {
+    <section class="paginate">
+        <ul>
+            @let hashPath = dirList?.currentItem?.hashPath || '';
+
+            @let previousButton = pageNavigatePreviousButton();
+            @if (previousButton["display"] != 0) {
+                <li class="button" (click)="list(hashPath, previousButton['skip'])">Previous</li>
+            }
+
+            @for (page of pageNavigate(); track page["page"]) {
+                @if (page["separator"] == 1) {
+                    @if (page["displayCurent"] > 0) {
+                        <li class="selected">... {{ page["displayCurent"] }} ...</li>
+                    } @else {
+                        <li>...</li>
+                    }
+                } @else {
+                    @let currentPage = page["page"];
+                    @let currentSkip = page["skip"];
+
+                    @if (page["selected"] == 1) {
+                        <li class="selected">{{ currentPage }}</li>
+                    } @else {
+                        <li class="button" (click)="list(hashPath, currentSkip)">{{ currentPage }}</li>
+                    }
+                }
+            }
+
+            @let nextButton = pageNavigateNextButton();
+            @if (nextButton["display"] != 0) {
+                <li class="button" (click)="list(hashPath,nextButton['skip'])">Next</li>
+            }
+
+        </ul>
+    </section>
+} @else if (dirList?.currentItem == null || dirList?.currentItem?.directory) {
+    <p style="text-align: center;">Currently displaying all items.</p>
+}
+
+@if (dirList?.currentItem == null || dirList?.currentItem?.directory) {
+    <div class="dropdrown-list-result-count">
+        <select name="dropdrown-list-result-count" (change)="onChangeDropdrownListResultCount($event)">
+            @let actualListResultCount = listResultCount();
+            <option [attr.selected]="actualListResultCount == 1 ? 'true' : null" value="1">Display 1 item by page</option>
+            <option [attr.selected]="actualListResultCount == 5 ? 'true' : null" value="5">Display 5 items by page</option>
+            <option [attr.selected]="actualListResultCount == 10 ? 'true' : null" value="10">Display 10 items by page</option>
+            <option [attr.selected]="actualListResultCount == 20 ? 'true' : null" value="20">Display 20 items by page</option>
+            <option [attr.selected]="actualListResultCount == 50 ? 'true' : null" value="50">Display 50 items by page</option>
+            <option [attr.selected]="actualListResultCount == 100 ? 'true' : null" value="100">Display 100 items by page</option>
+        </select>
+    </div>
+}
+
+}

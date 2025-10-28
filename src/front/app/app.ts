@@ -1,17 +1,30 @@
 import { Component, signal, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { BackendAPIService } from '../app/services/backend-api.service';
-import { PingComponent } from '../app/components/ping/ping.component';
+import { RouterOutlet, RouterLink } from '@angular/router';
+
+import { LocalStorageService } from './services/local-storage.service';
+import { RealmSelectorComponent } from './components/realm-selector/realm-selector.component';
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, PingComponent],
+    imports: [RouterOutlet, RouterLink, RealmSelectorComponent],
     templateUrl: './app.html',
     styleUrl: './app.css'
 })
 export class App {
-    protected readonly title = signal('mydmam');
+    private readonly localStorageService = inject(LocalStorageService);
 
-    readonly backendAPIService = inject(BackendAPIService);
+    protected readonly title = signal('MyDMAM');
+    selectedRealm = signal("");
+
+    constructor() {
+        try {
+            this.selectedRealm.set(this.localStorageService.getSelectedRealm());
+        } catch (error) {
+        }
+    }
+
+    getTopMenuSelectedClassName(expected:string):string {
+        return window.location.pathname.startsWith(expected) ? 'currentpage' : '';
+    }
 
 }

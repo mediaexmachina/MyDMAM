@@ -1,0 +1,31 @@
+<!--
+    This file is part of MyDMAM.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    Copyright (C) Media ex Machina 2025
+
+-->
+
+<h1>Realm selection</h1>
+
+@if (realmListResponse != null) {
+    <p>Select a Realm to works with:</p>
+
+    <ul>
+        @for (realmItem of realmListResponse.realms; track realmItem) {
+            <li><button type="button" (click)="selectRealm(realmItem)">{{ realmItem }}</button></li>
+        }
+    </ul>
+}
+@else {
+    <p>Realm list loading...</p>
+}

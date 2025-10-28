@@ -16,13 +16,26 @@
  */
 package media.mexm.mydmam;
 
+import java.io.File;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import media.mexm.mydmam.tools.DTORecordToAngularInterfaceConverter;
 
 @SpringBootApplication
 public class App {
 
+	public static final String CONTROLLER_BASE_MAPPING_API_PATH = "/api/v1";
+
 	public static void main(final String[] args) {
+		if (args != null && args.length == 1 && args[0].equals("export-dto-angular")) {
+			new DTORecordToAngularInterfaceConverter(
+					"media.mexm.mydmam.dto",
+					new File("src/front/app"))
+							.parseDTOs();
+			return;
+		}
 		SpringApplication.run(App.class, args);
 	}
 

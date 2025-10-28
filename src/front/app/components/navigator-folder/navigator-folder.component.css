@@ -1,0 +1,159 @@
+/*
+ * This file is part of MyDMAM.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * Copyright (C) Media ex Machina 2025
+ *
+ */
+
+nav.breadcrumb {
+    display: inline-block;
+    margin-top: 0.6em;
+}
+
+a {
+    display: inline-block
+}
+
+a.directory {
+    font-weight: 600;
+}
+
+nav.breadcrumb span.storage::after {
+    content: ":"
+}
+
+nav.breadcrumb .item::before {
+    content: "/"
+}
+
+nav.breadcrumb span.navigateto {
+    margin-right: 0.5em;
+}
+
+
+article.file-information h1 {
+    margin-top: 0.2em;
+    margin-bottom: 0.3em;
+    font-size: 2em;
+    font-weight: 200;
+}
+
+article.file-information div {
+    display: inline-block;
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+    margin-right: 1em;
+}
+
+ul.dirlist {
+    list-style-type: none;
+    padding-inline-start: 0em;
+}
+
+ul.dirlist li:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+ul.dirlist li:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+ul.dirlist li:hover:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+ul.dirlist li {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-wrap: break-word;
+
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+}
+
+ul.dirlist li .navigateto {
+    flex: 0.3 1 20em;
+}
+
+ul.dirlist li span {
+    flex: 0.1 1 7em;
+}
+
+ul.dirlist a {
+    color: black;
+    border-bottom: 1px dotted #00000000;
+}
+
+ul.dirlist a:hover {
+    color: rgb(2, 65, 211);
+    border-bottom: 1px dotted #0000005d;
+}
+
+section.paginate ul {
+    font-size: 1.1em;
+    list-style-type: none;
+    padding-inline-start: 0em;
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+    justify-content: center;
+    align-items: stretch;
+}
+
+section.paginate ul li {
+    vertical-align: middle;
+    margin: 0.2em;
+    padding: 0.6em 1.2em;
+    min-width: 0.7em;
+}
+
+section.paginate ul li.selected {
+    color: rgba(0, 0, 0, 0.484);
+    border: 0.1em solid rgba(0, 0, 0, 0.048);
+    cursor: default;
+}
+
+section.paginate ul li.button {
+    color: blue;
+    border: 0.1em solid rgba(0, 0, 0, 0.128);
+    cursor: pointer;
+}
+
+section.paginate ul li.button:hover {
+    border: 0.1em dotted rgba(0, 0, 0, 0.2);
+}
+
+div.dropdrown-list-result-count {
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+    justify-content: center;
+}
+
+div.dropdrown-list-result-count select {
+    font-family: "Red Hat Text";
+    color: blue;
+    padding: .375rem 2.25rem .375rem .75rem;
+    font-size: 1em;
+    font-weight: 400;
+    line-height: 1.5;
+    appearance: none;
+    border: 0.1em solid rgba(0, 0, 0, 0.128);
+    cursor: pointer;
+}
+
+div.dropdrown-list-result-count select:hover {
+    border: 0.1em dotted rgba(0, 0, 0, 0.2);
+}

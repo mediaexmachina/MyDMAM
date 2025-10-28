@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, firstValueFrom } from 'rxjs';
 import { HttpClient, HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { APIResponse } from '../interfaces/api-response.interface';
 
@@ -20,7 +20,7 @@ export class BackendAPIService {
     /**
      * @param data only for POST and PUT
      */
-    public fullRequestAPI<T>(method: "GET" | "HEAD" | "PUT" | "DELETE" | "POST", path: string, data: any = null): Observable<APIResponse<T>> {
+    public requestObservableAPI<T>(method: "GET" | "HEAD" | "PUT" | "DELETE" | "POST", path: string, data: any = null): Observable<APIResponse<T>> {
         let url: string = `${this.BASE_URL}/${path}`;
 
         if (path.startsWith("/")) {
@@ -30,7 +30,6 @@ export class BackendAPIService {
         const headers = {
             "accept": "application/json",
             "content-type": "application/json; charset=utf-8",
-            "x-toto": "ZZZZZZZZZZZZZZ"
         };
 
         const result$ = new Subject<APIResponse<T>>;
@@ -44,11 +43,19 @@ export class BackendAPIService {
                     method: method,
                     path: returnPath,
                     status: response.status,
+                    isOk: true,
                     data: <T>response.body
                 });
                 result$.complete();
             },
             error: (httpError: HttpErrorResponse) => {
+                result$.next({
+                    method: method,
+                    path: this.getAPIEndPointURL(httpError.url),
+                    status: httpError.status,
+                    isOk: false,
+                    data: null
+                });
                 result$.complete();
                 this.onRequestError(httpError);
             }
@@ -123,11 +130,12 @@ export class BackendAPIService {
     /**
      * @param data only for POST and PUT
      */
-    public requestAPI<T>(method: "GET" | "HEAD" | "PUT" | "DELETE" | "POST", path: string, data: any = null): Observable<T> {
-        const result$ = new Subject<T>;
-        this.fullRequestAPI<T>(method, path, data)
-            .subscribe(result => result$.next(result.data));
-        return result$.asObservable();
+    public async requestAsyncAPI<T>(method: "GET" | "HEAD" | "PUT" | "DELETE" | "POST", path: string, data: any = null): Promise<T|null> {
+        const result = await firstValueFrom(this.requestObservableAPI<T>(method, path, data));
+        if (result.isOk == false) {
+            return null;
+        }
+        return result.data;
     }
 
     /**

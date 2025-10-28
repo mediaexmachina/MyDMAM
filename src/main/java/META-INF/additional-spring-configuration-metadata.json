@@ -1,0 +1,7 @@
+{"properties": [
+  {
+    "name": "mydmam",
+    "type": "media.mexm.mydmam.configuration.MyDMAMConfigurationProperties",
+    "description": "Full MyDMAM configuration"
+  }
+]}

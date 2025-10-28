@@ -46,6 +46,7 @@
     <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="error" />
 
     <logger name="media.mexm" level="debug" />
+    <logger name="tv.hd3g" level="error" />
 
     <root level="error">
         <appender-ref ref="Console OUT" />

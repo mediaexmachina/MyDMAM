@@ -1,3 +1,6 @@
+application.yml
+logback.xml
+
 # Windows / macOS
 desktop.ini
 .DS_Store
@@ -13,7 +16,6 @@ src/main/resources/static/**
 src/main/resources/prerendered-routes.json
 
 # Working dir
-src/main/resources/application.yml
 /**/*proxy.conf.json
 
 # Node / Javascript
@@ -61,3 +63,4 @@ build/
 #!.vscode/extensions.json
 .history/*
 *.code-workspace
+
