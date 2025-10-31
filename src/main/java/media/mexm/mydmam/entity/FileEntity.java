@@ -53,6 +53,7 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 public class FileEntity {// TODO test
 
 	public static final int MAX_NAME_SIZE = 64;
+	public static final int HASH_STRING_LEN = 64;
 	public static final String TABLE_NAME = "file";
 
 	@Id
@@ -78,11 +79,11 @@ public class FileEntity {// TODO test
 	private String path;
 
 	@NotBlank
-	@Column(length = 64, name = "hash_path", updatable = false)
+	@Column(length = HASH_STRING_LEN, name = "hash_path", updatable = false)
 	private String hashPath;
 
 	@NotBlank
-	@Column(length = 64, name = "parent_hash_path", updatable = false)
+	@Column(length = HASH_STRING_LEN, name = "parent_hash_path", updatable = false)
 	private String parentHashPath;
 
 	@Setter

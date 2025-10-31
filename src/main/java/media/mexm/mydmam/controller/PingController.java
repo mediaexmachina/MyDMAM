@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.controller;
 
+import static media.mexm.mydmam.App.CONTROLLER_BASE_MAPPING_API_PATH;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -34,7 +35,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 @RestController
-@RequestMapping(value = "/api/v1/ping",
+@RequestMapping(value = CONTROLLER_BASE_MAPPING_API_PATH + "/ping",
 				produces = APPLICATION_JSON_VALUE)
 public class PingController {
 

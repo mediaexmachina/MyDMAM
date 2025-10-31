@@ -26,9 +26,6 @@ import media.mexm.mydmam.entity.FileEntity;
 
 public interface FileRepository extends JpaRepository<FileEntity, Long> {
 
-	@Query("SELECT f FROM FileEntity f WHERE f.parentHashPath IN :parentHashPath")
-	Set<FileEntity> getByParentHashPath(Set<String> parentHashPath);
-
 	@Query("SELECT f FROM FileEntity f WHERE f.hashPath IN :hashPath")
 	Set<FileEntity> getByHashPath(Set<String> hashPath);
 

@@ -1,5 +1,5 @@
 /*
- * This file is part of MyDMAM.
+ * This file is part of mydmam.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,18 +14,16 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-package media.mexm.mydmam;
+package media.mexm.mydmam.repository;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import java.util.List;
 
-@SpringBootApplication
-public class App {
+import media.mexm.mydmam.entity.FileEntity;
 
-	public static final String CONTROLLER_BASE_MAPPING_API_PATH = "/api/v1";
+public interface FileDao {
 
-	public static void main(final String[] args) {
-		SpringApplication.run(App.class, args);
-	}
+	List<FileEntity> getByParentHashPath(String parentHashPath, int from, int size);
+
+	int countParentHashPathItems(String realm, String storage, String parentHashPath);
 
 }

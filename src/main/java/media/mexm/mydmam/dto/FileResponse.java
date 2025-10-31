@@ -1,5 +1,5 @@
 /*
- * This file is part of MyDMAM.
+ * This file is part of mydmam.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,18 +14,15 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-package media.mexm.mydmam;
+package media.mexm.mydmam.dto;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import java.util.List;
 
-@SpringBootApplication
-public class App {
-
-	public static final String CONTROLLER_BASE_MAPPING_API_PATH = "/api/v1";
-
-	public static void main(final String[] args) {
-		SpringApplication.run(App.class, args);
-	}
-
+public record FileResponse(String realm,
+						   String storage,
+						   FileItemResponse item,
+						   int listSize,
+						   int skipCount,
+						   int totalSize,
+						   List<FileItemResponse> list) {
 }
