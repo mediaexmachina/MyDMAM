@@ -43,7 +43,7 @@ public class FileDaoImpl implements FileDao { // TODO test
 				""", FileEntity.class)
 				.setParameter("parentHashPath", parentHashPath)
 				.setFirstResult(from)
-				.setMaxResults(size) // TODO add sort
+				.setMaxResults(size)
 				.getResultList();
 	}
 
@@ -55,11 +55,12 @@ public class FileDaoImpl implements FileDao { // TODO test
 				WHERE f.parentHashPath = :parentHashPath
 				AND f.realm = :realm
 				AND f.storage = :storage
-				""", Integer.class)
+				""", Long.class)
 				.setParameter("parentHashPath", parentHashPath)
 				.setParameter("realm", realm)
 				.setParameter("storage", storage)
-				.getSingleResult();
+				.getSingleResult()
+				.intValue();
 	}
 
 }

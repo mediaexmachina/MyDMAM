@@ -20,9 +20,10 @@ import java.util.List;
 
 public record FileResponse(String realm,
 						   String storage,
-						   FileItemResponse item,
+						   String path,
+						   String hashPath,
 						   int listSize,
 						   int skipCount,
-						   int totalSize,
+						   int total,
 						   List<FileItemResponse> list) {
 }

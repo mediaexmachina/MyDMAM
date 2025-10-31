@@ -16,17 +16,34 @@
  */
 package media.mexm.mydmam.dto;
 
+import static org.apache.commons.io.FilenameUtils.getName;
+
 import media.mexm.mydmam.entity.FileEntity;
 
-public record FileItemResponse(boolean directory, String path, String hashPath, long modified, long length) {
+public record FileItemResponse(boolean directory,
+							   String name,
+							   String hashPath,
+							   long modified,
+							   long length) {
 
-	public static FileItemResponse createFromEntity(final FileEntity entity) {// TODO test
+	public static FileItemResponse createFromEntity(final FileEntity entity,
+													final String checkRealm,
+													final String checkStorage) {// TODO test
+		if (entity.getRealm().equals(checkRealm) == false) {
+			throw new IllegalArgumentException(
+					"Invalid realm check, expected=" + checkRealm + ", founded=" + entity.getRealm());
+		} else if (entity.getStorage().equals(checkStorage) == false) {
+			throw new IllegalArgumentException(
+					"Invalid storage check (for realm " + checkRealm + "), expected="
+											   + checkStorage + ", founded=" + entity.getStorage());
+		}
+
 		return new FileItemResponse(
 				entity.isDirectory(),
-				entity.getPath(),
+				getName(entity.getPath()),
 				entity.getHashPath(),
 				entity.getModified().getTime(),
-				entity.getLength());
+				entity.isDirectory() ? -1 : entity.getLength());
 	}
 
 }

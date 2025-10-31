@@ -16,17 +16,19 @@
  */
 package media.mexm.mydmam.controller;
 
+import static java.lang.Math.min;
 import static media.mexm.mydmam.App.CONTROLLER_BASE_MAPPING_API_PATH;
 import static media.mexm.mydmam.dto.FileItemResponse.createFromEntity;
 import static media.mexm.mydmam.entity.FileEntity.HASH_STRING_LEN;
 import static media.mexm.mydmam.entity.FileEntity.MAX_NAME_SIZE;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.Set;
 
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -41,11 +43,11 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import media.mexm.mydmam.component.ConstraintViolationExceptionHandler;
-import media.mexm.mydmam.dto.FileItemResponse;
+import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.dto.FileResponse;
 import media.mexm.mydmam.dto.RealmListResponse;
 import media.mexm.mydmam.dto.StorageListResponse;
+import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.repository.FileRepository;
 
@@ -53,9 +55,8 @@ import media.mexm.mydmam.repository.FileRepository;
 @Validated
 @RequestMapping(value = CONTROLLER_BASE_MAPPING_API_PATH + "/filesystem",
 				produces = APPLICATION_JSON_VALUE)
-public class FileSystemController {
-
-	private final ConstraintViolationExceptionHandler constraintViolationExceptionHandler;
+@Slf4j
+public class FileSystemController { // TODO test
 
 	@Autowired
 	FileRepository fileRepository;
@@ -64,10 +65,6 @@ public class FileSystemController {
 
 	@Value("${mydmamConsts.dirListMaxSize:100}")
 	int dirListMaxSize;
-
-	FileSystemController(final ConstraintViolationExceptionHandler constraintViolationExceptionHandler) {
-		this.constraintViolationExceptionHandler = constraintViolationExceptionHandler;
-	}
 
 	@GetMapping("/list")
 	@Transactional
@@ -88,10 +85,10 @@ public class FileSystemController {
 	public ResponseEntity<FileResponse> listRoot(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
 												 @PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String storage,
 												 @RequestParam(required = false,
-															   defaultValue = "0") @Min(0) final Integer skip) {
-		final var hashPath = hashPath(realm, storage, "/");
-		// TODO nope with list()...
-		return list(realm, storage, hashPath, skip);
+															   defaultValue = "0") @Min(0) final Integer skip,
+												 @RequestParam(required = false,
+															   defaultValue = "0") @Min(0) final Integer limit) {
+		return list(realm, storage, hashPath(realm, storage, "/"), skip, limit);
 	}
 
 	@GetMapping("/list/{realm}/{storage}/{path}")
@@ -100,37 +97,45 @@ public class FileSystemController {
 											 @PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String storage,
 											 @PathVariable @NotBlank @Size(max = HASH_STRING_LEN) final String path,
 											 @RequestParam(required = false,
-														   defaultValue = "0") @Min(0) final Integer skip) {
-		final var resultParentSet = fileRepository.getByHashPath(Set.of(path.toLowerCase()));
-		if (resultParentSet.isEmpty()) {
-			return new ResponseEntity<>(NOT_FOUND);
-		}
-
-		final var resultParent = resultParentSet.stream().findFirst().orElseThrow();
-		if (resultParent.getRealm().equals(realm) == false
-			|| resultParent.getStorage().equals(storage) == false) {
-			return new ResponseEntity<>(NOT_FOUND);
-		}
-
-		final var resultItemList = fileDao.getByParentHashPath(path.toLowerCase(), skip, dirListMaxSize);
+														   defaultValue = "0") @Min(0) final Integer skip,
+											 @RequestParam(required = false,
+														   defaultValue = "0") @Min(0) final Integer limit) {
+		final var maxAllowedEntries = min(dirListMaxSize, limit == 0 ? dirListMaxSize : limit);
+		final var resultItemList = fileDao.getByParentHashPath(path.toLowerCase(), skip, maxAllowedEntries);
 		final var listSize = resultItemList.size();
 		final int totalSize;
-		if (listSize >= dirListMaxSize) {
+		if (listSize >= maxAllowedEntries) {
 			totalSize = fileDao.countParentHashPathItems(realm, storage, path.toLowerCase());
 		} else {
 			totalSize = listSize;
 		}
 
-		return new ResponseEntity<>(
-				new FileResponse(
-						realm,
-						storage,
-						createFromEntity(resultParent),
-						listSize,
-						skip,
-						totalSize,
-						resultItemList.stream().map(FileItemResponse::createFromEntity).toList()),
-				OK);
+		final var listParentPath = resultItemList.stream()
+				.map(FileEntity::getPath)
+				.map(FilenameUtils::getFullPathNoEndSeparator)
+				.findFirst()
+				.or(() -> fileRepository.getByHashPath(Set.of(path.toLowerCase()))
+						.stream()
+						.map(FileEntity::getPath)
+						.findFirst())
+				.orElse(null);
+
+		try {
+			return new ResponseEntity<>(
+					new FileResponse(
+							realm,
+							storage,
+							listParentPath,
+							path,
+							listSize,
+							skip,
+							totalSize,
+							resultItemList.stream().map(e -> createFromEntity(e, realm, storage)).toList()),
+					OK);
+		} catch (final IllegalArgumentException e) {
+			log.debug("Invalid query for {}: {}", path, e.getMessage());
+			return new ResponseEntity<>(BAD_REQUEST);
+		}
 	}
 
 }
