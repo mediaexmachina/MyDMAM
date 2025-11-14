@@ -1,5 +1,5 @@
-application.yml
-logback.xml
+application*.yml
+logback*.xml
 
 # Windows / macOS
 desktop.ini

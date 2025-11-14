@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
@@ -33,6 +34,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +45,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
+import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.PathIndexer;
 import media.mexm.mydmam.service.PathIndexerService;
 import tv.hd3g.commons.testtools.Fake;
@@ -95,6 +98,8 @@ class PathIndexingConfTest {
 	PathIndexerService pathIndexerService;
 	@Mock
 	ObservedFolder scan;
+	@Mock
+	AuditTrail auditTrail;
 
 	@Captor
 	ArgumentCaptor<WatchedFileScanner> watchedFileScannerCaptor;
@@ -115,6 +120,9 @@ class PathIndexingConfTest {
 
 		when(indexer.getJobKitEngine()).thenReturn(jobKitEngine);
 		when(indexer.getPathIndexerService()).thenReturn(pathIndexerService);
+		when(indexer.getAuditTrail()).thenReturn(auditTrail);
+		when(auditTrail.getAuditTrailByRealm(anyString())).thenReturn(Optional.empty());
+
 		when(piRealm.storagesStream())
 				.thenReturn(Map.of(storageName, piStorage).entrySet().stream());
 		when(piStorage.scan()).thenReturn(scan);
@@ -154,6 +162,9 @@ class PathIndexingConfTest {
 
 		verify(indexer, atLeastOnce()).getJobKitEngine();
 		verify(indexer, atLeastOnce()).getPathIndexerService();
+		verify(indexer, atLeastOnce()).getAuditTrail();
+		verify(auditTrail, times(1)).getAuditTrailByRealm(realmName);
+
 		verify(piRealm, times(1)).storagesStream();
 		verify(piRealm, atLeastOnce()).spoolScans();
 		verify(piRealm, atLeastOnce()).timeBetweenScans();
