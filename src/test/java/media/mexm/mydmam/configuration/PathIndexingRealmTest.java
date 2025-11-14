@@ -49,7 +49,7 @@ class PathIndexingRealmTest {
 		conf = new PathIndexingRealm(
 				Map.of(storageName, piStorage),
 				timeBetweenScans,
-				spoolScans);
+				spoolScans, null);
 	}
 
 	@Test
@@ -67,7 +67,8 @@ class PathIndexingRealmTest {
 		conf = new PathIndexingRealm(
 				Map.of(),
 				timeBetweenScans,
-				spoolScans);
+				spoolScans,
+				null);
 
 		final var result = conf.storagesStream().toList();
 		assertThat(result).isEmpty();
@@ -75,7 +76,7 @@ class PathIndexingRealmTest {
 
 	@Test
 	void testStoragesStream_null() {
-		conf = new PathIndexingRealm(null, timeBetweenScans, spoolScans);
+		conf = new PathIndexingRealm(null, timeBetweenScans, spoolScans, null);
 
 		final var result = conf.storagesStream().toList();
 		assertThat(result).isEmpty();

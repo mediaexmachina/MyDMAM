@@ -74,6 +74,8 @@ class PathIndexerTest {
 	ObservedFolder observedFolder;
 	@Mock
 	WatchedFiles watchedFiles;
+	@Mock
+	AuditTrail auditTrail;
 
 	FlatJobKitEngine jobKitEngine;
 	PathIndexer pi;
@@ -92,7 +94,7 @@ class PathIndexerTest {
 			when(pathIndexingConf.makeWatchfolders(notNull())).thenReturn(Map.of(realmStorageFolderActivity,
 					watchfolders));
 
-			pi = new PathIndexer(configuration, jobKitEngine, pathIndexerService);
+			pi = new PathIndexer(configuration, jobKitEngine, pathIndexerService, auditTrail);
 			verify(configuration, atLeastOnce()).pathindexing();
 			verify(pathIndexingConf, times(1)).makeWatchfolders(pi);
 		}
@@ -172,7 +174,7 @@ class PathIndexerTest {
 
 		@BeforeEach
 		void init() {
-			pi = new PathIndexer(configuration, jobKitEngine, pathIndexerService);
+			pi = new PathIndexer(configuration, jobKitEngine, pathIndexerService, auditTrail);
 			verify(configuration, atLeastOnce()).pathindexing();
 		}
 
