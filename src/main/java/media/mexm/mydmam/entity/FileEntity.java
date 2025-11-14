@@ -36,7 +36,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import tv.hd3g.jobkit.watchfolder.WatchFolderPickupType;
 import tv.hd3g.transfertfiles.CachedFileAttributes;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
@@ -192,10 +191,6 @@ public class FileEntity {
 		final var notTooRecent = watchLast.getTime() < System.currentTimeMillis() - minFixedStateTime.toMillis();
 		return directory
 			   || watchLastIsSame && notTooRecent;
-	}
-
-	public boolean canBePickupFromType(final WatchFolderPickupType pickUp) {
-		return directory && pickUp.isPickUpDirs() || directory == false && pickUp.isPickUpFiles();
 	}
 
 	public FileEntity resetDoneButChanged() {

@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
-import static tv.hd3g.jobkit.watchfolder.WatchFolderPickupType.FILES_DIRS;
 
 import java.time.Duration;
 
@@ -102,11 +101,6 @@ class FileEntityTest {
 		when(firstDetectionFile.isDirectory()).thenReturn(true);
 		file = new FileEntity(realm, storage, firstDetectionFile);
 		assertTrue(file.isTimeQualified(Duration.ZERO));
-	}
-
-	@Test
-	void testCanBePickupFromType() {
-		assertTrue(file.canBePickupFromType(FILES_DIRS));
 	}
 
 	@Test

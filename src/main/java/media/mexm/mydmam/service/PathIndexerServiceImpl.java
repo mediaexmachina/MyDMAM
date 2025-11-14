@@ -86,7 +86,6 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 		final var updatedChangedFounded = updateFounded.stream()
 				.filter(FileEntity::isWatchMarkedAsDone)
 				.filter(u -> u.isTimeQualified(minFixedStateTime))
-				.filter(u -> u.canBePickupFromType(FILES_DIRS))
 				.filter(FileEntity::isWatchDoneButChanged)
 				.map(FileEntity::resetDoneButChanged)
 				.map(FileEntity::getHashPath)
@@ -107,7 +106,6 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 		 */
 		final var qualifiedAndCallbacked = qualifyFounded.stream()
 				.filter(u -> u.isTimeQualified(minFixedStateTime))
-				.filter(u -> u.canBePickupFromType(FILES_DIRS))
 				.map(FileEntity::getHashPath)
 				.map(detectedByhashKey::get)
 				.collect(toUnmodifiableSet());
