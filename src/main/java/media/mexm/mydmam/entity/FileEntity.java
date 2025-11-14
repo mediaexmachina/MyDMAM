@@ -17,6 +17,7 @@
 package media.mexm.mydmam.entity;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
+import static java.lang.Math.round;
 
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -164,7 +165,7 @@ public class FileEntity {
 	}
 
 	private void refreshNewFile(final CachedFileAttributes file) {
-		modified = new Timestamp(file.lastModified());
+		modified = new Timestamp(round(file.lastModified() / 1000d) * 1000);
 		length = file.length();
 	}
 
@@ -174,7 +175,7 @@ public class FileEntity {
 				refreshNewFile(seeAgainFile);
 			}
 		} else {
-			watchLastIsSame = modified.getTime() == seeAgainFile.lastModified()
+			watchLastIsSame = modified.getTime() == round(seeAgainFile.lastModified() / 1000d) * 1000
 							  && length == seeAgainFile.length();
 			if (watchLastIsSame == false) {
 				watchLast = new Timestamp(System.currentTimeMillis());
