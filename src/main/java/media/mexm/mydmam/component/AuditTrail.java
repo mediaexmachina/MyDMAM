@@ -75,7 +75,7 @@ public class AuditTrail implements InitializingBean { // TODO test
 					oWorkingDirectory.get());
 			tempAuditTrailByRealmName.put(realmName, realmAuditTrail);
 		}
-		auditTrailByRealmName = unmodifiableMap(auditTrailByRealmName);
+		auditTrailByRealmName = unmodifiableMap(tempAuditTrailByRealmName);
 	}
 
 	public Optional<RealmAuditTrail> getAuditTrailByRealm(final String realm) {

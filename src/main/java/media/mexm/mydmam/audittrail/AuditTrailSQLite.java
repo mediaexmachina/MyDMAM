@@ -88,8 +88,8 @@ public class AuditTrailSQLite { // TODO test
 			log.debug(EXECUTE_SQL, createTableSetup);
 			statement.executeUpdate(createTableSetup);
 
-			statement.executeUpdate("INSERT INTO setup (key, value) VALUES (version, \"" + VERSION + "\")");
-			statement.executeUpdate("INSERT INTO setup (key, value) VALUES (realm, \"" + realm + "\")");
+			statement.executeUpdate("INSERT INTO setup (key, value) VALUES (\"version\", \"" + VERSION + "\")");
+			statement.executeUpdate("INSERT INTO setup (key, value) VALUES (\"realm\", \"" + realm + "\")");
 		}
 	}
 
