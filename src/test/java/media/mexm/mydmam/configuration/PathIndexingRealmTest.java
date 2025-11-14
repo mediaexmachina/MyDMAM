@@ -16,12 +16,21 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static org.apache.commons.io.FileUtils.forceDelete;
+import static org.apache.commons.io.FileUtils.forceMkdir;
+import static org.apache.commons.io.FileUtils.getTempDirectory;
+import static org.apache.commons.io.FileUtils.touch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Map;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,17 +48,29 @@ class PathIndexingRealmTest {
 	String spoolScans;
 	@Fake
 	String storageName;
+	@Fake
+	String realmName;
 	@Mock
 	PathIndexingStorage piStorage;
 
 	PathIndexingRealm conf;
+	File workingDirectory;
 
 	@BeforeEach
 	void init() {
+		workingDirectory = new File(getTempDirectory(), "mydmam-" + getClass().getSimpleName());
 		conf = new PathIndexingRealm(
 				Map.of(storageName, piStorage),
 				timeBetweenScans,
-				spoolScans);
+				spoolScans,
+				workingDirectory);
+	}
+
+	@AfterEach
+	void ends() throws IOException {
+		if (workingDirectory.exists()) {
+			forceDelete(workingDirectory);
+		}
 	}
 
 	@Test
@@ -67,7 +88,8 @@ class PathIndexingRealmTest {
 		conf = new PathIndexingRealm(
 				Map.of(),
 				timeBetweenScans,
-				spoolScans);
+				spoolScans,
+				null);
 
 		final var result = conf.storagesStream().toList();
 		assertThat(result).isEmpty();
@@ -75,10 +97,43 @@ class PathIndexingRealmTest {
 
 	@Test
 	void testStoragesStream_null() {
-		conf = new PathIndexingRealm(null, timeBetweenScans, spoolScans);
+		conf = new PathIndexingRealm(null, timeBetweenScans, spoolScans, null);
 
 		final var result = conf.storagesStream().toList();
 		assertThat(result).isEmpty();
+	}
+
+	@Test
+	void testGetValidWorkingDirectory_empty() {
+		conf = new PathIndexingRealm(null, timeBetweenScans, spoolScans, null);
+		assertThat(conf.getValidWorkingDirectory(realmName))
+				.isEmpty();
+	}
+
+	@Test
+	void testGetValidWorkingDirectory_exists() throws IOException {
+		forceMkdir(workingDirectory);
+		assertThat(conf.getValidWorkingDirectory(realmName))
+				.contains(workingDirectory);
+	}
+
+	@Test
+	void testGetValidWorkingDirectory_notExists() throws IOException {
+		if (workingDirectory.exists()) {
+			forceDelete(workingDirectory);
+		}
+		assertThat(conf.getValidWorkingDirectory(realmName))
+				.contains(workingDirectory);
+	}
+
+	@Test
+	void testGetValidWorkingDirectory_invalid() throws IOException {
+		if (workingDirectory.exists()) {
+			forceDelete(workingDirectory);
+		}
+		touch(workingDirectory);
+		assertThrows(UncheckedIOException.class,
+				() -> conf.getValidWorkingDirectory(realmName));
 	}
 
 }

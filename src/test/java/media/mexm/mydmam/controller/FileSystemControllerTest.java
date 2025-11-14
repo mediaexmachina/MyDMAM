@@ -54,6 +54,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
+import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.dto.FileItemResponse;
 import media.mexm.mydmam.dto.FileResponse;
 import media.mexm.mydmam.dto.RealmListResponse;
@@ -89,6 +90,8 @@ class FileSystemControllerTest {
 	FileRepository fileRepository;
 	@MockitoBean
 	FileDao fileDao;
+	@MockitoBean
+	AuditTrail auditTrail;
 
 	@Mock
 	HttpServletRequest request;

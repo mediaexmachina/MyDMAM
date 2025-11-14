@@ -48,12 +48,16 @@ public class PathIndexer {
 	private final JobKitEngine jobKitEngine;
 	@Getter
 	private final PathIndexerService pathIndexerService;
+	@Getter
+	private final AuditTrail auditTrail;
 
 	public PathIndexer(@Autowired final MyDMAMConfigurationProperties configuration,
 					   @Autowired final JobKitEngine jobKitEngine,
-					   @Autowired final PathIndexerService pathIndexerService) {
+					   @Autowired final PathIndexerService pathIndexerService,
+					   @Autowired final AuditTrail auditTrail) {
 		this.jobKitEngine = Objects.requireNonNull(jobKitEngine, "\"jobKitEngine\" can't to be null");
 		this.pathIndexerService = Objects.requireNonNull(pathIndexerService, "\"pathIndexerService\" can't to be null");
+		this.auditTrail = Objects.requireNonNull(auditTrail, "\"auditTrail\" can't to be null");
 		pathIndexingConf = configuration.pathindexing();
 		watchfolders = Optional.ofNullable(pathIndexingConf)
 				.map(pi -> pi.makeWatchfolders(this))

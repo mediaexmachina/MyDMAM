@@ -48,7 +48,7 @@ public record PathIndexingConf(@Valid Map<String, PathIndexingRealm> realms,
 	private static final Pattern REPLACE_NORMALIZED = Pattern.compile("\\p{M}");
 	private static final Pattern REMOVE_NON_VALID_CHARS = Pattern.compile("[^a-z^A-Z^0-9^\\-^\\_]+"); // NOSONAR S5869
 
-	static String correctName(final String rawname, final String fieldName) {
+	public static String correctName(final String rawname, final String fieldName) {
 		Objects.requireNonNull(rawname, "You must setup " + fieldName);
 
 		final var normalized = REPLACE_NORMALIZED.matcher(normalize(rawname.trim(), NFKD)).replaceAll("");

@@ -17,14 +17,30 @@
 package media.mexm.mydmam.configuration;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.sqlite.SQLiteConfig;
+import org.sqlite.SQLiteConfig.JournalMode;
+import org.sqlite.SQLiteConfig.SynchronousMode;
+import org.sqlite.SQLiteConfig.TempStore;
 
 @Configuration
 @EnableTransactionManagement
 @ComponentScan(basePackages = { "tv.hd3g.jobkit.mod" })
 @EnableConfigurationProperties(MyDMAMConfigurationProperties.class)
 public class MyDMAMSetup {
+
+	@Bean
+	SQLiteConfig getSqliteConfig() {
+		final var sqliteConfig = new SQLiteConfig();
+		sqliteConfig.enableFullSync(false);
+		sqliteConfig.enableLoadExtension(false);
+		sqliteConfig.setJournalMode(JournalMode.OFF);
+		sqliteConfig.setSynchronous(SynchronousMode.NORMAL);
+		sqliteConfig.setTempStore(TempStore.MEMORY);
+		return sqliteConfig;
+	}
 
 }
