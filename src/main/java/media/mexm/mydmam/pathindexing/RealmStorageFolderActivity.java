@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Set;
 
+import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.component.PathIndexer;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
@@ -32,6 +33,7 @@ import tv.hd3g.jobkit.watchfolder.ObservedFolder;
 import tv.hd3g.jobkit.watchfolder.WatchedFiles;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
+@Slf4j
 public record RealmStorageFolderActivity(PathIndexer indexer,
 										 String realmName,
 										 PathIndexingRealm realm,
@@ -57,6 +59,8 @@ public record RealmStorageFolderActivity(PathIndexer indexer,
 		if (items.isEmpty()) {
 			return;
 		}
+		log.debug("Save to audit trail after scan result on {}:{}, event={}, {} item(s)",
+				realmName, storageName, event, items.size());
 
 		final var dataByObject = items.stream()
 				.collect(toUnmodifiableMap(

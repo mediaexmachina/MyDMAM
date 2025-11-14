@@ -27,14 +27,17 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.sqlite.SQLiteConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import tv.hd3g.jobkit.engine.JobKitEngine;
 
 @Component
+@Slf4j
 public class AuditTrail implements InitializingBean { // TODO test
 
 	@Autowired
@@ -43,6 +46,8 @@ public class AuditTrail implements InitializingBean { // TODO test
 	private MyDMAMConfigurationProperties conf;
 	@Autowired
 	private ObjectMapper objectMapper;
+	@Autowired
+	private SQLiteConfig sqliteConfig;
 
 	@Value("${mydmamConsts.auditTrailSpoolName:audittrail}")
 	private String auditTrailSpoolName;
@@ -61,14 +66,19 @@ public class AuditTrail implements InitializingBean { // TODO test
 		for (final var entry : Optional.ofNullable(pathIndexing.realms())
 				.orElse(Map.of())
 				.entrySet()) {
+			final var realmName = correctName(entry.getKey(), "realm name");
 
-			final var oWorkingDirectory = entry.getValue().getValidWorkingDirectory();
+			final var oWorkingDirectory = entry.getValue().getValidWorkingDirectory(realmName);
 			if (oWorkingDirectory.isEmpty()) {
 				continue;
 			}
-			final var realmName = correctName(entry.getKey(), "realm name");
+
+			log.info("Prepare audit trail for realm={}, on {}",
+					realmName, oWorkingDirectory.get().getAbsolutePath());
+
 			final var realmAuditTrail = new RealmAuditTrail(
 					jobkitEngine,
+					sqliteConfig,
 					objectMapper,
 					auditTrailSpoolName,
 					realmName,

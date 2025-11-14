@@ -31,8 +31,10 @@ import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import lombok.extern.slf4j.Slf4j;
 
 @Validated
+@Slf4j
 public record PathIndexingRealm(@Valid @NotNull Map<String, PathIndexingStorage> storages,
 								Duration timeBetweenScans,
 								String spoolScans,
@@ -45,12 +47,15 @@ public record PathIndexingRealm(@Valid @NotNull Map<String, PathIndexingStorage>
 				.stream();
 	}
 
-	public Optional<File> getValidWorkingDirectory() { // TODO test
+	public Optional<File> getValidWorkingDirectory(final String realmName) { // TODO test
 		if (workingDirectory == null) {
+			log.debug("No workingDirectory set for realm {}", realmName);
 			return Optional.empty();
 		}
 		try {
 			if (workingDirectory.exists() == false) {
+				log.info("Create working directory \"{}\" for realm {}",
+						workingDirectory.getAbsolutePath(), realmName);
 				forceMkdir(workingDirectory);
 			} else if (workingDirectory.isDirectory() == false
 					   || workingDirectory.canRead() == false
@@ -58,7 +63,8 @@ public record PathIndexingRealm(@Valid @NotNull Map<String, PathIndexingStorage>
 				throw new IOException("Can't read/write or it's not a directory");
 			}
 		} catch (final IOException e) {
-			throw new UncheckedIOException("Invalid workingDirectory: " + workingDirectory, e);
+			throw new UncheckedIOException(
+					"Invalid workingDirectory: " + workingDirectory + " for realm " + realmName, e);
 		}
 
 		return Optional.ofNullable(workingDirectory);

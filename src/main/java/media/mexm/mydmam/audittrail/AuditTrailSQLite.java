@@ -22,18 +22,14 @@ import java.sql.SQLException;
 import java.util.Collection;
 
 import org.sqlite.SQLiteConfig;
-import org.sqlite.SQLiteConfig.JournalMode;
-import org.sqlite.SQLiteConfig.SynchronousMode;
-import org.sqlite.SQLiteConfig.TempStore;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class AuditTrailSQLite { // TODO test
 
-	private static final String EXECUTE_SQL = "Execute SQL: {}";
-
 	public static final String VERSION = "1";
+	private static final String EXECUTE_SQL = "Execute SQL: {}";
 
 	private final String realm;
 	private final File sqliteFile;
@@ -41,16 +37,11 @@ public class AuditTrailSQLite { // TODO test
 	private final String url;
 	private Connection connection;
 
-	public AuditTrailSQLite(final String realm, final File realmWorkingDirectory) {
+	public AuditTrailSQLite(final String realm, final File realmWorkingDirectory, final SQLiteConfig sqliteConfig) {
 		this.realm = realm;
+		this.sqliteConfig = sqliteConfig;
 		sqliteFile = new File(realmWorkingDirectory, "audittrail-" + realm + ".sqlite");
 		url = "jdbc:sqlite:" + sqliteFile.getPath().replace('\\', '/');
-		sqliteConfig = new SQLiteConfig();
-		sqliteConfig.enableFullSync(false);
-		sqliteConfig.enableLoadExtension(false);
-		sqliteConfig.setJournalMode(JournalMode.OFF);
-		sqliteConfig.setSynchronous(SynchronousMode.NORMAL);
-		sqliteConfig.setTempStore(TempStore.MEMORY);
 	}
 
 	private void prepareSQLite() throws SQLException {

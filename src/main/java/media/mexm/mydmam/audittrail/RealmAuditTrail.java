@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.sqlite.SQLiteConfig;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,7 @@ public class RealmAuditTrail { // TODO test
 	private final AuditTrailSQLite sqlite;
 
 	public RealmAuditTrail(final JobKitEngine jobkitEngine,
+						   final SQLiteConfig sqliteConfig,
 						   final ObjectMapper objectMapper,
 						   final String auditTrailSpoolName,
 						   final String realmName,
@@ -47,7 +50,7 @@ public class RealmAuditTrail { // TODO test
 		this.objectMapper = requireNonNull(objectMapper);
 		this.auditTrailSpoolName = requireNonNull(auditTrailSpoolName);
 		this.realmName = requireNonNull(realmName);
-		sqlite = new AuditTrailSQLite(realmName, realmWorkingDirectory);
+		sqlite = new AuditTrailSQLite(realmName, realmWorkingDirectory, sqliteConfig);
 	}
 
 	public void asyncPersist(final String issuer, final String object, final String event, final Object data) {
