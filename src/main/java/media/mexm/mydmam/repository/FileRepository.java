@@ -34,29 +34,23 @@ public interface FileRepository extends JpaRepository<FileEntity, Long> {
 
 	@Query("""
 			SELECT f FROM FileEntity f
-			WHERE f.watchMarkedAsDone = false
-			AND ((f.directory = true AND :pickUpDirs = true) OR (f.directory = false AND :pickUpFiles = true))
+			WHERE f.watchMarkedAsDone = true
 			AND f.hashPath NOT IN :detectedHashPath
 			AND f.realm = :realm
 			AND f.storage = :storage
 			""")
-	Set<FileEntity> getLostedByHashPath(Set<String> detectedHashPath,
-										boolean pickUpDirs,
-										boolean pickUpFiles,
-										String realm,
-										String storage);
+	Set<FileEntity> getDoneAndLostedByHashPath(Set<String> detectedHashPath,
+											   String realm,
+											   String storage);
 
 	@Query("""
 			SELECT f FROM FileEntity f
-			WHERE f.watchMarkedAsDone = false
-			AND ((f.directory = true AND :pickUpDirs = true) OR (f.directory = false AND :pickUpFiles = true))
+			WHERE f.watchMarkedAsDone = true
 			AND f.realm = :realm
 			AND f.storage = :storage
 			""")
-	Set<FileEntity> getLostedForEmptyDir(boolean pickUpDirs,
-										 boolean pickUpFiles,
-										 String realm,
-										 String storage);
+	Set<FileEntity> getDoneLostedForEmptyDir(String realm,
+											 String storage);
 
 	@Query("""
 			SELECT f.hashPath FROM FileEntity f WHERE f.realm = :realm AND f.storage = :storage
@@ -84,17 +78,6 @@ public interface FileRepository extends JpaRepository<FileEntity, Long> {
 
 	@Query("SELECT COUNT(f) FROM FileEntity f WHERE f.realm = :realm")
 	int countByRealm(String realm);
-
-	@Query("""
-			SELECT COUNT(f) FROM FileEntity f
-			WHERE ((f.directory = true AND :pickUpDirs = true) OR (f.directory = false AND :pickUpFiles = true))
-			AND f.realm = :realm
-			AND f.storage = :storage
-			""")
-	int countByStorage(boolean pickUpDirs,
-					   boolean pickUpFiles,
-					   String realm,
-					   String storage);
 
 	@Query("DELETE FROM FileEntity WHERE realm = :realm AND storage NOT IN :storageToKeep")
 	@Modifying

@@ -20,7 +20,6 @@ import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
-import static tv.hd3g.jobkit.watchfolder.WatchFolderPickupType.FILES_DIRS;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -113,19 +112,15 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 		Set<FileAttributesReference> lostedAndCallbacked;
 		if (detectedByhashKey.isEmpty() == false) {
 			lostedAndCallbacked = fileRepository
-					.getLostedByHashPath(
+					.getDoneAndLostedByHashPath(
 							detectedByhashKey.keySet(),
-							FILES_DIRS.isPickUpDirs(),
-							FILES_DIRS.isPickUpFiles(),
-							realmName, storageName).stream()
+							realmName, storageName)
+					.stream()
 					.map(f -> f.toFileAttributesReference(false))
 					.collect(toUnmodifiableSet());
 		} else {
 			lostedAndCallbacked = fileRepository
-					.getLostedForEmptyDir(
-							FILES_DIRS.isPickUpDirs(),
-							FILES_DIRS.isPickUpFiles(),
-							realmName, storageName).stream()
+					.getDoneLostedForEmptyDir(realmName, storageName).stream()
 					.map(f -> f.toFileAttributesReference(false))
 					.collect(toUnmodifiableSet());
 		}
