@@ -82,6 +82,11 @@ public record PathIndexingConf(@Valid Map<String, PathIndexingRealm> realms,
 					final var realmConf = entry.getValue();
 
 					return realmConf.storagesStream()
+							.filter(storageConf -> {
+								final var storage = storageConf.getValue();
+								final var scan = storage.scan();
+								return scan.isDisabled() == false;
+							})
 							.map(storageConf -> {
 								final var storageName = correctName(storageConf.getKey(), "storage name");
 								final var storage = storageConf.getValue();
