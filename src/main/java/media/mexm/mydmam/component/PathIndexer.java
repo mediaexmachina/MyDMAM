@@ -18,19 +18,13 @@ package media.mexm.mydmam.component;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.configuration.PathIndexingConf;
 import media.mexm.mydmam.pathindexing.RealmStorageFolderActivity;
 import media.mexm.mydmam.service.PathIndexerService;
 import tv.hd3g.jobkit.engine.JobKitEngine;
@@ -40,38 +34,17 @@ import tv.hd3g.jobkit.watchfolder.Watchfolders;
 @Component
 public class PathIndexer {
 
-	@Nullable
-	private final PathIndexingConf pathIndexingConf;
-	@Getter
-	private final Map<RealmStorageFolderActivity, Watchfolders> watchfolders;
-	@Getter
 	private final JobKitEngine jobKitEngine;
-	@Getter
-	private final PathIndexerService pathIndexerService;
-	@Getter
-	private final AuditTrail auditTrail;
+	private final MyDMAMConfigurationProperties configuration;
+	private final Map<RealmStorageFolderActivity, Watchfolders> watchfolders;
 
-	public PathIndexer(@Autowired final MyDMAMConfigurationProperties configuration,
-					   @Autowired final JobKitEngine jobKitEngine,
+	public PathIndexer(@Autowired final JobKitEngine jobKitEngine,
 					   @Autowired final PathIndexerService pathIndexerService,
-					   @Autowired final AuditTrail auditTrail) {
-		this.jobKitEngine = Objects.requireNonNull(jobKitEngine, "\"jobKitEngine\" can't to be null");
-		this.pathIndexerService = Objects.requireNonNull(pathIndexerService, "\"pathIndexerService\" can't to be null");
-		this.auditTrail = Objects.requireNonNull(auditTrail, "\"auditTrail\" can't to be null");
-		pathIndexingConf = configuration.pathindexing();
-		watchfolders = Optional.ofNullable(pathIndexingConf)
-				.map(pi -> pi.makeWatchfolders(this))
-				.orElse(Map.of());
-	}
-
-	@PostConstruct
-	public void starts() {
+					   @Autowired final MyDMAMConfigurationProperties configuration) {
+		this.jobKitEngine = jobKitEngine;
+		this.configuration = configuration;
+		watchfolders = pathIndexerService.makeWatchfolders();
 		watchfolders.values().forEach(Watchfolders::startScans);
-	}
-
-	@PreDestroy
-	public void ends() {
-		watchfolders.values().forEach(Watchfolders::stopScans);
 	}
 
 	public void scanNow(final String realm, final String storage) {
@@ -84,7 +57,7 @@ public class PathIndexer {
 				})
 				.findFirst()
 				.ifPresent(entry -> {
-					final var spoolEvents = pathIndexingConf.getSpoolEvents();
+					final var spoolEvents = configuration.pathindexing().getSpoolEvents();
 
 					jobKitEngine.runOneShot(
 							"Manual scan for " + realm + ":" + storage,

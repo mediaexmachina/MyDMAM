@@ -16,7 +16,8 @@
  */
 package media.mexm.mydmam.component;
 
-import org.springframework.http.HttpStatus;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -36,6 +37,6 @@ public class ConstraintViolationExceptionHandler extends ResponseEntityException
 	protected ResponseEntity<Object> handleConstraintViolation(final ConstraintViolationException e,
 															   final WebRequest request) {
 		log.warn("Bad request (ConstraintViolationException): {}", e.getMessage());
-		return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		return new ResponseEntity<>(BAD_REQUEST);
 	}
 }

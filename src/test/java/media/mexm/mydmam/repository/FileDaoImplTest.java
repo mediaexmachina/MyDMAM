@@ -17,6 +17,7 @@
 package media.mexm.mydmam.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
@@ -96,6 +97,7 @@ class FileDaoImplTest {
 		final var size = (ITEMS_TO_ADD - from) / 2;
 		final var result = fileDao.getByParentHashPath(parentHashPath, from, size);
 		assertEquals(size, result.size());
+		assertFalse(result.isEmpty());
 		assertEquals("/" + basePath + "/" + baseName + from, result.get(0).getPath());
 	}
 

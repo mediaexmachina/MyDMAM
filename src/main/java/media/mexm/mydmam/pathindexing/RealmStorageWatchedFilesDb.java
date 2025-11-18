@@ -20,7 +20,6 @@ import java.util.Set;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.component.PathIndexer;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.service.PathIndexerService;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
@@ -39,14 +38,14 @@ public class RealmStorageWatchedFilesDb implements WatchedFilesDb {
 	private final String storageName;
 	private final PathIndexerService pathIndexerService;
 
-	public RealmStorageWatchedFilesDb(final PathIndexer indexer,
+	public RealmStorageWatchedFilesDb(final PathIndexerService pathIndexerService,
 									  final String realmName,
 									  final String storageName,
 									  final PathIndexingStorage storage) {
-		scanner = new WatchedFileScanner(storage.scan(), storage.getDefaultMaxDeep());
+		this.pathIndexerService = pathIndexerService;
 		this.realmName = realmName;
 		this.storageName = storageName;
-		pathIndexerService = indexer.getPathIndexerService();
+		scanner = new WatchedFileScanner(storage.scan(), storage.getDefaultMaxDeep());
 	}
 
 	@Override
