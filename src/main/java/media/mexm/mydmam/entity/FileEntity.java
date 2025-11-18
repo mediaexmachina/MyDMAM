@@ -127,7 +127,7 @@ public class FileEntity {
 	@Column(name = "watch_done_but_changed", columnDefinition = "TINYINT")
 	private boolean watchDoneButChanged;
 
-	@OneToMany(mappedBy = "file_id", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
+	@OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
 	private final Set<PendingActivityEntity> pendingActivities = new HashSet<>();
 
 	/**

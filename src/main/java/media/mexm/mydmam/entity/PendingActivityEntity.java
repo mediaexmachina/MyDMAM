@@ -27,6 +27,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
@@ -56,7 +57,7 @@ public class PendingActivityEntity {
 	private Timestamp createDate;
 
 	@NotNull
-	@Column(name = "file_id", updatable = false)
+	@JoinColumn(name = "file_id", updatable = false)
 	@ManyToOne(fetch = LAZY, cascade = REMOVE, optional = false)
 	private FileEntity file;
 
