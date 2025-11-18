@@ -5,7 +5,7 @@
     <groupId>media.mexm</groupId>
     <artifactId>mydmam</artifactId>
     <packaging>jar</packaging>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.0.2</version>
 
     <name>MyDMAM</name>
     <url>https://github.com/mediaexmachina/MyDMAM</url>
