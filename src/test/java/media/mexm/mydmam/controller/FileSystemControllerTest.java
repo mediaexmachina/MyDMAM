@@ -262,11 +262,11 @@ class FileSystemControllerTest {
 			verify(f, atLeastOnce()).getRealm();
 			verify(f, atLeastOnce()).getStorage();
 			verify(f, atLeastOnce()).isDirectory();
-			verify(f, atLeastOnce()).isWatchMarkedAsDone();
 		}
 
 		for (final var f : Set.of(fileChildren0, fileChildren1)) {
 			verify(f, atLeastOnce()).getLength();
+			verify(f, atLeastOnce()).isWatchMarkedAsDone();
 		}
 
 	}
@@ -332,7 +332,6 @@ class FileSystemControllerTest {
 		verify(file, atLeastOnce()).getRealm();
 		verify(file, atLeastOnce()).getStorage();
 		verify(file, atLeastOnce()).isDirectory();
-		verify(file, atLeastOnce()).isWatchMarkedAsDone();
 	}
 
 }
