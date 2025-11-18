@@ -33,11 +33,15 @@
                         Directory with {{ dirList?.total }} items.
                     }
                 </div>
+            } @else if (currentItem?.justDetected) {
+                <div class="just-detected">Just detected file (at least {{ numberFormat.format(currentItem?.length || 0) }} bytes), pending check...</div>
             } @else {
                 <div>File ({{ numberFormat.format(currentItem?.length || 0) }} bytes)</div>
             }
 
-            <div>Modified the {{ currentItem?.modified | date:'medium' }}.</div>
+            <div [class.just-detected]="currentItem?.justDetected">
+                Modified the {{ currentItem?.modified | date:'medium' }}.
+            </div>
         </aside>
 
     } @else if (dirList?.path == "/") {
@@ -93,6 +97,9 @@
         @if (fileItem.directory) {
             <span>Directory</span>
             <span></span>
+        } @else if (fileItem.justDetected) {
+            <span class="just-detected">Just detected file</span>
+            <span class="just-detected">At least {{ numberFormat.format(fileItem.length || 0) }} bytes</span>
         } @else {
             <span>Regular file</span>
             <span>{{ numberFormat.format(fileItem.length || 0) }} bytes</span>

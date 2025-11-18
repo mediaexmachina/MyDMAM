@@ -9,4 +9,5 @@ export interface FileItemResponse {
     hashPath: string;
     modified: number;
     length: number;
+    justDetected: boolean;
 }

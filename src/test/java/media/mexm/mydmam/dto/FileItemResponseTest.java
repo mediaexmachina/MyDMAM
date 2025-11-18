@@ -17,6 +17,7 @@
 package media.mexm.mydmam.dto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
@@ -31,6 +32,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 
 import media.mexm.mydmam.entity.FileEntity;
@@ -82,10 +85,12 @@ class FileItemResponseTest {
 		verifyNoMoreInteractions(fEntity);
 	}
 
-	@Test
-	void testCreateFromEntity_regularFile() {
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void testCreateFromEntity_regularFile(final boolean watchMarkedAsDone) {
 		directory = false;
 		when(fEntity.isDirectory()).thenReturn(directory);
+		when(fEntity.isWatchMarkedAsDone()).thenReturn(watchMarkedAsDone);
 
 		response = FileItemResponse.createFromEntity(fEntity, realm, storage);
 		assertEquals(directory, response.directory());
@@ -93,15 +98,19 @@ class FileItemResponseTest {
 		assertEquals(length, response.length());
 		assertEquals(time, response.modified());
 		assertEquals(name, response.name());
+		assertEquals(watchMarkedAsDone == false, response.justDetected());
 
 		checkOk();
 		verify(fEntity, atLeastOnce()).getLength();
+		verify(fEntity, atLeastOnce()).isWatchMarkedAsDone();
 	}
 
-	@Test
-	void testCreateFromEntity_directory() {
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void testCreateFromEntity_directory(final boolean watchMarkedAsDone) {
 		directory = true;
 		when(fEntity.isDirectory()).thenReturn(directory);
+		when(fEntity.isWatchMarkedAsDone()).thenReturn(watchMarkedAsDone);
 
 		response = FileItemResponse.createFromEntity(fEntity, realm, storage);
 		assertEquals(directory, response.directory());
@@ -109,6 +118,7 @@ class FileItemResponseTest {
 		assertEquals(-1l, response.length());
 		assertEquals(time, response.modified());
 		assertEquals(name, response.name());
+		assertFalse(response.justDetected());
 
 		checkOk();
 	}

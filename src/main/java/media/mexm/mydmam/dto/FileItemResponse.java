@@ -24,7 +24,8 @@ public record FileItemResponse(boolean directory,
 							   String name,
 							   String hashPath,
 							   long modified,
-							   long length) {
+							   long length,
+							   boolean justDetected) {
 
 	public static FileItemResponse createFromEntity(final FileEntity entity,
 													final String checkRealm,
@@ -43,7 +44,8 @@ public record FileItemResponse(boolean directory,
 				getName(entity.getPath()),
 				entity.getHashPath(),
 				entity.getModified().getTime(),
-				entity.isDirectory() ? -1 : entity.getLength());
+				entity.isDirectory() ? -1 : entity.getLength(),
+				(entity.isDirectory() || entity.isWatchMarkedAsDone()) == false);
 	}
 
 }

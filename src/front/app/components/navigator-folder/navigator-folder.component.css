@@ -157,3 +157,8 @@ div.dropdrown-list-result-count select {
 div.dropdrown-list-result-count select:hover {
     border: 0.1em dotted rgba(0, 0, 0, 0.2);
 }
+
+.just-detected {
+    color: rgb(173, 113, 0);
+    font-style: italic;
+}

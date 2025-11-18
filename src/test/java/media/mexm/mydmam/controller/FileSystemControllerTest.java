@@ -145,6 +145,7 @@ class FileSystemControllerTest {
 		when(file.getRealm()).thenReturn(realm);
 		when(file.getStorage()).thenReturn(storage);
 		when(file.isDirectory()).thenReturn(true);
+		when(file.isWatchMarkedAsDone()).thenReturn(true);
 
 		when(fileChildren0.getHashPath()).thenReturn(hashPath + "filechildren0");
 		when(fileChildren0.getLength()).thenReturn(length);
@@ -154,6 +155,7 @@ class FileSystemControllerTest {
 		when(fileChildren0.getRealm()).thenReturn(realm);
 		when(fileChildren0.getStorage()).thenReturn(storage);
 		when(fileChildren0.isDirectory()).thenReturn(false);
+		when(fileChildren0.isWatchMarkedAsDone()).thenReturn(true);
 
 		when(fileChildren1.getHashPath()).thenReturn(hashPath + "filechildren1");
 		when(fileChildren1.getLength()).thenReturn(length);
@@ -163,6 +165,7 @@ class FileSystemControllerTest {
 		when(fileChildren1.getRealm()).thenReturn(realm);
 		when(fileChildren1.getStorage()).thenReturn(storage);
 		when(fileChildren1.isDirectory()).thenReturn(false);
+		when(fileChildren1.isWatchMarkedAsDone()).thenReturn(true);
 	}
 
 	@AfterEach
@@ -240,7 +243,8 @@ class FileSystemControllerTest {
 
 		assertThat(response.realm()).isEqualTo(realm);
 		assertThat(response.storage()).isEqualTo(storage);
-		assertThat(response.currentItem()).isEqualTo(new FileItemResponse(true, baseName, hashPath, modified, -1));
+		assertThat(response.currentItem())
+				.isEqualTo(new FileItemResponse(true, baseName, hashPath, modified, -1, false));
 		assertThat(response.path()).isEqualTo("/" + basePath + "/" + baseName);
 		assertThat(response.parentHashPath()).isEqualTo(parentHashPath);
 		assertThat(response.listSize()).isEqualTo(2);
@@ -258,6 +262,7 @@ class FileSystemControllerTest {
 			verify(f, atLeastOnce()).getRealm();
 			verify(f, atLeastOnce()).getStorage();
 			verify(f, atLeastOnce()).isDirectory();
+			verify(f, atLeastOnce()).isWatchMarkedAsDone();
 		}
 
 		for (final var f : Set.of(fileChildren0, fileChildren1)) {
@@ -308,7 +313,8 @@ class FileSystemControllerTest {
 
 		assertThat(response.realm()).isEqualTo(realm);
 		assertThat(response.storage()).isEqualTo(storage);
-		assertThat(response.currentItem()).isEqualTo(new FileItemResponse(true, baseName, hashPath, modified, -1));
+		assertThat(response.currentItem())
+				.isEqualTo(new FileItemResponse(true, baseName, hashPath, modified, -1, false));
 		assertThat(response.path()).isEqualTo("/" + basePath + "/" + baseName);
 		assertThat(response.parentHashPath()).isEqualTo(parentHashPath);
 		assertThat(response.listSize()).isZero();
@@ -326,6 +332,7 @@ class FileSystemControllerTest {
 		verify(file, atLeastOnce()).getRealm();
 		verify(file, atLeastOnce()).getStorage();
 		verify(file, atLeastOnce()).isDirectory();
+		verify(file, atLeastOnce()).isWatchMarkedAsDone();
 	}
 
 }
