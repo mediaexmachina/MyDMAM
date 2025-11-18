@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
-import media.mexm.mydmam.component.PathIndexer;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.service.PathIndexerService;
 import tv.hd3g.commons.testtools.Fake;
@@ -50,8 +49,6 @@ class RealmStorageWatchedFilesDbTest {
 	String storageName;
 
 	@Mock
-	PathIndexer indexer;
-	@Mock
 	PathIndexingStorage storage;
 	@Mock
 	ObservedFolder scan;
@@ -68,13 +65,11 @@ class RealmStorageWatchedFilesDbTest {
 	void init() {
 		when(storage.scan()).thenReturn(scan);
 		when(storage.getDefaultMaxDeep()).thenReturn(0);
-		when(indexer.getPathIndexerService()).thenReturn(pathIndexerService);
 
-		db = new RealmStorageWatchedFilesDb(indexer, realmName, storageName, storage);
+		db = new RealmStorageWatchedFilesDb(pathIndexerService, realmName, storageName, storage);
 
 		verify(storage, atLeastOnce()).scan();
 		verify(storage, atLeastOnce()).getDefaultMaxDeep();
-		verify(indexer, atLeastOnce()).getPathIndexerService();
 		verify(scan, times(1)).createFileSystem();
 	}
 

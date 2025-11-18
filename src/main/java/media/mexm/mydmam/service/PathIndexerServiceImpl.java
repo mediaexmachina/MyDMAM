@@ -19,10 +19,15 @@ package media.mexm.mydmam.service;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static java.util.stream.Collectors.toUnmodifiableSet;
+import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE;
+import static media.mexm.mydmam.configuration.PathIndexingConf.correctName;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 
+import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,11 +36,21 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
+import media.mexm.mydmam.audittrail.RealmAuditTrail;
+import media.mexm.mydmam.component.AuditTrail;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
+import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.pathindexing.RealmStorageFolderActivity;
+import media.mexm.mydmam.pathindexing.RealmStorageWatchedFilesDb;
 import media.mexm.mydmam.repository.FileRepository;
+import tv.hd3g.jobkit.engine.JobKitEngine;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
 import tv.hd3g.jobkit.watchfolder.WatchedFileScanner;
 import tv.hd3g.jobkit.watchfolder.WatchedFiles;
+import tv.hd3g.jobkit.watchfolder.Watchfolders;
 import tv.hd3g.transfertfiles.AbstractFileSystemURL;
 import tv.hd3g.transfertfiles.CachedFileAttributes;
 import tv.hd3g.transfertfiles.FileAttributesReference;
@@ -46,6 +61,12 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 
 	@Autowired
 	FileRepository fileRepository;
+	@Autowired
+	AuditTrail auditTrail;
+	@Autowired
+	JobKitEngine jobKitEngine;
+	@Autowired
+	MyDMAMConfigurationProperties configuration;
 
 	@Override
 	@Transactional
@@ -186,4 +207,107 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 				.collect(toUnmodifiableSet());
 		fileRepository.deleteByHashPath(hashPathListToPurge);
 	}
+
+	@Override
+	public Map<RealmStorageFolderActivity, Watchfolders> makeWatchfolders() {
+		record KV(RealmStorageFolderActivity key, Watchfolders value) {
+		}
+
+		final var pathIndexingConf = configuration.pathindexing();
+		if (pathIndexingConf == null) {
+			return Map.of();
+		}
+		final var spoolEvents = pathIndexingConf.getSpoolEvents();
+
+		return Optional.ofNullable(pathIndexingConf.realms())
+				.orElse(Map.of())
+				.entrySet()
+				.stream()
+				.flatMap(entry -> {
+					final var realmName = correctName(entry.getKey(), "realm name");
+					final var realmConf = entry.getValue();
+
+					return realmConf.storagesStream()
+							.filter(storageConf -> {
+								final var storage = storageConf.getValue();
+								final var scan = storage.scan();
+								return scan.isDisabled() == false;
+							})
+							.map(storageConf -> {
+								final var storageName = correctName(storageConf.getKey(), "storage name");
+								final var storage = storageConf.getValue();
+
+								final var spoolScans = Optional.ofNullable(storage.spoolScans())
+										.or(() -> Optional.ofNullable(realmConf.spoolScans()))
+										.or(() -> Optional.ofNullable(pathIndexingConf.spoolScans()))
+										.filter(not(String::isEmpty))
+										.orElse("pathindexing");
+
+								final var timeBetweenScans = Optional.ofNullable(storage.timeBetweenScans())
+										.filter(Duration::isPositive)
+										.or(() -> Optional.ofNullable(realmConf.timeBetweenScans()))
+										.filter(Duration::isPositive)
+										.or(() -> Optional.ofNullable(pathIndexingConf.timeBetweenScans()))
+										.filter(Duration::isPositive)
+										.orElse(Duration.ofHours(1));
+
+								log.debug(
+										"Prepare Watchfolder for {}:{} with timeBetweenScans={}, spoolScans={} spoolEvents={}",
+										realmName, storageName, timeBetweenScans, spoolScans, spoolEvents);
+
+								final var folderActivity = new RealmStorageFolderActivity(
+										this, realmName, realmConf, storageName, storage);
+
+								return new KV(folderActivity, new Watchfolders(
+										List.of(storage.scan()),
+										folderActivity,
+										timeBetweenScans,
+										jobKitEngine,
+										spoolScans,
+										spoolEvents,
+										() -> new RealmStorageWatchedFilesDb(this, realmName, storageName, storage)));
+							});
+				})
+				.collect(toUnmodifiableMap(KV::key, KV::value));
+	}
+
+	@Override
+	public void onAfterScan(final String realmName,
+							final String storageName,
+							final PathIndexingRealm realm,
+							final PathIndexingStorage storage,
+							final ObservedFolder observedFolder,
+							final Duration scanTime,
+							final WatchedFiles scanResult) {
+		auditTrail.getAuditTrailByRealm(realmName)
+				.ifPresent(rat -> {
+					fileActivitytoAuditTrail(realmName, storageName, rat, "founded", scanResult.founded());
+					fileActivitytoAuditTrail(realmName, storageName, rat, "losted", scanResult.losted());
+					fileActivitytoAuditTrail(realmName, storageName, rat, "updated", scanResult.updated());
+				});
+
+		// TODO (2) add Pending Activity
+	}
+
+	@Override
+	public void fileActivitytoAuditTrail(final String realmName,
+										 final String storageName,
+										 final RealmAuditTrail auditTrail,
+										 final String event,
+										 final Set<? extends FileAttributesReference> items) {
+		if (items.isEmpty()) {
+			return;
+		}
+		log.debug("Save to audit trail after scan result on {}:{}, event={}, {} item(s)",
+				realmName, storageName, event, items.size());
+
+		final var inserts = items.stream()
+				.map(i -> new AuditTrailBatchInsertObject(
+						FILE,
+						hashPath(realmName, storageName, i.getPath()),
+						i))
+				.toList();
+		auditTrail.asyncPersist("pathindex", event, inserts);
+	}
+
 }

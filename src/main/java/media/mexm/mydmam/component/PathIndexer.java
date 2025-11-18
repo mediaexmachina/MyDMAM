@@ -18,7 +18,6 @@ package media.mexm.mydmam.component;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +26,6 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingConf;
@@ -40,32 +38,21 @@ import tv.hd3g.jobkit.watchfolder.Watchfolders;
 @Component
 public class PathIndexer {
 
-	@Nullable
-	private final PathIndexingConf pathIndexingConf;
-	@Getter
-	private final Map<RealmStorageFolderActivity, Watchfolders> watchfolders;
-	@Getter
-	private final JobKitEngine jobKitEngine;
-	@Getter
-	private final PathIndexerService pathIndexerService;
-	@Getter
-	private final AuditTrail auditTrail;
+	@Autowired
+	JobKitEngine jobKitEngine;
+	@Autowired
+	PathIndexerService pathIndexerService;
+	@Autowired
+	MyDMAMConfigurationProperties configuration;
 
-	public PathIndexer(@Autowired final MyDMAMConfigurationProperties configuration,
-					   @Autowired final JobKitEngine jobKitEngine,
-					   @Autowired final PathIndexerService pathIndexerService,
-					   @Autowired final AuditTrail auditTrail) {
-		this.jobKitEngine = Objects.requireNonNull(jobKitEngine, "\"jobKitEngine\" can't to be null");
-		this.pathIndexerService = Objects.requireNonNull(pathIndexerService, "\"pathIndexerService\" can't to be null");
-		this.auditTrail = Objects.requireNonNull(auditTrail, "\"auditTrail\" can't to be null");
-		pathIndexingConf = configuration.pathindexing();
-		watchfolders = Optional.ofNullable(pathIndexingConf)
-				.map(pi -> pi.makeWatchfolders(this))
-				.orElse(Map.of());
-	}
+	@Nullable
+	private PathIndexingConf pathIndexingConf;
+	private Map<RealmStorageFolderActivity, Watchfolders> watchfolders = Map.of();
 
 	@PostConstruct
 	public void starts() {
+		watchfolders = pathIndexerService.makeWatchfolders();
+		pathIndexingConf = configuration.pathindexing();
 		watchfolders.values().forEach(Watchfolders::startScans);
 	}
 

@@ -18,12 +18,9 @@ package media.mexm.mydmam.configuration;
 
 import static java.text.Normalizer.normalize;
 import static java.text.Normalizer.Form.NFKD;
-import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toUnmodifiableMap;
 import static media.mexm.mydmam.entity.FileEntity.MAX_NAME_SIZE;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,10 +30,6 @@ import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.component.PathIndexer;
-import media.mexm.mydmam.pathindexing.RealmStorageFolderActivity;
-import media.mexm.mydmam.pathindexing.RealmStorageWatchedFilesDb;
-import tv.hd3g.jobkit.watchfolder.Watchfolders;
 
 @Validated
 @Slf4j
@@ -65,65 +58,6 @@ public record PathIndexingConf(@Valid Map<String, PathIndexingRealm> realms,
 		return Optional.ofNullable(spoolEvents)
 				.filter(t -> t.isEmpty() == false)
 				.orElse("pathindexing");
-	}
-
-	public Map<RealmStorageFolderActivity, Watchfolders> makeWatchfolders(final PathIndexer indexer) {
-		record KV(RealmStorageFolderActivity key, Watchfolders value) {
-		}
-
-		final var spoolEvents = getSpoolEvents();
-
-		return Optional.ofNullable(realms)
-				.orElse(Map.of())
-				.entrySet()
-				.stream()
-				.flatMap(entry -> {
-					final var realmName = correctName(entry.getKey(), "realm name");
-					final var realmConf = entry.getValue();
-
-					return realmConf.storagesStream()
-							.filter(storageConf -> {
-								final var storage = storageConf.getValue();
-								final var scan = storage.scan();
-								return scan.isDisabled() == false;
-							})
-							.map(storageConf -> {
-								final var storageName = correctName(storageConf.getKey(), "storage name");
-								final var storage = storageConf.getValue();
-
-								final var spoolScans = Optional.ofNullable(storage.spoolScans())
-										.or(() -> Optional.ofNullable(realmConf.spoolScans()))
-										.or(() -> Optional.ofNullable(this.spoolScans))
-										.filter(not(String::isEmpty))
-										.orElse("pathindexing");
-
-								final var timeBetweenScans = Optional.ofNullable(storage.timeBetweenScans())
-										.filter(Duration::isPositive)
-										.or(() -> Optional.ofNullable(realmConf.timeBetweenScans()))
-										.filter(Duration::isPositive)
-										.or(() -> Optional.ofNullable(this.timeBetweenScans))
-										.filter(Duration::isPositive)
-										.orElse(Duration.ofHours(1));
-
-								log.debug(
-										"Prepare Watchfolder for {}:{} with timeBetweenScans={}, spoolScans={} spoolEvents={}",
-										realmName, storageName, timeBetweenScans, spoolScans, spoolEvents);
-
-								final var folderActivity = new RealmStorageFolderActivity(
-										indexer, realmName, realmConf, storageName, storage);
-
-								return new KV(folderActivity, new Watchfolders(
-										List.of(storage.scan()),
-										folderActivity,
-										timeBetweenScans,
-										indexer.getJobKitEngine(),
-										spoolScans,
-										spoolEvents,
-										() -> new RealmStorageWatchedFilesDb(
-												indexer, realmName, storageName, storage)));
-							});
-				})
-				.collect(toUnmodifiableMap(KV::key, KV::value));
 	}
 
 }

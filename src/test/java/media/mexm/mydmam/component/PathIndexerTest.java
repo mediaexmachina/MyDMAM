@@ -33,6 +33,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingConf;
@@ -45,8 +50,17 @@ import tv.hd3g.jobkit.watchfolder.ObservedFolder;
 import tv.hd3g.jobkit.watchfolder.WatchedFiles;
 import tv.hd3g.jobkit.watchfolder.Watchfolders;
 
+@SpringBootTest(webEnvironment = WebEnvironment.NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
+@ActiveProfiles({ "FlatJobKit" })
 class PathIndexerTest {
+
+	@MockitoBean
+	FlatJobKitEngine jobKitEngine;
+	@MockitoBean
+	PathIndexerService pathIndexerService;
+	@MockitoBean
+	MyDMAMConfigurationProperties configuration;
 
 	@Fake
 	String realm;
@@ -60,11 +74,6 @@ class PathIndexerTest {
 	String spoolEvents;
 
 	@Mock
-	MyDMAMConfigurationProperties configuration;
-
-	@Mock
-	PathIndexerService pathIndexerService;
-	@Mock
 	PathIndexingConf pathIndexingConf;
 	@Mock
 	RealmStorageFolderActivity realmStorageFolderActivity;
@@ -77,12 +86,19 @@ class PathIndexerTest {
 	@Mock
 	AuditTrail auditTrail;
 
-	FlatJobKitEngine jobKitEngine;
+	@Autowired
 	PathIndexer pi;
 
 	@BeforeEach
 	void init() {
-		jobKitEngine = new FlatJobKitEngine();
+		when(configuration.pathindexing()).thenReturn(pathIndexingConf);
+	}
+
+	@AfterEach
+	void ends() {
+		verify(pathIndexerService, times(1)).makeWatchfolders();
+		verify(configuration, atLeastOnce()).pathindexing();
+		assertTrue(jobKitEngine.isEmptyActiveServicesList());
 	}
 
 	@Nested
@@ -90,13 +106,8 @@ class PathIndexerTest {
 
 		@BeforeEach
 		void init() {
-			when(configuration.pathindexing()).thenReturn(pathIndexingConf);
-			when(pathIndexingConf.makeWatchfolders(notNull())).thenReturn(Map.of(realmStorageFolderActivity,
-					watchfolders));
-
-			pi = new PathIndexer(configuration, jobKitEngine, pathIndexerService, auditTrail);
-			verify(configuration, atLeastOnce()).pathindexing();
-			verify(pathIndexingConf, times(1)).makeWatchfolders(pi);
+			when(pathIndexerService.makeWatchfolders())
+					.thenReturn(Map.of(realmStorageFolderActivity, watchfolders));
 		}
 
 		@Test
@@ -162,21 +173,10 @@ class PathIndexerTest {
 			verify(realmStorageFolderActivity, atLeastOnce()).storageName();
 		}
 
-		@AfterEach
-		void ends() {
-			assertTrue(jobKitEngine.isEmptyActiveServicesList());
-		}
-
 	}
 
 	@Nested
 	class WithoutWatchfolder {
-
-		@BeforeEach
-		void init() {
-			pi = new PathIndexer(configuration, jobKitEngine, pathIndexerService, auditTrail);
-			verify(configuration, atLeastOnce()).pathindexing();
-		}
 
 		@Test
 		void testStarts() { // NOSONAR S2699
@@ -193,10 +193,6 @@ class PathIndexerTest {
 			pi.scanNow(realm, storage);
 		}
 
-		@AfterEach
-		void ends() {
-			assertTrue(jobKitEngine.isEmptyActiveServicesList());
-		}
 	}
 
 }
