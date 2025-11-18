@@ -16,12 +16,15 @@
  */
 package media.mexm.mydmam.service;
 
+import static media.mexm.mydmam.activity.ActivityEventType.NEW_FOUNDED_FILE;
+import static media.mexm.mydmam.activity.ActivityEventType.UPDATED_FILE;
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
@@ -63,6 +66,7 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
 import tv.hd3g.jobkit.watchfolder.WatchedFiles;
+import tv.hd3g.transfertfiles.CachedFileAttributes;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @SpringBootTest(webEnvironment = WebEnvironment.NONE)
@@ -83,6 +87,8 @@ class PathIndexerServiceTest {
 	MyDMAMConfigurationProperties configuration;
 	@MockitoBean
 	PathIndexer pathIndexer;
+	@MockitoBean
+	PendingActivityService pendingActivityService;
 
 	@Mock
 	PathIndexingConf pathIndexingConf;
@@ -94,6 +100,10 @@ class PathIndexerServiceTest {
 	RealmAuditTrail realmAuditTrail;
 	@Mock
 	FileAttributesReference item;
+	@Mock
+	CachedFileAttributes itemAdd;
+	@Mock
+	CachedFileAttributes itemUpdate;
 
 	@Captor
 	ArgumentCaptor<Collection<AuditTrailBatchInsertObject>> auditTrailBatchInsertObjectsCaptor;
@@ -118,7 +128,7 @@ class PathIndexerServiceTest {
 		assertTrue(jobKitEngine.isEmptyActiveServicesList());
 		assertEquals(0, jobKitEngine.getEndEventsList().size());
 
-		verifyNoMoreInteractions(fileRepository, auditTrail, configuration, pathIndexer);
+		verifyNoMoreInteractions(fileRepository, auditTrail, configuration, pathIndexer, pendingActivityService);
 	}
 
 	@Test
@@ -135,7 +145,7 @@ class PathIndexerServiceTest {
 		scan.setLabel("test");
 
 		storage = new PathIndexingStorage(scan, 0, Duration.ZERO, spool);
-		realm = new PathIndexingRealm(Map.of(storageName, storage), Duration.ZERO, spool, null);
+		realm = new PathIndexingRealm(Map.of(storageName, storage), Duration.ZERO, spool, spool, null);
 
 		when(configuration.pathindexing()).thenReturn(pathIndexingConf);
 		when(pathIndexingConf.getSpoolEvents()).thenReturn(spool);
@@ -160,16 +170,33 @@ class PathIndexerServiceTest {
 	@Test
 	void testOnAfterScan() {
 		when(auditTrail.getAuditTrailByRealm(realmName)).thenReturn(Optional.ofNullable(realmAuditTrail));
-		when(scanResult.founded()).thenReturn(Set.of());
+		when(itemAdd.getPath()).thenReturn("");
+		when(itemUpdate.getPath()).thenReturn("");
+		when(scanResult.founded()).thenReturn(Set.of(itemAdd));
+		when(scanResult.updated()).thenReturn(Set.of(itemUpdate));
+
+		/**
+		 * CANT TEST THIS!
+		 */
 		when(scanResult.losted()).thenReturn(Set.of());
-		when(scanResult.updated()).thenReturn(Set.of());
 
 		pis.onAfterScan(realmName, storageName, realm, storage, scan, scanTime, scanResult);
 
 		verify(auditTrail, times(1)).getAuditTrailByRealm(realmName);
+		verify(realmAuditTrail, times(1)).asyncPersist(eq("pathindex"), eq("founded"), anyList());
+		verify(realmAuditTrail, times(1)).asyncPersist(eq("pathindex"), eq("updated"), anyList());
 		verify(scanResult, atLeastOnce()).founded();
 		verify(scanResult, atLeastOnce()).losted();
 		verify(scanResult, atLeastOnce()).updated();
+		verify(itemAdd, atLeastOnce()).getPath();
+		verify(itemUpdate, atLeastOnce()).getPath();
+
+		verify(pendingActivityService, times(1))
+				.startsActivities(realmName, storageName, realm, Set.of(itemAdd), NEW_FOUNDED_FILE);
+		verify(pendingActivityService, times(1))
+				.cleanupFiles(realmName, storageName, realm, Set.of());
+		verify(pendingActivityService, times(1))
+				.startsActivities(realmName, storageName, realm, Set.of(itemUpdate), UPDATED_FILE);
 	}
 
 	@Test

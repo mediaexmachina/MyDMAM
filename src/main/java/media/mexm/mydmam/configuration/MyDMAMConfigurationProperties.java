@@ -16,6 +16,11 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static java.util.Optional.empty;
+
+import java.util.Optional;
+import java.util.Set;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +33,22 @@ public record MyDMAMConfigurationProperties(@Valid PathIndexingConf pathindexing
 
 	@ConstructorBinding
 	public MyDMAMConfigurationProperties { // NOSONAR S1186
+	}
+
+	public Set<String> getRealmNames() {
+		try {
+			return pathindexing().realms().keySet();
+		} catch (final NullPointerException e) {
+			return Set.of();
+		}
+	}
+
+	public Optional<PathIndexingRealm> getRealmByName(final String realmName) {
+		try {
+			return Optional.ofNullable(pathindexing().realms().get(realmName));
+		} catch (final NullPointerException e) {
+			return empty();
+		}
 	}
 
 }

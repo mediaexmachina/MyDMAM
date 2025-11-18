@@ -1,0 +1,46 @@
+/*
+ * This file is part of mydmam.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * Copyright (C) Media ex Machina 2025
+ *
+ */
+package media.mexm.mydmam.activity.component;
+
+import org.springframework.stereotype.Component;
+
+import media.mexm.mydmam.activity.ActivityEventType;
+import media.mexm.mydmam.activity.ActivityHandler;
+import media.mexm.mydmam.asset.MediaAsset;
+
+@Component
+/**
+ * Created only for PendingActivityServiceImpl debug
+ */
+public class DummyActivity implements ActivityHandler {
+
+	@Override
+	public boolean canHandle(final MediaAsset asset, final ActivityEventType eventType) {
+		/**
+		 * Created only for PendingActivityServiceImpl debug
+		 */
+		return false;
+	}
+
+	@Override
+	public void handle(final MediaAsset asset, final ActivityEventType eventType) throws Exception {
+		/**
+		 * Created only for PendingActivityServiceImpl debug
+		 */
+	}
+
+}

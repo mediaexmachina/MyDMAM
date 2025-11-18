@@ -38,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 public record PathIndexingRealm(@Valid @NotNull Map<String, PathIndexingStorage> storages,
 								Duration timeBetweenScans,
 								String spoolScans,
+								String spoolProcessAsset,
 								File workingDirectory) {
 
 	public Stream<Entry<String, PathIndexingStorage>> storagesStream() {
