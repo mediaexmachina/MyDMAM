@@ -44,7 +44,7 @@ import lombok.ToString;
 	   })
 @Getter
 @ToString
-public class PendingActivityEntity {
+public class PendingActivityEntity { // TODO test (2)
 
 	public static final String TABLE_NAME = "pending_activity";
 

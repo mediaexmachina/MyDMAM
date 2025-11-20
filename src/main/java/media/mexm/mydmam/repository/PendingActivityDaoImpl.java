@@ -40,7 +40,7 @@ import media.mexm.mydmam.entity.PendingActivityEntity;
 
 @Repository
 @Slf4j
-public class PendingActivityDaoImpl implements PendingActivityDao {
+public class PendingActivityDaoImpl implements PendingActivityDao { // TODO test (2)
 
 	@Autowired
 	@PersistenceContext
