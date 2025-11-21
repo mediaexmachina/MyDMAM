@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.repository;
 
-import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -31,8 +30,10 @@ public interface PendingActivityDao {
 
 	void endsActivity(String hashPath, String taskContext);
 
-	List<PendingActivityEntity> getPendingActivities(Duration maxAge, Set<String> realms);
+	List<PendingActivityEntity> getPendingActivities(Set<String> realms);
 
 	void resetPendingActivities(Collection<PendingActivityEntity> pendingActivities);
+
+	void deletePendingActivities(Collection<PendingActivityEntity> pendingActivities);
 
 }

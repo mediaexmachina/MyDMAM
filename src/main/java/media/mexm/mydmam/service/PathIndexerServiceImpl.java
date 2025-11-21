@@ -19,7 +19,6 @@ package media.mexm.mydmam.service;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static java.util.stream.Collectors.toUnmodifiableSet;
-import static media.mexm.mydmam.activity.ActivityEventType.LOSTED_FILE;
 import static media.mexm.mydmam.activity.ActivityEventType.NEW_FOUNDED_FILE;
 import static media.mexm.mydmam.activity.ActivityEventType.UPDATED_FILE;
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE;
@@ -293,7 +292,7 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 
 		pendingActivityService.applyActivities(realmName, storageName, realm, scanResult.founded(), NEW_FOUNDED_FILE);
 		pendingActivityService.applyActivities(realmName, storageName, realm, scanResult.updated(), UPDATED_FILE);
-		pendingActivityService.applyActivities(realmName, storageName, realm, scanResult.losted(), LOSTED_FILE);
+		pendingActivityService.cleanupFiles(realmName, storageName, realm, scanResult.losted());
 	}
 
 	@Override

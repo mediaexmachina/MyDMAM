@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.entity.FileEntity;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @Slf4j
@@ -31,6 +32,22 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 										 final String storageName,
 										 final FileAttributesReference file) {
 		return new MediaAsset(this, realmName, storageName, file.getPath());
+	}
+
+	@Override
+	public MediaAsset getFromFileEntry(final String realmName,
+									   final String storageName,
+									   final FileEntity file) {
+		return new MediaAsset(this, realmName, storageName, file.getPath());
+	}
+
+	@Override
+	public void purgeAssetArtefacts(final String realmName,
+									final String storageName,
+									final FileAttributesReference file) {
+		/**
+		 * TO BE IMPLEMENTED
+		 */
 	}
 
 }

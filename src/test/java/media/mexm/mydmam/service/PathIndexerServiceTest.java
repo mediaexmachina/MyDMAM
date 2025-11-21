@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.service;
 
-import static media.mexm.mydmam.activity.ActivityEventType.LOSTED_FILE;
 import static media.mexm.mydmam.activity.ActivityEventType.NEW_FOUNDED_FILE;
 import static media.mexm.mydmam.activity.ActivityEventType.UPDATED_FILE;
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE;
@@ -195,7 +194,7 @@ class PathIndexerServiceTest {
 		verify(pendingActivityService, times(1))
 				.applyActivities(realmName, storageName, realm, Set.of(itemAdd), NEW_FOUNDED_FILE);
 		verify(pendingActivityService, times(1))
-				.applyActivities(realmName, storageName, realm, Set.of(), LOSTED_FILE);
+				.cleanupFiles(realmName, storageName, realm, Set.of());
 		verify(pendingActivityService, times(1))
 				.applyActivities(realmName, storageName, realm, Set.of(itemUpdate), UPDATED_FILE);
 	}

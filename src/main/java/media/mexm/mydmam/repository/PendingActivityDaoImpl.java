@@ -53,6 +53,8 @@ public class PendingActivityDaoImpl implements PendingActivityDao { // TODO test
 
 	@Value("${mydmamConsts.instancename:''}")
 	String instanceName;
+	@Value("${mydmamConsts.pendingActivityMaxAgeGraceRestart:24h}")
+	Duration maxAgeGraceRestart;
 
 	@Override
 	@Transactional
@@ -131,9 +133,9 @@ public class PendingActivityDaoImpl implements PendingActivityDao { // TODO test
 
 	@Override
 	@Transactional
-	public List<PendingActivityEntity> getPendingActivities(final Duration maxAge, final Set<String> realms) {
+	public List<PendingActivityEntity> getPendingActivities(final Set<String> realms) {
 		final var host = getHostName();
-		final var olderThan = new Timestamp(System.currentTimeMillis() - maxAge.toMillis());
+		final var olderThan = new Timestamp(System.currentTimeMillis() - maxAgeGraceRestart.toMillis());
 
 		return entityManager.createQuery("""
 				SELECT pa FROM PendingActivityEntity pa
@@ -154,6 +156,11 @@ public class PendingActivityDaoImpl implements PendingActivityDao { // TODO test
 
 		pendingActivities.forEach(pa -> pa.setPendingTask(pa.getPendingTask(), host, pid));
 		pendingActivityRepository.saveAllAndFlush(pendingActivities);
+	}
+
+	@Override
+	public void deletePendingActivities(final Collection<PendingActivityEntity> pendingActivities) {
+		pendingActivityRepository.deleteAll(pendingActivities);
 	}
 
 	String getHostName() {

@@ -16,13 +16,17 @@
  */
 package media.mexm.mydmam.service;
 
+import static java.util.Collections.synchronizedSet;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toUnmodifiableSet;
+import static media.mexm.mydmam.activity.ActivityEventType.COLD_RESTART;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +38,7 @@ import media.mexm.mydmam.activity.ActivityHander;
 import media.mexm.mydmam.activity.PendingActivityJob;
 import media.mexm.mydmam.activity.PendingDispatchActivityJob;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import media.mexm.mydmam.repository.PendingActivityDao;
 import tv.hd3g.jobkit.engine.JobKitEngine;
@@ -43,16 +48,80 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 @Service
 public class PendingActivityServiceImpl implements PendingActivityService { // TODO test
 
-	@Autowired
-	PendingActivityDao pendingActivityDao;
-	@Autowired
-	JobKitEngine jobKitEngine;
-	@Autowired
-	List<ActivityHander> activityHanders;
-	@Autowired
-	MediaAssetService mediaAssetService;
-	@Value("${mydmamConsts.spoolProcessAsset:processasset}")
-	String spoolProcessAsset;
+	private final PendingActivityDao pendingActivityDao;
+	private final JobKitEngine jobKitEngine;
+	private final List<ActivityHander> activityHanders;
+	private final MediaAssetService mediaAssetService;
+	private final String spoolProcessAsset;
+	private final MyDMAMConfigurationProperties configuration;
+
+	public PendingActivityServiceImpl(@Autowired final PendingActivityDao pendingActivityDao,
+									  @Autowired final JobKitEngine jobKitEngine,
+									  @Autowired final List<ActivityHander> activityHanders,
+									  @Autowired final MediaAssetService mediaAssetService,
+									  @Autowired final MyDMAMConfigurationProperties configuration,
+									  @Value("${mydmamConsts.spoolProcessAsset:processasset}") final String spoolProcessAsset) {
+		this.pendingActivityDao = pendingActivityDao;
+		this.jobKitEngine = jobKitEngine;
+		this.activityHanders = activityHanders;
+		this.mediaAssetService = mediaAssetService;
+		this.configuration = configuration;
+		this.spoolProcessAsset = spoolProcessAsset;
+	}
+
+	void coldStart() {
+		final var pending = pendingActivityDao.getPendingActivities(configuration.getRealmNames());
+		if (pending.isEmpty()) {
+			return;
+		}
+
+		// TODO pending => files, pending by file
+		// TODO pendingActivityDao.resetPendingActivities(pending by file)
+		// TODO if ActivityEventType not cold -> PendingDispatchActivityJob (actual code)
+		// TODO else if ActivityEventType cold + dao.resetPendingActivities cold + dispatchAssetActivities
+		// TODO else dao.delete(pending by file) + dao.declateActivities cold + dispatchAssetActivities
+
+		pending.forEach(entry -> {
+			final var taskContext = entry.getTaskContext();
+			final var pendingTask = entry.getPendingTask(); // TODO in log message
+			final var file = entry.getFile();
+			final var realmName = file.getRealm();
+			final var storageName = file.getStorage();
+			final var hashPath = file.getHashPath();
+			final var realm = configuration.getRealmByName(realmName).orElseThrow();
+			final var spoolName = Optional.ofNullable(realm.spoolProcessAsset()).orElse(spoolProcessAsset);
+			final var asset = mediaAssetService.getFromFileEntry(realmName, storageName, file);
+
+			final var oEventType = Stream.of(ActivityEventType.values())
+					.filter(eventType -> eventType.toString().equalsIgnoreCase(taskContext))
+					.findFirst();
+			if (oEventType.isPresent()) {
+				final var eventType = oEventType.get();
+				final var eventTypeName = eventType.toString();
+				pendingActivityDao.updateActivity(hashPath, eventTypeName, "dispatch");
+
+				jobKitEngine.runOneShot(
+						new PendingDispatchActivityJob(
+								realmName,
+								storageName,
+								spoolName,
+								asset,
+								eventType,
+								pendingActivityDao,
+								this));
+			} else {
+				// TODO delete tasks
+				// pendingActivityDao.delete(pendingActivities)
+				dispatchAssetActivities(realmName,
+						storageName,
+						asset,
+						spoolName,
+						COLD_RESTART,
+						synchronizedSet(new HashSet<>()));
+			}
+		});
+
+	}
 
 	@Override
 	public void applyActivities(final String realmName,
@@ -139,10 +208,12 @@ public class PendingActivityServiceImpl implements PendingActivityService { // T
 
 	}
 
-	/*
-	TODO manage DAO + on start behavior
-	void updateActivity(String hashPath, String taskContext, String pendingTask);
-	List<PendingActivityEntity> getPendingActivities(Duration maxAge, Set<String> realms);
-	 * */
+	@Override
+	public void cleanupFiles(final String realmName,
+							 final String storageName,
+							 final PathIndexingRealm realm,
+							 final Set<? extends FileAttributesReference> losted) {
+		losted.forEach(file -> mediaAssetService.purgeAssetArtefacts(realmName, storageName, file));
+	}
 
 }

@@ -19,5 +19,5 @@ package media.mexm.mydmam.activity;
 public enum ActivityEventType {
 	NEW_FOUNDED_FILE,
 	UPDATED_FILE,
-	LOSTED_FILE;
+	COLD_RESTART;
 }

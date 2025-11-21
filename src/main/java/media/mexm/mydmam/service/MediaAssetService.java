@@ -17,6 +17,7 @@
 package media.mexm.mydmam.service;
 
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.entity.FileEntity;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 public interface MediaAssetService {
@@ -24,5 +25,11 @@ public interface MediaAssetService {
 	MediaAsset getFromWatchfolder(String realmName,
 								  String storageName,
 								  FileAttributesReference file);
+
+	MediaAsset getFromFileEntry(String realmName,
+								String storageName,
+								FileEntity file);
+
+	void purgeAssetArtefacts(String realmName, String storageName, FileAttributesReference file);
 
 }

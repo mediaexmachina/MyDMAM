@@ -38,4 +38,9 @@ public interface PendingActivityService {
 								 ActivityEventType eventType,
 								 Set<Class<?>> previousHandlers);
 
+	void cleanupFiles(String realmName,
+					  String storageName,
+					  PathIndexingRealm realm,
+					  Set<? extends FileAttributesReference> losted);
+
 }
