@@ -16,12 +16,10 @@
  */
 package media.mexm.mydmam.service;
 
-import static java.util.Collections.synchronizedSet;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -33,6 +31,8 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHander;
+import media.mexm.mydmam.activity.PendingActivityJob;
+import media.mexm.mydmam.activity.PendingDispatchActivityJob;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import media.mexm.mydmam.repository.PendingActivityDao;
@@ -71,35 +71,25 @@ public class PendingActivityServiceImpl implements PendingActivityService { // T
 		pendingActivityDao.declateActivities(hashPathItems, eventType.toString(), "dispatch");
 		final var spoolName = Optional.ofNullable(realm.spoolProcessAsset()).orElse(spoolProcessAsset);
 
-		assets.forEach(asset -> {
-			jobKitEngine.runOneShot("Dispatch founded file: " + asset.getName(), spoolName, 0, () -> {
-				log.debug("Start to dispatch founded file: \"{}\" ({}:{})", asset.getName(), realmName, storageName);
-				dispatchAssetActivities(
+		assets.forEach(asset -> jobKitEngine.runOneShot(
+				new PendingDispatchActivityJob(
 						realmName,
 						storageName,
-						asset, spoolName,
+						spoolName,
+						asset,
 						eventType,
-						synchronizedSet(new HashSet<>()));
-			}, e -> {
-				if (e != null) {
-					log.error("Can't dispatch founded file: \"{}\" ({}:{})",
-							asset.getName(), realmName, storageName, e);
-				} else {
-					log.trace("End dispatch founded file: \"{}\" ({}:{})",
-							asset.getName(), realmName, storageName);
-				}
-				pendingActivityDao.endsActivity(asset.getHashPath(), eventType.toString());
-			});
-		});
+						pendingActivityDao,
+						this)));
 
 	}
 
-	void dispatchAssetActivities(final String realmName,
-								 final String storageName,
-								 final MediaAsset asset,
-								 final String spoolName,
-								 final ActivityEventType eventType,
-								 final Set<Class<?>> previousHandlers) {
+	@Override
+	public void dispatchAssetActivities(final String realmName,
+										final String storageName,
+										final MediaAsset asset,
+										final String spoolName,
+										final ActivityEventType eventType,
+										final Set<Class<?>> previousHandlers) {
 		final var handlers = activityHanders.stream()
 				.filter(ah -> ah.canHandle(asset, eventType))
 				.toList();
@@ -133,28 +123,18 @@ public class PendingActivityServiceImpl implements PendingActivityService { // T
 				asset.getName(), realmName, storageName, taskContextNameList);
 
 		handlers.forEach(ah -> {
-			final var taskContextName = ah.getTaskContextName();
-			final var jobName = "Run media asset activity " + taskContextName + " on file: " + asset.getName();
+			pendingActivityDao.declateActivities(Set.of(asset.getHashPath()), ah.getTaskContextName(), "queue");
 
-			pendingActivityDao.declateActivities(Set.of(asset.getHashPath()), taskContextName, "queue");
-
-			jobKitEngine.runOneShot(jobName, spoolName, 0, () -> {
-				log.debug("Start media asset activity on file: \"{}\" ({}:{})",
-						asset.getName(), realmName, storageName);
-				pendingActivityDao.declateActivities(Set.of(asset.getHashPath()), taskContextName, "starts");
-				ah.handle(asset, eventType);
-			}, e -> {
-				pendingActivityDao.endsActivity(asset.getHashPath(), taskContextName);
-				if (e != null) {
-					log.error("Can't run media asset activity on file: \"{}\" ({}:{})",
-							asset.getName(), realmName, storageName, e);
-				} else {
-					log.trace("Ends media asset activity on file: \"{}\" ({}:{})",
-							asset.getName(), realmName, storageName);
-					dispatchAssetActivities(realmName, storageName, asset, spoolName, eventType, previousHandlers);
-				}
-			});
-
+			jobKitEngine.runOneShot(new PendingActivityJob(
+					realmName,
+					storageName,
+					spoolName,
+					asset,
+					ah,
+					eventType,
+					previousHandlers,
+					pendingActivityDao,
+					this));
 		});
 
 	}

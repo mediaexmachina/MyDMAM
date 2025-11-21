@@ -19,6 +19,7 @@ package media.mexm.mydmam.service;
 import java.util.Set;
 
 import media.mexm.mydmam.activity.ActivityEventType;
+import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
@@ -29,5 +30,12 @@ public interface PendingActivityService {
 						 PathIndexingRealm realm,
 						 Set<? extends FileAttributesReference> files,
 						 ActivityEventType eventType);
+
+	void dispatchAssetActivities(String realmName,
+								 String storageName,
+								 MediaAsset asset,
+								 String spoolName,
+								 ActivityEventType eventType,
+								 Set<Class<?>> previousHandlers);
 
 }
