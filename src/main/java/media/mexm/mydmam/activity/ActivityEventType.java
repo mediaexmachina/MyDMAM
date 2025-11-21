@@ -16,22 +16,8 @@
  */
 package media.mexm.mydmam.activity;
 
-import java.util.List;
-
-import media.mexm.mydmam.asset.MediaAsset;
-
-public interface FileIOActivityHander {
-
-	default List<ActivityHander> onFoundNewAsset(final MediaAsset asset) {
-		return List.of();
-	}
-
-	default List<ActivityHander> onUpdateAsset(final MediaAsset asset) {
-		return List.of();
-	}
-
-	default List<ActivityHander> onDeleteAsset(final MediaAsset asset) {
-		return List.of();
-	}
-
+public enum ActivityEventType {
+	NEW_FOUNDED_FILE,
+	UPDATED_FILE,
+	LOSTED_FILE;
 }

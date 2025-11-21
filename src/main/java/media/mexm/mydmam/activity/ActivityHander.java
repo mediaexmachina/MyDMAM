@@ -16,10 +16,19 @@
  */
 package media.mexm.mydmam.activity;
 
-public interface ActivityHander extends FileIOActivityHander {
+import media.mexm.mydmam.asset.MediaAsset;
+
+/**
+ * An ActivityHander must be stateless
+ */
+public interface ActivityHander {
 
 	default String getTaskContextName() {
 		return getClass().getSimpleName();
 	}
+
+	boolean canHandle(MediaAsset asset, ActivityEventType eventType);
+
+	void handle(MediaAsset asset, ActivityEventType eventType) throws Exception;
 
 }

@@ -18,9 +18,20 @@ package media.mexm.mydmam.activity.component;
 
 import org.springframework.stereotype.Component;
 
+import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHander;
+import media.mexm.mydmam.asset.MediaAsset;
 
 @Component
-public class DummyActivity implements ActivityHander {
+public class DummyActivity implements ActivityHander { // TODO delete me
+
+	@Override
+	public boolean canHandle(final MediaAsset asset, final ActivityEventType eventType) {
+		return false;
+	}
+
+	@Override
+	public void handle(final MediaAsset asset, final ActivityEventType eventType) throws Exception {
+	}
 
 }
