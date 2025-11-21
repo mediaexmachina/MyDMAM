@@ -18,7 +18,6 @@ package media.mexm.mydmam.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.atLeast;
@@ -122,7 +121,6 @@ class PathIndexerServiceWFLogicTest {
 		when(anotherFile.getParentPath()).thenReturn("/parent/" + anotherPath);
 
 		entity = new FileEntity(realm, storage, file);
-		// when(watchedFileScannerSupplier.create(observedFolder)).thenReturn(watchedFileScanner);
 	}
 
 	@AfterEach
@@ -137,7 +135,6 @@ class PathIndexerServiceWFLogicTest {
 
 	private int prepareAnotherEntityOutsideTest() {
 		final var faker = net.datafaker.Faker.instance();
-		// final var observedFolder = Mockito.mock(ObservedFolder.class);
 		final var file2 = Mockito.mock(CachedFileAttributes.class);
 
 		when(file2.isDirectory()).thenReturn(false);
@@ -156,14 +153,16 @@ class PathIndexerServiceWFLogicTest {
 	}
 
 	@Test
-	void testUpdate() {
+	void testAddDelete() { // NOSONAR S5961
 		final var repositorySize = prepareUpdate();
+		// ??? when(file.isDirectory()).thenReturn(false);
 
 		/**
 		 * First, add
 		 */
 		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
 		assertTrue(watchedFilesResult.founded().isEmpty());
+		assertTrue(watchedFilesResult.updated().isEmpty());
 		assertTrue(watchedFilesResult.losted().isEmpty());
 		assertEquals(1, watchedFilesResult.totalFiles());
 		assertEquals(repositorySize + 1, repository.count());
@@ -174,6 +173,7 @@ class PathIndexerServiceWFLogicTest {
 		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
 		assertEquals(1, watchedFilesResult.founded().size());
 		assertEquals(file, watchedFilesResult.founded().stream().findFirst().get());
+		assertTrue(watchedFilesResult.updated().isEmpty());
 		assertTrue(watchedFilesResult.losted().isEmpty());
 		assertEquals(1, watchedFilesResult.totalFiles());
 		assertEquals(repositorySize + 1, repository.count());
@@ -184,6 +184,7 @@ class PathIndexerServiceWFLogicTest {
 		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
 		assertTrue(watchedFilesResult.founded().isEmpty());
 		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertTrue(watchedFilesResult.updated().isEmpty());
 		assertEquals(1, watchedFilesResult.totalFiles());
 		assertEquals(repositorySize + 1, repository.count());
 
@@ -194,19 +195,182 @@ class PathIndexerServiceWFLogicTest {
 		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
 		assertTrue(watchedFilesResult.founded().isEmpty());
 		assertThat(watchedFilesResult.losted()).size().isEqualTo(1);
+		assertTrue(watchedFilesResult.updated().isEmpty());
 		assertEquals(path, watchedFilesResult.losted().iterator().next().getPath());
 
 		assertEquals(0, watchedFilesResult.totalFiles());
 		assertEquals(repositorySize, repository.count());
 
 		verify(observedFolder, atLeastOnce()).getMinFixedStateTime();
-		// verify(watchedFileSetupManager, atLeastOnce()).get(observedFolder);
 		verify(watchedFileScanner, times(4)).scan(fileSystem);
 	}
 
 	@Test
-	void testUpdate_lost() {
-		final var repositorySize = prepareUpdate();
+	void testUpdate_size() {
+		prepareUpdate();
+		when(file.isDirectory()).thenReturn(false);
+
+		/**
+		 * First + Second, add and "confirm"
+		 */
+		pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+
+		/**
+		 * Third
+		 */
+		when(file.length()).thenReturn(length + 1l);
+		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		assertTrue(watchedFilesResult.founded().isEmpty());
+		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertTrue(watchedFilesResult.updated().isEmpty());
+		assertEquals(1, watchedFilesResult.totalFiles());
+
+		/**
+		 * Fourth, confirm
+		 */
+		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		assertTrue(watchedFilesResult.founded().isEmpty());
+		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertEquals(1, watchedFilesResult.totalFiles());
+
+		assertThat(watchedFilesResult.updated()).size().isEqualTo(1);
+		assertEquals(path, watchedFilesResult.updated().iterator().next().getPath());
+
+		verify(observedFolder, atLeastOnce()).getMinFixedStateTime();
+		verify(watchedFileScanner, times(4)).scan(fileSystem);
+	}
+
+	@Test
+	void testUpdate_date() {
+		prepareUpdate();
+		when(file.isDirectory()).thenReturn(false);
+
+		/**
+		 * First + Second, add and "confirm"
+		 */
+		pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+
+		/**
+		 * Third
+		 */
+		when(file.lastModified()).thenReturn(lastModified + 2000l);
+		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		assertTrue(watchedFilesResult.founded().isEmpty());
+		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertTrue(watchedFilesResult.updated().isEmpty());
+		assertEquals(1, watchedFilesResult.totalFiles());
+
+		/**
+		 * Fourth, confirm
+		 */
+		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		assertTrue(watchedFilesResult.founded().isEmpty());
+		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertEquals(1, watchedFilesResult.totalFiles());
+
+		assertThat(watchedFilesResult.updated()).size().isEqualTo(1);
+		assertEquals(path, watchedFilesResult.updated().iterator().next().getPath());
+
+		verify(observedFolder, atLeastOnce()).getMinFixedStateTime();
+		verify(watchedFileScanner, times(4)).scan(fileSystem);
+	}
+
+	@Test
+	void testAdd_growing() {
+		prepareUpdate();
+		when(file.isDirectory()).thenReturn(false);
+
+		/**
+		 * First, add
+		 */
+		pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+
+		/**
+		 * Second, growing
+		 */
+		when(file.length()).thenReturn(length + 1l);
+		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		assertTrue(watchedFilesResult.founded().isEmpty());
+		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertTrue(watchedFilesResult.updated().isEmpty());
+		assertEquals(1, watchedFilesResult.totalFiles());
+
+		/**
+		 * Third, growing
+		 */
+		when(file.length()).thenReturn(length + 2l);
+		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		assertTrue(watchedFilesResult.founded().isEmpty());
+		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertTrue(watchedFilesResult.updated().isEmpty());
+		assertEquals(1, watchedFilesResult.totalFiles());
+
+		/**
+		 * Fourth, confirm
+		 */
+		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		assertTrue(watchedFilesResult.updated().isEmpty());
+		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertEquals(1, watchedFilesResult.totalFiles());
+
+		assertThat(watchedFilesResult.founded()).size().isEqualTo(1);
+		assertEquals(path, watchedFilesResult.founded().iterator().next().getPath());
+
+		verify(observedFolder, atLeastOnce()).getMinFixedStateTime();
+		verify(watchedFileScanner, times(4)).scan(fileSystem);
+	}
+
+	@Test
+	void testUpdate_growing() {
+		prepareUpdate();
+		when(file.isDirectory()).thenReturn(false);
+
+		/**
+		 * First + second, add + confirm
+		 */
+		pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+
+		/**
+		 * Second, growing
+		 */
+		when(file.length()).thenReturn(length + 1l);
+		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		assertTrue(watchedFilesResult.founded().isEmpty());
+		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertTrue(watchedFilesResult.updated().isEmpty());
+		assertEquals(1, watchedFilesResult.totalFiles());
+
+		/**
+		 * Third, growing again
+		 */
+		when(file.length()).thenReturn(length + 2l);
+		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		assertTrue(watchedFilesResult.founded().isEmpty());
+		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertTrue(watchedFilesResult.updated().isEmpty());
+		assertEquals(1, watchedFilesResult.totalFiles());
+
+		/**
+		 * Fourth, confirm
+		 */
+		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
+		assertTrue(watchedFilesResult.founded().isEmpty());
+		assertTrue(watchedFilesResult.losted().isEmpty());
+		assertEquals(1, watchedFilesResult.totalFiles());
+
+		assertThat(watchedFilesResult.updated()).size().isEqualTo(1);
+		assertEquals(path, watchedFilesResult.updated().iterator().next().getPath());
+
+		verify(observedFolder, atLeastOnce()).getMinFixedStateTime();
+		verify(watchedFileScanner, times(5)).scan(fileSystem);
+	}
+
+	@Test
+	void testLost() {
+		prepareUpdate();
 
 		/**
 		 * First, add
@@ -218,27 +382,18 @@ class PathIndexerServiceWFLogicTest {
 		 */
 		when(watchedFileScanner.scan(fileSystem)).thenReturn(List.of());
 		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
-		assertTrue(watchedFilesResult.founded().isEmpty());
-
-		assertEquals(1, watchedFilesResult.losted().size());// TODO correct lost bug...
-		final var losted = watchedFilesResult.losted().stream().findFirst().get();
-		assertFalse(losted.exists());
-		assertEquals(directory, losted.isDirectory());
-		assertEquals(path, losted.getPath());
-		assertEquals(lastModified, losted.lastModified());
-		assertEquals(length, losted.length());
-
+		assertThat(watchedFilesResult.losted()).isEmpty();
+		assertThat(watchedFilesResult.founded()).isEmpty();
+		assertThat(watchedFilesResult.updated()).isEmpty();
 		assertEquals(0, watchedFilesResult.totalFiles());
-		assertEquals(repositorySize, repository.count());
 
 		verify(observedFolder, atLeastOnce()).getMinFixedStateTime();
-		// verify(watchedFileSetupManager, atLeastOnce()).get(observedFolder);
 		verify(watchedFileScanner, times(2)).scan(fileSystem);
 	}
 
 	@Test
-	void testUpdate_lost_nonEmptyDir() {
-		final var repositorySize = prepareUpdate();
+	void testLost_nonEmptyDir() {
+		prepareUpdate();
 		when(watchedFileScanner.scan(fileSystem)).thenReturn(List.of(file, anotherFile));
 
 		/**
@@ -251,28 +406,18 @@ class PathIndexerServiceWFLogicTest {
 		 */
 		when(watchedFileScanner.scan(fileSystem)).thenReturn(List.of(anotherFile));
 		watchedFilesResult = pis.updateFoundedFiles(watchedFileScanner, realm, storage, observedFolder, fileSystem);
-		assertEquals(1, watchedFilesResult.founded().size());
+		assertThat(watchedFilesResult.losted()).isEmpty();
+		assertThat(watchedFilesResult.updated()).isEmpty();
+		assertThat(watchedFilesResult.founded()).size().isEqualTo(1);
 		assertEquals(anotherFile, watchedFilesResult.founded().stream().findFirst().get());
 
-		assertEquals(1, watchedFilesResult.losted().size()); // TODO correct lost bug...
-		final var losted = watchedFilesResult.losted().stream().findFirst().get();
-		assertFalse(losted.exists());
-		assertEquals(directory, losted.isDirectory());
-		assertEquals(path, losted.getPath());
-		assertEquals(lastModified, losted.lastModified());
-		assertEquals(length, losted.length());
-
-		assertEquals(1, watchedFilesResult.totalFiles());
-		assertEquals(repositorySize + 1, repository.count());
-
 		verify(observedFolder, atLeastOnce()).getMinFixedStateTime();
-		// verify(watchedFileSetupManager, atLeastOnce()).get(observedFolder);
 		verify(watchedFileScanner, times(2)).scan(fileSystem);
-
 		verify(anotherFile, atLeastOnce()).getPath();
 		verify(anotherFile, atLeastOnce()).isDirectory();
 		verify(anotherFile, atLeastOnce()).length();
 		verify(anotherFile, atLeastOnce()).lastModified();
+		verify(anotherFile, atLeastOnce()).getParentPath();
 	}
 
 	@Test
@@ -294,10 +439,8 @@ class PathIndexerServiceWFLogicTest {
 
 	private int prepareUpdate() {
 		final var repositorySize = prepareAnotherEntityOutsideTest();
-		// watchedFileScannerProviderEntry = new WatchedFileScannerProviderEntry(watchedFileScanner, pickUp);
 		when(file.isDirectory()).thenReturn(directory);
 		when(anotherFile.isDirectory()).thenReturn(directory);
-		// when(watchedFileSetupManager.get(observedFolder)).thenReturn(watchedFileScannerProviderEntry);
 		when(watchedFileScanner.scan(fileSystem)).thenReturn(List.of(file));
 		when(observedFolder.getMinFixedStateTime()).thenReturn(Duration.ofMillis(-1000));
 		return repositorySize;

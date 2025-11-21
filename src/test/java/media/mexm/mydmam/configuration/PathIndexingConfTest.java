@@ -105,17 +105,6 @@ class PathIndexingConfTest {
 				timeBetweenScans,
 				spoolScans,
 				spoolEvents);
-
-		/*when(indexer.getJobKitEngine()).thenReturn(jobKitEngine);
-		when(indexer.getPathIndexerService()).thenReturn(pathIndexerService);
-		when(indexer.getAuditTrail()).thenReturn(auditTrail);
-		when(auditTrail.getAuditTrailByRealm(anyString())).thenReturn(Optional.empty());
-		
-		when(piRealm.storagesStream())
-				.thenReturn(Map.of(storageName, piStorage).entrySet().stream());
-		when(piStorage.scan()).thenReturn(scan);
-		when(piStorage.getDefaultMaxDeep()).thenReturn(maxDeep);
-		when(scan.isRecursive()).thenReturn(true);*/
 	}
 
 	@Test
@@ -130,45 +119,5 @@ class PathIndexingConfTest {
 		conf = new PathIndexingConf(Map.of(realmName, piRealm), timeBetweenScans, spoolScans, "");
 		assertEquals("pathindexing", conf.getSpoolEvents());
 	}
-
-	/*@Test
-	void testMakeWatchfolders() {
-		final var result = conf.makeWatchfolders(indexer);
-	
-		assertNotNull(result);
-		assertThat(result).isNotNull().hasSize(1);
-		final var result1st = result.entrySet().stream().findFirst().get();
-		final var fa = result1st.getKey();
-		assertEquals(indexer, fa.indexer());
-		assertEquals(piRealm, fa.realm());
-		assertEquals(realmName, fa.realmName());
-		assertEquals(piStorage, fa.storage());
-		assertEquals(storageName, fa.storageName());
-	
-		result1st.getValue().startScans();
-		jobKitEngine.runAllServicesOnce();
-	
-		verify(indexer, atLeastOnce()).getJobKitEngine();
-		verify(indexer, atLeastOnce()).getPathIndexerService();
-		verify(indexer, atLeastOnce()).getAuditTrail();
-		verify(auditTrail, times(1)).getAuditTrailByRealm(realmName);
-	
-		verify(piRealm, times(1)).storagesStream();
-		verify(piRealm, atLeastOnce()).spoolScans();
-		verify(piRealm, atLeastOnce()).timeBetweenScans();
-		verify(piStorage, atLeastOnce()).scan();
-		verify(piStorage, atLeastOnce()).spoolScans();
-		verify(piStorage, atLeastOnce()).timeBetweenScans();
-		verify(piStorage, atLeastOnce()).getDefaultMaxDeep();
-	
-		verify(pathIndexerService, times(1)).updateFoundedFiles(
-				watchedFileScannerCaptor.capture(), eq(realmName), eq(storageName), eq(scan), any());
-	
-		verify(scan, atLeast(1)).createFileSystem();
-		assertEquals(maxDeep, watchedFileScannerCaptor.getValue().getMaxDeep());
-	
-		assertFalse(jobKitEngine.isEmptyActiveServicesList());
-		Mockito.reset(scan);
-	}*/
 
 }
