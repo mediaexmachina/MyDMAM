@@ -135,7 +135,7 @@ class PathIndexerServiceTest {
 		scan.setLabel("test");
 
 		storage = new PathIndexingStorage(scan, 0, Duration.ZERO, spool);
-		realm = new PathIndexingRealm(Map.of(storageName, storage), Duration.ZERO, spool, null);
+		realm = new PathIndexingRealm(Map.of(storageName, storage), Duration.ZERO, spool, spool, null);
 
 		when(configuration.pathindexing()).thenReturn(pathIndexingConf);
 		when(pathIndexingConf.getSpoolEvents()).thenReturn(spool);

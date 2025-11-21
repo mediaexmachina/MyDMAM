@@ -45,7 +45,7 @@ class PathIndexingRealmTest {
 	@Mock
 	Duration timeBetweenScans;
 	@Fake
-	String spoolScans;
+	String spool;
 	@Fake
 	String storageName;
 	@Fake
@@ -62,7 +62,7 @@ class PathIndexingRealmTest {
 		conf = new PathIndexingRealm(
 				Map.of(storageName, piStorage),
 				timeBetweenScans,
-				spoolScans,
+				spool, spool,
 				workingDirectory);
 	}
 
@@ -88,7 +88,7 @@ class PathIndexingRealmTest {
 		conf = new PathIndexingRealm(
 				Map.of(),
 				timeBetweenScans,
-				spoolScans,
+				spool, spool,
 				null);
 
 		final var result = conf.storagesStream().toList();
@@ -97,7 +97,7 @@ class PathIndexingRealmTest {
 
 	@Test
 	void testStoragesStream_null() {
-		conf = new PathIndexingRealm(null, timeBetweenScans, spoolScans, null);
+		conf = new PathIndexingRealm(null, timeBetweenScans, spool, spool, null);
 
 		final var result = conf.storagesStream().toList();
 		assertThat(result).isEmpty();
@@ -105,7 +105,7 @@ class PathIndexingRealmTest {
 
 	@Test
 	void testGetValidWorkingDirectory_empty() {
-		conf = new PathIndexingRealm(null, timeBetweenScans, spoolScans, null);
+		conf = new PathIndexingRealm(null, timeBetweenScans, spool, spool, null);
 		assertThat(conf.getValidWorkingDirectory(realmName))
 				.isEmpty();
 	}
