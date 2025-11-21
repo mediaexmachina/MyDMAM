@@ -20,9 +20,6 @@ import static java.util.Collections.synchronizedSet;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toUnmodifiableSet;
-import static media.mexm.mydmam.activity.ActivityEventType.LOSTED_FILE;
-import static media.mexm.mydmam.activity.ActivityEventType.NEW_FOUNDED_FILE;
-import static media.mexm.mydmam.activity.ActivityEventType.UPDATED_FILE;
 
 import java.util.HashSet;
 import java.util.List;
@@ -38,15 +35,13 @@ import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHander;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
-import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.repository.PendingActivityDao;
 import tv.hd3g.jobkit.engine.JobKitEngine;
-import tv.hd3g.transfertfiles.CachedFileAttributes;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @Slf4j
 @Service
-public class PendingActivityServiceImpl { // TODO interface + test
+public class PendingActivityServiceImpl implements PendingActivityService { // TODO test
 
 	@Autowired
 	PendingActivityDao pendingActivityDao;
@@ -59,36 +54,12 @@ public class PendingActivityServiceImpl { // TODO interface + test
 	@Value("${mydmamConsts.spoolProcessAsset:processasset}")
 	String spoolProcessAsset;
 
-	public void onFoundFiles(final String realmName,
-							 final String storageName,
-							 final PathIndexingRealm realm,
-							 final PathIndexingStorage storage,
-							 final Set<CachedFileAttributes> files) {
-		applyActivities(realmName, storageName, realm, storage, files, NEW_FOUNDED_FILE);
-	}
-
-	public void onUpdateFiles(final String realmName,
-							  final String storageName,
-							  final PathIndexingRealm realm,
-							  final PathIndexingStorage storage,
-							  final Set<CachedFileAttributes> files) {
-		applyActivities(realmName, storageName, realm, storage, files, UPDATED_FILE);
-	}
-
-	public void onLostedFiles(final String realmName,
-							  final String storageName,
-							  final PathIndexingRealm realm,
-							  final PathIndexingStorage storage,
-							  final Set<? extends FileAttributesReference> files) {
-		applyActivities(realmName, storageName, realm, storage, files, LOSTED_FILE);
-	}
-
-	void applyActivities(final String realmName,
-						 final String storageName,
-						 final PathIndexingRealm realm,
-						 final PathIndexingStorage storage,
-						 final Set<? extends FileAttributesReference> files,
-						 final ActivityEventType eventType) {
+	@Override
+	public void applyActivities(final String realmName,
+								final String storageName,
+								final PathIndexingRealm realm,
+								final Set<? extends FileAttributesReference> files,
+								final ActivityEventType eventType) {
 		final var assets = files.stream()
 				.filter(not(FileAttributesReference::isDirectory))
 				.map(f -> mediaAssetService.getFromWatchfolder(realmName, storageName, f))
@@ -103,7 +74,7 @@ public class PendingActivityServiceImpl { // TODO interface + test
 		assets.forEach(asset -> {
 			jobKitEngine.runOneShot("Dispatch founded file: " + asset.getName(), spoolName, 0, () -> {
 				log.debug("Start to dispatch founded file: \"{}\" ({}:{})", asset.getName(), realmName, storageName);
-				dispatchActivities(
+				dispatchAssetActivities(
 						realmName,
 						storageName,
 						asset, spoolName,
@@ -123,12 +94,12 @@ public class PendingActivityServiceImpl { // TODO interface + test
 
 	}
 
-	void dispatchActivities(final String realmName,
-							final String storageName,
-							final MediaAsset asset,
-							final String spoolName,
-							final ActivityEventType eventType,
-							final Set<Class<?>> previousHandlers) {
+	void dispatchAssetActivities(final String realmName,
+								 final String storageName,
+								 final MediaAsset asset,
+								 final String spoolName,
+								 final ActivityEventType eventType,
+								 final Set<Class<?>> previousHandlers) {
 		final var handlers = activityHanders.stream()
 				.filter(ah -> ah.canHandle(asset, eventType))
 				.toList();
@@ -180,7 +151,7 @@ public class PendingActivityServiceImpl { // TODO interface + test
 				} else {
 					log.trace("Ends media asset activity on file: \"{}\" ({}:{})",
 							asset.getName(), realmName, storageName);
-					dispatchActivities(realmName, storageName, asset, spoolName, eventType, previousHandlers);
+					dispatchAssetActivities(realmName, storageName, asset, spoolName, eventType, previousHandlers);
 				}
 			});
 
