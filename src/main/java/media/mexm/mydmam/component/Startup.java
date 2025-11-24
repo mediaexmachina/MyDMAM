@@ -29,9 +29,12 @@ public class Startup implements InitializingBean {
 	PendingActivityService pendingActivityService;
 	@Autowired
 	PathIndexer pathIndexer;
+	@Autowired
+	AuditTrail auditTrail;
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
+		auditTrail.init();
 		pendingActivityService.restartPendingActivities();
 		pathIndexer.startScans();
 	}

@@ -29,6 +29,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.sqlite.SQLiteConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,19 +43,21 @@ import media.mexm.mydmam.configuration.PathIndexingConf;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
-import tv.hd3g.jobkit.engine.JobKitEngine;
 
+@SpringBootTest(webEnvironment = WebEnvironment.NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
+@ActiveProfiles({ "FlatJobKit", "NoStartup" })
 class AuditTrailTest {
 
-	@Mock
-	JobKitEngine jobkitEngine;
-	@Mock
+	@MockitoBean
 	MyDMAMConfigurationProperties conf;
-	@Mock
-	ObjectMapper objectMapper;
-	@Mock
+	@MockitoBean
 	SQLiteConfig sqliteConfig;
+	@MockitoBean
+	ObjectMapper objectMapper;
+	@MockitoBean
+	PathIndexer pathIndexer;
+
 	@Mock
 	PathIndexingRealm pathIndexingRealm;
 
@@ -61,6 +68,7 @@ class AuditTrailTest {
 	@Fake
 	File workingDirectory;
 
+	@Autowired
 	AuditTrail auditTrail;
 	PathIndexingConf pathIndexingConf;
 
@@ -80,12 +88,8 @@ class AuditTrailTest {
 	@Test
 	void testGetAuditTrailByRealm_emptyConf() {
 		when(conf.pathindexing()).thenReturn(null);
-		auditTrail = new AuditTrail(
-				jobkitEngine,
-				conf,
-				objectMapper,
-				sqliteConfig,
-				auditTrailSpoolName);
+
+		auditTrail.init();
 
 		verify(conf, times(1)).pathindexing();
 		assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
@@ -96,12 +100,7 @@ class AuditTrailTest {
 		when(pathIndexingRealm.getValidWorkingDirectory(realmName))
 				.thenReturn(Optional.empty());
 
-		auditTrail = new AuditTrail(
-				jobkitEngine,
-				conf,
-				objectMapper,
-				sqliteConfig,
-				auditTrailSpoolName);
+		auditTrail.init();
 
 		verify(conf, times(1)).pathindexing();
 		verify(pathIndexingRealm, times(1)).getValidWorkingDirectory(realmName);
@@ -110,12 +109,7 @@ class AuditTrailTest {
 
 	@Test
 	void testGetAuditTrailByRealm() {
-		auditTrail = new AuditTrail(
-				jobkitEngine,
-				conf,
-				objectMapper,
-				sqliteConfig,
-				auditTrailSpoolName);
+		auditTrail.init();
 
 		verify(conf, times(1)).pathindexing();
 		verify(pathIndexingRealm, times(1)).getValidWorkingDirectory(realmName);

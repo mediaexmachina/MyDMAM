@@ -16,7 +16,7 @@
  */
 package media.mexm.mydmam.component;
 
-import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.synchronizedMap;
 import static media.mexm.mydmam.configuration.PathIndexingConf.correctName;
 
 import java.util.HashMap;
@@ -40,20 +40,24 @@ import tv.hd3g.jobkit.engine.JobKitEngine;
 @Slf4j
 public class AuditTrail {
 
-	private final Map<String, RealmAuditTrail> auditTrailByRealmName;
+	private final Map<String, RealmAuditTrail> auditTrailByRealmName = synchronizedMap(new HashMap<>());
 
-	public AuditTrail(@Autowired final JobKitEngine jobkitEngine,
-					  @Autowired final MyDMAMConfigurationProperties conf,
-					  @Autowired final ObjectMapper objectMapper,
-					  @Autowired final SQLiteConfig sqliteConfig,
-					  @Value("${mydmamConsts.auditTrailSpoolName:audittrail}") final String auditTrailSpoolName) {
+	@Autowired
+	JobKitEngine jobkitEngine;
+	@Autowired
+	MyDMAMConfigurationProperties conf;
+	@Autowired
+	ObjectMapper objectMapper;
+	@Autowired
+	SQLiteConfig sqliteConfig;
+	@Value("${mydmamConsts.auditTrailSpoolName:audittrail}")
+	String auditTrailSpoolName;
+
+	public void init() {
 		final var pathIndexing = conf.pathindexing();
 		if (pathIndexing == null) {
-			auditTrailByRealmName = Map.of();
 			return;
 		}
-
-		final var tempAuditTrailByRealmName = new HashMap<String, RealmAuditTrail>();
 
 		for (final var entry : Optional.ofNullable(pathIndexing.realms())
 				.orElse(Map.of())
@@ -76,9 +80,8 @@ public class AuditTrail {
 					realmName,
 					sqlite);
 
-			tempAuditTrailByRealmName.put(realmName, realmAuditTrail);
+			auditTrailByRealmName.put(realmName, realmAuditTrail);
 		}
-		auditTrailByRealmName = unmodifiableMap(tempAuditTrailByRealmName);
 	}
 
 	public Optional<RealmAuditTrail> getAuditTrailByRealm(final String realm) {
