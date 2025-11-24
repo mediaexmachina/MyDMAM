@@ -22,7 +22,6 @@ import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,10 +32,8 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import java.io.File;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -56,11 +53,8 @@ import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.PathIndexer;
-import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.configuration.PathIndexingConf;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
-import media.mexm.mydmam.repository.FileRepository;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
@@ -80,18 +74,12 @@ class PathIndexerServiceTest {
 	PathIndexerService pis;
 
 	@MockitoBean
-	FileRepository fileRepository;
-	@MockitoBean
 	AuditTrail auditTrail;
-	@MockitoBean
-	MyDMAMConfigurationProperties configuration;
 	@MockitoBean
 	PathIndexer pathIndexer;
 	@MockitoBean
 	PendingActivityService pendingActivityService;
 
-	@Mock
-	PathIndexingConf pathIndexingConf;
 	@Mock
 	Duration scanTime;
 	@Mock
@@ -108,8 +96,6 @@ class PathIndexerServiceTest {
 	@Captor
 	ArgumentCaptor<Collection<AuditTrailBatchInsertObject>> auditTrailBatchInsertObjectsCaptor;
 
-	@Fake
-	String spool;
 	@Fake
 	String realmName;
 	@Fake
@@ -128,43 +114,7 @@ class PathIndexerServiceTest {
 		assertTrue(jobKitEngine.isEmptyActiveServicesList());
 		assertEquals(0, jobKitEngine.getEndEventsList().size());
 
-		verifyNoMoreInteractions(fileRepository, auditTrail, configuration, pathIndexer, pendingActivityService);
-	}
-
-	@Test
-	void testMakeWatchfolders_empty() {
-		final var result = pis.makeWatchfolders();
-		assertTrue(result.isEmpty());
-		verify(configuration, times(1)).pathindexing();
-	}
-
-	@Test
-	void testMakeWatchfolders() {
-		scan = new ObservedFolder();
-		scan.setTargetFolder(new File(".").getAbsolutePath());
-		scan.setLabel("test");
-
-		storage = new PathIndexingStorage(scan, 0, Duration.ZERO, spool);
-		realm = new PathIndexingRealm(Map.of(storageName, storage), Duration.ZERO, spool, spool, null);
-
-		when(configuration.pathindexing()).thenReturn(pathIndexingConf);
-		when(pathIndexingConf.getSpoolEvents()).thenReturn(spool);
-		when(pathIndexingConf.realms()).thenReturn(Map.of(realmName, realm));
-
-		final var result = pis.makeWatchfolders();
-		assertThat(result).size().isEqualTo(1);
-
-		final var realmStorageFolderActivity = result.keySet().iterator().next();
-		assertNotNull(realmStorageFolderActivity.pathIndexerService());
-		assertEquals(realmName, realmStorageFolderActivity.realmName());
-		assertEquals(realm, realmStorageFolderActivity.realm());
-		assertEquals(storageName, realmStorageFolderActivity.storageName());
-		assertEquals(storage, realmStorageFolderActivity.storage());
-
-		verify(configuration, atLeastOnce()).pathindexing();
-		verify(pathIndexingConf, atLeastOnce()).getSpoolEvents();
-		verify(pathIndexingConf, atLeastOnce()).realms();
-		verify(pathIndexingConf, atLeastOnce()).timeBetweenScans();
+		verifyNoMoreInteractions(auditTrail, pathIndexer, pendingActivityService);
 	}
 
 	@Test

@@ -17,17 +17,14 @@
 package media.mexm.mydmam.service;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.Set;
 
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
-import media.mexm.mydmam.pathindexing.RealmStorageFolderActivity;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
 import tv.hd3g.jobkit.watchfolder.WatchedFileScanner;
 import tv.hd3g.jobkit.watchfolder.WatchedFiles;
-import tv.hd3g.jobkit.watchfolder.Watchfolders;
 import tv.hd3g.transfertfiles.AbstractFileSystemURL;
 import tv.hd3g.transfertfiles.CachedFileAttributes;
 import tv.hd3g.transfertfiles.FileAttributesReference;
@@ -52,8 +49,6 @@ public interface PathIndexerService {
 					 ObservedFolder observedFolder,
 					 Duration scanTime,
 					 WatchedFiles scanResult);
-
-	Map<RealmStorageFolderActivity, Watchfolders> makeWatchfolders();
 
 	void fileActivitytoAuditTrail(String realmName,
 								  String storageName,

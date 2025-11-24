@@ -41,7 +41,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 import tv.hd3g.transfertfiles.CachedFileAttributes;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
@@ -54,7 +53,6 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 				   @Index(columnList = "storage", name = FileEntity.TABLE_NAME + "_storage_idx")
 	   })
 @Getter
-@ToString
 public class FileEntity {
 
 	public static final int MAX_NAME_SIZE = 64;
@@ -213,6 +211,21 @@ public class FileEntity {
 
 	public FileAttributesReference toFileAttributesReference(final boolean exists) {
 		return new FileAttributesReference(path, length, modified.getTime(), exists, directory);
+	}
+
+	@Override
+	public String toString() {
+		final var builder = new StringBuilder();
+		builder.append("FileEntity [id=");
+		builder.append(id);
+		builder.append(", realm=");
+		builder.append(realm);
+		builder.append(", storage=");
+		builder.append(storage);
+		builder.append(", hashPath=");
+		builder.append(hashPath);
+		builder.append("]");
+		return builder.toString();
 	}
 
 }

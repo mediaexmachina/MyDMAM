@@ -17,15 +17,19 @@
 package media.mexm.mydmam.component;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import java.io.IOException;
+import java.io.File;
+import java.time.Duration;
 import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
@@ -37,14 +41,13 @@ import org.mockito.Mock;
 
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingConf;
-import media.mexm.mydmam.pathindexing.RealmStorageFolderActivity;
+import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.service.PathIndexerService;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
-import tv.hd3g.jobkit.watchfolder.WatchedFiles;
-import tv.hd3g.jobkit.watchfolder.Watchfolders;
 
 @ExtendWith(MockToolsExtendsJunit.class)
 class PathIndexerTest {
@@ -54,41 +57,99 @@ class PathIndexerTest {
 	@Fake
 	String storage;
 	@Fake
-	String falseRealm;
-	@Fake
-	String falseStorage;
-	@Fake
 	String spoolEvents;
 
-	@Mock
-	ObservedFolder observedFolder;
-	@Mock
-	WatchedFiles watchedFiles;
 	@Mock
 	PathIndexerService pathIndexerService;
 	@Mock
 	MyDMAMConfigurationProperties configuration;
 	@Mock
-	RealmStorageFolderActivity realmStorageFolderActivity;
-	@Mock
-	Watchfolders watchfolder;
-	@Mock
 	PathIndexingConf pathIndexingConf;
 
-	FlatJobKitEngine jobKitEngine;
-	PathIndexer pi;
+	private FlatJobKitEngine jobKitEngine;
+	private PathIndexer pi;
 
 	@BeforeEach
 	void init() {
 		jobKitEngine = new FlatJobKitEngine();
 	}
 
-	@AfterEach
-	void ends() {
-		assertTrue(jobKitEngine.isEmptyActiveServicesList());
-		assertThat(jobKitEngine.getEndEventsList()).isEmpty();
+	@Nested
+	class WithWatchfolder {
 
-		verify(pathIndexerService, times(1)).makeWatchfolders();
+		ObservedFolder scan;
+
+		PathIndexingStorage piStorage;
+		PathIndexingRealm piRealm;
+
+		@BeforeEach
+		void init() {
+			scan = new ObservedFolder();
+			scan.setTargetFolder(new File(".").getAbsolutePath());
+			scan.setLabel("test");
+
+			piStorage = new PathIndexingStorage(scan, 0, Duration.ZERO, spoolEvents);
+			piRealm = new PathIndexingRealm(Map.of(storage, piStorage), Duration.ZERO, spoolEvents, spoolEvents, null);
+
+			when(configuration.pathindexing()).thenReturn(pathIndexingConf);
+			when(pathIndexingConf.getSpoolEvents()).thenReturn(spoolEvents);
+			when(pathIndexingConf.realms()).thenReturn(Map.of(realm, piRealm));
+
+			pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
+		}
+
+		@AfterEach
+		void ends() {
+			verify(configuration, atLeastOnce()).pathindexing();
+			verify(pathIndexingConf, atLeastOnce()).getSpoolEvents();
+			verify(pathIndexingConf, atLeastOnce()).realms();
+			verify(pathIndexingConf, atLeastOnce()).timeBetweenScans();
+			assertFalse(jobKitEngine.isEmptyActiveServicesList());
+
+			assertThat(jobKitEngine.getEndEventsList()).size().isGreaterThan(0);
+		}
+
+		@Test
+		void testGetWatchfolders() {
+			final var result = pi.getWatchfolders();
+			assertThat(result).size().isEqualTo(1);
+
+			final var realmStorageFolderActivity = result.keySet().iterator().next();
+			assertNotNull(realmStorageFolderActivity.pathIndexerService());
+			assertEquals(realm, realmStorageFolderActivity.realmName());
+			assertEquals(piRealm, realmStorageFolderActivity.realm());
+			assertEquals(storage, realmStorageFolderActivity.storageName());
+			assertEquals(piStorage, realmStorageFolderActivity.storage());
+		}
+
+		@Test
+		void testScanNow_withResults() {
+			pi.scanNow(realm, storage);
+
+			verify(configuration, atLeastOnce()).pathindexing();
+			verify(pathIndexingConf, atLeastOnce()).getSpoolEvents();
+			verify(pathIndexerService, times(1)).updateFoundedFiles(
+					any(), eq(realm), eq(storage), any(), any());
+		}
+
+		@Test
+		void testScanNow_withoutResults() {
+			pi.scanNow(realm, storage);
+
+			verify(configuration, atLeastOnce()).pathindexing();
+			verify(pathIndexingConf, atLeastOnce()).getSpoolEvents();
+			verify(pathIndexerService, times(1)).updateFoundedFiles(
+					any(), eq(realm), eq(storage), any(), any());
+		}
+
+		@Test
+		void testScanNow_badRealm_badStorage() {
+			pi.scanNow(realm, storage);
+
+			verify(pathIndexerService, times(1)).updateFoundedFiles(
+					any(), eq(realm), eq(storage), any(), any());
+		}
+
 	}
 
 	@Nested
@@ -96,86 +157,20 @@ class PathIndexerTest {
 
 		@BeforeEach
 		void init() {
-			when(pathIndexerService.makeWatchfolders()).thenReturn(Map.of());
 			pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
 		}
 
 		@Test
-		void testScanNow() { // NOSONAR
+		void testScanNow() {
 			pi.scanNow(realm, storage);
-		}
-	}
-
-	@Nested
-	class WithWatchfolder {
-
-		@BeforeEach
-		void init() {
-			when(pathIndexerService.makeWatchfolders())
-					.thenReturn(Map.of(realmStorageFolderActivity, watchfolder));
-			when(configuration.pathindexing()).thenReturn(pathIndexingConf);
-			when(pathIndexingConf.getSpoolEvents()).thenReturn(spoolEvents);
-
-			pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
+			verify(configuration, times(1)).pathindexing();
 		}
 
 		@AfterEach
 		void ends() {
-			verify(watchfolder, times(1)).startScans();
+			assertTrue(jobKitEngine.isEmptyActiveServicesList());
+			assertThat(jobKitEngine.getEndEventsList()).isEmpty();
 		}
-
-		@Test
-		void testScanNow_withResults() throws IOException {
-			when(realmStorageFolderActivity.realmName()).thenReturn(realm);
-			when(realmStorageFolderActivity.storageName()).thenReturn(storage);
-			when(pathIndexingConf.getSpoolEvents()).thenReturn(spoolEvents);
-			when(watchfolder.manualScan()).thenReturn(Map.of(observedFolder, watchedFiles));
-
-			pi.scanNow(realm, storage);
-
-			verify(realmStorageFolderActivity, atLeastOnce()).realmName();
-			verify(realmStorageFolderActivity, atLeastOnce()).storageName();
-			verify(configuration, atLeastOnce()).pathindexing();
-			verify(pathIndexingConf, atLeastOnce()).getSpoolEvents();
-			verify(watchfolder, times(1)).manualScan();
-			verify(realmStorageFolderActivity, times(1)).onAfterScan(eq(observedFolder), notNull(), eq(watchedFiles));
-		}
-
-		@Test
-		void testScanNow_withoutResults() {
-			when(realmStorageFolderActivity.realmName()).thenReturn(realm);
-			when(realmStorageFolderActivity.storageName()).thenReturn(storage);
-			when(pathIndexingConf.getSpoolEvents()).thenReturn(spoolEvents);
-			when(watchfolder.manualScan()).thenReturn(Map.of());
-
-			pi.scanNow(realm, storage);
-
-			verify(realmStorageFolderActivity, atLeastOnce()).realmName();
-			verify(realmStorageFolderActivity, atLeastOnce()).storageName();
-			verify(configuration, atLeastOnce()).pathindexing();
-			verify(pathIndexingConf, atLeastOnce()).getSpoolEvents();
-			verify(watchfolder, times(1)).manualScan();
-		}
-
-		@Test
-		void testScanNow_badRealm() {
-			when(realmStorageFolderActivity.realmName()).thenReturn(falseRealm);
-
-			pi.scanNow(realm, storage);
-
-			verify(realmStorageFolderActivity, atLeastOnce()).realmName();
-		}
-
-		@Test
-		void testScanNow_badStorage() {
-			when(realmStorageFolderActivity.realmName()).thenReturn(realm);
-			when(realmStorageFolderActivity.storageName()).thenReturn(falseStorage);
-
-			pi.scanNow(realm, storage);
-
-			verify(realmStorageFolderActivity, atLeastOnce()).realmName();
-			verify(realmStorageFolderActivity, atLeastOnce()).storageName();
-		}
-
 	}
+
 }

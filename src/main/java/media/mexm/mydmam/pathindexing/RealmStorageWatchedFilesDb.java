@@ -18,7 +18,6 @@ package media.mexm.mydmam.pathindexing;
 
 import java.util.Set;
 
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.service.PathIndexerService;
@@ -62,7 +61,6 @@ public class RealmStorageWatchedFilesDb implements WatchedFilesDb {
 	}
 
 	@Override
-	@Transactional
 	public void reset(final ObservedFolder observedFolder, final Set<CachedFileAttributes> foundedFiles) {
 		pathIndexerService.resetFoundedFiles(realmName, storageName, observedFolder, foundedFiles);
 	}

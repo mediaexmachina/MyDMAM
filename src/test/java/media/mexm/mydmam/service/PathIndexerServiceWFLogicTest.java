@@ -155,7 +155,6 @@ class PathIndexerServiceWFLogicTest {
 	@Test
 	void testAddDelete() { // NOSONAR S5961
 		final var repositorySize = prepareUpdate();
-		// ??? when(file.isDirectory()).thenReturn(false);
 
 		/**
 		 * First, add
