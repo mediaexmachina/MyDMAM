@@ -96,6 +96,7 @@ class PathIndexerTest {
 			when(pathIndexingConf.realms()).thenReturn(Map.of(realm, piRealm));
 
 			pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
+			pi.startScans();
 		}
 
 		@AfterEach
@@ -123,17 +124,7 @@ class PathIndexerTest {
 		}
 
 		@Test
-		void testScanNow_withResults() {
-			pi.scanNow(realm, storage);
-
-			verify(configuration, atLeastOnce()).pathindexing();
-			verify(pathIndexingConf, atLeastOnce()).getSpoolEvents();
-			verify(pathIndexerService, times(1)).updateFoundedFiles(
-					any(), eq(realm), eq(storage), any(), any());
-		}
-
-		@Test
-		void testScanNow_withoutResults() {
+		void testScanNow() {
 			pi.scanNow(realm, storage);
 
 			verify(configuration, atLeastOnce()).pathindexing();
@@ -158,6 +149,7 @@ class PathIndexerTest {
 		@BeforeEach
 		void init() {
 			pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
+			pi.startScans();
 		}
 
 		@Test

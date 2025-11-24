@@ -52,6 +52,9 @@ public class PathIndexer {
 		this.configuration = configuration;
 		this.pathIndexerService = pathIndexerService;
 		watchfolders = makeWatchfolders();
+	}
+
+	public void startScans() {
 		watchfolders.values().forEach(Watchfolders::startScans);
 	}
 

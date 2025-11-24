@@ -19,9 +19,11 @@ package media.mexm.mydmam;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.internal.util.MockUtil.isMock;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
@@ -29,7 +31,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import media.mexm.mydmam.component.PathIndexer;
+import media.mexm.mydmam.component.Startup;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
 import tv.hd3g.jobkit.engine.JobKitEngine;
 
@@ -43,6 +48,18 @@ class MockService {
 		@Primary
 		FlatJobKitEngine flatJobKitEngine() {
 			return new FlatJobKitEngine();
+		}
+
+	}
+
+	@Configuration
+	@Profile({ "NoStartup" })
+	static class NoStartup {
+
+		@Bean
+		@Primary
+		Startup startup() {
+			return Mockito.mock(Startup.class);
 		}
 
 	}
@@ -68,6 +85,23 @@ class MockService {
 			assertEquals(jobKitEngine, flatJobKitEngine);
 			assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
 			assertEquals(0, flatJobKitEngine.getEndEventsList().size());
+		}
+	}
+
+	@SpringBootTest
+	@ActiveProfiles({ "NoStartup" })
+	static class TestNoStartup {
+
+		@Autowired
+		Startup startup;
+		@MockitoBean
+		PathIndexer pathIndexer;
+
+		@Test
+		void test() {
+			assertTrue(isMock(startup));
+			verifyNoInteractions(pathIndexer);
+			verifyNoInteractions(startup);
 		}
 	}
 

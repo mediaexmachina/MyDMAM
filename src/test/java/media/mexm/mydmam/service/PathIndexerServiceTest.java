@@ -65,7 +65,7 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @SpringBootTest(webEnvironment = WebEnvironment.NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
-@ActiveProfiles({ "FlatJobKit" })
+@ActiveProfiles({ "FlatJobKit", "NoStartup" })
 class PathIndexerServiceTest {
 
 	@Autowired

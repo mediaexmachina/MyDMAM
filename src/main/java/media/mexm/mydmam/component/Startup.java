@@ -27,10 +27,13 @@ public class Startup implements InitializingBean {
 
 	@Autowired
 	PendingActivityService pendingActivityService;
+	@Autowired
+	PathIndexer pathIndexer;
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		pendingActivityService.restartPendingActivities();
+		pathIndexer.startScans();
 	}
 
 }
