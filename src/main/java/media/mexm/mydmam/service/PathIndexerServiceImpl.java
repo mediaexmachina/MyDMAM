@@ -24,6 +24,7 @@ import static media.mexm.mydmam.activity.ActivityEventType.UPDATED_FILE;
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.component.AuditTrail;
+import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
@@ -65,6 +67,8 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 	MyDMAMConfigurationProperties configuration;
 	@Autowired
 	PendingActivityService pendingActivityService;
+	@Autowired
+	Indexer indexer;
 
 	@Override
 	@Transactional
@@ -225,6 +229,17 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 		pendingActivityService.startsActivities(realmName, storageName, realm, scanResult.founded(), NEW_FOUNDED_FILE);
 		pendingActivityService.startsActivities(realmName, storageName, realm, scanResult.updated(), UPDATED_FILE);
 		pendingActivityService.cleanupFiles(realmName, storageName, realm, scanResult.losted());
+
+		indexer.getIndexerByRealm(realmName)
+				.ifPresent(index -> {
+					try {
+						index.put(scanResult.founded(), storageName);
+						index.update(scanResult.updated(), storageName);
+						index.remove(scanResult.losted(), storageName);
+					} catch (final IOException e) {
+						log.error("Can't put to indexer", e);
+					}
+				});
 	}
 
 	@Override

@@ -2,57 +2,44 @@
  * This file is part of mydmam.
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * Copyright (C) hdsdi3g for hd3g.tv 2025
+ * Copyright (C) Media ex Machina 2025
  *
  */
 package media.mexm.mydmam.component;
 
 import static media.mexm.mydmam.configuration.PathIndexingConf.correctName;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.sqlite.SQLiteConfig;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.audittrail.AuditTrailSQLite;
-import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import tv.hd3g.jobkit.engine.JobKitEngine;
+import media.mexm.mydmam.indexer.RealmIndexer;
 
 @Component
 @Slf4j
-public class AuditTrail {
+public class Indexer {
 
-	private final Map<String, RealmAuditTrail> auditTrailByRealmName = new HashMap<>();
+	private final Map<String, RealmIndexer> indexerByRealmName = new HashMap<>();
 
-	@Autowired
-	JobKitEngine jobkitEngine;
 	@Autowired
 	MyDMAMConfigurationProperties conf;
-	@Autowired
-	ObjectMapper objectMapper;
-	@Autowired
-	SQLiteConfig sqliteConfig;
-	@Value("${mydmamConsts.auditTrailSpoolName:audittrail}")
-	String auditTrailSpoolName;
 
-	public void init() {
+	public void init() throws IOException {
 		final var pathIndexing = conf.pathindexing();
 		if (pathIndexing == null) {
 			return;
@@ -68,26 +55,17 @@ public class AuditTrail {
 				continue;
 			}
 
-			log.info("Prepare audit trail for realm={}, on {}",
+			log.info("Prepare indexer for realm={}, on {}",
 					realmName, oWorkingDirectory.get().getAbsolutePath());
-
-			final var sqlite = new AuditTrailSQLite(realmName, oWorkingDirectory.get(), sqliteConfig);
-			final var realmAuditTrail = new RealmAuditTrail(
-					jobkitEngine,
-					objectMapper,
-					auditTrailSpoolName,
-					realmName,
-					sqlite);
-
-			auditTrailByRealmName.put(realmName, realmAuditTrail);
+			final var realmIndexer = new RealmIndexer(realmName, oWorkingDirectory.get());
+			indexerByRealmName.put(realmName, realmIndexer);
 		}
 	}
 
-	public Optional<RealmAuditTrail> getAuditTrailByRealm(final String realm) {
-		if (auditTrailByRealmName.containsKey(realm) == false) {
+	public Optional<RealmIndexer> getIndexerByRealm(final String realm) {
+		if (indexerByRealmName.containsKey(realm) == false) {
 			return Optional.empty();
 		}
-		return Optional.ofNullable(auditTrailByRealmName.get(realm));
+		return Optional.ofNullable(indexerByRealmName.get(realm));
 	}
-
 }
