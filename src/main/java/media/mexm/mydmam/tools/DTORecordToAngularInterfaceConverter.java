@@ -16,6 +16,8 @@
  */
 package media.mexm.mydmam.tools;
 
+import static java.lang.reflect.Modifier.isNative;
+import static java.lang.reflect.Modifier.isStatic;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
@@ -177,6 +179,13 @@ public class DTORecordToAngularInterfaceConverter {
 				.map(field -> {
 					final var name = field.getName();
 					final var type = field.getType();
+					final var modifiers = field.getModifiers();
+
+					if (isNative(modifiers)
+						|| cls.isEnum() == false && isStatic(modifiers)
+						|| cls.isEnum() && type.isAssignableFrom(cls) == false) {
+						return null;
+					}
 
 					if (defaultClassConverter.containsKey(type)) {
 						return new ClassFieldToAngular(
@@ -233,13 +242,13 @@ public class DTORecordToAngularInterfaceConverter {
 
 							return new ClassFieldToAngular(
 									name,
-									"Map<" + angularTypeK + ", " + angularTypeV + ">",
+									"Record<" + angularTypeK + ", " + angularTypeV + ">",
 									importTypes,
 									false);
 						} else {
 							return new ClassFieldToAngular(
 									name,
-									"Map",
+									"Record",
 									Map.of(),
 									false);
 						}

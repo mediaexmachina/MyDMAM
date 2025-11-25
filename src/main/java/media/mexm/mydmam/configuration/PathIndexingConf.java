@@ -18,6 +18,7 @@ package media.mexm.mydmam.configuration;
 
 import static java.text.Normalizer.normalize;
 import static java.text.Normalizer.Form.NFKD;
+import static media.mexm.mydmam.App.REPLACE_NORMALIZED;
 import static media.mexm.mydmam.entity.FileEntity.MAX_NAME_SIZE;
 
 import java.time.Duration;
@@ -38,7 +39,6 @@ public record PathIndexingConf(@Valid Map<String, PathIndexingRealm> realms,
 							   String spoolScans,
 							   String spoolEvents) {
 
-	private static final Pattern REPLACE_NORMALIZED = Pattern.compile("\\p{M}");
 	private static final Pattern REMOVE_NON_VALID_CHARS = Pattern.compile("[^a-z^A-Z^0-9^\\-^\\_]+"); // NOSONAR S5869
 
 	public static String correctName(final String rawname, final String fieldName) {

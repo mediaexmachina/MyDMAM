@@ -31,10 +31,13 @@ public class Startup implements InitializingBean {
 	PathIndexer pathIndexer;
 	@Autowired
 	AuditTrail auditTrail;
+	@Autowired
+	Indexer indexer;
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		auditTrail.init();
+		indexer.init();
 		pendingActivityService.restartPendingActivities();
 		pathIndexer.startScans();
 	}

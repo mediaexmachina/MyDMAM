@@ -29,7 +29,7 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
 @SpringBootTest(webEnvironment = NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
-@ActiveProfiles({ "FlatJobKit", "NoStartup" })
+@ActiveProfiles({ "Default" })
 class AboutInstanceTest {
 
 	@Autowired

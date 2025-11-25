@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.component;
 
-import static java.util.Collections.synchronizedMap;
 import static media.mexm.mydmam.configuration.PathIndexingConf.correctName;
 
 import java.util.HashMap;
@@ -40,7 +39,7 @@ import tv.hd3g.jobkit.engine.JobKitEngine;
 @Slf4j
 public class AuditTrail {
 
-	private final Map<String, RealmAuditTrail> auditTrailByRealmName = synchronizedMap(new HashMap<>());
+	private final Map<String, RealmAuditTrail> auditTrailByRealmName = new HashMap<>();
 
 	@Autowired
 	JobKitEngine jobkitEngine;

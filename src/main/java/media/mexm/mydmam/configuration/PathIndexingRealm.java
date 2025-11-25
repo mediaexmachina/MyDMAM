@@ -30,12 +30,11 @@ import java.util.stream.Stream;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Validated
 @Slf4j
-public record PathIndexingRealm(@Valid @NotNull Map<String, PathIndexingStorage> storages,
+public record PathIndexingRealm(@Valid Map<String, PathIndexingStorage> storages,
 								Duration timeBetweenScans,
 								String spoolScans,
 								String spoolProcessAsset,

@@ -55,7 +55,7 @@ import tv.hd3g.transfertfiles.CachedFileAttributes;
 
 @SpringBootTest(webEnvironment = WebEnvironment.NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
-@ActiveProfiles({ "FlatJobKit" })
+@ActiveProfiles({ "Default" })
 class PathIndexerServiceWFLogicTest {
 
 	@Mock

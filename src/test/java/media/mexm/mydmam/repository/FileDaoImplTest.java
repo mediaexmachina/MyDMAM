@@ -16,11 +16,13 @@
  */
 package media.mexm.mydmam.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
+import java.util.HashSet;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +41,7 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.transfertfiles.CachedFileAttributes;
 
 @SpringBootTest(webEnvironment = WebEnvironment.NONE)
-@ActiveProfiles({ "FlatJobKit" })
+@ActiveProfiles({ "Default" })
 @ExtendWith(MockToolsExtendsJunit.class)
 class FileDaoImplTest {
 
@@ -106,6 +108,13 @@ class FileDaoImplTest {
 		assertEquals(ITEMS_TO_ADD, fileDao.countParentHashPathItems(realm, storage, parentHashPath));
 		assertEquals(0, fileDao.countParentHashPathItems(realm + "NOPE", storage, parentHashPath));
 		assertEquals(0, fileDao.countParentHashPathItems(realm, storage + "NOPE", parentHashPath));
+	}
+
+	@Test
+	void testGetAllFromRealm() {
+		final var collectedFiles = new HashSet<FileEntity>(ITEMS_TO_ADD);
+		fileDao.getAllFromRealm(realm, collectedFiles::add);
+		assertThat(collectedFiles).size().isEqualTo(ITEMS_TO_ADD);
 	}
 
 }

@@ -14,18 +14,13 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-package media.mexm.mydmam.repository;
+package media.mexm.mydmam.dto;
 
-import java.util.List;
+import org.springframework.validation.annotation.Validated;
 
-import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.tools.FileEntityConsumer;
+import jakarta.annotation.Nullable;
+import media.mexm.mydmam.indexer.FileSearchConstraints;
 
-public interface FileDao {
+public record SearchConstraintsRequest(@Validated @Nullable FileSearchConstraints fileConstraints) {
 
-	List<FileEntity> getByParentHashPath(String parentHashPath, int from, int size);
-
-	int countParentHashPathItems(String realm, String storage, String parentHashPath);
-
-	void getAllFromRealm(String realm, FileEntityConsumer onFile);
 }

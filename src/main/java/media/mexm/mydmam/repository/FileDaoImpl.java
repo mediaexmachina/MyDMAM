@@ -26,6 +26,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.tools.FileEntityConsumer;
 
 @Repository
 @Slf4j
@@ -62,6 +63,18 @@ public class FileDaoImpl implements FileDao {
 				.setParameter("storage", storage)
 				.getSingleResult()
 				.intValue();
+	}
+
+	@Override
+	@Transactional
+	public void getAllFromRealm(final String realm, final FileEntityConsumer onFile) {
+		entityManager.createQuery("""
+				SELECT f FROM FileEntity f
+				WHERE f.realm = :realm
+				""", FileEntity.class)
+				.setParameter("realm", realm)
+				.getResultStream()
+				.forEach(onFile);
 	}
 
 }

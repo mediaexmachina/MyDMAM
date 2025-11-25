@@ -19,8 +19,11 @@ package media.mexm.mydmam;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.internal.util.MockUtil.isMock;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -64,6 +67,24 @@ class MockService {
 
 	}
 
+	@Configuration
+	@Profile({ "Default" })
+	static class Default {
+
+		@Bean
+		@Primary
+		Startup startup() {
+			return Mockito.mock(Startup.class);
+		}
+
+		@Bean
+		@Primary
+		FlatJobKitEngine flatJobKitEngine() {
+			return new FlatJobKitEngine();
+		}
+
+	}
+
 	/*
 	 * =========
 	 * TEST ZONE
@@ -98,11 +119,45 @@ class MockService {
 		PathIndexer pathIndexer;
 
 		@Test
-		void test() {
+		void test() throws Exception {
 			assertTrue(isMock(startup));
+			verify(startup, times(1)).afterPropertiesSet();
+			verifyNoMoreInteractions(startup);
+
 			verifyNoInteractions(pathIndexer);
-			verifyNoInteractions(startup);
 		}
+	}
+
+	@SpringBootTest
+	@ActiveProfiles({ "Default" })
+	static class TestDefault {
+
+		@Autowired
+		Startup startup;
+		@MockitoBean
+		PathIndexer pathIndexer;
+		@Autowired
+		JobKitEngine jobKitEngine;
+		@Autowired
+		FlatJobKitEngine flatJobKitEngine;
+
+		@Test
+		void testStartup() throws Exception {
+			assertTrue(isMock(startup));
+			verify(startup, times(1)).afterPropertiesSet();
+			verifyNoMoreInteractions(startup);
+
+			verifyNoInteractions(pathIndexer);
+		}
+
+		@Test
+		void testJobKit() {
+			assertFalse(isMock(jobKitEngine));
+			assertEquals(jobKitEngine, flatJobKitEngine);
+			assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
+			assertEquals(0, flatJobKitEngine.getEndEventsList().size());
+		}
+
 	}
 
 }

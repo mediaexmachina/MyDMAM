@@ -16,16 +16,25 @@
  */
 package media.mexm.mydmam.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.entity.FileEntity;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @Slf4j
 @Service
 public class MediaAssetServiceImpl implements MediaAssetService {
+
+	@Autowired
+	Indexer indexer;
+
+	/*
+	 * NOPE *this*
+	 */
 
 	@Override
 	public MediaAsset getFromWatchfolder(final String realmName,

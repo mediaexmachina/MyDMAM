@@ -38,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.component.AuditTrail;
+import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
@@ -65,6 +66,8 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 	MyDMAMConfigurationProperties configuration;
 	@Autowired
 	PendingActivityService pendingActivityService;
+	@Autowired
+	Indexer indexer;
 
 	@Override
 	@Transactional
@@ -225,6 +228,9 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 		pendingActivityService.startsActivities(realmName, storageName, realm, scanResult.founded(), NEW_FOUNDED_FILE);
 		pendingActivityService.startsActivities(realmName, storageName, realm, scanResult.updated(), UPDATED_FILE);
 		pendingActivityService.cleanupFiles(realmName, storageName, realm, scanResult.losted());
+
+		indexer.getIndexerByRealm(realmName)
+				.ifPresent(index -> index.update(scanResult, storageName));
 	}
 
 	@Override

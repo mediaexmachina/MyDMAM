@@ -14,18 +14,15 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-package media.mexm.mydmam.repository;
+package media.mexm.mydmam.indexer;
 
-import java.util.List;
+import java.io.IOException;
 
-import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.tools.FileEntityConsumer;
+import org.apache.lucene.index.IndexWriter;
 
-public interface FileDao {
+@FunctionalInterface
+interface LuceneWriterConsumer {
 
-	List<FileEntity> getByParentHashPath(String parentHashPath, int from, int size);
+	void accept(IndexWriter writer) throws IOException;
 
-	int countParentHashPathItems(String realm, String storage, String parentHashPath);
-
-	void getAllFromRealm(String realm, FileEntityConsumer onFile);
 }

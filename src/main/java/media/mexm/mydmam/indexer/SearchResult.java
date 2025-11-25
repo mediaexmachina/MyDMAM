@@ -14,18 +14,11 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-package media.mexm.mydmam.repository;
+package media.mexm.mydmam.indexer;
 
 import java.util.List;
 
-import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.tools.FileEntityConsumer;
+public record SearchResult(List<FileSearchResult> foundedFiles,
+						   int totalFounded) {
 
-public interface FileDao {
-
-	List<FileEntity> getByParentHashPath(String parentHashPath, int from, int size);
-
-	int countParentHashPathItems(String realm, String storage, String parentHashPath);
-
-	void getAllFromRealm(String realm, FileEntityConsumer onFile);
 }

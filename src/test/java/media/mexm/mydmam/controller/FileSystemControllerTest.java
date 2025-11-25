@@ -18,7 +18,6 @@ package media.mexm.mydmam.controller;
 
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -36,7 +35,6 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,12 +62,11 @@ import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.repository.FileRepository;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
-import tv.hd3g.jobkit.engine.FlatJobKitEngine;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ExtendWith(MockToolsExtendsJunit.class)
-@ActiveProfiles({ "FlatJobKit" })
+@ActiveProfiles({ "Default" })
 class FileSystemControllerTest {
 
 	private static final RequestMapping REQUEST_MAPPING = FileSystemController.class.getAnnotation(
@@ -83,8 +80,6 @@ class FileSystemControllerTest {
 	MockMvc mvc;
 	@Autowired
 	ObjectMapper objectMapper;
-	@Autowired
-	FlatJobKitEngine flatJobKitEngine;
 
 	@MockitoBean
 	FileRepository fileRepository;
@@ -166,12 +161,6 @@ class FileSystemControllerTest {
 		when(fileChildren1.getStorage()).thenReturn(storage);
 		when(fileChildren1.isDirectory()).thenReturn(false);
 		when(fileChildren1.isWatchMarkedAsDone()).thenReturn(true);
-	}
-
-	@AfterEach
-	void ends() {
-		assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
-		assertEquals(0, flatJobKitEngine.getEndEventsList().size());
 	}
 
 	@Test

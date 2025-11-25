@@ -59,7 +59,7 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @SpringBootTest(webEnvironment = NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
-@ActiveProfiles({ "FlatJobKit", "NoStartup" })
+@ActiveProfiles({ "Default" })
 class PendingActivityServiceTest {
 
 	@MockitoBean

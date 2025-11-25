@@ -14,18 +14,13 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-package media.mexm.mydmam.repository;
+package media.mexm.mydmam.tools;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.tools.FileEntityConsumer;
 
-public interface FileDao {
+@FunctionalInterface
+public interface FileEntityConsumer extends Consumer<FileEntity> {
 
-	List<FileEntity> getByParentHashPath(String parentHashPath, int from, int size);
-
-	int countParentHashPathItems(String realm, String storage, String parentHashPath);
-
-	void getAllFromRealm(String realm, FileEntityConsumer onFile);
 }

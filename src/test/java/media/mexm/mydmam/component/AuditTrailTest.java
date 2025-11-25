@@ -46,7 +46,7 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
 @SpringBootTest(webEnvironment = WebEnvironment.NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
-@ActiveProfiles({ "FlatJobKit", "NoStartup" })
+@ActiveProfiles({ "Default" })
 class AuditTrailTest {
 
 	@MockitoBean

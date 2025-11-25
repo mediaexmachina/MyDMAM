@@ -14,18 +14,21 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-package media.mexm.mydmam.repository;
+package media.mexm.mydmam.indexer;
 
-import java.util.List;
+import static java.lang.Float.compare;
 
-import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.tools.FileEntityConsumer;
+public record FileSearchResult(String hashPath,
+							   String storage,
+							   String name,
+							   String parentPath,
+							   float score,
+							   String explain) implements
+							  Comparable<FileSearchResult> {
 
-public interface FileDao {
+	@Override
+	public int compareTo(final FileSearchResult o) {
+		return compare(o.score, score);
+	}
 
-	List<FileEntity> getByParentHashPath(String parentHashPath, int from, int size);
-
-	int countParentHashPathItems(String realm, String storage, String parentHashPath);
-
-	void getAllFromRealm(String realm, FileEntityConsumer onFile);
 }
