@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.indexer;
 
+import static java.util.Collections.unmodifiableList;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DATE;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DIRECTORY;
@@ -26,23 +27,22 @@ import static media.mexm.mydmam.indexer.NamedIndexField.FILE_LENGTH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_LINK;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_NAME;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_HASH_PATH;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_PATH;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PATH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_SPECIAL;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_STORAGE;
 import static org.apache.commons.io.FileUtils.forceMkdir;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 import static org.apache.lucene.search.BooleanClause.Occur.MUST;
+import static org.apache.lucene.search.Sort.RELEVANCE;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -55,12 +55,11 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -119,19 +118,20 @@ public class RealmIndexer { // TODO test
 
 		log.trace("Make Lucene document on {}:{}:{}", realmName, storageName, hashPath);
 
+		document.add(new StringField(FILE_HASH_PATH, hashPath, YES));
+		document.add(new TextField(FILE_NAME, file.getName(), YES));
 		document.add(new TextField(FILE_STORAGE, storageName, YES));
-		document.add(new TextField(FILE_PATH, file.getPath(), YES));
-		document.add(new IntField(FILE_DIRECTORY, file.isDirectory() ? 1 : 0, YES));
-		document.add(new IntField(FILE_HIDDEN, file.isHidden() ? 1 : 0, YES));
-		document.add(new IntField(FILE_LINK, file.isLink() ? 1 : 0, YES));
-		document.add(new IntField(FILE_SPECIAL, file.isSpecial() ? 1 : 0, YES));
-		document.add(new LongField(FILE_DATE, file.lastModified(), YES));
-		document.add(new LongField(FILE_LENGTH, file.length(), YES));
-		document.add(new IntField(FILE_EXISTS, file.exists() ? 1 : 0, YES));
 
-		document.add(new TextField(FILE_PARENT_PATH, file.getParentPath(), NO));
-		document.add(new TextField(FILE_NAME, file.getName(), NO));
-		document.add(new StringField(FILE_HASH_PATH, hashPath, NO));
+		// TODO get name without ext ?
+		// TODO split name by spaces ?
+
+		document.add(new IntField(FILE_DIRECTORY, file.isDirectory() ? 1 : 0, NO));
+		document.add(new IntField(FILE_HIDDEN, file.isHidden() ? 1 : 0, NO));
+		document.add(new IntField(FILE_LINK, file.isLink() ? 1 : 0, NO));
+		document.add(new IntField(FILE_SPECIAL, file.isSpecial() ? 1 : 0, NO));
+		document.add(new LongField(FILE_DATE, file.lastModified(), NO));
+		document.add(new LongField(FILE_LENGTH, file.length(), NO));
+		document.add(new IntField(FILE_EXISTS, file.exists() ? 1 : 0, NO));
 		document.add(new StringField(FILE_PARENT_HASH_PATH,
 				hashPath(realmName, storageName, file.getParentPath()), NO));
 		return document;
@@ -153,7 +153,7 @@ public class RealmIndexer { // TODO test
 			for (final var file : scanResult.updated()) {
 				final var hashPath = hashPath(realmName, storageName, file.getPath());
 				final Iterable<? extends IndexableField> doc = toDocument(file, storageName, hashPath);
-				// TODO maybe a read update ?
+				// TODO maybe a real update ?
 				/*
 				public void updateField(String docId, int newFieldvalue) {
 					MyDataObject data = primaryDataStore.fetch(docId);
@@ -161,7 +161,7 @@ public class RealmIndexer { // TODO test
 					primaryDataStore.save(data);
 					updateIndex(data);
 				}
-
+				
 				public void updateIndex(MyDataObject object) {
 					// convertToLucene is more or less the code in the
 					// first snippet of your question
@@ -186,57 +186,127 @@ public class RealmIndexer { // TODO test
 
 	}
 
-	public List<FileSearchResult> openSearch(final String q, final Optional<String> limitToStorage, final int limit) {
-		final var searcher = new IndexSearcher(reader);
-		final var builder = new BooleanQuery.Builder();
-
-		/*
-		https://stackoverflow.com/questions/2005084/how-to-specify-two-fields-in-lucene-queryparser
-				 * */
-		final var exists = new TermQuery(new Term(FILE_EXISTS, "1"));
-		builder.add(exists, MUST);
-
-		limitToStorage.ifPresent(storage -> {
-			final var onStorage = new TermQuery(new Term(FILE_STORAGE, storage));
-			builder.add(onStorage, MUST);
-		});
-
+	private List<FileSearchResult> processSearch(final Optional<String> limitToStorage,
+												 final boolean fileMustExists,
+												 final IndexSearcher searcher,
+												 final Query query,
+												 final int limit) {
 		try {
-			// TODO manage "*" with WildcardQuery + add *q*
-			/*
-			 * https://stackoverflow.com/questions/5484965/howto-perform-a-contains-search-rather-than-starts-with-using-lucene-net
-			 *
-			 *
-			 * parser.setFuzzyMinSim(0.6f);
-			 * */
+			final var builder = new BooleanQuery.Builder();
 
-			@Deprecated
-			final var multiField = new MultiFieldQueryParser(
-					new String[] { FILE_NAME }, analyzer).parse(q);
-			builder.add(multiField, MUST);
-		} catch (final ParseException e) {
-			throw new IllegalArgumentException("Can't parse query", e);
-		}
+			if (fileMustExists) {
+				final var exists = new TermQuery(new Term(FILE_EXISTS, "1"));
+				builder.add(exists, MUST);
+			}
 
-		try {
-			final var sortedTopDoc = searcher.search(builder.build(), limit, Sort.RELEVANCE);
+			limitToStorage.ifPresent(storage -> {
+				final var onStorage = new TermQuery(new Term(FILE_STORAGE, storage));
+				builder.add(onStorage, MUST);
+			});
+
+			builder.add(query, MUST);
+
+			final var sortedTopDoc = searcher.search(builder.build(), limit, RELEVANCE);
 			final var storedFields = searcher.storedFields();
 
 			final var result = new ArrayList<FileSearchResult>(sortedTopDoc.scoreDocs.length);
 
 			for (final var scoredDoc : sortedTopDoc.scoreDocs) {
-				final var doc = storedFields.document(scoredDoc.doc, Set.of(FILE_HASH_PATH));
+				final var doc = storedFields.document(scoredDoc.doc, Set.of(FILE_HASH_PATH, FILE_STORAGE, FILE_NAME));
 
-				Optional.ofNullable(doc.getField(FILE_HASH_PATH))
-						.map(IndexableField::stringValue)
-						.map(hashPath -> new FileSearchResult(hashPath, scoredDoc.score))
-						.ifPresent(result::add);
+				final var hashPath = doc.getField(FILE_HASH_PATH);
+				final var storage = doc.getField(FILE_STORAGE);
+				final var name = doc.getField(FILE_NAME);
+
+				if (hashPath != null && storage != null && name != null) {
+					result.add(new FileSearchResult(
+							hashPath.stringValue(),
+							storage.stringValue(),
+							name.stringValue(),
+							scoredDoc.score));
+				} else {
+					log.warn("Nulls in document: hashPath={} storage={} name={}", hashPath, storage, name);
+				}
 			}
 
-			return Collections.unmodifiableList(result);
+			return unmodifiableList(result);
 		} catch (final IOException e) {
 			throw new UncheckedIOException("Can't read from Lucene index on " + indexDir.getAbsolutePath(), e);
 		}
+	}
+
+	public List<FileSearchResult> openSearch(final String q,
+											 final Optional<String> limitToStorage,
+											 final int limit,
+											 final boolean fileMustExists) {
+		final var searcher = new IndexSearcher(reader);
+		final var result = new ArrayList<FileSearchResult>();
+
+		final Query directQuery;
+		if (q.contains("*") || q.contains("?")) {
+			/**
+			 * Contains wilcards
+			 */
+			directQuery = new WildcardQuery(new Term(FILE_NAME, q));
+		} else {
+			/**
+			 * Exact file name match
+			 */
+			directQuery = new TermQuery(new Term(FILE_NAME, q));
+		}
+
+		final var searchResults0 = processSearch(
+				limitToStorage,
+				fileMustExists,
+				searcher,
+				directQuery,
+				limit);
+		result.addAll(searchResults0);
+		if (limit - result.size() <= 0) {
+			return result;
+		}
+
+		/**
+		 * Contains part of file name
+		 */
+		final var searchResults1 = processSearch(
+				limitToStorage,
+				fileMustExists,
+				searcher,
+				new WildcardQuery(new Term(FILE_NAME, "*" + q + "*")),
+				limit - result.size());
+
+		result.addAll(searchResults1);
+		if (limit - result.size() <= 0) {
+			return result;
+		}
+
+		if (q.contains(" ")) {
+			/**
+			 * Multiple parts of file name
+			 */
+			final var booleanBuilder = new BooleanQuery.Builder();
+
+			Stream.of(q.split(" ")).forEach(word -> {
+				booleanBuilder.add(new WildcardQuery(new Term(FILE_NAME, "*" + word + "*")), MUST);
+			});
+
+			final var searchResults2 = processSearch(
+					limitToStorage,
+					fileMustExists,
+					searcher,
+					booleanBuilder.build(),
+					limit - result.size());
+
+			result.addAll(searchResults2);
+			if (limit - result.size() <= 0) {
+				return result;
+			}
+		}
+
+		// TODO add fuzzy
+
+		return result;
 	}
 	/*
 	 * <ul>
@@ -252,29 +322,37 @@ public class RealmIndexer { // TODO test
 	 */
 
 	/*
+	https://stackoverflow.com/questions/2005084/how-to-specify-two-fields-in-lucene-queryparser
+
+	 * https://stackoverflow.com/questions/5484965/howto-perform-a-contains-search-rather-than-starts-with-using-lucene-net
+	 *
+	 * parser.setFuzzyMinSim(0.6f);
+	 *
+	 * MultiFieldQueryParser
+	 *
 	protected Query intRangeQuery(String field,
 	Integer min, Integer max,
 	boolean includeBoundaries){
-
+	
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.intToPrefixCoded(min.intValue()),
 	NumericUtils.intToPrefixCoded(max.intValue()),
 	includeBoundaries, includeBoundaries);
-
+	
 	return rangeQuery;
 	}
-
+	
 	protected Query longRangeQuery(String field,
 	Long min, Long max,
 	boolean includeBoundaries){
-
+	
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.longToPrefixCoded(min.longValue()),
 	NumericUtils.longToPrefixCoded(max.longValue()),
 	includeBoundaries, includeBoundaries);
-
+	
 	return rangeQuery;
 	}
-	 * */
+	* */
 
 }

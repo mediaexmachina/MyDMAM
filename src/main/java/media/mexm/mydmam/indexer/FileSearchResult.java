@@ -16,6 +16,8 @@
  */
 package media.mexm.mydmam.indexer;
 
-public record FileSearchResult(String hashPath, float score) {
+public record FileSearchResult(String hashPath, String storage, String name, float score) {
+
+	// TODO add "search step"
 
 }
