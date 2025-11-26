@@ -122,6 +122,8 @@ public class RealmIndexer { // TODO test
 		document.add(new TextField(FILE_NAME, file.getName(), YES));
 		document.add(new TextField(FILE_STORAGE, storageName, YES));
 
+		// TODO .toLowerCase() ?
+		// TODO without accents ?
 		// TODO get name without ext ?
 		// TODO split name by spaces ?
 
