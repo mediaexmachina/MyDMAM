@@ -17,6 +17,18 @@
 package media.mexm.mydmam.indexer;
 
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DATE;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DIRECTORY;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_EXISTS;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_HASH_PATH;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_HIDDEN;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_LENGTH;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_LINK;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_NAME;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_HASH_PATH;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_PATH;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PATH;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_SPECIAL;
 import static org.apache.commons.io.FileUtils.forceMkdir;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
@@ -45,7 +57,6 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 @Slf4j
 public class RealmIndexer { // TODO test
 
-	private static final String FILE_HASH_PATH = "file.hashPath";
 	private final String realmName;
 	private final File indexDir;
 	private final Directory fsDirectoryIndex;
@@ -63,8 +74,17 @@ public class RealmIndexer { // TODO test
 		indexWriterConfig = new IndexWriterConfig(analyzer);
 	}
 
+	public synchronized void close() {
+		try {
+			fsDirectoryIndex.close();
+		} catch (final IOException e) {
+			log.error("Can't close Lucene index on " + indexDir.getAbsolutePath(), e);
+		}
+	}
+
 	private synchronized void write(final LuceneWriterConsumer cWriter) {
 		try {
+			log.debug("Open Lucene index on \"{}\" for writing", indexDir);
 			final var writer = new IndexWriter(fsDirectoryIndex, indexWriterConfig);
 			cWriter.accept(writer);
 			writer.close();
@@ -76,19 +96,21 @@ public class RealmIndexer { // TODO test
 	private Document toDocument(final FileAttributesReference file, final String storageName, final String hashPath) {
 		final var document = new Document();
 
-		document.add(new TextField("file.path", file.getPath(), YES));
-		document.add(new IntField("file.directory", file.isDirectory() ? 1 : 0, YES));
-		document.add(new IntField("file.hidden", file.isHidden() ? 1 : 0, YES));
-		document.add(new IntField("file.link", file.isLink() ? 1 : 0, YES));
-		document.add(new IntField("file.special", file.isSpecial() ? 1 : 0, YES));
-		document.add(new LongField("file.date", file.lastModified(), YES));
-		document.add(new LongField("file.length", file.length(), YES));
-		document.add(new IntField("file.exists", file.exists() ? 1 : 0, YES));
+		log.trace("Make Lucene document on {}:{}:{}", realmName, storageName, hashPath);
 
-		document.add(new TextField("file.parentPath", file.getParentPath(), NO));
-		document.add(new TextField("file.name", file.getName(), NO));
+		document.add(new TextField(FILE_PATH, file.getPath(), YES));
+		document.add(new IntField(FILE_DIRECTORY, file.isDirectory() ? 1 : 0, YES));
+		document.add(new IntField(FILE_HIDDEN, file.isHidden() ? 1 : 0, YES));
+		document.add(new IntField(FILE_LINK, file.isLink() ? 1 : 0, YES));
+		document.add(new IntField(FILE_SPECIAL, file.isSpecial() ? 1 : 0, YES));
+		document.add(new LongField(FILE_DATE, file.lastModified(), YES));
+		document.add(new LongField(FILE_LENGTH, file.length(), YES));
+		document.add(new IntField(FILE_EXISTS, file.exists() ? 1 : 0, YES));
+
+		document.add(new TextField(FILE_PARENT_PATH, file.getParentPath(), NO));
+		document.add(new TextField(FILE_NAME, file.getName(), NO));
 		document.add(new StringField(FILE_HASH_PATH, hashPath, NO));
-		document.add(new StringField("file.parentHashPath",
+		document.add(new StringField(FILE_PARENT_HASH_PATH,
 				hashPath(realmName, storageName, file.getParentPath()), NO));
 		return document;
 	}
@@ -100,6 +122,7 @@ public class RealmIndexer { // TODO test
 			return;
 		}
 
+		log.info("Start to update Lucene index \"{}\" with {}", indexDir, scanResult);
 		write(writer -> {
 			writer.addDocuments(scanResult.founded().stream()
 					.map(f -> toDocument(f, storageName, hashPath(realmName, storageName, f.getPath())))

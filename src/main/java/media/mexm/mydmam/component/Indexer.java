@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +33,7 @@ import media.mexm.mydmam.indexer.RealmIndexer;
 
 @Component
 @Slf4j
-public class Indexer {
+public class Indexer implements DisposableBean {
 
 	private final Map<String, RealmIndexer> indexerByRealmName = new HashMap<>();
 
@@ -67,5 +68,10 @@ public class Indexer {
 			return Optional.empty();
 		}
 		return Optional.ofNullable(indexerByRealmName.get(realm));
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		indexerByRealmName.values().forEach(RealmIndexer::close);
 	}
 }
