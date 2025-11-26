@@ -23,7 +23,7 @@ import static org.apache.lucene.document.Field.Store.YES;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Set;
+import java.io.UncheckedIOException;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -39,6 +39,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import lombok.extern.slf4j.Slf4j;
+import tv.hd3g.jobkit.watchfolder.WatchedFiles;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @Slf4j
@@ -50,7 +51,6 @@ public class RealmIndexer { // TODO test
 	private final Directory fsDirectoryIndex;
 	private final StandardAnalyzer analyzer;
 	private final IndexWriterConfig indexWriterConfig;
-	private final IndexWriter writer;
 
 	public RealmIndexer(final String realmName,
 						final File workingDir) throws IOException {
@@ -61,13 +61,16 @@ public class RealmIndexer { // TODO test
 		fsDirectoryIndex = FSDirectory.open(indexDir.toPath());
 		analyzer = new StandardAnalyzer();
 		indexWriterConfig = new IndexWriterConfig(analyzer);
-		indexWriterConfig.setCommitOnClose(true);
-
-		writer = new IndexWriter(fsDirectoryIndex, indexWriterConfig);
 	}
 
-	public void close() throws IOException {
-		writer.close();
+	private synchronized void write(final LuceneWriterConsumer cWriter) {
+		try {
+			final var writer = new IndexWriter(fsDirectoryIndex, indexWriterConfig);
+			cWriter.accept(writer);
+			writer.close();
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Can't write to Lucene index on " + indexDir.getAbsolutePath(), e);
+		}
 	}
 
 	private Document toDocument(final FileAttributesReference file, final String storageName, final String hashPath) {
@@ -90,43 +93,32 @@ public class RealmIndexer { // TODO test
 		return document;
 	}
 
-	public void put(final Set<? extends FileAttributesReference> files, final String storageName) throws IOException {
-		if (files.isEmpty()) {
+	public void update(final WatchedFiles scanResult, final String storageName) {
+		if (scanResult.founded().isEmpty()
+			&& scanResult.updated().isEmpty()
+			&& scanResult.losted().isEmpty()) {
 			return;
 		}
 
-		writer.addDocuments(files.stream()
-				.map(f -> toDocument(f, storageName, hashPath(realmName, storageName, f.getPath())))
-				.toList());
-		writer.commit();
-	}
+		write(writer -> {
+			writer.addDocuments(scanResult.founded().stream()
+					.map(f -> toDocument(f, storageName, hashPath(realmName, storageName, f.getPath())))
+					.toList());
 
-	public void update(final Set<? extends FileAttributesReference> files,
-					   final String storageName) throws IOException {
-		if (files.isEmpty()) {
-			return;
-		}
+			for (final var file : scanResult.updated()) {
+				final var hashPath = hashPath(realmName, storageName, file.getPath());
+				final Iterable<? extends IndexableField> doc = toDocument(file, storageName, hashPath);
+				writer.updateDocument(new Term(FILE_HASH_PATH, hashPath), doc);
+			}
 
-		for (final var file : files) {
-			final var hashPath = hashPath(realmName, storageName, file.getPath());
-			final Iterable<? extends IndexableField> doc = toDocument(file, storageName, hashPath);
-			writer.updateDocument(new Term(FILE_HASH_PATH, hashPath), doc);
-		}
-		writer.commit();
-	}
+			final var terms = scanResult.losted().stream()
+					.map(f -> new Term(FILE_HASH_PATH, hashPath(realmName, storageName, f.getPath())))
+					.toArray(Term[]::new);
+			writer.deleteDocuments(terms);
 
-	public void remove(final Set<? extends FileAttributesReference> files,
-					   final String storageName) throws IOException {
-		if (files.isEmpty()) {
-			return;
-		}
+			writer.commit();
+		});
 
-		final var terms = files.stream()
-				.map(f -> new Term(FILE_HASH_PATH, hashPath(realmName, storageName, f.getPath())))
-				.toArray(Term[]::new);
-
-		writer.deleteDocuments(terms);
-		writer.commit();
 	}
 
 	/*

@@ -24,7 +24,6 @@ import static media.mexm.mydmam.activity.ActivityEventType.UPDATED_FILE;
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -231,15 +230,7 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 		pendingActivityService.cleanupFiles(realmName, storageName, realm, scanResult.losted());
 
 		indexer.getIndexerByRealm(realmName)
-				.ifPresent(index -> {
-					try {
-						index.put(scanResult.founded(), storageName);
-						index.update(scanResult.updated(), storageName);
-						index.remove(scanResult.losted(), storageName);
-					} catch (final IOException e) {
-						log.error("Can't put to indexer", e);
-					}
-				});
+				.ifPresent(index -> index.update(scanResult, storageName));
 	}
 
 	@Override
