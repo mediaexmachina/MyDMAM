@@ -29,13 +29,20 @@ import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_HASH_PATH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_PATH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PATH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_SPECIAL;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_STORAGE;
 import static org.apache.commons.io.FileUtils.forceMkdir;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
+import static org.apache.lucene.search.BooleanClause.Occur.MUST;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -43,10 +50,17 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -60,6 +74,7 @@ public class RealmIndexer { // TODO test
 	private final String realmName;
 	private final File indexDir;
 	private final Directory fsDirectoryIndex;
+	private final DirectoryReader reader;
 	private final StandardAnalyzer analyzer;
 	private final IndexWriterConfig indexWriterConfig;
 
@@ -72,9 +87,15 @@ public class RealmIndexer { // TODO test
 		fsDirectoryIndex = FSDirectory.open(indexDir.toPath());
 		analyzer = new StandardAnalyzer();
 		indexWriterConfig = new IndexWriterConfig(analyzer);
+		reader = DirectoryReader.open(fsDirectoryIndex);
 	}
 
 	public synchronized void close() {
+		try {
+			reader.close();
+		} catch (final IOException e) {
+			log.error("Can't close Lucene reader index on " + indexDir.getAbsolutePath(), e);
+		}
 		try {
 			fsDirectoryIndex.close();
 		} catch (final IOException e) {
@@ -98,6 +119,7 @@ public class RealmIndexer { // TODO test
 
 		log.trace("Make Lucene document on {}:{}:{}", realmName, storageName, hashPath);
 
+		document.add(new TextField(FILE_STORAGE, storageName, YES));
 		document.add(new TextField(FILE_PATH, file.getPath(), YES));
 		document.add(new IntField(FILE_DIRECTORY, file.isDirectory() ? 1 : 0, YES));
 		document.add(new IntField(FILE_HIDDEN, file.isHidden() ? 1 : 0, YES));
@@ -131,6 +153,26 @@ public class RealmIndexer { // TODO test
 			for (final var file : scanResult.updated()) {
 				final var hashPath = hashPath(realmName, storageName, file.getPath());
 				final Iterable<? extends IndexableField> doc = toDocument(file, storageName, hashPath);
+				// TODO maybe a read update ?
+				/*
+				public void updateField(String docId, int newFieldvalue) {
+					MyDataObject data = primaryDataStore.fetch(docId);
+					data.setFieldValue(newFieldValue);
+					primaryDataStore.save(data);
+					updateIndex(data);
+				}
+
+				public void updateIndex(MyDataObject object) {
+					// convertToLucene is more or less the code in the
+					// first snippet of your question
+					Document d = convertToLucene(object);
+					// IndexWriter should be created once
+					// IndexWriter.updateDocument will internally delete and index
+					// the document
+					this.writer.updateDocument(new Term("id", object.getId()), d);
+					// potentially call writer.commit()
+				}
+				* */
 				writer.updateDocument(new Term(FILE_HASH_PATH, hashPath), doc);
 			}
 
@@ -144,6 +186,58 @@ public class RealmIndexer { // TODO test
 
 	}
 
+	public List<FileSearchResult> openSearch(final String q, final Optional<String> limitToStorage, final int limit) {
+		final var searcher = new IndexSearcher(reader);
+		final var builder = new BooleanQuery.Builder();
+
+		/*
+		https://stackoverflow.com/questions/2005084/how-to-specify-two-fields-in-lucene-queryparser
+				 * */
+		final var exists = new TermQuery(new Term(FILE_EXISTS, "1"));
+		builder.add(exists, MUST);
+
+		limitToStorage.ifPresent(storage -> {
+			final var onStorage = new TermQuery(new Term(FILE_STORAGE, storage));
+			builder.add(onStorage, MUST);
+		});
+
+		try {
+			// TODO manage "*" with WildcardQuery + add *q*
+			/*
+			 * https://stackoverflow.com/questions/5484965/howto-perform-a-contains-search-rather-than-starts-with-using-lucene-net
+			 *
+			 *
+			 * parser.setFuzzyMinSim(0.6f);
+			 * */
+
+			@Deprecated
+			final var multiField = new MultiFieldQueryParser(
+					new String[] { FILE_NAME }, analyzer).parse(q);
+			builder.add(multiField, MUST);
+		} catch (final ParseException e) {
+			throw new IllegalArgumentException("Can't parse query", e);
+		}
+
+		try {
+			final var sortedTopDoc = searcher.search(builder.build(), limit, Sort.RELEVANCE);
+			final var storedFields = searcher.storedFields();
+
+			final var result = new ArrayList<FileSearchResult>(sortedTopDoc.scoreDocs.length);
+
+			for (final var scoredDoc : sortedTopDoc.scoreDocs) {
+				final var doc = storedFields.document(scoredDoc.doc, Set.of(FILE_HASH_PATH));
+
+				Optional.ofNullable(doc.getField(FILE_HASH_PATH))
+						.map(IndexableField::stringValue)
+						.map(hashPath -> new FileSearchResult(hashPath, scoredDoc.score))
+						.ifPresent(result::add);
+			}
+
+			return Collections.unmodifiableList(result);
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Can't read from Lucene index on " + indexDir.getAbsolutePath(), e);
+		}
+	}
 	/*
 	 * <ul>
 	 * <li>{@link SortedDocValuesField}: {@code byte[]} indexed column-wise for sorting/faceting
@@ -156,4 +250,31 @@ public class RealmIndexer { // TODO test
 	 * </ul>
 	 * *
 	 */
+
+	/*
+	protected Query intRangeQuery(String field,
+	Integer min, Integer max,
+	boolean includeBoundaries){
+
+	TermRangeQuery rangeQuery = new TermRangeQuery(field,
+	NumericUtils.intToPrefixCoded(min.intValue()),
+	NumericUtils.intToPrefixCoded(max.intValue()),
+	includeBoundaries, includeBoundaries);
+
+	return rangeQuery;
+	}
+
+	protected Query longRangeQuery(String field,
+	Long min, Long max,
+	boolean includeBoundaries){
+
+	TermRangeQuery rangeQuery = new TermRangeQuery(field,
+	NumericUtils.longToPrefixCoded(min.longValue()),
+	NumericUtils.longToPrefixCoded(max.longValue()),
+	includeBoundaries, includeBoundaries);
+
+	return rangeQuery;
+	}
+	 * */
+
 }

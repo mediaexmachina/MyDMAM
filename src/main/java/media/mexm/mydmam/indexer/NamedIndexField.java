@@ -22,6 +22,7 @@ import java.util.Optional;
 public class NamedIndexField {
 
 	public static final NamedIndexField FILE = new NamedIndexField("file");
+	public static final String FILE_STORAGE = new NamedIndexField(FILE, "storage").toString();
 	public static final String FILE_PATH = new NamedIndexField(FILE, "path").toString();
 	public static final String FILE_DIRECTORY = new NamedIndexField(FILE, "directory").toString();
 	public static final String FILE_HIDDEN = new NamedIndexField(FILE, "hidden").toString();
