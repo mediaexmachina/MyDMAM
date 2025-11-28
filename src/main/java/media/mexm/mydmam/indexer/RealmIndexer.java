@@ -82,7 +82,6 @@ public class RealmIndexer { // TODO test
 	private final String realmName;
 	private final File indexDir;
 	private final Directory fsDirectoryIndex;
-	private final DirectoryReader reader;
 	private final StandardAnalyzer analyzer;
 	private final IndexWriterConfig indexWriterConfig;
 	private final boolean computeExplainOnResults;
@@ -98,15 +97,9 @@ public class RealmIndexer { // TODO test
 		fsDirectoryIndex = FSDirectory.open(indexDir.toPath());
 		analyzer = new StandardAnalyzer();
 		indexWriterConfig = new IndexWriterConfig(analyzer);
-		reader = DirectoryReader.open(fsDirectoryIndex);
 	}
 
 	public synchronized void close() {
-		try {
-			reader.close();
-		} catch (final IOException e) {
-			log.error("Can't close Lucene reader index on " + indexDir.getAbsolutePath(), e);
-		}
 		try {
 			fsDirectoryIndex.close();
 		} catch (final IOException e) {
@@ -197,7 +190,7 @@ public class RealmIndexer { // TODO test
 					primaryDataStore.save(data);
 					updateIndex(data);
 				}
-
+				
 				public void updateIndex(MyDataObject object) {
 					// convertToLucene is more or less the code in the
 					// first snippet of your question
@@ -224,10 +217,9 @@ public class RealmIndexer { // TODO test
 
 	private Set<FileSearchResult> processSearch(final Optional<String> limitToStorage,
 												final boolean fileMustExists,
-												final IndexSearcher searcher,
 												final Query query,
 												final int limit) {
-		try {
+		try (var reader = DirectoryReader.open(fsDirectoryIndex)) {
 			final var builder = new BooleanQuery.Builder();
 
 			if (fileMustExists) {
@@ -243,6 +235,7 @@ public class RealmIndexer { // TODO test
 			builder.add(query, MUST);
 
 			final var finalQuery = builder.build();
+			final var searcher = new IndexSearcher(reader);
 			final var sortedTopDoc = searcher.search(finalQuery, limit);
 			final var storedFields = searcher.storedFields();
 
@@ -293,12 +286,11 @@ public class RealmIndexer { // TODO test
 											final Optional<String> limitToStorage,
 											final int limit,
 											final boolean fileMustExists) {
-		final var searcher = new IndexSearcher(reader);
 		final var mainQuery = new BooleanQuery.Builder();
 
 		if (q.contains("*") || q.contains("?")) {
 			/**
-			 * Contains wilcards
+			 * Contains wildcards
 			 */
 			addShouldBooleanBoostedQuery(mainQuery, new WildcardQuery(new Term(FILE_NAME, q)), 10f);
 			addShouldBooleanBoostedQuery(mainQuery, new WildcardQuery(new Term(FILE_BASE_NAME, q)), 8f);
@@ -314,6 +306,7 @@ public class RealmIndexer { // TODO test
 
 		final var normalizeQ = normalizeSearchString(q);
 
+		// TODO sub boolean WITH normalizeQ
 		normalizeQ.forEach(word -> {
 			addShouldBooleanBoostedQuery(mainQuery, new TermQuery(new Term(FILE_NAME, word)), 5f);
 			addShouldBooleanBoostedQuery(mainQuery, new TermQuery(new Term(FILE_BASE_NAME, word)), 3f);
@@ -325,7 +318,6 @@ public class RealmIndexer { // TODO test
 		return processSearch(
 				limitToStorage,
 				fileMustExists,
-				searcher,
 				mainQuery.build(),
 				limit);
 	}
@@ -345,7 +337,7 @@ public class RealmIndexer { // TODO test
 	/*
 	 * https://stackoverflow.com/questions/26498013/lucene-ranking-with-booleanquery-determining-quality-of-hits
 	https://stackoverflow.com/questions/2005084/how-to-specify-two-fields-in-lucene-queryparser
-	
+
 	 * https://stackoverflow.com/questions/5484965/howto-perform-a-contains-search-rather-than-starts-with-using-lucene-net
 	 *
 	 * parser.setFuzzyMinSim(0.6f);
@@ -355,24 +347,24 @@ public class RealmIndexer { // TODO test
 	protected Query intRangeQuery(String field,
 	Integer min, Integer max,
 	boolean includeBoundaries){
-
+	
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.intToPrefixCoded(min.intValue()),
 	NumericUtils.intToPrefixCoded(max.intValue()),
 	includeBoundaries, includeBoundaries);
-
+	
 	return rangeQuery;
 	}
-
+	
 	protected Query longRangeQuery(String field,
 	Long min, Long max,
 	boolean includeBoundaries){
-
+	
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.longToPrefixCoded(min.longValue()),
 	NumericUtils.longToPrefixCoded(max.longValue()),
 	includeBoundaries, includeBoundaries);
-
+	
 	return rangeQuery;
 	}
 	* */

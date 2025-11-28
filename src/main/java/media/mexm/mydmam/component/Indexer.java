@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,8 @@ public class Indexer implements DisposableBean {
 
 	@Autowired
 	MyDMAMConfigurationProperties conf;
+	@Value("${mydmamConsts.explainSearchResults:false}")
+	boolean explainSearchResults;
 
 	public void init() throws IOException {
 		final var pathIndexing = conf.pathindexing();
@@ -58,7 +61,7 @@ public class Indexer implements DisposableBean {
 
 			log.info("Prepare indexer for realm={}, on {}",
 					realmName, oWorkingDirectory.get().getAbsolutePath());
-			final var realmIndexer = new RealmIndexer(realmName, oWorkingDirectory.get());
+			final var realmIndexer = new RealmIndexer(realmName, oWorkingDirectory.get(), explainSearchResults);
 			indexerByRealmName.put(realmName, realmIndexer);
 		}
 	}
