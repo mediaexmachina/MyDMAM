@@ -17,6 +17,7 @@
 package media.mexm.mydmam;
 
 import java.io.File;
+import java.util.regex.Pattern;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,6 +28,7 @@ import media.mexm.mydmam.tools.DTORecordToAngularInterfaceConverter;
 public class App {
 
 	public static final String CONTROLLER_BASE_MAPPING_API_PATH = "/api/v1";
+	public static final Pattern REPLACE_NORMALIZED = Pattern.compile("\\p{M}");
 
 	public static void main(final String[] args) {
 		if (args != null && args.length == 1 && args[0].equals("export-dto-angular")) {

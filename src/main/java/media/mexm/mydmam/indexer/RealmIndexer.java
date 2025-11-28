@@ -16,8 +16,12 @@
  */
 package media.mexm.mydmam.indexer;
 
+import static java.text.Normalizer.normalize;
+import static java.text.Normalizer.Form.NFKD;
 import static java.util.Collections.unmodifiableList;
+import static media.mexm.mydmam.App.REPLACE_NORMALIZED;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_BASE_NAME;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DATE;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DIRECTORY;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_EXISTS;
@@ -30,6 +34,7 @@ import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_HASH_PATH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_SPECIAL;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_STORAGE;
 import static org.apache.commons.io.FileUtils.forceMkdir;
+import static org.apache.commons.io.FilenameUtils.getBaseName;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 import static org.apache.lucene.search.BooleanClause.Occur.MUST;
@@ -42,6 +47,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -113,19 +120,41 @@ public class RealmIndexer { // TODO test
 		}
 	}
 
+	private static final Pattern REMOVE_NON_VALID_CHARS = Pattern.compile("[^a-z0-9]+"); // NOSONAR S5869
+
+	/**
+	 * Not compatible with other chars than western chars.
+	 */
+	public static List<String> normalizeSearchString(final String value) {
+		if (value == null) {
+			return List.of();
+		}
+		final var trimValue = value.toLowerCase().trim();
+		if (trimValue.isEmpty()) {
+			return List.of();
+		}
+
+		final var normalized = REPLACE_NORMALIZED.matcher(normalize(trimValue, NFKD)).replaceAll("");
+		final var cleaned = REMOVE_NON_VALID_CHARS.matcher(normalized).replaceAll(" ").trim();
+
+		if (cleaned.isEmpty()) {
+			return List.of();
+		}
+
+		return List.of(cleaned.split(" "));
+	}
+
 	private Document toDocument(final FileAttributesReference file, final String storageName, final String hashPath) {
 		final var document = new Document();
 
 		log.trace("Make Lucene document on {}:{}:{}", realmName, storageName, hashPath);
 
 		document.add(new StringField(FILE_HASH_PATH, hashPath, YES));
+		document.add(new StringField(FILE_STORAGE, storageName, YES));
 		document.add(new TextField(FILE_NAME, file.getName(), YES));
-		document.add(new TextField(FILE_STORAGE, storageName, YES));
 
-		// TODO .toLowerCase() ?
-		// TODO without accents ?
-		// TODO get name without ext ?
-		// TODO split name by spaces ?
+		normalizeSearchString(getBaseName(file.getName()))
+				.forEach(baseName -> document.add(new TextField(FILE_BASE_NAME, baseName, NO)));
 
 		document.add(new IntField(FILE_DIRECTORY, file.isDirectory() ? 1 : 0, NO));
 		document.add(new IntField(FILE_HIDDEN, file.isHidden() ? 1 : 0, NO));
@@ -237,19 +266,21 @@ public class RealmIndexer { // TODO test
 		}
 	}
 
-	public List<FileSearchResult> openSearch(final String q,
-											 final Optional<String> limitToStorage,
-											 final int limit,
-											 final boolean fileMustExists) {
+	public Set<FileSearchResult> openSearch(final String q,
+											final Optional<String> limitToStorage,
+											final int limit,
+											final boolean fileMustExists) {
 		final var searcher = new IndexSearcher(reader);
-		final var result = new ArrayList<FileSearchResult>();
+		final var result = new TreeSet<FileSearchResult>();
+
+		// TODO BoostQuery ?
 
 		final Query directQuery;
 		if (q.contains("*") || q.contains("?")) {
 			/**
 			 * Contains wilcards
 			 */
-			directQuery = new WildcardQuery(new Term(FILE_NAME, q));
+			directQuery = new WildcardQuery(new Term(FILE_NAME, q)); // TODO + FILE_BASE_NAME
 		} else {
 			/**
 			 * Exact file name match
@@ -268,6 +299,8 @@ public class RealmIndexer { // TODO test
 			return result;
 		}
 
+		// TODO wiith normalizeSearchString ...
+
 		/**
 		 * Contains part of file name
 		 */
@@ -275,7 +308,7 @@ public class RealmIndexer { // TODO test
 				limitToStorage,
 				fileMustExists,
 				searcher,
-				new WildcardQuery(new Term(FILE_NAME, "*" + q + "*")),
+				new WildcardQuery(new Term(FILE_BASE_NAME, "*" + q + "*")),
 				limit - result.size());
 
 		result.addAll(searchResults1);
@@ -290,7 +323,7 @@ public class RealmIndexer { // TODO test
 			final var booleanBuilder = new BooleanQuery.Builder();
 
 			Stream.of(q.split(" ")).forEach(word -> {
-				booleanBuilder.add(new WildcardQuery(new Term(FILE_NAME, "*" + word + "*")), MUST);
+				booleanBuilder.add(new WildcardQuery(new Term(FILE_BASE_NAME, "*" + word + "*")), MUST);
 			});
 
 			final var searchResults2 = processSearch(
@@ -324,6 +357,7 @@ public class RealmIndexer { // TODO test
 	 */
 
 	/*
+	 * https://stackoverflow.com/questions/26498013/lucene-ranking-with-booleanquery-determining-quality-of-hits
 	https://stackoverflow.com/questions/2005084/how-to-specify-two-fields-in-lucene-queryparser
 
 	 * https://stackoverflow.com/questions/5484965/howto-perform-a-contains-search-rather-than-starts-with-using-lucene-net

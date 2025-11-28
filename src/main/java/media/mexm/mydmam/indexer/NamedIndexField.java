@@ -23,7 +23,6 @@ public class NamedIndexField {
 
 	public static final NamedIndexField FILE = new NamedIndexField("file");
 	public static final String FILE_STORAGE = new NamedIndexField(FILE, "storage").toString();
-	// public static final String FILE_PATH = new NamedIndexField(FILE, "path").toString();
 	public static final String FILE_DIRECTORY = new NamedIndexField(FILE, "directory").toString();
 	public static final String FILE_HIDDEN = new NamedIndexField(FILE, "hidden").toString();
 	public static final String FILE_LINK = new NamedIndexField(FILE, "link").toString();
@@ -31,8 +30,8 @@ public class NamedIndexField {
 	public static final String FILE_DATE = new NamedIndexField(FILE, "date").toString();
 	public static final String FILE_LENGTH = new NamedIndexField(FILE, "length").toString();
 	public static final String FILE_EXISTS = new NamedIndexField(FILE, "exists").toString();
-	// public static final String FILE_PARENT_PATH = new NamedIndexField(FILE, "parentPath").toString();
 	public static final String FILE_NAME = new NamedIndexField(FILE, "name").toString();
+	public static final String FILE_BASE_NAME = new NamedIndexField(FILE, "baseName").toString();
 	public static final String FILE_HASH_PATH = new NamedIndexField(FILE, "hashPath").toString();
 	public static final String FILE_PARENT_HASH_PATH = new NamedIndexField(FILE, "parentHashPath").toString();
 
