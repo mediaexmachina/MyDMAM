@@ -20,7 +20,11 @@ import static java.lang.Float.compare;
 
 import java.util.Objects;
 
-public record FileSearchResult(String hashPath, String storage, String name, float score) implements
+public record FileSearchResult(String hashPath,
+							   String storage,
+							   String name,
+							   float score,
+							   String explain) implements
 							  Comparable<FileSearchResult> {
 
 	// TODO add "search step"

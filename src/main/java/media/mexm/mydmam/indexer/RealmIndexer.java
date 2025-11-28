@@ -18,7 +18,7 @@ package media.mexm.mydmam.indexer;
 
 import static java.text.Normalizer.normalize;
 import static java.text.Normalizer.Form.NFKD;
-import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableSet;
 import static media.mexm.mydmam.App.REPLACE_NORMALIZED;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_BASE_NAME;
@@ -38,18 +38,16 @@ import static org.apache.commons.io.FilenameUtils.getBaseName;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 import static org.apache.lucene.search.BooleanClause.Occur.MUST;
-import static org.apache.lucene.search.Sort.RELEVANCE;
+import static org.apache.lucene.search.BooleanClause.Occur.SHOULD;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -62,7 +60,11 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -83,11 +85,14 @@ public class RealmIndexer { // TODO test
 	private final DirectoryReader reader;
 	private final StandardAnalyzer analyzer;
 	private final IndexWriterConfig indexWriterConfig;
+	private final boolean computeExplainOnResults;
 
 	public RealmIndexer(final String realmName,
-						final File workingDir) throws IOException {
+						final File workingDir,
+						final boolean computeExplainOnResults) throws IOException {
 		this.realmName = realmName;
 		indexDir = new File(workingDir, "index");
+		this.computeExplainOnResults = computeExplainOnResults;
 
 		forceMkdir(indexDir);
 		fsDirectoryIndex = FSDirectory.open(indexDir.toPath());
@@ -192,7 +197,7 @@ public class RealmIndexer { // TODO test
 					primaryDataStore.save(data);
 					updateIndex(data);
 				}
-				
+
 				public void updateIndex(MyDataObject object) {
 					// convertToLucene is more or less the code in the
 					// first snippet of your question
@@ -217,11 +222,11 @@ public class RealmIndexer { // TODO test
 
 	}
 
-	private List<FileSearchResult> processSearch(final Optional<String> limitToStorage,
-												 final boolean fileMustExists,
-												 final IndexSearcher searcher,
-												 final Query query,
-												 final int limit) {
+	private Set<FileSearchResult> processSearch(final Optional<String> limitToStorage,
+												final boolean fileMustExists,
+												final IndexSearcher searcher,
+												final Query query,
+												final int limit) {
 		try {
 			final var builder = new BooleanQuery.Builder();
 
@@ -237,11 +242,18 @@ public class RealmIndexer { // TODO test
 
 			builder.add(query, MUST);
 
-			final var sortedTopDoc = searcher.search(builder.build(), limit, RELEVANCE);
+			final var finalQuery = builder.build();
+			final var sortedTopDoc = searcher.search(finalQuery, limit);
 			final var storedFields = searcher.storedFields();
 
-			final var result = new ArrayList<FileSearchResult>(sortedTopDoc.scoreDocs.length);
+			// TODO scorer/highlighter/fragment
+			// QueryScorer scorer = new QueryScorer(finalQuery);
+			// Highlighter highlighter = new Highlighter(scorer);
+			// String fragment = highlighter.getBestFragment(analyzer, fieldName, myDoc.getField(fieldName));
 
+			final var result = new TreeSet<FileSearchResult>();
+
+			Explanation explain = null;
 			for (final var scoredDoc : sortedTopDoc.scoreDocs) {
 				final var doc = storedFields.document(scoredDoc.doc, Set.of(FILE_HASH_PATH, FILE_STORAGE, FILE_NAME));
 
@@ -249,21 +261,32 @@ public class RealmIndexer { // TODO test
 				final var storage = doc.getField(FILE_STORAGE);
 				final var name = doc.getField(FILE_NAME);
 
+				if (computeExplainOnResults) {
+					explain = searcher.explain(finalQuery, scoredDoc.doc);
+				}
+
 				if (hashPath != null && storage != null && name != null) {
 					result.add(new FileSearchResult(
 							hashPath.stringValue(),
 							storage.stringValue(),
 							name.stringValue(),
-							scoredDoc.score));
+							scoredDoc.score,
+							Optional.ofNullable(explain).map(Explanation::toString).orElse(null)));
 				} else {
 					log.warn("Nulls in document: hashPath={} storage={} name={}", hashPath, storage, name);
 				}
 			}
 
-			return unmodifiableList(result);
+			return unmodifiableSet(result);
 		} catch (final IOException e) {
 			throw new UncheckedIOException("Can't read from Lucene index on " + indexDir.getAbsolutePath(), e);
 		}
+	}
+
+	private static void addShouldBooleanBoostedQuery(final BooleanQuery.Builder builder,
+													 final Query query,
+													 final float boost) {
+		builder.add(new BooleanClause(new BoostQuery(query, boost), SHOULD));
 	}
 
 	public Set<FileSearchResult> openSearch(final String q,
@@ -271,77 +294,40 @@ public class RealmIndexer { // TODO test
 											final int limit,
 											final boolean fileMustExists) {
 		final var searcher = new IndexSearcher(reader);
-		final var result = new TreeSet<FileSearchResult>();
+		final var mainQuery = new BooleanQuery.Builder();
 
-		// TODO BoostQuery ?
-
-		final Query directQuery;
 		if (q.contains("*") || q.contains("?")) {
 			/**
 			 * Contains wilcards
 			 */
-			directQuery = new WildcardQuery(new Term(FILE_NAME, q)); // TODO + FILE_BASE_NAME
+			addShouldBooleanBoostedQuery(mainQuery, new WildcardQuery(new Term(FILE_NAME, q)), 10f);
+			addShouldBooleanBoostedQuery(mainQuery, new WildcardQuery(new Term(FILE_BASE_NAME, q)), 8f);
 		} else {
 			/**
 			 * Exact file name match
 			 */
-			directQuery = new TermQuery(new Term(FILE_NAME, q));
+			addShouldBooleanBoostedQuery(mainQuery, new TermQuery(new Term(FILE_NAME, q)), 10f);
+			addShouldBooleanBoostedQuery(mainQuery, new TermQuery(new Term(FILE_BASE_NAME, q)), 8f);
 		}
 
-		final var searchResults0 = processSearch(
+		addShouldBooleanBoostedQuery(mainQuery, new FuzzyQuery(new Term(FILE_NAME, q)), 0.5f);
+
+		final var normalizeQ = normalizeSearchString(q);
+
+		normalizeQ.forEach(word -> {
+			addShouldBooleanBoostedQuery(mainQuery, new TermQuery(new Term(FILE_NAME, word)), 5f);
+			addShouldBooleanBoostedQuery(mainQuery, new TermQuery(new Term(FILE_BASE_NAME, word)), 3f);
+			addShouldBooleanBoostedQuery(mainQuery, new WildcardQuery(new Term(FILE_BASE_NAME, "*" + word + "*")), 1f);
+
+			addShouldBooleanBoostedQuery(mainQuery, new FuzzyQuery(new Term(FILE_BASE_NAME, word)), 0.1f);
+		});
+
+		return processSearch(
 				limitToStorage,
 				fileMustExists,
 				searcher,
-				directQuery,
+				mainQuery.build(),
 				limit);
-		result.addAll(searchResults0);
-		if (limit - result.size() <= 0) {
-			return result;
-		}
-
-		// TODO wiith normalizeSearchString ...
-
-		/**
-		 * Contains part of file name
-		 */
-		final var searchResults1 = processSearch(
-				limitToStorage,
-				fileMustExists,
-				searcher,
-				new WildcardQuery(new Term(FILE_BASE_NAME, "*" + q + "*")),
-				limit - result.size());
-
-		result.addAll(searchResults1);
-		if (limit - result.size() <= 0) {
-			return result;
-		}
-
-		if (q.contains(" ")) {
-			/**
-			 * Multiple parts of file name
-			 */
-			final var booleanBuilder = new BooleanQuery.Builder();
-
-			Stream.of(q.split(" ")).forEach(word -> {
-				booleanBuilder.add(new WildcardQuery(new Term(FILE_BASE_NAME, "*" + word + "*")), MUST);
-			});
-
-			final var searchResults2 = processSearch(
-					limitToStorage,
-					fileMustExists,
-					searcher,
-					booleanBuilder.build(),
-					limit - result.size());
-
-			result.addAll(searchResults2);
-			if (limit - result.size() <= 0) {
-				return result;
-			}
-		}
-
-		// TODO add fuzzy
-
-		return result;
 	}
 	/*
 	 * <ul>
@@ -359,7 +345,7 @@ public class RealmIndexer { // TODO test
 	/*
 	 * https://stackoverflow.com/questions/26498013/lucene-ranking-with-booleanquery-determining-quality-of-hits
 	https://stackoverflow.com/questions/2005084/how-to-specify-two-fields-in-lucene-queryparser
-
+	
 	 * https://stackoverflow.com/questions/5484965/howto-perform-a-contains-search-rather-than-starts-with-using-lucene-net
 	 *
 	 * parser.setFuzzyMinSim(0.6f);
@@ -369,24 +355,24 @@ public class RealmIndexer { // TODO test
 	protected Query intRangeQuery(String field,
 	Integer min, Integer max,
 	boolean includeBoundaries){
-	
+
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.intToPrefixCoded(min.intValue()),
 	NumericUtils.intToPrefixCoded(max.intValue()),
 	includeBoundaries, includeBoundaries);
-	
+
 	return rangeQuery;
 	}
-	
+
 	protected Query longRangeQuery(String field,
 	Long min, Long max,
 	boolean includeBoundaries){
-	
+
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.longToPrefixCoded(min.longValue()),
 	NumericUtils.longToPrefixCoded(max.longValue()),
 	includeBoundaries, includeBoundaries);
-	
+
 	return rangeQuery;
 	}
 	* */
