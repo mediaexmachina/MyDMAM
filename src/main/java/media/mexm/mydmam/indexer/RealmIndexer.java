@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -190,7 +191,7 @@ public class RealmIndexer { // TODO test
 					primaryDataStore.save(data);
 					updateIndex(data);
 				}
-				
+
 				public void updateIndex(MyDataObject object) {
 					// convertToLucene is more or less the code in the
 					// first snippet of your question
@@ -282,6 +283,8 @@ public class RealmIndexer { // TODO test
 		builder.add(new BooleanClause(new BoostQuery(query, boost), SHOULD));
 	}
 
+	private static final Function<Query, BooleanClause> toBooleanMustClause = query -> new BooleanClause(query, MUST);
+
 	public Set<FileSearchResult> openSearch(final String q,
 											final Optional<String> limitToStorage,
 											final int limit,
@@ -306,14 +309,41 @@ public class RealmIndexer { // TODO test
 
 		final var normalizeQ = normalizeSearchString(q);
 
-		// TODO sub boolean WITH normalizeQ
-		normalizeQ.forEach(word -> {
-			addShouldBooleanBoostedQuery(mainQuery, new TermQuery(new Term(FILE_NAME, word)), 5f);
-			addShouldBooleanBoostedQuery(mainQuery, new TermQuery(new Term(FILE_BASE_NAME, word)), 3f);
-			addShouldBooleanBoostedQuery(mainQuery, new WildcardQuery(new Term(FILE_BASE_NAME, "*" + word + "*")), 1f);
+		addShouldBooleanBoostedQuery(mainQuery,
+				new BooleanQuery.Builder()
+						.add(normalizeQ.stream()
+								.map(word -> new Term(FILE_NAME, word))
+								.map(TermQuery::new)
+								.map(toBooleanMustClause)
+								.toList())
+						.build(), 5f);
 
-			addShouldBooleanBoostedQuery(mainQuery, new FuzzyQuery(new Term(FILE_BASE_NAME, word)), 0.1f);
-		});
+		addShouldBooleanBoostedQuery(mainQuery,
+				new BooleanQuery.Builder()
+						.add(normalizeQ.stream()
+								.map(word -> new Term(FILE_BASE_NAME, word))
+								.map(TermQuery::new)
+								.map(toBooleanMustClause)
+								.toList())
+						.build(), 3f);
+
+		addShouldBooleanBoostedQuery(mainQuery,
+				new BooleanQuery.Builder()
+						.add(normalizeQ.stream()
+								.map(word -> new Term(FILE_BASE_NAME, "*" + word + "*"))
+								.map(WildcardQuery::new)
+								.map(toBooleanMustClause)
+								.toList())
+						.build(), 1f);
+
+		addShouldBooleanBoostedQuery(mainQuery,
+				new BooleanQuery.Builder()
+						.add(normalizeQ.stream()
+								.map(word -> new Term(FILE_BASE_NAME, word))
+								.map(FuzzyQuery::new)
+								.map(query -> new BooleanClause(query, MUST))
+								.toList())
+						.build(), 0.1f);
 
 		return processSearch(
 				limitToStorage,
@@ -337,7 +367,7 @@ public class RealmIndexer { // TODO test
 	/*
 	 * https://stackoverflow.com/questions/26498013/lucene-ranking-with-booleanquery-determining-quality-of-hits
 	https://stackoverflow.com/questions/2005084/how-to-specify-two-fields-in-lucene-queryparser
-
+	
 	 * https://stackoverflow.com/questions/5484965/howto-perform-a-contains-search-rather-than-starts-with-using-lucene-net
 	 *
 	 * parser.setFuzzyMinSim(0.6f);
@@ -347,24 +377,24 @@ public class RealmIndexer { // TODO test
 	protected Query intRangeQuery(String field,
 	Integer min, Integer max,
 	boolean includeBoundaries){
-	
+
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.intToPrefixCoded(min.intValue()),
 	NumericUtils.intToPrefixCoded(max.intValue()),
 	includeBoundaries, includeBoundaries);
-	
+
 	return rangeQuery;
 	}
-	
+
 	protected Query longRangeQuery(String field,
 	Long min, Long max,
 	boolean includeBoundaries){
-	
+
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.longToPrefixCoded(min.longValue()),
 	NumericUtils.longToPrefixCoded(max.longValue()),
 	includeBoundaries, includeBoundaries);
-	
+
 	return rangeQuery;
 	}
 	* */

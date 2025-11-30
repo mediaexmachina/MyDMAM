@@ -160,6 +160,8 @@ class RealmIndexerTest {
 		results = ri.openSearch("impossible to found this!", empty(), 10, false);
 		assertThat(results).isEmpty();
 
+		results = ri.openSearch("basename", empty(), 10, false);
+
 		// TODO test by base file name
 		// TODO test by part + (s)
 		// TODO test by wilcards
