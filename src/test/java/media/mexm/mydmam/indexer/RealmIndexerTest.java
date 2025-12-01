@@ -22,6 +22,7 @@ import static media.mexm.mydmam.indexer.RealmIndexer.normalizeSearchString;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.forceMkdir;
 import static org.apache.commons.io.FileUtils.getTempDirectory;
+import static org.apache.commons.io.FilenameUtils.getBaseName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.clearInvocations;
@@ -84,7 +85,7 @@ class RealmIndexerTest {
 
 	@BeforeEach
 	void init() throws Exception {
-		fileName = faker.numerify("baseName#####") + "." + faker.numerify("extention#####");
+		fileName = faker.numerify("baseName#####ok42") + "." + faker.numerify("extention#####");
 		parentPath = "/" + faker.numerify("root#####") + "/" + faker.numerify("parent#####");
 		path = parentPath + "/" + fileName;
 
@@ -116,8 +117,8 @@ class RealmIndexerTest {
 	@Test
 	void testNormalizeSearchString() {
 		final var result = normalizeSearchString(" THIS IS_A_$tést\\WITH * NUM8ERS. ");
-		assertEquals(6, result.size());
-		assertEquals("this is a test with num8ers", result.stream().collect(Collectors.joining(" ")));
+		assertEquals(8, result.size());
+		assertEquals("this is a test with num 8 ers", result.stream().collect(Collectors.joining(" ")));
 	}
 
 	CachedFileAttributes makeFalseFile() {
@@ -147,26 +148,45 @@ class RealmIndexerTest {
 		final var scanResult = new WatchedFiles(Set.of(makeFalseFile(), file, makeFalseFile()), Set.of(), Set.of(), 0);
 		ri.update(scanResult, storageName);
 
-		var results = ri.openSearch(fileName, empty(), 10, false);
+		var results = ri.openSearch(getBaseName(fileName), empty(), 10, false);
 		assertThat(results).size().isEqualTo(1);
-		final var result0 = results.stream().findFirst().get();
+		assertThat(results.stream().findFirst().get().hashPath())
+				.isEqualTo(fileHashPath);
 
+		final var result0 = results.stream().findFirst().get();
 		assertThat(result0.hashPath()).isEqualTo(fileHashPath);
 		assertThat(result0.name()).isEqualTo(fileName);
 		assertThat(result0.score()).isGreaterThan(0f);
 		assertThat(result0.storage()).isEqualTo(storageName);
 		assertThat(result0.explain()).isNotEmpty();
 
+		results = ri.openSearch(fileName, empty(), 10, false);
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.stream().findFirst().get().hashPath())
+				.isEqualTo(fileHashPath);
+
 		results = ri.openSearch("impossible to found this!", empty(), 10, false);
 		assertThat(results).isEmpty();
 
 		results = ri.openSearch("basename", empty(), 10, false);
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.stream().findFirst().get().hashPath())
+				.isEqualTo(fileHashPath);
 
-		// TODO test by base file name
-		// TODO test by part + (s)
-		// TODO test by wilcards
-		// TODO test by fuzzy
-		// TODO test by accents
+		results = ri.openSearch("basenamf", empty(), 10, false);
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.stream().findFirst().get().hashPath())
+				.isEqualTo(fileHashPath);
+
+		results = ri.openSearch("basenamé", empty(), 10, false);
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.stream().findFirst().get().hashPath())
+				.isEqualTo(fileHashPath);
+
+		results = ri.openSearch("42 basename ok", empty(), 10, false);
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.stream().findFirst().get().hashPath())
+				.isEqualTo(fileHashPath);
 
 		verify(file, atLeastOnce()).getPath();
 		clearInvocations(file);

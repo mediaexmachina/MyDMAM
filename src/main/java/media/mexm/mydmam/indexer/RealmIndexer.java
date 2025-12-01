@@ -49,13 +49,13 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -140,7 +140,17 @@ public class RealmIndexer { // TODO test
 			return List.of();
 		}
 
-		return List.of(cleaned.split(" "));
+		return Stream.of(cleaned.split(" "))
+				.flatMap(word -> {
+					if (Pattern.compile(".*\\d.*")
+							.matcher(word)
+							.matches()) {
+						return Stream.of(word.split("(?<=\\d)(?=\\D)|(?=\\d)(?<=\\D)"));
+					} else {
+						return Stream.of(word);
+					}
+				})
+				.toList();
 	}
 
 	private Document toDocument(final FileAttributesReference file, final String storageName, final String hashPath) {
@@ -150,10 +160,10 @@ public class RealmIndexer { // TODO test
 
 		document.add(new StringField(FILE_HASH_PATH, hashPath, YES));
 		document.add(new StringField(FILE_STORAGE, storageName, YES));
-		document.add(new TextField(FILE_NAME, file.getName(), YES));
+		document.add(new StringField(FILE_NAME, file.getName(), YES));
 
 		normalizeSearchString(getBaseName(file.getName()))
-				.forEach(baseName -> document.add(new TextField(FILE_BASE_NAME, baseName, NO)));
+				.forEach(baseName -> document.add(new StringField(FILE_BASE_NAME, baseName, NO)));
 
 		document.add(new IntField(FILE_DIRECTORY, file.isDirectory() ? 1 : 0, NO));
 		document.add(new IntField(FILE_HIDDEN, file.isHidden() ? 1 : 0, NO));
@@ -330,18 +340,17 @@ public class RealmIndexer { // TODO test
 		addShouldBooleanBoostedQuery(mainQuery,
 				new BooleanQuery.Builder()
 						.add(normalizeQ.stream()
-								.map(word -> new Term(FILE_BASE_NAME, "*" + word + "*"))
-								.map(WildcardQuery::new)
+								.map(word -> new BooleanQuery.Builder()
+										.add(new BooleanClause(
+												new FuzzyQuery(
+														new Term(FILE_BASE_NAME, word)),
+												SHOULD))
+										.add(new BooleanClause(
+												new WildcardQuery(
+														new Term(FILE_BASE_NAME, "*" + word + "*")),
+												SHOULD))
+										.build())
 								.map(toBooleanMustClause)
-								.toList())
-						.build(), 1f);
-
-		addShouldBooleanBoostedQuery(mainQuery,
-				new BooleanQuery.Builder()
-						.add(normalizeQ.stream()
-								.map(word -> new Term(FILE_BASE_NAME, word))
-								.map(FuzzyQuery::new)
-								.map(query -> new BooleanClause(query, MUST))
 								.toList())
 						.build(), 0.1f);
 
