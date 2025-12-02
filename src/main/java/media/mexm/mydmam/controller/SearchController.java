@@ -75,7 +75,7 @@ public class SearchController {
 		}
 
 		final var maxAllowedEntries = min(searchResultMaxSize, limit == 0 ? searchResultMaxSize : limit);
-		final var searchResult = oRealmIndexer.get().openSearch(q.trim(), Optional.empty(), maxAllowedEntries, true);
+		final var searchResult = oRealmIndexer.get().openSearch(q.trim(), Optional.empty(), maxAllowedEntries);
 		// TODO return with dedictated DTO
 
 		final var list = fileRepository.getAllRealms().stream().sorted().toList(); // TODO nope

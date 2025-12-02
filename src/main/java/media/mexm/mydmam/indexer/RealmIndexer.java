@@ -18,19 +18,18 @@ package media.mexm.mydmam.indexer;
 
 import static java.text.Normalizer.normalize;
 import static java.text.Normalizer.Form.NFKD;
-import static java.util.Collections.unmodifiableSet;
 import static media.mexm.mydmam.App.REPLACE_NORMALIZED;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_BASE_NAME;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DATE;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DIRECTORY;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_EXISTS;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_HASH_PATH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_HIDDEN;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_LENGTH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_LINK;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_NAME;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_HASH_PATH;
+import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_PATH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_SPECIAL;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_STORAGE;
 import static org.apache.commons.io.FileUtils.forceMkdir;
@@ -43,10 +42,10 @@ import static org.apache.lucene.search.BooleanClause.Occur.SHOULD;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -59,7 +58,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -78,13 +76,15 @@ import tv.hd3g.jobkit.watchfolder.WatchedFiles;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @Slf4j
-public class RealmIndexer { // TODO test
+public class RealmIndexer {
+
+	private static final Pattern REMOVE_NON_VALID_CHARS = Pattern.compile("[^a-z0-9]+"); // NOSONAR S5869
+	private static final Pattern DETECT_NUMBERS = Pattern.compile(".*\\d.*");
 
 	private final String realmName;
 	private final File indexDir;
 	private final Directory fsDirectoryIndex;
 	private final StandardAnalyzer analyzer;
-	private final IndexWriterConfig indexWriterConfig;
 	private final boolean computeExplainOnResults;
 
 	public RealmIndexer(final String realmName,
@@ -97,7 +97,6 @@ public class RealmIndexer { // TODO test
 		forceMkdir(indexDir);
 		fsDirectoryIndex = FSDirectory.open(indexDir.toPath());
 		analyzer = new StandardAnalyzer();
-		indexWriterConfig = new IndexWriterConfig(analyzer);
 	}
 
 	public synchronized void close() {
@@ -111,6 +110,7 @@ public class RealmIndexer { // TODO test
 	private synchronized void write(final LuceneWriterConsumer cWriter) {
 		try {
 			log.debug("Open Lucene index on \"{}\" for writing", indexDir);
+			final var indexWriterConfig = new IndexWriterConfig(analyzer);
 			final var writer = new IndexWriter(fsDirectoryIndex, indexWriterConfig);
 			cWriter.accept(writer);
 			writer.close();
@@ -118,8 +118,6 @@ public class RealmIndexer { // TODO test
 			throw new UncheckedIOException("Can't write to Lucene index on " + indexDir.getAbsolutePath(), e);
 		}
 	}
-
-	private static final Pattern REMOVE_NON_VALID_CHARS = Pattern.compile("[^a-z0-9]+"); // NOSONAR S5869
 
 	/**
 	 * Not compatible with other chars than western chars.
@@ -142,9 +140,7 @@ public class RealmIndexer { // TODO test
 
 		return Stream.of(cleaned.split(" "))
 				.flatMap(word -> {
-					if (Pattern.compile(".*\\d.*")
-							.matcher(word)
-							.matches()) {
+					if (DETECT_NUMBERS.matcher(word).matches()) {
 						return Stream.of(word.split("(?<=\\d)(?=\\D)|(?=\\d)(?<=\\D)"));
 					} else {
 						return Stream.of(word);
@@ -155,12 +151,12 @@ public class RealmIndexer { // TODO test
 
 	private Document toDocument(final FileAttributesReference file, final String storageName, final String hashPath) {
 		final var document = new Document();
-
 		log.trace("Make Lucene document on {}:{}:{}", realmName, storageName, hashPath);
 
 		document.add(new StringField(FILE_HASH_PATH, hashPath, YES));
 		document.add(new StringField(FILE_STORAGE, storageName, YES));
 		document.add(new StringField(FILE_NAME, file.getName(), YES));
+		document.add(new StringField(FILE_PARENT_PATH, file.getParentPath(), YES));
 
 		normalizeSearchString(getBaseName(file.getName()))
 				.forEach(baseName -> document.add(new StringField(FILE_BASE_NAME, baseName, NO)));
@@ -171,7 +167,6 @@ public class RealmIndexer { // TODO test
 		document.add(new IntField(FILE_SPECIAL, file.isSpecial() ? 1 : 0, NO));
 		document.add(new LongField(FILE_DATE, file.lastModified(), NO));
 		document.add(new LongField(FILE_LENGTH, file.length(), NO));
-		document.add(new IntField(FILE_EXISTS, file.exists() ? 1 : 0, NO));
 		document.add(new StringField(FILE_PARENT_HASH_PATH,
 				hashPath(realmName, storageName, file.getParentPath()), NO));
 		return document;
@@ -192,28 +187,7 @@ public class RealmIndexer { // TODO test
 
 			for (final var file : scanResult.updated()) {
 				final var hashPath = hashPath(realmName, storageName, file.getPath());
-				final Iterable<? extends IndexableField> doc = toDocument(file, storageName, hashPath);
-				// TODO maybe a real update ?
-				/*
-				public void updateField(String docId, int newFieldvalue) {
-					MyDataObject data = primaryDataStore.fetch(docId);
-					data.setFieldValue(newFieldValue);
-					primaryDataStore.save(data);
-					updateIndex(data);
-				}
-
-				public void updateIndex(MyDataObject object) {
-					// convertToLucene is more or less the code in the
-					// first snippet of your question
-					Document d = convertToLucene(object);
-					// IndexWriter should be created once
-					// IndexWriter.updateDocument will internally delete and index
-					// the document
-					this.writer.updateDocument(new Term("id", object.getId()), d);
-					// potentially call writer.commit()
-				}
-				* */
-				writer.updateDocument(new Term(FILE_HASH_PATH, hashPath), doc);
+				writer.updateDocument(new Term(FILE_HASH_PATH, hashPath), toDocument(file, storageName, hashPath));
 			}
 
 			final var terms = scanResult.losted().stream()
@@ -226,27 +200,21 @@ public class RealmIndexer { // TODO test
 
 	}
 
-	private Set<FileSearchResult> processSearch(final Optional<String> limitToStorage,
-												final boolean fileMustExists,
-												final Query query,
-												final int limit) {
+	private List<FileSearchResult> processSearch(final Optional<FileSearchConstraints> oFileSearchConstraints,
+												 final Query query,
+												 final int limit) {
 		try (var reader = DirectoryReader.open(fsDirectoryIndex)) {
 			final var builder = new BooleanQuery.Builder();
 
-			if (fileMustExists) {
-				final var exists = new TermQuery(new Term(FILE_EXISTS, "1"));
-				builder.add(exists, MUST);
-			}
-
-			limitToStorage.ifPresent(storage -> {
-				final var onStorage = new TermQuery(new Term(FILE_STORAGE, storage));
-				builder.add(onStorage, MUST);
-			});
+			oFileSearchConstraints.ifPresent(fileSearchConstraints -> fileSearchConstraints.apply(builder));
 
 			builder.add(query, MUST);
 
 			final var finalQuery = builder.build();
 			final var searcher = new IndexSearcher(reader);
+
+			final var count = searcher.count(finalQuery);
+			// TODO manage count
 			final var sortedTopDoc = searcher.search(finalQuery, limit);
 			final var storedFields = searcher.storedFields();
 
@@ -255,15 +223,17 @@ public class RealmIndexer { // TODO test
 			// Highlighter highlighter = new Highlighter(scorer);
 			// String fragment = highlighter.getBestFragment(analyzer, fieldName, myDoc.getField(fieldName));
 
-			final var result = new TreeSet<FileSearchResult>();
+			final var result = new ArrayList<FileSearchResult>();
 
 			Explanation explain = null;
 			for (final var scoredDoc : sortedTopDoc.scoreDocs) {
-				final var doc = storedFields.document(scoredDoc.doc, Set.of(FILE_HASH_PATH, FILE_STORAGE, FILE_NAME));
+				final var doc = storedFields.document(scoredDoc.doc,
+						Set.of(FILE_HASH_PATH, FILE_STORAGE, FILE_NAME, FILE_PARENT_PATH));
 
 				final var hashPath = doc.getField(FILE_HASH_PATH);
 				final var storage = doc.getField(FILE_STORAGE);
 				final var name = doc.getField(FILE_NAME);
+				final var parentPath = doc.getField(FILE_PARENT_PATH);
 
 				if (computeExplainOnResults) {
 					explain = searcher.explain(finalQuery, scoredDoc.doc);
@@ -274,6 +244,7 @@ public class RealmIndexer { // TODO test
 							hashPath.stringValue(),
 							storage.stringValue(),
 							name.stringValue(),
+							parentPath.stringValue(),
 							scoredDoc.score,
 							Optional.ofNullable(explain).map(Explanation::toString).orElse(null)));
 				} else {
@@ -281,7 +252,7 @@ public class RealmIndexer { // TODO test
 				}
 			}
 
-			return unmodifiableSet(result);
+			return result.stream().sorted().toList();
 		} catch (final IOException e) {
 			throw new UncheckedIOException("Can't read from Lucene index on " + indexDir.getAbsolutePath(), e);
 		}
@@ -295,10 +266,9 @@ public class RealmIndexer { // TODO test
 
 	private static final Function<Query, BooleanClause> toBooleanMustClause = query -> new BooleanClause(query, MUST);
 
-	public Set<FileSearchResult> openSearch(final String q,
-											final Optional<String> limitToStorage,
-											final int limit,
-											final boolean fileMustExists) {
+	public List<FileSearchResult> openSearch(final String q,
+											 final Optional<FileSearchConstraints> oConstraints,
+											 final int limit) {
 		final var mainQuery = new BooleanQuery.Builder();
 
 		if (q.contains("*") || q.contains("?")) {
@@ -355,8 +325,7 @@ public class RealmIndexer { // TODO test
 						.build(), 0.1f);
 
 		return processSearch(
-				limitToStorage,
-				fileMustExists,
+				oConstraints,
 				mainQuery.build(),
 				limit);
 	}
@@ -376,7 +345,7 @@ public class RealmIndexer { // TODO test
 	/*
 	 * https://stackoverflow.com/questions/26498013/lucene-ranking-with-booleanquery-determining-quality-of-hits
 	https://stackoverflow.com/questions/2005084/how-to-specify-two-fields-in-lucene-queryparser
-	
+
 	 * https://stackoverflow.com/questions/5484965/howto-perform-a-contains-search-rather-than-starts-with-using-lucene-net
 	 *
 	 * parser.setFuzzyMinSim(0.6f);
@@ -386,24 +355,24 @@ public class RealmIndexer { // TODO test
 	protected Query intRangeQuery(String field,
 	Integer min, Integer max,
 	boolean includeBoundaries){
-
+	
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.intToPrefixCoded(min.intValue()),
 	NumericUtils.intToPrefixCoded(max.intValue()),
 	includeBoundaries, includeBoundaries);
-
+	
 	return rangeQuery;
 	}
-
+	
 	protected Query longRangeQuery(String field,
 	Long min, Long max,
 	boolean includeBoundaries){
-
+	
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.longToPrefixCoded(min.longValue()),
 	NumericUtils.longToPrefixCoded(max.longValue()),
 	includeBoundaries, includeBoundaries);
-
+	
 	return rangeQuery;
 	}
 	* */

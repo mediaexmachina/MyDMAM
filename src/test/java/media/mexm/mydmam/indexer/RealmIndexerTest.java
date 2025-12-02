@@ -17,8 +17,11 @@
 package media.mexm.mydmam.indexer;
 
 import static java.util.Optional.empty;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static media.mexm.mydmam.indexer.RealmIndexer.normalizeSearchString;
+import static media.mexm.mydmam.indexer.SearchConstraintCondition.IGNORE;
+import static media.mexm.mydmam.indexer.SearchConstraintRange.NO_RANGE;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.forceMkdir;
 import static org.apache.commons.io.FileUtils.getTempDirectory;
@@ -31,6 +34,8 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 
 import java.io.File;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -148,52 +153,112 @@ class RealmIndexerTest {
 		final var scanResult = new WatchedFiles(Set.of(makeFalseFile(), file, makeFalseFile()), Set.of(), Set.of(), 0);
 		ri.update(scanResult, storageName);
 
-		var results = ri.openSearch(getBaseName(fileName), empty(), 10, false);
+		var results = ri.openSearch(getBaseName(fileName), empty(), 10);
 		assertThat(results).size().isEqualTo(1);
-		assertThat(results.stream().findFirst().get().hashPath())
+		assertThat(results.get(0).hashPath())
 				.isEqualTo(fileHashPath);
 
-		final var result0 = results.stream().findFirst().get();
+		final var result0 = results.get(0);
 		assertThat(result0.hashPath()).isEqualTo(fileHashPath);
 		assertThat(result0.name()).isEqualTo(fileName);
 		assertThat(result0.score()).isGreaterThan(0f);
 		assertThat(result0.storage()).isEqualTo(storageName);
 		assertThat(result0.explain()).isNotEmpty();
 
-		results = ri.openSearch(fileName, empty(), 10, false);
+		results = ri.openSearch(fileName, empty(), 10);
 		assertThat(results).size().isEqualTo(1);
-		assertThat(results.stream().findFirst().get().hashPath())
+		assertThat(results.get(0).hashPath())
 				.isEqualTo(fileHashPath);
 
-		results = ri.openSearch("impossible to found this!", empty(), 10, false);
+		results = ri.openSearch("impossible to found this!", empty(), 10);
 		assertThat(results).isEmpty();
 
-		results = ri.openSearch("basename", empty(), 10, false);
+		results = ri.openSearch("basename", empty(), 10);
 		assertThat(results).size().isEqualTo(1);
-		assertThat(results.stream().findFirst().get().hashPath())
+		assertThat(results.get(0).hashPath())
 				.isEqualTo(fileHashPath);
 
-		results = ri.openSearch("basenamf", empty(), 10, false);
+		results = ri.openSearch("basenamf", empty(), 10);
 		assertThat(results).size().isEqualTo(1);
-		assertThat(results.stream().findFirst().get().hashPath())
+		assertThat(results.get(0).hashPath())
 				.isEqualTo(fileHashPath);
 
-		results = ri.openSearch("basenamé", empty(), 10, false);
+		results = ri.openSearch("basenamé", empty(), 10);
 		assertThat(results).size().isEqualTo(1);
-		assertThat(results.stream().findFirst().get().hashPath())
+		assertThat(results.get(0).hashPath())
 				.isEqualTo(fileHashPath);
 
-		results = ri.openSearch("42 basename ok", empty(), 10, false);
+		results = ri.openSearch("42 basename ok", empty(), 10);
 		assertThat(results).size().isEqualTo(1);
-		assertThat(results.stream().findFirst().get().hashPath())
+		assertThat(results.get(0).hashPath())
 				.isEqualTo(fileHashPath);
 
 		verify(file, atLeastOnce()).getPath();
 		clearInvocations(file);
 	}
 
-	// TODO test openSearch exists
-	// TODO test openSearch limitToStorage
-	// TODO test files updated + removed && search before / after
+	FileSearchConstraints constraint;
+
+	@Test
+	void testOpenSearch_constraint_storage() {
+		final var watchedFiles = new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0);
+
+		when(file.getName()).thenReturn("fromstorage1");
+		ri.update(watchedFiles, "storage1");
+
+		when(file.getName()).thenReturn("fromstorage2");
+		ri.update(watchedFiles, "storage2");
+
+		var results = ri.openSearch("fromsto", empty(), 10);
+
+		assertThat(results).size().isEqualTo(2);
+		assertThat(results.stream().map(FileSearchResult::name).collect(toUnmodifiableSet()))
+				.contains("fromstorage1", "fromstorage2");
+		assertThat(results.stream().map(FileSearchResult::storage).collect(toUnmodifiableSet()))
+				.contains("storage1", "storage2");
+
+		for (var pos = 1; pos < 3; pos++) {
+			constraint = new FileSearchConstraints(
+					IGNORE, IGNORE, IGNORE, IGNORE, NO_RANGE, NO_RANGE, List.of("storage" + pos), null, null);
+
+			results = ri.openSearch("fromsto", Optional.ofNullable(constraint), 10);
+			assertThat(results).size().isEqualTo(1);
+			assertThat(results.get(0).name()).isEqualTo("fromstorage" + pos);
+		}
+
+		verify(file, atLeastOnce()).getPath();
+		clearInvocations(file);
+	}
+
+	@Test
+	void testFile_add_delete_update() {
+		final var scanResultAdd = new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0);
+		ri.update(scanResultAdd, storageName);
+
+		var results = ri.openSearch(getBaseName(fileName), empty(), 10);
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.get(0).hashPath()).isEqualTo(fileHashPath);
+
+		final var scanResultLosted = new WatchedFiles(Set.of(), Set.of(file), Set.of(), 0);
+		ri.update(scanResultLosted, storageName);
+		results = ri.openSearch(getBaseName(fileName), empty(), 10);
+		assertThat(results).isEmpty();
+
+		ri.update(scanResultAdd, storageName);
+		results = ri.openSearch(getBaseName(fileName), empty(), 10);
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.get(0).hashPath()).isEqualTo(fileHashPath);
+
+		final var scanResultUpdated = new WatchedFiles(Set.of(), Set.of(), Set.of(file), 0);
+		ri.update(scanResultUpdated, storageName);
+		results = ri.openSearch(getBaseName(fileName), empty(), 10);
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.get(0).hashPath()).isEqualTo(fileHashPath);
+
+		verify(file, atLeastOnce()).getPath();
+		clearInvocations(file);
+	}
+
+	// TODO test constrains
 
 }

@@ -29,10 +29,10 @@ public class NamedIndexField {
 	public static final String FILE_SPECIAL = new NamedIndexField(FILE, "special").toString();
 	public static final String FILE_DATE = new NamedIndexField(FILE, "date").toString();
 	public static final String FILE_LENGTH = new NamedIndexField(FILE, "length").toString();
-	public static final String FILE_EXISTS = new NamedIndexField(FILE, "exists").toString();
 	public static final String FILE_NAME = new NamedIndexField(FILE, "name").toString();
 	public static final String FILE_BASE_NAME = new NamedIndexField(FILE, "baseName").toString();
 	public static final String FILE_HASH_PATH = new NamedIndexField(FILE, "hashPath").toString();
+	public static final String FILE_PARENT_PATH = new NamedIndexField(FILE, "parentPath").toString();
 	public static final String FILE_PARENT_HASH_PATH = new NamedIndexField(FILE, "parentHashPath").toString();
 
 	private final Optional<NamedIndexField> oParent;

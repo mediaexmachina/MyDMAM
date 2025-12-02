@@ -18,36 +18,13 @@ package media.mexm.mydmam.indexer;
 
 import static java.lang.Float.compare;
 
-import java.util.Objects;
-
 public record FileSearchResult(String hashPath,
 							   String storage,
 							   String name,
+							   String parentPath,
 							   float score,
 							   String explain) implements
 							  Comparable<FileSearchResult> {
-
-	// TODO add "search step"
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(hashPath);
-	}
-
-	@Override
-	public boolean equals(final Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		final var other = (FileSearchResult) obj;
-		return Objects.equals(hashPath, other.hashPath);
-	}
 
 	@Override
 	public int compareTo(final FileSearchResult o) {

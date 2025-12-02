@@ -16,10 +16,12 @@
  */
 package media.mexm.mydmam.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.entity.FileEntity;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
@@ -27,16 +29,19 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 @Service
 public class MediaAssetServiceImpl implements MediaAssetService {
 
+	@Autowired
+	Indexer indexer;
+
 	@Override
 	public MediaAsset getFromWatchfolder(final String realmName,
 										 final String storageName,
 										 final FileAttributesReference file) {
-		return new MediaAsset(this, realmName, storageName, file.getPath());
+		return new MediaAsset(this, realmName, storageName, file.getPath());// TODO NOPE *this*
 	}
 
 	@Override
 	public MediaAsset getFromFileEntry(final FileEntity file) {
-		return new MediaAsset(this, file.getRealm(), file.getStorage(), file.getPath());
+		return new MediaAsset(this, file.getRealm(), file.getStorage(), file.getPath());// TODO NOPE *this*
 	}
 
 	@Override
