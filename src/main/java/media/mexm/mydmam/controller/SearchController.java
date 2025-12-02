@@ -26,6 +26,8 @@ import static media.mexm.mydmam.entity.FileEntity.MAX_NAME_SIZE;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import java.util.Map;
 import java.util.Optional;
@@ -34,12 +36,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.annotation.Nullable;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -49,6 +52,7 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.dto.FileItemResponse;
 import media.mexm.mydmam.dto.OpenSearchResponse;
+import media.mexm.mydmam.dto.SearchConstraintsRequest;
 import media.mexm.mydmam.indexer.FileSearchResult;
 import media.mexm.mydmam.repository.FileRepository;
 
@@ -67,21 +71,25 @@ public class SearchController {// TODO test
 	@Value("${mydmamConsts.searchResultMaxSize:100}")
 	int searchResultMaxSize;
 
-	@GetMapping("/{realm}")
+	@RequestMapping(value = "/{realm}", method = { GET, POST, POST })
 	@Transactional
 	public ResponseEntity<OpenSearchResponse> openSearch(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
 														 @RequestParam(required = true) @NotBlank @Size(max = 256) final String q,
 														 @RequestParam(required = false,
 																	   defaultValue = "0") @Min(0) final Integer limit,
 														 @RequestParam(required = false,
-																	   defaultValue = "0") @Min(0) @Max(1) final Integer resolveHashPaths) {
+																	   defaultValue = "0") @Min(0) @Max(1) final Integer resolveHashPaths,
+														 @RequestBody(required = false) @Validated @Nullable final SearchConstraintsRequest constraints) {
+
 		final var oRealmIndexer = indexer.getIndexerByRealm(realm);
 		if (oRealmIndexer.isEmpty()) {
 			return new ResponseEntity<>(UNPROCESSABLE_ENTITY);
 		}
 
 		final var maxAllowedEntries = min(searchResultMaxSize, limit == 0 ? searchResultMaxSize : limit);
-		final var searchResult = oRealmIndexer.get().openSearch(q.trim(), Optional.empty(), maxAllowedEntries);
+		final var oFileConstraints = Optional.ofNullable(constraints).map(SearchConstraintsRequest::fileConstraints);
+
+		final var searchResult = oRealmIndexer.get().openSearch(q.trim(), oFileConstraints, maxAllowedEntries);
 
 		Map<String, FileItemResponse> relatedFiles = Map.of();
 		if (resolveHashPaths == 1 && searchResult.foundedFiles().isEmpty() == false) {
@@ -99,10 +107,9 @@ public class SearchController {// TODO test
 						searchResult,
 						q.trim(),
 						maxAllowedEntries,
-						relatedFiles),
+						relatedFiles,
+						constraints),
 				OK);
 	}
-
-	// TODO with constraints
 
 }

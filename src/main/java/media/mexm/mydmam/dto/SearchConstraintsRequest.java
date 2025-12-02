@@ -16,15 +16,11 @@
  */
 package media.mexm.mydmam.dto;
 
-import java.util.Map;
+import org.springframework.validation.annotation.Validated;
 
 import jakarta.annotation.Nullable;
-import media.mexm.mydmam.indexer.SearchResult;
+import media.mexm.mydmam.indexer.FileSearchConstraints;
 
-public record OpenSearchResponse(SearchResult result,
-								 String q,
-								 int limit,
-								 Map<String, FileItemResponse> relatedFiles,
-								 @Nullable SearchConstraintsRequest constraints) {
+public record SearchConstraintsRequest(@Validated @Nullable FileSearchConstraints fileConstraints) {
 
 }
