@@ -22,10 +22,10 @@ public enum SearchConstraintCondition {
 	MUST_NOT(0),
 	IGNORE(-1);
 
-	public final String indexedValue;
+	public final int indexedValue;
 
 	SearchConstraintCondition(final int indexedValue) {
-		this.indexedValue = String.valueOf(indexedValue);
+		this.indexedValue = indexedValue;
 	}
 
 }

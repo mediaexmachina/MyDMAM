@@ -20,6 +20,8 @@ import static java.text.Normalizer.normalize;
 import static java.text.Normalizer.Form.NFKD;
 import static media.mexm.mydmam.App.REPLACE_NORMALIZED;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
+import static media.mexm.mydmam.indexer.NamedIndexField.DOCUMENT_TYPE;
+import static media.mexm.mydmam.indexer.NamedIndexField.DOCUMENT_TYPE_FILE;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_BASE_NAME;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DATE;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DIRECTORY;
@@ -58,6 +60,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -153,6 +156,7 @@ public class RealmIndexer {
 		final var document = new Document();
 		log.trace("Make Lucene document on {}:{}:{}", realmName, storageName, hashPath);
 
+		document.add(new StringField(DOCUMENT_TYPE, DOCUMENT_TYPE_FILE, YES));
 		document.add(new StringField(FILE_HASH_PATH, hashPath, YES));
 		document.add(new StringField(FILE_STORAGE, storageName, YES));
 		document.add(new StringField(FILE_NAME, file.getName(), YES));
@@ -165,6 +169,7 @@ public class RealmIndexer {
 		document.add(new IntField(FILE_HIDDEN, file.isHidden() ? 1 : 0, NO));
 		document.add(new IntField(FILE_LINK, file.isLink() ? 1 : 0, NO));
 		document.add(new IntField(FILE_SPECIAL, file.isSpecial() ? 1 : 0, NO));
+
 		document.add(new LongField(FILE_DATE, file.lastModified(), NO));
 		document.add(new LongField(FILE_LENGTH, file.length(), NO));
 		document.add(new StringField(FILE_PARENT_HASH_PATH,
@@ -228,18 +233,26 @@ public class RealmIndexer {
 			Explanation explain = null;
 			for (final var scoredDoc : sortedTopDoc.scoreDocs) {
 				final var doc = storedFields.document(scoredDoc.doc,
-						Set.of(FILE_HASH_PATH, FILE_STORAGE, FILE_NAME, FILE_PARENT_PATH));
-
-				final var hashPath = doc.getField(FILE_HASH_PATH);
-				final var storage = doc.getField(FILE_STORAGE);
-				final var name = doc.getField(FILE_NAME);
-				final var parentPath = doc.getField(FILE_PARENT_PATH);
+						Set.of(FILE_HASH_PATH,
+								FILE_STORAGE,
+								FILE_NAME,
+								FILE_PARENT_PATH,
+								DOCUMENT_TYPE));
 
 				if (computeExplainOnResults) {
 					explain = searcher.explain(finalQuery, scoredDoc.doc);
 				}
 
-				if (hashPath != null && storage != null && name != null) {
+				final var documentType = Optional.ofNullable(doc.getField(DOCUMENT_TYPE))
+						.map(IndexableField::stringValue)
+						.orElseThrow();
+
+				if (documentType.equals(DOCUMENT_TYPE_FILE)) {
+					final var hashPath = doc.getField(FILE_HASH_PATH);
+					final var storage = doc.getField(FILE_STORAGE);
+					final var name = doc.getField(FILE_NAME);
+					final var parentPath = doc.getField(FILE_PARENT_PATH);
+
 					result.add(new FileSearchResult(
 							hashPath.stringValue(),
 							storage.stringValue(),
@@ -247,8 +260,9 @@ public class RealmIndexer {
 							parentPath.stringValue(),
 							scoredDoc.score,
 							Optional.ofNullable(explain).map(Explanation::toString).orElse(null)));
+
 				} else {
-					log.warn("Nulls in document: hashPath={} storage={} name={}", hashPath, storage, name);
+					log.warn("Can't manage this document type: {}", documentType);
 				}
 			}
 
@@ -345,7 +359,7 @@ public class RealmIndexer {
 	/*
 	 * https://stackoverflow.com/questions/26498013/lucene-ranking-with-booleanquery-determining-quality-of-hits
 	https://stackoverflow.com/questions/2005084/how-to-specify-two-fields-in-lucene-queryparser
-
+	
 	 * https://stackoverflow.com/questions/5484965/howto-perform-a-contains-search-rather-than-starts-with-using-lucene-net
 	 *
 	 * parser.setFuzzyMinSim(0.6f);
@@ -355,24 +369,24 @@ public class RealmIndexer {
 	protected Query intRangeQuery(String field,
 	Integer min, Integer max,
 	boolean includeBoundaries){
-	
+
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.intToPrefixCoded(min.intValue()),
 	NumericUtils.intToPrefixCoded(max.intValue()),
 	includeBoundaries, includeBoundaries);
-	
+
 	return rangeQuery;
 	}
-	
+
 	protected Query longRangeQuery(String field,
 	Long min, Long max,
 	boolean includeBoundaries){
-	
+
 	TermRangeQuery rangeQuery = new TermRangeQuery(field,
 	NumericUtils.longToPrefixCoded(min.longValue()),
 	NumericUtils.longToPrefixCoded(max.longValue()),
 	includeBoundaries, includeBoundaries);
-	
+
 	return rangeQuery;
 	}
 	* */

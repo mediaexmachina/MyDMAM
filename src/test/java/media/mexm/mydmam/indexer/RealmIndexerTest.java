@@ -21,6 +21,8 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static media.mexm.mydmam.indexer.RealmIndexer.normalizeSearchString;
 import static media.mexm.mydmam.indexer.SearchConstraintCondition.IGNORE;
+import static media.mexm.mydmam.indexer.SearchConstraintCondition.MUST;
+import static media.mexm.mydmam.indexer.SearchConstraintCondition.MUST_NOT;
 import static media.mexm.mydmam.indexer.SearchConstraintRange.NO_RANGE;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.forceMkdir;
@@ -34,15 +36,21 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
@@ -71,8 +79,6 @@ class RealmIndexerTest {
 	@Fake
 	boolean special;
 	@Fake
-	long lastModified;
-	@Fake
 	long length;
 	@Fake
 	boolean exists;
@@ -81,6 +87,7 @@ class RealmIndexerTest {
 	String path;
 	String parentPath;
 	String fileHashPath;
+	long lastModified;
 
 	@Mock
 	CachedFileAttributes file;
@@ -88,11 +95,20 @@ class RealmIndexerTest {
 	File workingDir;
 	RealmIndexer ri;
 
+	FileSearchConstraints constraint;
+	SearchConstraintCondition directoryConstraint;
+	SearchConstraintCondition hiddenConstraint;
+	SearchConstraintCondition linkConstraint;
+	SearchConstraintCondition specialConstraint;
+	SearchConstraintRange constraintDateRange;
+	SearchConstraintRange constraintSizeRange;
+
 	@BeforeEach
 	void init() throws Exception {
 		fileName = faker.numerify("baseName#####ok42") + "." + faker.numerify("extention#####");
 		parentPath = "/" + faker.numerify("root#####") + "/" + faker.numerify("parent#####");
 		path = parentPath + "/" + fileName;
+		lastModified = System.currentTimeMillis();
 
 		when(file.getName()).thenReturn(fileName);
 		when(file.getParentPath()).thenReturn(parentPath);
@@ -110,7 +126,7 @@ class RealmIndexerTest {
 		workingDir = new File(getTempDirectory(), "mydmam_" + realmName + "_test-indexer");
 		forceMkdir(workingDir);
 
-		ri = new RealmIndexer(realmName, workingDir, true); // TODO use computeExplainOnResults
+		ri = new RealmIndexer(realmName, workingDir, false);
 	}
 
 	@AfterEach
@@ -120,10 +136,28 @@ class RealmIndexerTest {
 	}
 
 	@Test
+	void testComputeExplainOnResults() throws IOException {// NOSONAR S5961
+		ri.close();
+		ri = new RealmIndexer(realmName, workingDir, true);
+		ri.update(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
+
+		assertThat(ri.openSearch(getBaseName(fileName), empty(), 10)
+				.stream().findFirst().map(FileSearchResult::explain)
+				.orElse(null)).isNotEmpty();
+
+		verify(file, atLeastOnce()).getPath();
+		clearInvocations(file);
+	}
+
+	@Test
 	void testNormalizeSearchString() {
 		final var result = normalizeSearchString(" THIS IS_A_$tést\\WITH * NUM8ERS. ");
 		assertEquals(8, result.size());
 		assertEquals("this is a test with num 8 ers", result.stream().collect(Collectors.joining(" ")));
+
+		assertThat(normalizeSearchString(null)).isEmpty();
+		assertThat(normalizeSearchString(" \t")).isEmpty();
+		assertThat(normalizeSearchString("_")).isEmpty();
 	}
 
 	CachedFileAttributes makeFalseFile() {
@@ -149,7 +183,7 @@ class RealmIndexerTest {
 	}
 
 	@Test
-	void testOpenSearch() {
+	void testOpenSearch() {// NOSONAR S5961
 		final var scanResult = new WatchedFiles(Set.of(makeFalseFile(), file, makeFalseFile()), Set.of(), Set.of(), 0);
 		ri.update(scanResult, storageName);
 
@@ -163,7 +197,7 @@ class RealmIndexerTest {
 		assertThat(result0.name()).isEqualTo(fileName);
 		assertThat(result0.score()).isGreaterThan(0f);
 		assertThat(result0.storage()).isEqualTo(storageName);
-		assertThat(result0.explain()).isNotEmpty();
+		assertThat(result0.explain()).isNull();
 
 		results = ri.openSearch(fileName, empty(), 10);
 		assertThat(results).size().isEqualTo(1);
@@ -193,38 +227,10 @@ class RealmIndexerTest {
 		assertThat(results.get(0).hashPath())
 				.isEqualTo(fileHashPath);
 
-		verify(file, atLeastOnce()).getPath();
-		clearInvocations(file);
-	}
-
-	FileSearchConstraints constraint;
-
-	@Test
-	void testOpenSearch_constraint_storage() {
-		final var watchedFiles = new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0);
-
-		when(file.getName()).thenReturn("fromstorage1");
-		ri.update(watchedFiles, "storage1");
-
-		when(file.getName()).thenReturn("fromstorage2");
-		ri.update(watchedFiles, "storage2");
-
-		var results = ri.openSearch("fromsto", empty(), 10);
-
-		assertThat(results).size().isEqualTo(2);
-		assertThat(results.stream().map(FileSearchResult::name).collect(toUnmodifiableSet()))
-				.contains("fromstorage1", "fromstorage2");
-		assertThat(results.stream().map(FileSearchResult::storage).collect(toUnmodifiableSet()))
-				.contains("storage1", "storage2");
-
-		for (var pos = 1; pos < 3; pos++) {
-			constraint = new FileSearchConstraints(
-					IGNORE, IGNORE, IGNORE, IGNORE, NO_RANGE, NO_RANGE, List.of("storage" + pos), null, null);
-
-			results = ri.openSearch("fromsto", Optional.ofNullable(constraint), 10);
-			assertThat(results).size().isEqualTo(1);
-			assertThat(results.get(0).name()).isEqualTo("fromstorage" + pos);
-		}
+		results = ri.openSearch("bas?nam*", empty(), 10);
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.get(0).hashPath())
+				.isEqualTo(fileHashPath);
 
 		verify(file, atLeastOnce()).getPath();
 		clearInvocations(file);
@@ -259,6 +265,252 @@ class RealmIndexerTest {
 		clearInvocations(file);
 	}
 
-	// TODO test constrains
+	@Test
+	void testOpenSearch_constraint_storage() {
+		final var watchedFiles = new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0);
+
+		when(file.getName()).thenReturn("fromstorage1");
+		ri.update(watchedFiles, "storage1");
+
+		when(file.getName()).thenReturn("fromstorage2");
+		ri.update(watchedFiles, "storage2");
+
+		var results = ri.openSearch("fromsto", empty(), 10);
+
+		assertThat(results).size().isEqualTo(2);
+		assertThat(results.stream().map(FileSearchResult::name).collect(toUnmodifiableSet()))
+				.contains("fromstorage1", "fromstorage2");
+		assertThat(results.stream().map(FileSearchResult::storage).collect(toUnmodifiableSet()))
+				.contains("storage1", "storage2");
+
+		for (var pos = 1; pos < 3; pos++) {
+			constraint = new FileSearchConstraints(
+					IGNORE, IGNORE, IGNORE, IGNORE, NO_RANGE, NO_RANGE, List.of("storage" + pos), null, null);
+
+			results = ri.openSearch("fromsto", Optional.ofNullable(constraint), 10);
+			assertThat(results).size().isEqualTo(1);
+			assertThat(results.get(0).name()).isEqualTo("fromstorage" + pos);
+		}
+
+		verify(file, atLeastOnce()).getPath();
+		clearInvocations(file);
+	}
+
+	private static Stream<Arguments> fourBooleansArgumentsParameters() {
+		return IntStream.range(0, 16)
+				.mapToObj(i -> Arguments.of(
+						i % 2 == 0,
+						(i >> 1) % 2 == 0,
+						(i >> 2) % 2 == 0,
+						(i >> 3) % 2 == 0));
+	}
+
+	@ParameterizedTest
+	@MethodSource("fourBooleansArgumentsParameters")
+	void testOpenSearch_boolean_constraints(final boolean directory,
+											final boolean hidden,
+											final boolean link,
+											final boolean special) {
+		final var watchedFiles = new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0);
+		when(file.isDirectory()).thenReturn(directory);
+		when(file.isHidden()).thenReturn(hidden);
+		when(file.isLink()).thenReturn(link);
+		when(file.isSpecial()).thenReturn(special);
+		ri.update(watchedFiles, storageName);
+
+		final var results = ri.openSearch("basename", empty(), 10);
+		assertThat(results.stream().findFirst().map(FileSearchResult::hashPath).orElse(null)).isEqualTo(fileHashPath);
+
+		directoryConstraint = IGNORE;
+		hiddenConstraint = IGNORE;
+		linkConstraint = IGNORE;
+		specialConstraint = IGNORE;
+		assertThatFoundWithBooleanConstraints();
+
+		directoryConstraint = directory ? MUST : MUST_NOT;
+		assertThatFoundWithBooleanConstraints();
+		directoryConstraint = directory ? MUST_NOT : MUST;
+		assertThatNotFoundWithBooleanConstraints();
+		directoryConstraint = IGNORE;
+
+		hiddenConstraint = hidden ? MUST : MUST_NOT;
+		assertThatFoundWithBooleanConstraints();
+		hiddenConstraint = hidden ? MUST_NOT : MUST;
+		assertThatNotFoundWithBooleanConstraints();
+		hiddenConstraint = IGNORE;
+
+		linkConstraint = link ? MUST : MUST_NOT;
+		assertThatFoundWithBooleanConstraints();
+		linkConstraint = link ? MUST_NOT : MUST;
+		assertThatNotFoundWithBooleanConstraints();
+		linkConstraint = IGNORE;
+
+		specialConstraint = special ? MUST : MUST_NOT;
+		assertThatFoundWithBooleanConstraints();
+		specialConstraint = special ? MUST_NOT : MUST;
+		assertThatNotFoundWithBooleanConstraints();
+		specialConstraint = IGNORE;
+
+		directoryConstraint = directory ? MUST : MUST_NOT;
+		hiddenConstraint = hidden ? MUST : MUST_NOT;
+		linkConstraint = link ? MUST : MUST_NOT;
+		specialConstraint = special ? MUST : MUST_NOT;
+		assertThatFoundWithBooleanConstraints();
+
+		directoryConstraint = directory ? MUST_NOT : MUST;
+		hiddenConstraint = hidden ? MUST_NOT : MUST;
+		linkConstraint = link ? MUST_NOT : MUST;
+		specialConstraint = special ? MUST_NOT : MUST;
+		assertThatNotFoundWithBooleanConstraints();
+
+		verify(file, atLeastOnce()).getPath();
+		clearInvocations(file);
+	}
+
+	private void assertThatFoundWithBooleanConstraints() {
+		assertThat(ri.openSearch("basename",
+				Optional.ofNullable(new FileSearchConstraints(
+						directoryConstraint, hiddenConstraint, linkConstraint, specialConstraint,
+						NO_RANGE, NO_RANGE, List.of(), null, null)), 10)
+				.stream().findFirst().map(FileSearchResult::hashPath).orElse(null)).isEqualTo(fileHashPath);
+	}
+
+	private void assertThatNotFoundWithBooleanConstraints() {
+		assertThat(ri.openSearch("basename",
+				Optional.ofNullable(new FileSearchConstraints(
+						directoryConstraint, hiddenConstraint, linkConstraint, specialConstraint,
+						NO_RANGE, NO_RANGE, List.of(), null, null)), 10)).isEmpty();
+	}
+
+	@Test
+	void testOpenSearch_length_size_constraints() {
+		ri.update(new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0), storageName);
+
+		constraintDateRange = new SearchConstraintRange(true, lastModified - 1, lastModified + 1);
+		constraintSizeRange = new SearchConstraintRange(false, length - 1, length + 1);
+		assertThatFoundWithDateSizeConstraints();
+
+		constraintDateRange = new SearchConstraintRange(true, lastModified + 1, lastModified + 2);
+		assertThatNotFoundWithDateSizeConstraints();
+		constraintDateRange = new SearchConstraintRange(true, lastModified - 2, lastModified - 1);
+		assertThatNotFoundWithDateSizeConstraints();
+
+		constraintDateRange = new SearchConstraintRange(false, lastModified - 1, lastModified + 1);
+		constraintSizeRange = new SearchConstraintRange(true, length - 1, length + 1);
+		assertThatFoundWithDateSizeConstraints();
+
+		constraintSizeRange = new SearchConstraintRange(true, length + 1, length + 2);
+		assertThatNotFoundWithDateSizeConstraints();
+		constraintSizeRange = new SearchConstraintRange(true, length - 2, length - 1);
+		assertThatNotFoundWithDateSizeConstraints();
+
+		constraintDateRange = new SearchConstraintRange(true, lastModified - 1, lastModified + 1);
+		constraintSizeRange = new SearchConstraintRange(true, length - 1, length + 1);
+		assertThatFoundWithDateSizeConstraints();
+
+		constraintDateRange = new SearchConstraintRange(true, lastModified - 2, lastModified - 1);
+		constraintSizeRange = new SearchConstraintRange(true, length + 1, length + 2);
+		assertThatNotFoundWithDateSizeConstraints();
+
+		verify(file, atLeastOnce()).getPath();
+		clearInvocations(file);
+	}
+
+	private void assertThatFoundWithDateSizeConstraints() {
+		assertThat(ri.openSearch("basename",
+				Optional.ofNullable(new FileSearchConstraints(
+						IGNORE, IGNORE, IGNORE, IGNORE,
+						constraintDateRange, constraintSizeRange, List.of(), null, null)), 10)
+				.stream().findFirst().map(FileSearchResult::hashPath).orElse(null)).isEqualTo(fileHashPath);
+	}
+
+	private void assertThatNotFoundWithDateSizeConstraints() {
+		assertThat(ri.openSearch("basename",
+				Optional.ofNullable(new FileSearchConstraints(
+						IGNORE, IGNORE, IGNORE, IGNORE,
+						constraintDateRange, constraintSizeRange, List.of(), null, null)), 10)).isEmpty();
+	}
+
+	String parentPathConstraint;
+	String parentHashPathConstraint;
+
+	@Test
+	void testOpenSearch_parentpath_constraints() {
+		ri.update(new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0), storageName);
+
+		parentPathConstraint = "/";
+		assertThatFoundWithParentPathHashConstraints();
+		parentPathConstraint = parentPath;
+		assertThatFoundWithParentPathHashConstraints();
+		parentPathConstraint = "IMPOSSIBLE";
+		assertThatNotFoundWithParentPathHashConstraints();
+
+		parentPathConstraint = null;
+		parentHashPathConstraint = hashPath(realmName, storageName, "/");
+		assertThatNotFoundWithParentPathHashConstraints();
+		parentHashPathConstraint = hashPath(realmName, storageName, parentPath);
+		assertThatFoundWithParentPathHashConstraints();
+		parentHashPathConstraint = hashPath(realmName, storageName, "IMPOSSIBLE");
+		assertThatNotFoundWithParentPathHashConstraints();
+
+		parentPathConstraint = parentPath;
+		parentHashPathConstraint = hashPath(realmName, storageName, parentPath);
+		assertThatFoundWithParentPathHashConstraints();
+
+		parentPathConstraint = parentPath;
+		parentHashPathConstraint = hashPath(realmName, storageName, "IMPOSSIBLE");
+		assertThatFoundWithParentPathHashConstraints();
+
+		verify(file, atLeastOnce()).getPath();
+		clearInvocations(file);
+	}
+
+	private void assertThatFoundWithParentPathHashConstraints() {
+		assertThat(ri.openSearch("basename",
+				Optional.ofNullable(new FileSearchConstraints(
+						IGNORE, IGNORE, IGNORE, IGNORE,
+						NO_RANGE, NO_RANGE, List.of(), parentPathConstraint, parentHashPathConstraint)), 10)
+				.stream().findFirst().map(FileSearchResult::hashPath).orElse(null)).isEqualTo(fileHashPath);
+	}
+
+	private void assertThatNotFoundWithParentPathHashConstraints() {
+		assertThat(ri.openSearch("basename",
+				Optional.ofNullable(new FileSearchConstraints(
+						IGNORE, IGNORE, IGNORE, IGNORE,
+						NO_RANGE, NO_RANGE, List.of(), parentPathConstraint, parentHashPathConstraint)), 10)).isEmpty();
+	}
+
+	/*
+	@Fake
+	boolean directory;
+	@Fake
+	boolean hidden;
+	@Fake
+	boolean link;
+	@Fake
+	boolean special;
+	@Fake
+	long lastModified;
+	@Fake
+	long length;
+	@Fake
+	boolean exists;
+
+	String fileName;
+	String path;
+	String parentPath;
+	String fileHashPath;
+
+		fileName = faker.numerify("baseName#####ok42") + "." + faker.numerify("extention#####");
+		parentPath = "/" + faker.numerify("root#####") + "/" + faker.numerify("parent#####");
+		path = parentPath + "/" + fileName;
+
+		when(file.getName()).thenReturn(fileName);
+		when(file.getParentPath()).thenReturn(parentPath);
+		when(file.getPath()).thenReturn(path);
+		when(file.lastModified()).thenReturn(lastModified);
+		when(file.length()).thenReturn(length);
+		when(file.exists()).thenReturn(exists); */
+	// TODO test update + constrains (size/date)
 
 }

@@ -16,11 +16,10 @@
  */
 package media.mexm.mydmam.indexer;
 
-import static org.apache.lucene.document.LongPoint.pack;
+import static org.apache.lucene.document.LongField.newRangeQuery;
 import static org.apache.lucene.search.BooleanClause.Occur.MUST;
 
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.TermRangeQuery;
 
 public record SearchConstraintRange(boolean restricted,
 									long min,
@@ -29,10 +28,11 @@ public record SearchConstraintRange(boolean restricted,
 	public static final SearchConstraintRange NO_RANGE = new SearchConstraintRange(false, 0, 0);
 
 	void apply(final BooleanQuery.Builder booleanQuery, final String field) {
-		if (restricted) {
+		if (restricted == false) {
 			return;
 		}
-		booleanQuery.add(new TermRangeQuery(field, pack(min), pack(max), true, true), MUST);
+
+		booleanQuery.add(newRangeQuery(field, min, max), MUST);
 	}
 
 }

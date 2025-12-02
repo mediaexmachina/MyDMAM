@@ -26,6 +26,7 @@ import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_PATH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_SPECIAL;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_STORAGE;
 import static media.mexm.mydmam.indexer.SearchConstraintCondition.IGNORE;
+import static org.apache.lucene.document.IntField.newExactQuery;
 import static org.apache.lucene.search.BooleanClause.Occur.MUST;
 import static org.apache.lucene.search.BooleanClause.Occur.SHOULD;
 
@@ -48,18 +49,18 @@ public record FileSearchConstraints(SearchConstraintCondition directory,
 									@Nullable String parentPath,
 									@Nullable String parentHashPath) {
 
-	void apply(final BooleanQuery.Builder booleanQuery) { // TODO test
+	void apply(final BooleanQuery.Builder booleanQuery) {
 		if (directory != IGNORE) {
-			booleanQuery.add(new TermQuery(new Term(FILE_DIRECTORY, directory.indexedValue)), MUST);
+			booleanQuery.add(newExactQuery(FILE_DIRECTORY, directory.indexedValue), MUST);
 		}
 		if (hidden != IGNORE) {
-			booleanQuery.add(new TermQuery(new Term(FILE_HIDDEN, hidden.indexedValue)), MUST);
+			booleanQuery.add(newExactQuery(FILE_HIDDEN, hidden.indexedValue), MUST);
 		}
 		if (link != IGNORE) {
-			booleanQuery.add(new TermQuery(new Term(FILE_LINK, link.indexedValue)), MUST);
+			booleanQuery.add(newExactQuery(FILE_LINK, link.indexedValue), MUST);
 		}
 		if (special != IGNORE) {
-			booleanQuery.add(new TermQuery(new Term(FILE_SPECIAL, special.indexedValue)), MUST);
+			booleanQuery.add(newExactQuery(FILE_SPECIAL, special.indexedValue), MUST);
 		}
 		date.apply(booleanQuery, FILE_DATE);
 		size.apply(booleanQuery, FILE_LENGTH);
