@@ -205,9 +205,9 @@ public class RealmIndexer {
 
 	}
 
-	private List<FileSearchResult> processSearch(final Optional<FileSearchConstraints> oFileSearchConstraints,
-												 final Query query,
-												 final int limit) {
+	private SearchResult processSearch(final Optional<FileSearchConstraints> oFileSearchConstraints,
+									   final Query query,
+									   final int limit) {
 		try (var reader = DirectoryReader.open(fsDirectoryIndex)) {
 			final var builder = new BooleanQuery.Builder();
 
@@ -218,8 +218,7 @@ public class RealmIndexer {
 			final var finalQuery = builder.build();
 			final var searcher = new IndexSearcher(reader);
 
-			final var count = searcher.count(finalQuery);
-			// TODO manage count
+			final var totalFounded = searcher.count(finalQuery);
 			final var sortedTopDoc = searcher.search(finalQuery, limit);
 			final var storedFields = searcher.storedFields();
 
@@ -228,7 +227,7 @@ public class RealmIndexer {
 			// Highlighter highlighter = new Highlighter(scorer);
 			// String fragment = highlighter.getBestFragment(analyzer, fieldName, myDoc.getField(fieldName));
 
-			final var result = new ArrayList<FileSearchResult>();
+			final var foundedFiles = new ArrayList<FileSearchResult>();
 
 			Explanation explain = null;
 			for (final var scoredDoc : sortedTopDoc.scoreDocs) {
@@ -253,7 +252,7 @@ public class RealmIndexer {
 					final var name = doc.getField(FILE_NAME);
 					final var parentPath = doc.getField(FILE_PARENT_PATH);
 
-					result.add(new FileSearchResult(
+					foundedFiles.add(new FileSearchResult(
 							hashPath.stringValue(),
 							storage.stringValue(),
 							name.stringValue(),
@@ -266,7 +265,7 @@ public class RealmIndexer {
 				}
 			}
 
-			return result.stream().sorted().toList();
+			return new SearchResult(foundedFiles.stream().sorted().toList(), totalFounded);
 		} catch (final IOException e) {
 			throw new UncheckedIOException("Can't read from Lucene index on " + indexDir.getAbsolutePath(), e);
 		}
@@ -280,9 +279,9 @@ public class RealmIndexer {
 
 	private static final Function<Query, BooleanClause> toBooleanMustClause = query -> new BooleanClause(query, MUST);
 
-	public List<FileSearchResult> openSearch(final String q,
-											 final Optional<FileSearchConstraints> oConstraints,
-											 final int limit) {
+	public SearchResult openSearch(final String q,
+								   final Optional<FileSearchConstraints> oConstraints,
+								   final int limit) {
 		final var mainQuery = new BooleanQuery.Builder();
 
 		if (q.contains("*") || q.contains("?")) {
@@ -343,52 +342,5 @@ public class RealmIndexer {
 				mainQuery.build(),
 				limit);
 	}
-	/*
-	 * <ul>
-	 * <li>{@link SortedDocValuesField}: {@code byte[]} indexed column-wise for sorting/faceting
-	 * <li>{@link SortedSetDocValuesField}: {@code SortedSet<byte[]>} indexed column-wise for
-	 * sorting/faceting
-	 * <li>{@link NumericDocValuesField}: {@code long} indexed column-wise for sorting/faceting
-	 * <li>{@link SortedNumericDocValuesField}: {@code SortedSet<long>} indexed column-wise for
-	 * sorting/faceting
-	 * <li>{@link StoredField}: Stored-only value for retrieving in summary results
-	 * </ul>
-	 * *
-	 */
-
-	/*
-	 * https://stackoverflow.com/questions/26498013/lucene-ranking-with-booleanquery-determining-quality-of-hits
-	https://stackoverflow.com/questions/2005084/how-to-specify-two-fields-in-lucene-queryparser
-	
-	 * https://stackoverflow.com/questions/5484965/howto-perform-a-contains-search-rather-than-starts-with-using-lucene-net
-	 *
-	 * parser.setFuzzyMinSim(0.6f);
-	 *
-	 * MultiFieldQueryParser
-	 *
-	protected Query intRangeQuery(String field,
-	Integer min, Integer max,
-	boolean includeBoundaries){
-
-	TermRangeQuery rangeQuery = new TermRangeQuery(field,
-	NumericUtils.intToPrefixCoded(min.intValue()),
-	NumericUtils.intToPrefixCoded(max.intValue()),
-	includeBoundaries, includeBoundaries);
-
-	return rangeQuery;
-	}
-
-	protected Query longRangeQuery(String field,
-	Long min, Long max,
-	boolean includeBoundaries){
-
-	TermRangeQuery rangeQuery = new TermRangeQuery(field,
-	NumericUtils.longToPrefixCoded(min.longValue()),
-	NumericUtils.longToPrefixCoded(max.longValue()),
-	includeBoundaries, includeBoundaries);
-
-	return rangeQuery;
-	}
-	* */
 
 }

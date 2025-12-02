@@ -38,14 +38,15 @@ import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.TermQuery;
 
 import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotNull;
 
-public record FileSearchConstraints(SearchConstraintCondition directory,
-									SearchConstraintCondition hidden,
-									SearchConstraintCondition link,
-									SearchConstraintCondition special,
-									SearchConstraintRange date,
-									SearchConstraintRange size,
-									List<String> storages,
+public record FileSearchConstraints(@NotNull SearchConstraintCondition directory,
+									@NotNull SearchConstraintCondition hidden,
+									@NotNull SearchConstraintCondition link,
+									@NotNull SearchConstraintCondition special,
+									@NotNull SearchConstraintRange date,
+									@NotNull SearchConstraintRange size,
+									@NotNull List<String> storages,
 									@Nullable String parentPath,
 									@Nullable String parentHashPath) {
 
@@ -71,9 +72,9 @@ public record FileSearchConstraints(SearchConstraintCondition directory,
 			booleanQuery.add(storageQuery.build(), MUST);
 		}
 
-		if (parentPath != null) {
+		if (parentPath != null && parentPath.isEmpty() == false) {
 			booleanQuery.add(new PrefixQuery(new Term(FILE_PARENT_PATH, parentPath)), MUST);
-		} else if (parentHashPath != null) {
+		} else if (parentHashPath != null && parentHashPath.isEmpty() == false) {
 			booleanQuery.add(new TermQuery(new Term(FILE_PARENT_HASH_PATH, parentHashPath)), MUST);
 		}
 	}

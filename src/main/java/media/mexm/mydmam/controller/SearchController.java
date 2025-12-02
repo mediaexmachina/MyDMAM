@@ -17,12 +17,17 @@
 package media.mexm.mydmam.controller;
 
 import static java.lang.Math.min;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toUnmodifiableMap;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.App.CONTROLLER_BASE_MAPPING_API_PATH;
+import static media.mexm.mydmam.dto.FileItemResponse.createFromEntity;
 import static media.mexm.mydmam.entity.FileEntity.MAX_NAME_SIZE;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,13 +41,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.component.Indexer;
-import media.mexm.mydmam.dto.RealmListResponse;
-import media.mexm.mydmam.repository.FileDao;
+import media.mexm.mydmam.dto.FileItemResponse;
+import media.mexm.mydmam.dto.OpenSearchResponse;
+import media.mexm.mydmam.indexer.FileSearchResult;
 import media.mexm.mydmam.repository.FileRepository;
 
 @RestController
@@ -50,25 +57,24 @@ import media.mexm.mydmam.repository.FileRepository;
 @RequestMapping(value = CONTROLLER_BASE_MAPPING_API_PATH + "/search",
 				produces = APPLICATION_JSON_VALUE)
 @Slf4j
-public class SearchController {
+public class SearchController {// TODO test
 
 	@Autowired
 	Indexer indexer;
-
 	@Autowired
-	FileRepository fileRepository;// TODO needed ?
-	@Autowired
-	FileDao fileDao;// TODO needed ?
+	FileRepository fileRepository;
 
 	@Value("${mydmamConsts.searchResultMaxSize:100}")
 	int searchResultMaxSize;
 
 	@GetMapping("/{realm}")
 	@Transactional
-	public ResponseEntity<RealmListResponse> openSearch(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
-														@RequestParam(required = true) @NotBlank @Size(max = 256) final String q,
-														@RequestParam(required = false,
-																	  defaultValue = "0") @Min(0) final Integer limit) {
+	public ResponseEntity<OpenSearchResponse> openSearch(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
+														 @RequestParam(required = true) @NotBlank @Size(max = 256) final String q,
+														 @RequestParam(required = false,
+																	   defaultValue = "0") @Min(0) final Integer limit,
+														 @RequestParam(required = false,
+																	   defaultValue = "0") @Min(0) @Max(1) final Integer resolveHashPaths) {
 		final var oRealmIndexer = indexer.getIndexerByRealm(realm);
 		if (oRealmIndexer.isEmpty()) {
 			return new ResponseEntity<>(UNPROCESSABLE_ENTITY);
@@ -76,12 +82,27 @@ public class SearchController {
 
 		final var maxAllowedEntries = min(searchResultMaxSize, limit == 0 ? searchResultMaxSize : limit);
 		final var searchResult = oRealmIndexer.get().openSearch(q.trim(), Optional.empty(), maxAllowedEntries);
-		// TODO return with dedictated DTO
 
-		final var list = fileRepository.getAllRealms().stream().sorted().toList(); // TODO nope
-		return new ResponseEntity<>(new RealmListResponse(list), OK);
+		Map<String, FileItemResponse> relatedFiles = Map.of();
+		if (resolveHashPaths == 1 && searchResult.foundedFiles().isEmpty() == false) {
+			final var hashPathsToResolve = searchResult.foundedFiles().stream()
+					.map(FileSearchResult::hashPath)
+					.distinct()
+					.collect(toUnmodifiableSet());
+			relatedFiles = fileRepository.getByHashPath(hashPathsToResolve).stream()
+					.map(f -> createFromEntity(f, realm, f.getStorage()))
+					.collect(toUnmodifiableMap(FileItemResponse::hashPath, identity()));
+		}
+
+		return new ResponseEntity<>(
+				new OpenSearchResponse(
+						searchResult,
+						q.trim(),
+						maxAllowedEntries,
+						relatedFiles),
+				OK);
 	}
 
-	// TODO (2) same with limit to storage
-	// TODO (2) optional with files resolution
+	// TODO with constraints
+
 }

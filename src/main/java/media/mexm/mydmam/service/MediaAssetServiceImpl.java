@@ -32,16 +32,20 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 	@Autowired
 	Indexer indexer;
 
+	/*
+	 * NOPE *this*
+	 */
+
 	@Override
 	public MediaAsset getFromWatchfolder(final String realmName,
 										 final String storageName,
 										 final FileAttributesReference file) {
-		return new MediaAsset(this, realmName, storageName, file.getPath());// TODO NOPE *this*
+		return new MediaAsset(this, realmName, storageName, file.getPath());
 	}
 
 	@Override
 	public MediaAsset getFromFileEntry(final FileEntity file) {
-		return new MediaAsset(this, file.getRealm(), file.getStorage(), file.getPath());// TODO NOPE *this*
+		return new MediaAsset(this, file.getRealm(), file.getStorage(), file.getPath());
 	}
 
 	@Override
