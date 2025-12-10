@@ -1,0 +1,74 @@
+<!--
+    This file is part of MyDMAM.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    Copyright (C) Media ex Machina 2025
+
+-->
+
+@let searchResult = searchResponse();
+@if (searchResult != null) {
+    <h1>Search results for <span class="search-q">{{ searchResult.q }}</span></h1>
+
+    @if (searchResult.result.totalFounded == 0) {
+        <p>No results found.</p>
+    } @else if (searchResult.result.totalFounded == searchResult.result.foundedFiles.length) {
+        <p>Display {{ searchResult.result.totalFounded }}
+            @if (searchResult.result.totalFounded == 1) {
+                result:
+            } @else {
+                results:
+            }
+        </p>
+    } @else {
+        <p>Found {{ searchResult.result.totalFounded }} results, display only the {{ searchResult.result.foundedFiles.length }} bests.</p>
+    }
+
+    <ul>
+        @for (item of searchResult.result.foundedFiles; track item.hashPath) {
+            @let relatedFile = searchResult.relatedFiles[item.hashPath];
+            <li>
+                <a class="result-item-title" [routerLink]="['/navigator', item.storage, item.hashPath]"
+                   [queryParams]="{ q: searchResult.q }">
+                    {{ item.name }}
+                </a>
+                <div class="attributes">
+                    <div>
+                        @if (relatedFile.directory) {
+                            Directory
+                        } @else {
+                            Regular file: {{ numberFormat.format(relatedFile.length || 0) }} bytes,
+                            modified the {{ relatedFile.modified | date:'medium' }}
+                        }
+                    </div>
+                    <div>
+                        Located in
+                        <a [routerLink]="['/navigator', item.storage]"
+                        [queryParams]="{ q: searchResult.q }">
+                            {{ item.storage }}
+                        </a>
+                        :
+                        <a [routerLink]="['/navigator', item.storage, fileSystemService.hashPath(item.storage, item.parentPath)]"
+                        [queryParams]="{ q: searchResult.q }">
+                            {{ item.parentPath }}
+                        </a>
+                    </div>
+                </div>
+            </li>
+        }
+    </ul>
+
+} @else if (pendingSearch()) {
+    <h1>Pending search...</h1>
+} @else {
+    <h1>Search: no results to display</h1>
+}

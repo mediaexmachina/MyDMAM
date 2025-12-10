@@ -23,7 +23,7 @@ header {
     margin-top: 0px;
 }
 
-header h1 {
+h1 {
     margin: 0px;
     font-size: 1.3em;
 }
@@ -55,18 +55,6 @@ ul.topmenu li {
     margin-right: 0.3em;
 }
 
-a, a:visited, a:active {
-    color: black;
-    border-bottom: none;
-}
-
-a:hover {
-    color: rgb(2, 65, 211);
-    text-decoration: none;
-    border-bottom: none;
-}
-
-
 ul.topmenu a {
     padding-top: 0.4em;
     padding-bottom: 0.4em;
@@ -86,6 +74,13 @@ ul.topmenu a.currentpage {
     background-color: rgba(0, 0, 0, 0.039);
 }
 
-main {
-    margin: 1em;
+a, a:visited, a:active {
+    color: black;
+    border-bottom: none;
+}
+
+a:hover {
+    color: rgb(2, 65, 211);
+    text-decoration: none;
+    border-bottom: none;
 }

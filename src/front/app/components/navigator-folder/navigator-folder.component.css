@@ -40,14 +40,6 @@ nav.breadcrumb span.navigateto {
     margin-right: 0.5em;
 }
 
-
-article.file-information h1 {
-    margin-top: 0.2em;
-    margin-bottom: 0.3em;
-    font-size: 2em;
-    font-weight: 200;
-}
-
 article.file-information div {
     display: inline-block;
     margin-top: 0.2em;
@@ -58,18 +50,6 @@ article.file-information div {
 ul.dirlist {
     list-style-type: none;
     padding-inline-start: 0em;
-}
-
-ul.dirlist li:nth-child(odd) {
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-ul.dirlist li:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-}
-
-ul.dirlist li:hover:nth-child(odd) {
-    background-color: rgba(0, 0, 0, 0.05);
 }
 
 ul.dirlist li {
@@ -143,7 +123,6 @@ div.dropdrown-list-result-count {
 }
 
 div.dropdrown-list-result-count select {
-    font-family: "Red Hat Text";
     color: blue;
     padding: .375rem 2.25rem .375rem .75rem;
     font-size: 1em;

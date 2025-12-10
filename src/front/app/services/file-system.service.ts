@@ -45,14 +45,22 @@ export class FileSystemService {
 
     public async listRoot(storage:string, skip:number = 0, limit:number = 0): Promise<FileResponse|null> {
         const realm = this.localStorageService.getSelectedRealm();
+        const params = {
+            skip: skip,
+            limit: limit
+        }
         return this.backendAPIService.requestAsyncAPI<FileResponse>(
-            "GET", `/filesystem/list/${realm}/${storage}?skip=${skip}&limit=${limit}`);
+            "GET", `/filesystem/list/${realm}/${storage}`, params);
     }
 
     public async list(storage:string, hashPath:string, skip:number = 0, limit:number = 0): Promise<FileResponse|null> {
         const realm = this.localStorageService.getSelectedRealm();
+        const params = {
+            skip: skip,
+            limit: limit
+        }
         return this.backendAPIService.requestAsyncAPI<FileResponse>(
-            "GET", `/filesystem/list/${realm}/${storage}/${hashPath}?skip=${skip}&limit=${limit}`);
+            "GET", `/filesystem/list/${realm}/${storage}/${hashPath}`, params);
     }
 
     public hashPath(storage:string, path:string) {

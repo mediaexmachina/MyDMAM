@@ -1,14 +1,25 @@
 import { Component, signal, inject } from '@angular/core';
-import { RouterOutlet, RouterLink } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 
 import { LocalStorageService } from './services/local-storage.service';
 import { RealmSelectorComponent } from './components/realm-selector/realm-selector.component';
+import { TopBarComponent } from "./components/top-bar/top-bar.component";
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, RouterLink, RealmSelectorComponent],
-    templateUrl: './app.html',
-    styleUrl: './app.css'
+    imports: [RouterOutlet, RealmSelectorComponent, TopBarComponent],
+    template: `
+        <app-top-bar [title]="title()" [realm]="selectedRealm()"></app-top-bar>
+
+        <main style="margin: 1em">
+            @if (selectedRealm() == "") {
+            <app-realm-selector [(selectedRealm)]="selectedRealm"></app-realm-selector>
+            }
+            @else {
+            <router-outlet />
+            }
+        </main>`,
+    styles: ``
 })
 export class App {
     private readonly localStorageService = inject(LocalStorageService);
@@ -21,10 +32,6 @@ export class App {
             this.selectedRealm.set(this.localStorageService.getSelectedRealm());
         } catch (error) {
         }
-    }
-
-    getTopMenuSelectedClassName(expected:string):string {
-        return window.location.pathname.startsWith(expected) ? 'currentpage' : '';
     }
 
 }

@@ -14,7 +14,7 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-import { Component, inject, input, model } from '@angular/core';
+import { Component, inject, model } from '@angular/core';
 
 import { LocalStorageService } from '../../services/local-storage.service';
 import { FileSystemService } from '../../services/file-system.service';

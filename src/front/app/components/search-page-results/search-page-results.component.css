@@ -16,26 +16,25 @@
  */
 
 ul {
-    display: flex;
-    flex-direction: row;
+    padding-inline-start: 0;
+}
+
+li {
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+}
+
+div.attributes {
+    font-size: 90%;
+    margin-left: 1.5em;
     margin-top: 0.2em;
-    margin-bottom: 0px;
-    align-items: center;
 }
 
-a, a:visited, a:active {
-    text-align: center;
-    display: list-item;
-    min-width: 6em;
-    margin: 0.2em 0.6em;
-    padding: 0.5em;
-    border: 0.15em solid rgba(0, 0, 0, 0.2);
-
-    text-decoration: none;
-    color: black;
+a.result-item-title {
+    font-size: 130%;
+    margin-left: 0.3em;
 }
 
-a:hover {
-    color: rgb(2, 65, 211);
-    background-color: rgba(0, 0, 0, 0.06);
+span.search-q {
+    font-weight: 400;
 }

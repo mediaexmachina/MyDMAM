@@ -21,6 +21,10 @@ body {
     padding: 0px;
 }
 
+select, input, button {
+    font-family: "Red Hat Text";
+}
+
 a, a:visited, a:active {
     color: blue;
     text-decoration: none;
@@ -31,4 +35,28 @@ a:hover {
     color: rgb(2, 65, 211);
     text-decoration: none;
     border-bottom: 1px dotted #0000005d;
+}
+
+h1 {
+    margin-top: 0.2em;
+    margin-bottom: 0.3em;
+    font-size: 2em;
+    font-weight: 200;
+}
+
+ul {
+    list-style-type: none;
+    padding-inline-start: 1em;
+}
+
+ul li:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.015);
+}
+
+ul li:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+ul li:hover:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.045);
 }

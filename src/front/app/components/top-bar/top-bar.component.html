@@ -1,0 +1,42 @@
+<!--
+    This file is part of MyDMAM.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    Copyright (C) Media ex Machina 2025
+
+-->
+<header>
+    <nav class="topbar">
+        <nav class="left">
+            <h1><a routerLink="/">{{ title() }}</a></h1>
+            <ul class="topmenu">
+                <li><a routerLink="/navigator" [className]="getTopMenuSelectedClassName('/navigator')">File navigator</a></li>
+            </ul>
+        </nav>
+
+        <nav class="right">
+            <ul class="topmenu">
+                <li>
+                    <app-search-bar></app-search-bar>
+                </li>
+                <li>
+                    @if (realm() == "") {
+                    <p>No selected realm</p>
+                    }
+                    @else {
+                    <a routerLink="/realm">{{ realm() }} realm</a>
+                    }
+                </li>
+            </ul>
+        </nav>
+    </nav>
+</header>

@@ -1,6 +1,22 @@
+/*
+ * This file is part of MyDMAM.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * Copyright (C) Media ex Machina 2025
+ *
+ */
 import { Injectable, inject } from '@angular/core';
 import { Observable, Subject, firstValueFrom } from 'rxjs';
-import { HttpClient, HttpErrorResponse, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpResponse, HttpParams } from '@angular/common/http';
 import { APIResponse } from '../interfaces/api-response.interface';
 
 @Injectable({
@@ -20,7 +36,10 @@ export class BackendAPIService {
     /**
      * @param data only for POST and PUT
      */
-    public requestObservableAPI<T>(method: "GET" | "HEAD" | "PUT" | "DELETE" | "POST", path: string, data: any = null): Observable<APIResponse<T>> {
+    public requestObservableAPI<T>(method: "GET" | "HEAD" | "PUT" | "DELETE" | "POST",
+                                   path: string,
+                                   params: any = {},
+                                   data: any = null): Observable<APIResponse<T>> {
         let url: string = `${this.BASE_URL}/${path}`;
 
         if (path.startsWith("/")) {
@@ -31,6 +50,13 @@ export class BackendAPIService {
             "accept": "application/json",
             "content-type": "application/json; charset=utf-8",
         };
+
+        let httpParams = new HttpParams();
+        for (const key in params) {
+            if (params.hasOwnProperty(key)) {
+                httpParams = httpParams.append(key, params[key]);
+            }
+        }
 
         const result$ = new Subject<APIResponse<T>>;
 
@@ -64,6 +90,7 @@ export class BackendAPIService {
         switch (method) {
             case "GET": {
                 this.httpClient.get(url, {
+                    params: httpParams,
                     headers: headers,
                     timeout: this.TIMEOUT,
                     observe: 'response',
@@ -76,6 +103,7 @@ export class BackendAPIService {
             }
             case "HEAD": {
                 this.httpClient.head(url, {
+                    params: httpParams,
                     headers: headers,
                     timeout: this.TIMEOUT,
                     observe: 'response',
@@ -88,6 +116,7 @@ export class BackendAPIService {
             }
             case "POST": {
                 this.httpClient.post(url, data, {
+                    params: httpParams,
                     headers: headers,
                     timeout: this.TIMEOUT,
                     observe: 'response',
@@ -100,6 +129,7 @@ export class BackendAPIService {
             }
             case "PUT": {
                 this.httpClient.put(url, data, {
+                    params: httpParams,
                     headers: headers,
                     timeout: this.TIMEOUT,
                     observe: 'response',
@@ -112,6 +142,7 @@ export class BackendAPIService {
             }
             case "DELETE": {
                 this.httpClient.delete(url, {
+                    params: httpParams,
                     headers: headers,
                     timeout: this.TIMEOUT,
                     observe: 'response',
@@ -130,8 +161,11 @@ export class BackendAPIService {
     /**
      * @param data only for POST and PUT
      */
-    public async requestAsyncAPI<T>(method: "GET" | "HEAD" | "PUT" | "DELETE" | "POST", path: string, data: any = null): Promise<T|null> {
-        const result = await firstValueFrom(this.requestObservableAPI<T>(method, path, data));
+    public async requestAsyncAPI<T>(method: "GET" | "HEAD" | "PUT" | "DELETE" | "POST",
+                                    path: string,
+                                    params: any = {},
+                                    data: any = null): Promise<T|null> {
+        const result = await firstValueFrom(this.requestObservableAPI<T>(method, path, params, data));
         if (result.isOk == false) {
             return null;
         }

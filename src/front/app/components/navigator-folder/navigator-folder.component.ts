@@ -14,10 +14,9 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-import { Component, signal, inject, effect, WritableSignal, computed } from '@angular/core';
+import { Component, signal, inject, computed } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { FileSystemService } from '../../services/file-system.service';
 import { LocalStorageService } from '../../services/local-storage.service';

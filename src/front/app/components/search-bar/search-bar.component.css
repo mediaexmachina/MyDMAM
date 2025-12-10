@@ -1,41 +1,16 @@
 /*
  * This file is part of MyDMAM.
- *
+ * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- *
+ * 
  * Copyright (C) Media ex Machina 2025
- *
+ * 
  */
-
-ul {
-    display: flex;
-    flex-direction: row;
-    margin-top: 0.2em;
-    margin-bottom: 0px;
-    align-items: center;
-}
-
-a, a:visited, a:active {
-    text-align: center;
-    display: list-item;
-    min-width: 6em;
-    margin: 0.2em 0.6em;
-    padding: 0.5em;
-    border: 0.15em solid rgba(0, 0, 0, 0.2);
-
-    text-decoration: none;
-    color: black;
-}
-
-a:hover {
-    color: rgb(2, 65, 211);
-    background-color: rgba(0, 0, 0, 0.06);
-}
