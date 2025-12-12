@@ -29,10 +29,7 @@
                     <app-search-bar></app-search-bar>
                 </li>
                 <li>
-                    @if (realm() == "") {
-                    <p>No selected realm</p>
-                    }
-                    @else {
+                    @if (realm() != "") {
                     <a routerLink="/realm">{{ realm() }} realm</a>
                     }
                 </li>
