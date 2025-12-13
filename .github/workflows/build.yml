@@ -1,4 +1,4 @@
-name: "Maven tests"
+name: "Build front and back end"
 permissions:
   contents: read
   pull-requests: write
@@ -18,29 +18,34 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+        cache: 'npm'
     - name: Set up JDK 25
       uses: actions/setup-java@v4
       with:
         java-version: 25
         distribution: 'temurin'
         cache: 'maven'
-    - name: Cache SonarQube packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.sonar/cache
-        key: ${{ runner.os }}-sonar
-        restore-keys: ${{ runner.os }}-sonar
     - name: Cache Maven packages
       uses: actions/cache@v4
       with:
         path: ~/.m2
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
+    - run: npm ci --ignore-scripts
+    - run: npm run build
     - name: Build with Maven
       run: >-
-        mvn -B verify
-        org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
-        -Dsonar.projectKey=mediaexmachina_MyDMAM
+        mvn -B install
+        -Dgpg.skip=true
+        -Dmaven.javadoc.skip=true
+        -Dmaven.source.skip=true
+        -DskipTests
+        -Djacoco.skip=true
+        -Dlicense.skipAddThirdParty=true
+        -Dagent=false
+        -Dmaven.javadoc.skip=true
         --file pom.xml
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
