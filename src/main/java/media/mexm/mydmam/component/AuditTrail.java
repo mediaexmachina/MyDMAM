@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.sqlite.SQLiteConfig;
 
@@ -47,8 +46,6 @@ public class AuditTrail {
 	ObjectMapper objectMapper;
 	@Autowired
 	SQLiteConfig sqliteConfig;
-	@Value("${mydmamConsts.auditTrailSpoolName:audittrail}")
-	String auditTrailSpoolName;
 
 	public void init() {
 		final var pathIndexing = conf.pathindexing();
@@ -73,7 +70,7 @@ public class AuditTrail {
 			final var realmAuditTrail = new RealmAuditTrail(
 					jobkitEngine,
 					objectMapper,
-					auditTrailSpoolName,
+					conf.auditTrailSpoolName(),
 					realmName,
 					sqlite);
 

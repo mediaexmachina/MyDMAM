@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
 @SpringBootTest(webEnvironment = NONE)
@@ -34,10 +35,12 @@ class AboutInstanceTest {
 
 	@Autowired
 	AboutInstance ai;
+	@Autowired
+	MyDMAMConfigurationProperties conf;
 
 	@Test
-	void testGetPendingActivityHostName() {
-		assertThat(ai.getPendingActivityHostName()).hasSizeGreaterThan(0).isASCII();
+	void testGetInstanceName() {
+		assertThat(ai.getInstanceName()).isEqualTo(conf.instancename());
 	}
 
 	@Test

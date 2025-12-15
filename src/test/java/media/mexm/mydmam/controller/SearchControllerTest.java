@@ -47,7 +47,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
@@ -60,6 +59,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import media.mexm.mydmam.component.Indexer;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.dto.OpenSearchResponse;
 import media.mexm.mydmam.dto.SearchConstraintsRequest;
 import media.mexm.mydmam.entity.FileEntity;
@@ -91,8 +91,8 @@ class SearchControllerTest {
 	MockMvc mvc;
 	@Autowired
 	ObjectMapper objectMapper;
-	@Value("${mydmamConsts.searchResultMaxSize:100}")
-	int searchResultMaxSize;
+	@Autowired
+	MyDMAMConfigurationProperties conf;
 
 	@MockitoBean
 	Indexer indexer;
@@ -135,7 +135,7 @@ class SearchControllerTest {
 		baseHeaders.setContentType(APPLICATION_JSON);
 		foundedFile = new FileSearchResult(hashPath, storage, name, parentPath, score, explain);
 		searchResult = new SearchResult(List.of(foundedFile), totalFounded);
-		limit = searchResultMaxSize / 2;
+		limit = conf.searchResultMaxSize() / 2;
 		q = rightPad(leftPad(q, faker.number().numberBetween(1, 10)), faker.number().numberBetween(1, 10));
 
 		fileConstraints = new FileSearchConstraints(
@@ -195,14 +195,14 @@ class SearchControllerTest {
 				.getContentAsString();
 
 		final var response = objectMapper.readValue(content, OpenSearchResponse.class);
-		assertThat(response.limit()).isEqualTo(searchResultMaxSize);
+		assertThat(response.limit()).isEqualTo(conf.searchResultMaxSize());
 		assertThat(response.q()).isEqualTo(q.trim());
 		assertThat(response.relatedFiles()).isEmpty();
 		assertNull(response.constraints());
 		assertThat(response.result()).isEqualTo(searchResult);
 
 		verify(indexer, times(1)).getIndexerByRealm(realm);
-		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), searchResultMaxSize);
+		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), conf.searchResultMaxSize());
 	}
 
 	@Test
@@ -243,7 +243,7 @@ class SearchControllerTest {
 				.getContentAsString();
 
 		final var response = objectMapper.readValue(content, OpenSearchResponse.class);
-		assertThat(response.limit()).isEqualTo(searchResultMaxSize);
+		assertThat(response.limit()).isEqualTo(conf.searchResultMaxSize());
 		assertThat(response.q()).isEqualTo(q.trim());
 		assertNull(response.constraints());
 		assertThat(response.result()).isEqualTo(searchResult);
@@ -252,7 +252,7 @@ class SearchControllerTest {
 		assertThat(response.relatedFiles().get(hashPath).hashPath()).isEqualTo(hashPath);
 
 		verify(indexer, times(1)).getIndexerByRealm(realm);
-		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), searchResultMaxSize);
+		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), conf.searchResultMaxSize());
 		verify(fileRepository, times(1)).getByHashPath(Set.of(hashPath));
 	}
 
@@ -270,14 +270,15 @@ class SearchControllerTest {
 				.getContentAsString();
 
 		final var response = objectMapper.readValue(content, OpenSearchResponse.class);
-		assertThat(response.limit()).isEqualTo(searchResultMaxSize);
+		assertThat(response.limit()).isEqualTo(conf.searchResultMaxSize());
 		assertThat(response.q()).isEqualTo(q.trim());
 		assertThat(response.relatedFiles()).isEmpty();
 		assertThat(response.constraints()).isEqualTo(constraintsRequest);
 		assertThat(response.result()).isEqualTo(searchResult);
 
 		verify(indexer, times(1)).getIndexerByRealm(realm);
-		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.ofNullable(fileConstraints), searchResultMaxSize);
+		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.ofNullable(fileConstraints), conf
+				.searchResultMaxSize());
 	}
 
 	@Test
@@ -296,14 +297,14 @@ class SearchControllerTest {
 				.getContentAsString();
 
 		final var response = objectMapper.readValue(content, OpenSearchResponse.class);
-		assertThat(response.limit()).isEqualTo(searchResultMaxSize);
+		assertThat(response.limit()).isEqualTo(conf.searchResultMaxSize());
 		assertThat(response.q()).isEqualTo(q.trim());
 		assertThat(response.relatedFiles()).isEmpty();
 		assertNull(response.constraints());
 		assertThat(response.result()).isEqualTo(searchResult);
 
 		verify(indexer, times(1)).getIndexerByRealm(realm);
-		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), searchResultMaxSize);
+		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), conf.searchResultMaxSize());
 	}
 
 	@Test

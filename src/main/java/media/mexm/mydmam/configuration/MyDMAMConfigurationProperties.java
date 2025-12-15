@@ -20,21 +20,43 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 
 @ConfigurationProperties(prefix = "mydmam")
 @Validated
-public record MyDMAMConfigurationProperties(@Valid PathIndexingConf pathindexing) {
+public record MyDMAMConfigurationProperties(@Valid PathIndexingConf pathindexing,
+											String instancename,
+											@DefaultValue("audittrail") @NotEmpty String auditTrailSpoolName,
+											@DefaultValue("false") boolean explainSearchResults,
+											@DefaultValue("10000") @Min(0) int resetBatchSizeIndexer,
+											@DefaultValue("100") @Min(1) int dirListMaxSize,
+											@DefaultValue("100") @Min(1) int searchResultMaxSize,
+											@DefaultValue("24h") Duration pendingActivityMaxAgeGraceRestart) {
 
-	@ConstructorBinding
-	public MyDMAMConfigurationProperties { // NOSONAR S1186
+	public MyDMAMConfigurationProperties {
+		if (instancename == null || instancename.isEmpty()) {
+			try {
+				instancename = InetAddress.getLocalHost().getHostName();
+			} catch (final UnknownHostException e) {
+				throw new IllegalStateException("Can't get hostname", e);
+			}
+		}
+		if (pendingActivityMaxAgeGraceRestart.isPositive() == false) {
+			throw new IllegalStateException("Invalid pendingActivityMaxAgeGraceRestart: "
+											+ pendingActivityMaxAgeGraceRestart);
+		}
 	}
 
 	public Set<String> getRealmNames() {

@@ -103,6 +103,7 @@ class IndexerTest {
 		if (realmWorkingDirectory.exists()) {
 			forceDelete(realmWorkingDirectory);
 		}
+		when(conf.resetBatchSizeIndexer()).thenReturn(10000);
 	}
 
 	@AfterEach

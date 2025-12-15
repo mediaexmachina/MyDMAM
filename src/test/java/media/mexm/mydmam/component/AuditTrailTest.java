@@ -83,6 +83,7 @@ class AuditTrailTest {
 		when(pathIndexingRealm.workingDirectory())
 				.thenReturn(workingDirectory);
 		when(conf.pathindexing()).thenReturn(pathIndexingConf);
+		when(conf.auditTrailSpoolName()).thenReturn(auditTrailSpoolName);
 	}
 
 	@Test

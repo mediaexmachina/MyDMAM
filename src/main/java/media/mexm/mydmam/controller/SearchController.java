@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,6 +51,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.component.Indexer;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.dto.FileItemResponse;
 import media.mexm.mydmam.dto.OpenSearchResponse;
 import media.mexm.mydmam.dto.SearchConstraintsRequest;
@@ -69,9 +69,8 @@ public class SearchController {
 	Indexer indexer;
 	@Autowired
 	FileRepository fileRepository;
-
-	@Value("${mydmamConsts.searchResultMaxSize:100}")
-	int searchResultMaxSize;
+	@Autowired
+	MyDMAMConfigurationProperties conf;
 
 	@RequestMapping(value = "/{realm}", method = { GET, POST, PUT })
 	@Transactional
@@ -88,7 +87,7 @@ public class SearchController {
 			return new ResponseEntity<>(UNPROCESSABLE_ENTITY);
 		}
 
-		final var maxAllowedEntries = min(searchResultMaxSize, limit == 0 ? searchResultMaxSize : limit);
+		final var maxAllowedEntries = min(conf.searchResultMaxSize(), limit == 0 ? conf.searchResultMaxSize() : limit);
 		final var oFileConstraints = Optional.ofNullable(constraints).map(SearchConstraintsRequest::fileConstraints);
 
 		final var searchResult = oRealmIndexer.get().openSearch(q.trim(), oFileConstraints, maxAllowedEntries);

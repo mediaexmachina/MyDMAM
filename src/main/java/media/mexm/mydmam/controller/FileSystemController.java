@@ -30,7 +30,6 @@ import java.util.Optional;
 
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,6 +43,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.dto.FileResponse;
 import media.mexm.mydmam.dto.RealmListResponse;
 import media.mexm.mydmam.dto.StorageListResponse;
@@ -59,12 +59,11 @@ import media.mexm.mydmam.repository.FileRepository;
 public class FileSystemController {
 
 	@Autowired
+	MyDMAMConfigurationProperties conf;
+	@Autowired
 	FileRepository fileRepository;
 	@Autowired
 	FileDao fileDao;
-
-	@Value("${mydmamConsts.dirListMaxSize:100}")
-	int dirListMaxSize;
 
 	@GetMapping("/list")
 	@Transactional
@@ -100,7 +99,7 @@ public class FileSystemController {
 														   defaultValue = "0") @Min(0) final Integer skip,
 											 @RequestParam(required = false,
 														   defaultValue = "0") @Min(0) final Integer limit) {
-		final var maxAllowedEntries = min(dirListMaxSize, limit == 0 ? dirListMaxSize : limit);
+		final var maxAllowedEntries = min(conf.dirListMaxSize(), limit == 0 ? conf.dirListMaxSize() : limit);
 		final var resultItemList = fileDao.getByParentHashPath(hashPath.toLowerCase(), skip, maxAllowedEntries);
 		final var listSize = resultItemList.size();
 		final var totalSize = fileDao.countParentHashPathItems(realm, storage, hashPath.toLowerCase());

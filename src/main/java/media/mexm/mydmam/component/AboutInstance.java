@@ -16,38 +16,23 @@
  */
 package media.mexm.mydmam.component;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import lombok.Getter;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 
 @Component
 public class AboutInstance {
 
-	private final String hostName;
+	@Getter
+	private final String instanceName;
 	@Getter
 	private final long pid;
-	private final String instanceName;
 
-	public AboutInstance(@Value("${mydmamConsts.instancename:}") final String instanceName) {
-		try {
-			hostName = InetAddress.getLocalHost().getHostName();
-		} catch (final UnknownHostException e) {
-			throw new IllegalStateException("Can't get hostname", e);
-		}
+	public AboutInstance(@Autowired final MyDMAMConfigurationProperties configuration) {
+		instanceName = configuration.instancename();
 		pid = ProcessHandle.current().pid();
-		this.instanceName = instanceName;
-	}
-
-	public String getPendingActivityHostName() {
-		if (instanceName == null || instanceName.isEmpty()) {
-			return hostName;
-		} else {
-			return hostName + "#" + instanceName;
-		}
 	}
 
 }

@@ -17,14 +17,12 @@
 package media.mexm.mydmam.repository;
 
 import java.sql.Timestamp;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 import jakarta.persistence.EntityManager;
@@ -33,6 +31,7 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.PendingActivityEntity;
 
@@ -48,9 +47,8 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
 	FileRepository fileRepository;
 	@Autowired
 	PendingActivityRepository pendingActivityRepository;
-
-	@Value("${mydmamConsts.pendingActivityMaxAgeGraceRestart:24h}")
-	Duration maxAgeGraceRestart;
+	@Autowired
+	MyDMAMConfigurationProperties conf;
 
 	@Override
 	@Transactional
@@ -95,7 +93,8 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
 	@Override
 	@Transactional
 	public List<PendingActivityEntity> getPendingActivities(final Set<String> realms, final String hostName) {
-		final var olderThan = new Timestamp(System.currentTimeMillis() - maxAgeGraceRestart.toMillis());
+		final var olderThan = new Timestamp(System.currentTimeMillis()
+											- conf.pendingActivityMaxAgeGraceRestart().toMillis());
 
 		return entityManager.createQuery("""
 				SELECT pa FROM PendingActivityEntity pa

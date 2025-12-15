@@ -16,11 +16,14 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -44,11 +47,76 @@ class MyDMAMConfigurationPropertiesTest {
 	@Fake
 	String otherRealm;
 
+	@Fake
+	String instancename;
+	@Fake
+	String auditTrailSpoolName;
+	@Fake
+	boolean explainSearchResults;
+	@Fake
+	int resetBatchSizeIndexer;
+	@Fake
+	int dirListMaxSize;
+	@Fake
+	int searchResultMaxSize;
+	@Fake
+	long pendingActivityMaxAgeGraceRestartDuration;
+	Duration pendingActivityMaxAgeGraceRestart;
+
 	MyDMAMConfigurationProperties c;
 
 	@BeforeEach
 	void init() {
-		c = new MyDMAMConfigurationProperties(pathindexing);
+		pendingActivityMaxAgeGraceRestart = Duration.ofMillis(abs(pendingActivityMaxAgeGraceRestartDuration));
+
+		c = new MyDMAMConfigurationProperties(
+				pathindexing,
+				instancename,
+				auditTrailSpoolName,
+				explainSearchResults,
+				resetBatchSizeIndexer,
+				dirListMaxSize,
+				searchResultMaxSize,
+				pendingActivityMaxAgeGraceRestart);
+	}
+
+	@Test
+	void testNoInstancename() {
+		c = new MyDMAMConfigurationProperties(
+				pathindexing,
+				null,
+				auditTrailSpoolName,
+				explainSearchResults,
+				resetBatchSizeIndexer,
+				dirListMaxSize,
+				searchResultMaxSize,
+				pendingActivityMaxAgeGraceRestart);
+		assertThat(c.instancename()).isNotEmpty();
+	}
+
+	@Test
+	void testBadPendingActivityMaxAgeGraceRestart() {
+		pendingActivityMaxAgeGraceRestart = Duration.ofMillis(-abs(pendingActivityMaxAgeGraceRestartDuration));
+		assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
+				pathindexing,
+				instancename,
+				auditTrailSpoolName,
+				explainSearchResults,
+				resetBatchSizeIndexer,
+				dirListMaxSize,
+				searchResultMaxSize,
+				pendingActivityMaxAgeGraceRestart));
+
+		pendingActivityMaxAgeGraceRestart = Duration.ZERO;
+		assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
+				pathindexing,
+				instancename,
+				auditTrailSpoolName,
+				explainSearchResults,
+				resetBatchSizeIndexer,
+				dirListMaxSize,
+				searchResultMaxSize,
+				pendingActivityMaxAgeGraceRestart));
 	}
 
 	@Test

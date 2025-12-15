@@ -23,7 +23,6 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
@@ -45,11 +44,6 @@ public class Indexer implements DisposableBean {
 	@Autowired
 	JobKitEngine jobKit;
 
-	@Value("${mydmamConsts.explainSearchResults:false}")
-	boolean explainSearchResults;
-	@Value("${mydmamConsts.resetBatchSizeIndexer:10000}")
-	int resetBatchSizeIndexer;
-
 	public void init() throws IOException {
 		final var pathIndexing = conf.pathindexing();
 		if (pathIndexing == null) {
@@ -68,7 +62,7 @@ public class Indexer implements DisposableBean {
 
 			log.info("Prepare indexer for realm={}, on {}",
 					realmName, workingDirectory.getAbsolutePath());
-			final var realmIndexer = new RealmIndexer(realmName, workingDirectory, explainSearchResults);
+			final var realmIndexer = new RealmIndexer(realmName, workingDirectory, conf.explainSearchResults());
 			indexerByRealmName.put(realmName, realmIndexer);
 		}
 	}
@@ -91,7 +85,7 @@ public class Indexer implements DisposableBean {
 			indexerByRealmName.forEach((realm, indexer) -> {
 				log.info("Start to reset indexes on realm {}", realm);
 
-				try (var session = indexer.reset(resetBatchSizeIndexer)) {
+				try (var session = indexer.reset(conf.resetBatchSizeIndexer())) {
 					fileDao.getAllFromRealm(realm, session);
 				} catch (final Exception e) {
 					log.error("Can't run reset", e);

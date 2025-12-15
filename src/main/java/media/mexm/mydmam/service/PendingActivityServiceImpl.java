@@ -98,7 +98,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 						activityHandler,
 						eventType,
 						internalObjectMapper.writeValueAsString(previousHandlers),
-						aboutInstance.getPendingActivityHostName(),
+						aboutInstance.getInstanceName(),
 						aboutInstance.getPid());
 
 				jobKitEngine.runOneShot(new PendingActivityJob(
@@ -142,7 +142,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 					activityHandler,
 					eventType,
 					internalObjectMapper.writeValueAsString(previousHandlers),
-					aboutInstance.getPendingActivityHostName(),
+					aboutInstance.getInstanceName(),
 					aboutInstance.getPid());
 
 			jobKitEngine.runOneShot(pendingActivityJob.evolve(activityHandler));
@@ -155,7 +155,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 	public void restartPendingActivities() {
 		final var allPendingList = pendingActivityDao.getPendingActivities(
 				configuration.getRealmNames(),
-				aboutInstance.getPendingActivityHostName());
+				aboutInstance.getInstanceName());
 		if (allPendingList.isEmpty()) {
 			return;
 		}
@@ -201,7 +201,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
 								pendingActivityDao.resetPendingActivity(
 										pending,
-										aboutInstance.getPendingActivityHostName(),
+										aboutInstance.getInstanceName(),
 										aboutInstance.getPid());
 
 								log.trace(LOG_QUEUE_RUN_FOR_ON, asset, pending.getHandlerName());

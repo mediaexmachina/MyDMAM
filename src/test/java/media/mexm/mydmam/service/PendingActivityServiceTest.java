@@ -126,7 +126,7 @@ class PendingActivityServiceTest {
 		when(file.isDirectory()).thenReturn(false);
 		when(mediaAssetService.getFromWatchfolder(realmName, storageName, file)).thenReturn(asset);
 		when(internalObjectMapper.writeValueAsString(Set.of(handlerName))).thenReturn(previousHandlersNames);
-		when(aboutInstance.getPendingActivityHostName()).thenReturn(hostName);
+		when(aboutInstance.getInstanceName()).thenReturn(hostName);
 		when(aboutInstance.getPid()).thenReturn(pid);
 		when(asset.getHashPath()).thenReturn(hashPathItem);
 	}
@@ -168,7 +168,7 @@ class PendingActivityServiceTest {
 		verify(asset, atLeastOnce()).getHashPath();
 		verify(asset, atLeastOnce()).getName();
 		verify(internalObjectMapper, times(1)).writeValueAsString(Set.of(handlerName));
-		verify(aboutInstance, atLeastOnce()).getPendingActivityHostName();
+		verify(aboutInstance, atLeastOnce()).getInstanceName();
 		verify(aboutInstance, atLeastOnce()).getPid();
 		verify(pendingActivityDao, times(1))
 				.declateActivity(hashPathItem, activityHandler, eventType, previousHandlersNames, hostName, pid);
@@ -204,7 +204,7 @@ class PendingActivityServiceTest {
 		verify(asset, atLeastOnce()).getHashPath();
 		verify(asset, atLeastOnce()).getName();
 		verify(internalObjectMapper, times(1)).writeValueAsString(previousHandlers);
-		verify(aboutInstance, atLeastOnce()).getPendingActivityHostName();
+		verify(aboutInstance, atLeastOnce()).getInstanceName();
 		verify(aboutInstance, atLeastOnce()).getPid();
 
 		verify(pendingActivityDao, times(1))
@@ -220,7 +220,7 @@ class PendingActivityServiceTest {
 		pas.restartPendingActivities();
 
 		verify(pendingActivityDao, times(1)).getPendingActivities(Set.of(realmName), hostName);
-		verify(aboutInstance, atLeastOnce()).getPendingActivityHostName();
+		verify(aboutInstance, atLeastOnce()).getInstanceName();
 	}
 
 	@Nested
@@ -262,7 +262,7 @@ class PendingActivityServiceTest {
 		@AfterEach
 		void ends() {
 			verify(pendingActivityDao, times(1)).getPendingActivities(Set.of(realmName), hostName);
-			verify(aboutInstance, atLeastOnce()).getPendingActivityHostName();
+			verify(aboutInstance, atLeastOnce()).getInstanceName();
 			verify(entity, atLeastOnce()).getEventType();
 			verify(entity, atLeastOnce()).getFile();
 			verify(entity, atLeastOnce()).getPreviousHandlers();
