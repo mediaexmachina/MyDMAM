@@ -34,12 +34,12 @@ import lombok.extern.slf4j.Slf4j;
 
 @Validated
 @Slf4j
-public record PathIndexingRealm(@Valid Map<TechnicalName, PathIndexingStorage> storages,
-								Duration timeBetweenScans,
-								@DefaultValue("processasset") @NotEmpty String spoolProcessAsset,
-								File workingDirectory) {
+public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
+						Duration timeBetweenScans,
+						@DefaultValue("processasset") @NotEmpty String spoolProcessAsset,
+						File workingDirectory) {
 
-	public PathIndexingRealm {
+	public RealmConf {
 		storages = Optional.ofNullable(storages).orElse(Map.of());
 
 		if (workingDirectory != null) {

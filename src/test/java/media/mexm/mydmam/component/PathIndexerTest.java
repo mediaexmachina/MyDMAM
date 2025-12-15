@@ -41,7 +41,7 @@ import org.mockito.Mock;
 
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.InfraConf;
-import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.service.PathIndexerService;
@@ -83,7 +83,7 @@ class PathIndexerTest {
 		ObservedFolder scan;
 
 		PathIndexingStorage piStorage;
-		PathIndexingRealm piRealm;
+		RealmConf piRealm;
 
 		@BeforeEach
 		void init() {
@@ -92,7 +92,7 @@ class PathIndexerTest {
 			scan.setLabel("test");
 
 			piStorage = new PathIndexingStorage(scan, 0, duration, spoolEvents);
-			piRealm = new PathIndexingRealm(Map.of(new TechnicalName(storage), piStorage),
+			piRealm = new RealmConf(Map.of(new TechnicalName(storage), piStorage),
 					duration, spoolEvents, null);
 
 			when(configuration.infra()).thenReturn(infra);

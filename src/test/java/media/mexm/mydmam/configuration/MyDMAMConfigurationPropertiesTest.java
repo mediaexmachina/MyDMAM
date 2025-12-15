@@ -40,7 +40,7 @@ class MyDMAMConfigurationPropertiesTest {
 	@Mock
 	InfraConf pathindexing;
 	@Mock
-	PathIndexingRealm realm;
+	RealmConf realm;
 
 	@Fake
 	String realmName;

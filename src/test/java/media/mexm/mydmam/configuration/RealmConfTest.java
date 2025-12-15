@@ -40,7 +40,7 @@ import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
 @ExtendWith(MockToolsExtendsJunit.class)
-class PathIndexingRealmTest {
+class RealmConfTest {
 
 	@Mock
 	Duration mockTimeBetweenScans;
@@ -58,12 +58,12 @@ class PathIndexingRealmTest {
 
 	Duration timeBetweenScans;
 	File workingDirectory;
-	PathIndexingRealm conf;
+	RealmConf conf;
 
 	@BeforeEach
 	void init() {
 		workingDirectory = new File(getTempDirectory(), "mydmam-" + getClass().getSimpleName());
-		conf = new PathIndexingRealm(
+		conf = new RealmConf(
 				Map.of(new TechnicalName(storageName), piStorage),
 				mockTimeBetweenScans,
 				spool,
@@ -90,7 +90,7 @@ class PathIndexingRealmTest {
 
 	@Test
 	void testStoragesStream_empty() {
-		conf = new PathIndexingRealm(
+		conf = new RealmConf(
 				Map.of(),
 				mockTimeBetweenScans,
 				spool,
@@ -102,7 +102,7 @@ class PathIndexingRealmTest {
 
 	@Test
 	void testStoragesStream_null() {
-		conf = new PathIndexingRealm(null, mockTimeBetweenScans, spool, null);
+		conf = new RealmConf(null, mockTimeBetweenScans, spool, null);
 
 		final var result = conf.storages().entrySet().stream().toList();
 		assertThat(result).isEmpty();
@@ -110,7 +110,7 @@ class PathIndexingRealmTest {
 
 	@Test
 	void testGetValidWorkingDirectory_empty() {
-		conf = new PathIndexingRealm(null, mockTimeBetweenScans, spool, null);
+		conf = new RealmConf(null, mockTimeBetweenScans, spool, null);
 		assertThat(conf.workingDirectory()).isNull();
 	}
 
@@ -134,7 +134,7 @@ class PathIndexingRealmTest {
 		}
 		touch(workingDirectory);
 		final var map = Map.of(new TechnicalName(storageName), piStorage);
-		assertThrows(UncheckedIOException.class, () -> new PathIndexingRealm(
+		assertThrows(UncheckedIOException.class, () -> new RealmConf(
 				map,
 				mockTimeBetweenScans,
 				spool,
@@ -145,19 +145,19 @@ class PathIndexingRealmTest {
 	void testTimeBetweenScans() {
 		final var map = Map.of(new TechnicalName(storageName), piStorage);
 
-		conf = new PathIndexingRealm(map, null, spool, workingDirectory);
+		conf = new RealmConf(map, null, spool, workingDirectory);
 		assertThat(conf.timeBetweenScans()).isNull();
 
 		timeBetweenScans = Duration.ofMillis(duration);
-		conf = new PathIndexingRealm(map, timeBetweenScans, spool, workingDirectory);
+		conf = new RealmConf(map, timeBetweenScans, spool, workingDirectory);
 		assertThat(conf.timeBetweenScans()).isEqualTo(Duration.ofMillis(duration));
 
 		timeBetweenScans = Duration.ZERO;
 		assertThrows(IllegalArgumentException.class,
-				() -> new PathIndexingRealm(map, timeBetweenScans, spool, workingDirectory));
+				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory));
 		timeBetweenScans = Duration.ofMillis(-duration);
 		assertThrows(IllegalArgumentException.class,
-				() -> new PathIndexingRealm(map, timeBetweenScans, spool, workingDirectory));
+				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory));
 	}
 
 }

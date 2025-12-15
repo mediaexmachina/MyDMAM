@@ -20,7 +20,7 @@ import java.util.Set;
 
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.PendingActivityJob;
-import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.RealmConf;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 public interface PendingActivityService {
@@ -29,13 +29,13 @@ public interface PendingActivityService {
 
 	void startsActivities(String realmName,
 						  String storageName,
-						  PathIndexingRealm realm,
+						  RealmConf realm,
 						  Set<? extends FileAttributesReference> files,
 						  ActivityEventType eventType);
 
 	void cleanupFiles(String realmName,
 					  String storageName,
-					  PathIndexingRealm realm,
+					  RealmConf realm,
 					  Set<? extends FileAttributesReference> losted);
 
 	void restartPendingActivities();

@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.time.Duration;
 
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.service.PathIndexerService;
 import tv.hd3g.jobkit.watchfolder.FolderActivity;
@@ -30,7 +30,7 @@ import tv.hd3g.jobkit.watchfolder.WatchedFiles;
 @Slf4j
 public record RealmStorageFolderActivity(PathIndexerService pathIndexerService,
 										 String realmName,
-										 PathIndexingRealm realm,
+										 RealmConf realm,
 										 String storageName,
 										 PathIndexingStorage storage) implements FolderActivity {
 

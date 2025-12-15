@@ -49,7 +49,7 @@ import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.component.AboutInstance;
 import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.PendingActivityEntity;
 import media.mexm.mydmam.repository.PendingActivityDao;
@@ -77,7 +77,7 @@ class PendingActivityServiceTest {
 	AboutInstance aboutInstance;
 
 	@Mock
-	PathIndexingRealm realm;
+	RealmConf realm;
 	@Mock
 	FileAttributesReference lostedFile;
 	@Mock

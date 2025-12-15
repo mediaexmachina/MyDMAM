@@ -40,7 +40,7 @@ import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.repository.FileRepository;
@@ -213,7 +213,7 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 	@Transactional
 	public void onAfterScan(final String realmName,
 							final String storageName,
-							final PathIndexingRealm realm,
+							final RealmConf realm,
 							final PathIndexingStorage storage,
 							final ObservedFolder observedFolder,
 							final Duration scanTime,

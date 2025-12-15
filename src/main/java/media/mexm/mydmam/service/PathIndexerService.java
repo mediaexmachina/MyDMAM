@@ -20,7 +20,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
-import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
 import tv.hd3g.jobkit.watchfolder.WatchedFileScanner;
@@ -44,7 +44,7 @@ public interface PathIndexerService {
 
 	void onAfterScan(String realmName,
 					 String storageName,
-					 PathIndexingRealm realm,
+					 RealmConf realm,
 					 PathIndexingStorage storage,
 					 ObservedFolder observedFolder,
 					 Duration scanTime,

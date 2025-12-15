@@ -70,7 +70,7 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
 		}
 	}
 
-	public Optional<PathIndexingRealm> getRealmByName(final String realmName) {
+	public Optional<RealmConf> getRealmByName(final String realmName) {
 		requireNonNull(realmName);
 		try {
 			return Optional.ofNullable(infra().realms().get(new TechnicalName(realmName)));

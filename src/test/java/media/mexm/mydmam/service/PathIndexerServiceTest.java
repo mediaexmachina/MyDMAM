@@ -53,7 +53,7 @@ import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.PathIndexer;
-import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -105,7 +105,7 @@ class PathIndexerServiceTest {
 	@Fake
 	String path;
 
-	PathIndexingRealm realm;
+	RealmConf realm;
 	PathIndexingStorage storage;
 	ObservedFolder scan;
 

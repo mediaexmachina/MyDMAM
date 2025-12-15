@@ -41,7 +41,7 @@ import media.mexm.mydmam.activity.PendingActivityJob;
 import media.mexm.mydmam.component.AboutInstance;
 import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.PendingActivityEntity;
 import media.mexm.mydmam.repository.PendingActivityDao;
 import tv.hd3g.jobkit.engine.JobKitEngine;
@@ -71,7 +71,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 	@Override
 	public void startsActivities(final String realmName,
 								 final String storageName,
-								 final PathIndexingRealm realm,
+								 final RealmConf realm,
 								 final Set<? extends FileAttributesReference> files,
 								 final ActivityEventType eventType) {
 		final var assets = files.stream()
@@ -185,7 +185,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
 							final var asset = mediaAssetService.getFromFileEntry(file);
 							final var spoolName = configuration.getRealmByName(file.getRealm())
-									.map(PathIndexingRealm::spoolProcessAsset)
+									.map(RealmConf::spoolProcessAsset)
 									.orElseThrow(() -> new IllegalStateException(
 											"Can't found realm=" + file.getRealm()));
 
@@ -225,7 +225,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 	@Override
 	public void cleanupFiles(final String realmName,
 							 final String storageName,
-							 final PathIndexingRealm realm,
+							 final RealmConf realm,
 							 final Set<? extends FileAttributesReference> losted) {
 		losted.forEach(file -> mediaAssetService.purgeAssetArtefacts(realmName, storageName, file));
 	}

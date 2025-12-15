@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Validated
 @Slf4j
-public record InfraConf(@Valid Map<TechnicalName, PathIndexingRealm> realms,
+public record InfraConf(@Valid Map<TechnicalName, RealmConf> realms,
 						@DefaultValue("1h") @NotNull Duration timeBetweenScans,
 						@DefaultValue("pathindexing") @NotEmpty String spoolEvents) {
 

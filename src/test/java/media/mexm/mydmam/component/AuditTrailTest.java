@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.InfraConf;
-import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.TechnicalName;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -60,7 +60,7 @@ class AuditTrailTest {
 	PathIndexer pathIndexer;
 
 	@Mock
-	PathIndexingRealm pathIndexingRealm;
+	RealmConf realmConf;
 
 	@Fake
 	String auditTrailSpoolName;
@@ -76,11 +76,11 @@ class AuditTrailTest {
 	@BeforeEach
 	void init() {
 		infra = new InfraConf(
-				Map.of(new TechnicalName(realmName), pathIndexingRealm),
+				Map.of(new TechnicalName(realmName), realmConf),
 				Duration.ofHours(1),
 				null);
 
-		when(pathIndexingRealm.workingDirectory())
+		when(realmConf.workingDirectory())
 				.thenReturn(workingDirectory);
 		when(conf.infra()).thenReturn(infra);
 		when(conf.auditTrailSpoolName()).thenReturn(auditTrailSpoolName);
@@ -98,12 +98,12 @@ class AuditTrailTest {
 
 	@Test
 	void testGetAuditTrailByRealm_noWorkingDir() {
-		when(pathIndexingRealm.workingDirectory()).thenReturn(null);
+		when(realmConf.workingDirectory()).thenReturn(null);
 
 		auditTrail.init();
 
 		verify(conf, times(1)).infra();
-		verify(pathIndexingRealm, times(1)).workingDirectory();
+		verify(realmConf, times(1)).workingDirectory();
 		assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
 	}
 
@@ -112,7 +112,7 @@ class AuditTrailTest {
 		auditTrail.init();
 
 		verify(conf, times(1)).infra();
-		verify(pathIndexingRealm, times(1)).workingDirectory();
+		verify(realmConf, times(1)).workingDirectory();
 
 		final var realmAuditTrail = auditTrail.getAuditTrailByRealm(realmName);
 		assertThat(realmAuditTrail).isNotEmpty();

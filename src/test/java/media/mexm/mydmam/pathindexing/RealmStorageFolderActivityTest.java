@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
-import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.service.PathIndexerService;
 import tv.hd3g.commons.testtools.Fake;
@@ -41,7 +41,7 @@ class RealmStorageFolderActivityTest {
 	@Mock
 	PathIndexerService pathIndexerService;
 	@Mock
-	PathIndexingRealm realm;
+	RealmConf realm;
 	@Mock
 	PathIndexingStorage storage;
 	@Mock
