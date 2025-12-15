@@ -44,7 +44,7 @@ public class RealmStorageWatchedFilesDb implements WatchedFilesDb {
 		this.pathIndexerService = pathIndexerService;
 		this.realmName = realmName;
 		this.storageName = storageName;
-		scanner = new WatchedFileScanner(storage.scan(), storage.maxDeep());
+		scanner = new WatchedFileScanner(storage.makeObservedFolder(realmName, storageName), storage.maxDeep());
 	}
 
 	@Override

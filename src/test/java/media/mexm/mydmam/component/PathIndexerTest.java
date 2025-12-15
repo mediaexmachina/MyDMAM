@@ -39,16 +39,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
-import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.InfraConf;
-import media.mexm.mydmam.configuration.RealmConf;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.service.PathIndexerService;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
-import tv.hd3g.jobkit.watchfolder.ObservedFolder;
 
 @ExtendWith(MockToolsExtendsJunit.class)
 class PathIndexerTest {
@@ -79,19 +78,17 @@ class PathIndexerTest {
 
 	@Nested
 	class WithWatchfolder {
-
-		ObservedFolder scan;
-
 		PathIndexingStorage piStorage;
 		RealmConf piRealm;
 
 		@BeforeEach
 		void init() {
-			scan = new ObservedFolder();
-			scan.setTargetFolder(new File(".").getAbsolutePath());
-			scan.setLabel("test");
-
-			piStorage = new PathIndexingStorage(scan, 0, duration, spoolEvents);
+			piStorage = new PathIndexingStorage(
+					new File(".").getAbsolutePath(), 10,
+					duration,
+					0,
+					null, null, null, null, null, null, null, null, false, false,
+					Duration.ZERO, false, "pathindexing");
 			piRealm = new RealmConf(Map.of(new TechnicalName(storage), piStorage),
 					duration, spoolEvents, null);
 

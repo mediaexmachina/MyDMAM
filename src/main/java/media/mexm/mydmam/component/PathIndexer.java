@@ -113,8 +113,7 @@ public class PathIndexer {
 					return realmConf.storages().entrySet().stream()
 							.filter(storageConf -> {
 								final var storage = storageConf.getValue();
-								final var scan = storage.scan();
-								return scan.isDisabled() == false;
+								return storage.noScans() == false;
 							})
 							.map(storageConf -> {
 								final var storageName = storageConf.getKey().name();
@@ -138,7 +137,7 @@ public class PathIndexer {
 										storage);
 
 								return new KV(folderActivity, new Watchfolders(
-										List.of(storage.scan()),
+										List.of(storage.makeObservedFolder(realmName, storageName)),
 										folderActivity,
 										timeBetweenScans,
 										jobKitEngine,

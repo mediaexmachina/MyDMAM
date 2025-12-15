@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.pathindexing;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.reset;
@@ -63,12 +64,12 @@ class RealmStorageWatchedFilesDbTest {
 
 	@BeforeEach
 	void init() {
-		when(storage.scan()).thenReturn(scan);
+		when(storage.makeObservedFolder(any(), any())).thenReturn(scan);
 		when(storage.maxDeep()).thenReturn(0);
 
 		db = new RealmStorageWatchedFilesDb(pathIndexerService, realmName, storageName, storage);
 
-		verify(storage, atLeastOnce()).scan();
+		verify(storage, atLeastOnce()).makeObservedFolder(realmName, storageName);
 		verify(storage, atLeastOnce()).maxDeep();
 		verify(scan, times(1)).createFileSystem();
 	}
