@@ -43,6 +43,7 @@ import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingConf;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.service.PathIndexerService;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -68,10 +69,12 @@ class PathIndexerTest {
 
 	private FlatJobKitEngine jobKitEngine;
 	private PathIndexer pi;
+	private Duration duration;
 
 	@BeforeEach
 	void init() {
 		jobKitEngine = new FlatJobKitEngine();
+		duration = Duration.ofHours(1);
 	}
 
 	@Nested
@@ -88,12 +91,13 @@ class PathIndexerTest {
 			scan.setTargetFolder(new File(".").getAbsolutePath());
 			scan.setLabel("test");
 
-			piStorage = new PathIndexingStorage(scan, 0, Duration.ZERO, spoolEvents);
-			piRealm = new PathIndexingRealm(Map.of(storage, piStorage), Duration.ZERO, spoolEvents, spoolEvents, null);
+			piStorage = new PathIndexingStorage(scan, 0, duration, spoolEvents);
+			piRealm = new PathIndexingRealm(Map.of(new TechnicalName(storage), piStorage),
+					duration, spoolEvents, null);
 
 			when(configuration.pathindexing()).thenReturn(pathIndexingConf);
-			when(pathIndexingConf.getSpoolEvents()).thenReturn(spoolEvents);
-			when(pathIndexingConf.realms()).thenReturn(Map.of(realm, piRealm));
+			when(pathIndexingConf.spoolEvents()).thenReturn(spoolEvents);
+			when(pathIndexingConf.realms()).thenReturn(Map.of(new TechnicalName(realm), piRealm));
 
 			pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
 			pi.startScans();
@@ -102,7 +106,7 @@ class PathIndexerTest {
 		@AfterEach
 		void ends() {
 			verify(configuration, atLeastOnce()).pathindexing();
-			verify(pathIndexingConf, atLeastOnce()).getSpoolEvents();
+			verify(pathIndexingConf, atLeastOnce()).spoolEvents();
 			verify(pathIndexingConf, atLeastOnce()).realms();
 			verify(pathIndexingConf, atLeastOnce()).timeBetweenScans();
 			assertFalse(jobKitEngine.isEmptyActiveServicesList());
@@ -128,7 +132,7 @@ class PathIndexerTest {
 			pi.scanNow(realm, storage);
 
 			verify(configuration, atLeastOnce()).pathindexing();
-			verify(pathIndexingConf, atLeastOnce()).getSpoolEvents();
+			verify(pathIndexingConf, atLeastOnce()).spoolEvents();
 			verify(pathIndexerService, times(1)).updateFoundedFiles(
 					any(), eq(realm), eq(storage), any(), any());
 		}

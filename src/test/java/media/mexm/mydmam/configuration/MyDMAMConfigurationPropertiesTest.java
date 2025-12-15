@@ -59,21 +59,21 @@ class MyDMAMConfigurationPropertiesTest {
 
 	@Test
 	void testGetRealmNames() {
-		when(pathindexing.realms()).thenReturn(Map.of(realmName, realm));
+		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
 		assertThat(c.getRealmNames()).containsOnly(realmName);
 		verify(pathindexing, times(1)).realms();
 	}
 
 	@Test
 	void testGetRealmByName_contains() {
-		when(pathindexing.realms()).thenReturn(Map.of(realmName, realm));
+		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
 		assertThat(c.getRealmByName(realmName)).contains(realm);
 		verify(pathindexing, times(1)).realms();
 	}
 
 	@Test
 	void testGetRealmByName_notContains() {
-		when(pathindexing.realms()).thenReturn(Map.of(realmName, realm));
+		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
 		assertThat(c.getRealmByName(otherRealm)).isEmpty();
 		verify(pathindexing, times(1)).realms();
 	}

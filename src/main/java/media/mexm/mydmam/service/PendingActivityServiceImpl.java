@@ -27,12 +27,10 @@ import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_LIST_STRING;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
@@ -69,8 +67,6 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 	InternalObjectMapper internalObjectMapper;
 	@Autowired
 	AboutInstance aboutInstance;
-	@Value("${mydmamConsts.spoolProcessAsset:processasset}")
-	String spoolProcessAsset;
 
 	@Override
 	public void startsActivities(final String realmName,
@@ -85,7 +81,6 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 		if (assets.isEmpty()) {
 			return;
 		}
-		final var spoolName = Optional.ofNullable(realm.spoolProcessAsset()).orElse(spoolProcessAsset);
 
 		assets.forEach(asset -> {
 
@@ -107,7 +102,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 						aboutInstance.getPid());
 
 				jobKitEngine.runOneShot(new PendingActivityJob(
-						spoolName,
+						realm.spoolProcessAsset(),
 						asset,
 						activityHandler,
 						eventType,
@@ -190,8 +185,9 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
 							final var asset = mediaAssetService.getFromFileEntry(file);
 							final var spoolName = configuration.getRealmByName(file.getRealm())
-									.flatMap(r -> Optional.ofNullable(r.spoolProcessAsset()))
-									.orElse(spoolProcessAsset);
+									.map(PathIndexingRealm::spoolProcessAsset)
+									.orElseThrow(() -> new IllegalStateException(
+											"Can't found realm=" + file.getRealm()));
 
 							pendings.forEach(pending -> {
 								final var oActivityHander = activityHandlers.stream()

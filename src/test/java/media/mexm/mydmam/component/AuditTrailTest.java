@@ -22,8 +22,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingConf;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.TechnicalName;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
@@ -75,13 +76,12 @@ class AuditTrailTest {
 	@BeforeEach
 	void init() {
 		pathIndexingConf = new PathIndexingConf(
-				Map.of(realmName, pathIndexingRealm),
-				null,
-				null,
+				Map.of(new TechnicalName(realmName), pathIndexingRealm),
+				Duration.ofHours(1),
 				null);
 
-		when(pathIndexingRealm.getValidWorkingDirectory(realmName))
-				.thenReturn(Optional.ofNullable(workingDirectory));
+		when(pathIndexingRealm.workingDirectory())
+				.thenReturn(workingDirectory);
 		when(conf.pathindexing()).thenReturn(pathIndexingConf);
 	}
 
@@ -97,13 +97,12 @@ class AuditTrailTest {
 
 	@Test
 	void testGetAuditTrailByRealm_noWorkingDir() {
-		when(pathIndexingRealm.getValidWorkingDirectory(realmName))
-				.thenReturn(Optional.empty());
+		when(pathIndexingRealm.workingDirectory()).thenReturn(null);
 
 		auditTrail.init();
 
 		verify(conf, times(1)).pathindexing();
-		verify(pathIndexingRealm, times(1)).getValidWorkingDirectory(realmName);
+		verify(pathIndexingRealm, times(1)).workingDirectory();
 		assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
 	}
 
@@ -112,7 +111,7 @@ class AuditTrailTest {
 		auditTrail.init();
 
 		verify(conf, times(1)).pathindexing();
-		verify(pathIndexingRealm, times(1)).getValidWorkingDirectory(realmName);
+		verify(pathIndexingRealm, times(1)).workingDirectory();
 
 		final var realmAuditTrail = auditTrail.getAuditTrailByRealm(realmName);
 		assertThat(realmAuditTrail).isNotEmpty();

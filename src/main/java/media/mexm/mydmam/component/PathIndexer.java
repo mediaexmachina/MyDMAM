@@ -16,9 +16,7 @@
  */
 package media.mexm.mydmam.component;
 
-import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
-import static media.mexm.mydmam.configuration.PathIndexingConf.correctName;
 
 import java.time.Duration;
 import java.util.List;
@@ -72,7 +70,7 @@ public class PathIndexer {
 				})
 				.findFirst()
 				.ifPresent(entry -> {
-					final var spoolEvents = configuration.pathindexing().getSpoolEvents();
+					final var spoolEvents = configuration.pathindexing().spoolEvents();
 
 					jobKitEngine.runOneShot(
 							"Manual scan for " + realm + ":" + storage,
@@ -102,42 +100,34 @@ public class PathIndexer {
 		if (pathIndexingConf == null) {
 			return Map.of();
 		}
-		final var spoolEvents = pathIndexingConf.getSpoolEvents();
+		final var spoolEvents = pathIndexingConf.spoolEvents();
 
 		return Optional.ofNullable(pathIndexingConf.realms())
 				.orElse(Map.of())
 				.entrySet()
 				.stream()
 				.flatMap(entry -> {
-					final var realmName = correctName(entry.getKey(), "realm name");
+					final var realmName = entry.getKey().name();
 					final var realmConf = entry.getValue();
 
-					return realmConf.storagesStream()
+					return realmConf.storages().entrySet().stream()
 							.filter(storageConf -> {
 								final var storage = storageConf.getValue();
 								final var scan = storage.scan();
 								return scan.isDisabled() == false;
 							})
 							.map(storageConf -> {
-								final var storageName = correctName(storageConf.getKey(), "storage name");
+								final var storageName = storageConf.getKey().name();
 								final var storage = storageConf.getValue();
 
-								final var spoolScans = Optional.ofNullable(storage.spoolScans())
-										.or(() -> Optional.ofNullable(realmConf.spoolScans()))
-										.or(() -> Optional.ofNullable(pathIndexingConf.spoolScans()))
-										.filter(not(String::isEmpty))
-										.orElse("pathindexing");
+								final var spoolScans = storage.spoolScans();
 
 								final var timeBetweenScans = Optional.ofNullable(storage.timeBetweenScans())
-										.filter(Duration::isPositive)
 										.or(() -> Optional.ofNullable(realmConf.timeBetweenScans()))
-										.filter(Duration::isPositive)
-										.or(() -> Optional.ofNullable(pathIndexingConf.timeBetweenScans()))
-										.filter(Duration::isPositive)
-										.orElse(Duration.ofHours(1));
+										.orElse(pathIndexingConf.timeBetweenScans());
 
 								log.debug(
-										"Prepare Watchfolder for {}:{} with timeBetweenScans={}, spoolScans={} spoolEvents={}",
+										"Prepare Watchfolder for {}:{} with mockTimeBetweenScans={}, spoolScans={} spoolEvents={}",
 										realmName, storageName, timeBetweenScans, spoolScans, spoolEvents);
 
 								final var folderActivity = new RealmStorageFolderActivity(

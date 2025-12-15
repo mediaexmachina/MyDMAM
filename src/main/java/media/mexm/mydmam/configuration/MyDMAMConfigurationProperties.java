@@ -16,7 +16,9 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
 import java.util.Optional;
 import java.util.Set;
@@ -37,15 +39,19 @@ public record MyDMAMConfigurationProperties(@Valid PathIndexingConf pathindexing
 
 	public Set<String> getRealmNames() {
 		try {
-			return pathindexing().realms().keySet();
+			return pathindexing().realms().keySet()
+					.stream()
+					.map(TechnicalName::name)
+					.collect(toUnmodifiableSet());
 		} catch (final NullPointerException e) {
 			return Set.of();
 		}
 	}
 
 	public Optional<PathIndexingRealm> getRealmByName(final String realmName) {
+		requireNonNull(realmName);
 		try {
-			return Optional.ofNullable(pathindexing().realms().get(realmName));
+			return Optional.ofNullable(pathindexing().realms().get(new TechnicalName(realmName)));
 		} catch (final NullPointerException e) {
 			return empty();
 		}

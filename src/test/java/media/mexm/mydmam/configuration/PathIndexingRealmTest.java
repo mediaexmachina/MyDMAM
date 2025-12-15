@@ -17,7 +17,6 @@
 package media.mexm.mydmam.configuration;
 
 import static org.apache.commons.io.FileUtils.forceDelete;
-import static org.apache.commons.io.FileUtils.forceMkdir;
 import static org.apache.commons.io.FileUtils.getTempDirectory;
 import static org.apache.commons.io.FileUtils.touch;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -43,31 +43,36 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 class PathIndexingRealmTest {
 
 	@Mock
-	Duration timeBetweenScans;
+	Duration mockTimeBetweenScans;
+	@Mock
+	PathIndexingStorage piStorage;
+
 	@Fake
 	String spool;
 	@Fake
 	String storageName;
 	@Fake
 	String realmName;
-	@Mock
-	PathIndexingStorage piStorage;
+	@Fake(min = 1, max = 10000)
+	long duration;
 
-	PathIndexingRealm conf;
+	Duration timeBetweenScans;
 	File workingDirectory;
+	PathIndexingRealm conf;
 
 	@BeforeEach
 	void init() {
 		workingDirectory = new File(getTempDirectory(), "mydmam-" + getClass().getSimpleName());
 		conf = new PathIndexingRealm(
-				Map.of(storageName, piStorage),
-				timeBetweenScans,
-				spool, spool,
+				Map.of(new TechnicalName(storageName), piStorage),
+				mockTimeBetweenScans,
+				spool,
 				workingDirectory);
 	}
 
 	@AfterEach
 	void ends() throws IOException {
+		Mockito.reset(mockTimeBetweenScans);
 		if (workingDirectory.exists()) {
 			forceDelete(workingDirectory);
 		}
@@ -75,11 +80,11 @@ class PathIndexingRealmTest {
 
 	@Test
 	void testStoragesStream() {
-		final var result = conf.storagesStream().toList();
+		final var result = conf.storages().entrySet().stream().toList();
 		assertThat(result).size().isEqualTo(1);
 		final var entry = result.get(0);
 
-		assertEquals(storageName, entry.getKey());
+		assertEquals(new TechnicalName(storageName), entry.getKey());
 		assertEquals(piStorage, entry.getValue());
 	}
 
@@ -87,34 +92,31 @@ class PathIndexingRealmTest {
 	void testStoragesStream_empty() {
 		conf = new PathIndexingRealm(
 				Map.of(),
-				timeBetweenScans,
-				spool, spool,
+				mockTimeBetweenScans,
+				spool,
 				null);
 
-		final var result = conf.storagesStream().toList();
+		final var result = conf.storages().entrySet().stream().toList();
 		assertThat(result).isEmpty();
 	}
 
 	@Test
 	void testStoragesStream_null() {
-		conf = new PathIndexingRealm(null, timeBetweenScans, spool, spool, null);
+		conf = new PathIndexingRealm(null, mockTimeBetweenScans, spool, null);
 
-		final var result = conf.storagesStream().toList();
+		final var result = conf.storages().entrySet().stream().toList();
 		assertThat(result).isEmpty();
 	}
 
 	@Test
 	void testGetValidWorkingDirectory_empty() {
-		conf = new PathIndexingRealm(null, timeBetweenScans, spool, spool, null);
-		assertThat(conf.getValidWorkingDirectory(realmName))
-				.isEmpty();
+		conf = new PathIndexingRealm(null, mockTimeBetweenScans, spool, null);
+		assertThat(conf.workingDirectory()).isNull();
 	}
 
 	@Test
-	void testGetValidWorkingDirectory_exists() throws IOException {
-		forceMkdir(workingDirectory);
-		assertThat(conf.getValidWorkingDirectory(realmName))
-				.contains(workingDirectory);
+	void testGetValidWorkingDirectory_exists() {
+		assertThat(conf.workingDirectory()).isEqualTo(workingDirectory);
 	}
 
 	@Test
@@ -122,8 +124,7 @@ class PathIndexingRealmTest {
 		if (workingDirectory.exists()) {
 			forceDelete(workingDirectory);
 		}
-		assertThat(conf.getValidWorkingDirectory(realmName))
-				.contains(workingDirectory);
+		assertThat(conf.workingDirectory()).isEqualTo(workingDirectory);
 	}
 
 	@Test
@@ -132,8 +133,31 @@ class PathIndexingRealmTest {
 			forceDelete(workingDirectory);
 		}
 		touch(workingDirectory);
-		assertThrows(UncheckedIOException.class,
-				() -> conf.getValidWorkingDirectory(realmName));
+		final var map = Map.of(new TechnicalName(storageName), piStorage);
+		assertThrows(UncheckedIOException.class, () -> new PathIndexingRealm(
+				map,
+				mockTimeBetweenScans,
+				spool,
+				workingDirectory));
+	}
+
+	@Test
+	void testTimeBetweenScans() {
+		final var map = Map.of(new TechnicalName(storageName), piStorage);
+
+		conf = new PathIndexingRealm(map, null, spool, workingDirectory);
+		assertThat(conf.timeBetweenScans()).isNull();
+
+		timeBetweenScans = Duration.ofMillis(duration);
+		conf = new PathIndexingRealm(map, timeBetweenScans, spool, workingDirectory);
+		assertThat(conf.timeBetweenScans()).isEqualTo(Duration.ofMillis(duration));
+
+		timeBetweenScans = Duration.ZERO;
+		assertThrows(IllegalArgumentException.class,
+				() -> new PathIndexingRealm(map, timeBetweenScans, spool, workingDirectory));
+		timeBetweenScans = Duration.ofMillis(-duration);
+		assertThrows(IllegalArgumentException.class,
+				() -> new PathIndexingRealm(map, timeBetweenScans, spool, workingDirectory));
 	}
 
 }

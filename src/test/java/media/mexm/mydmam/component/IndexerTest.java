@@ -53,6 +53,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingConf;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
+import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.tools.FileEntityConsumer;
@@ -121,39 +122,36 @@ class IndexerTest {
 	@Test
 	void testInit_noWorkingDir() throws IOException {
 		when(conf.pathindexing()).thenReturn(pathindexing);
-		when(pathindexing.realms()).thenReturn(Map.of(realmName, pathIndexingRealm));
-		when(pathIndexingRealm.getValidWorkingDirectory(realmName)).thenReturn(Optional.empty());
+		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
+		when(pathIndexingRealm.workingDirectory()).thenReturn(null);
 
 		indexer.init();
 		assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
 		verify(conf, times(1)).pathindexing();
 		verify(pathindexing, times(1)).realms();
-		verify(pathIndexingRealm, times(1)).getValidWorkingDirectory(realmName);
+		verify(pathIndexingRealm, times(1)).workingDirectory();
 	}
 
 	@Test
 	void testInitGetIndexerByRealm() throws IOException {
 		when(conf.pathindexing()).thenReturn(pathindexing);
-		when(pathindexing.realms()).thenReturn(Map.of(realmName, pathIndexingRealm));
-		when(pathIndexingRealm.getValidWorkingDirectory(realmName))
-				.thenReturn(Optional.ofNullable(realmWorkingDirectory));
-
+		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
+		when(pathIndexingRealm.workingDirectory()).thenReturn(realmWorkingDirectory);
 		indexer.init();
 		assertThat(indexer.getIndexerByRealm(realmName)).isNotEmpty();
 		assertThat(indexer.getIndexerByRealm(badRealmName)).isEmpty();
 
 		verify(conf, times(1)).pathindexing();
 		verify(pathindexing, times(1)).realms();
-		verify(pathIndexingRealm, times(1)).getValidWorkingDirectory(realmName);
+		verify(pathIndexingRealm, times(1)).workingDirectory();
 	}
 
 	@Test
 	void testDestroy() throws IOException {
 		when(conf.pathindexing()).thenReturn(pathindexing);
-		when(pathindexing.realms()).thenReturn(Map.of(realmName, pathIndexingRealm));
-		when(pathIndexingRealm.getValidWorkingDirectory(realmName))
-				.thenReturn(Optional.ofNullable(realmWorkingDirectory));
+		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
+		when(pathIndexingRealm.workingDirectory()).thenReturn(realmWorkingDirectory);
 
 		indexer.init();
 		indexer.destroy();
@@ -161,7 +159,7 @@ class IndexerTest {
 
 		verify(conf, times(1)).pathindexing();
 		verify(pathindexing, times(1)).realms();
-		verify(pathIndexingRealm, times(1)).getValidWorkingDirectory(realmName);
+		verify(pathIndexingRealm, times(1)).workingDirectory();
 	}
 
 	@Nested
@@ -216,9 +214,8 @@ class IndexerTest {
 		@Test
 		void testReset() throws IOException {
 			when(conf.pathindexing()).thenReturn(pathindexing);
-			when(pathindexing.realms()).thenReturn(Map.of(realmName, pathIndexingRealm));
-			when(pathIndexingRealm.getValidWorkingDirectory(realmName))
-					.thenReturn(Optional.ofNullable(realmWorkingDirectory));
+			when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
+			when(pathIndexingRealm.workingDirectory()).thenReturn(realmWorkingDirectory);
 
 			indexer.init();
 			final var realmIndexer = indexer.getIndexerByRealm(realmName).get();
@@ -247,7 +244,7 @@ class IndexerTest {
 
 			verify(conf, times(1)).pathindexing();
 			verify(pathindexing, times(1)).realms();
-			verify(pathIndexingRealm, times(1)).getValidWorkingDirectory(realmName);
+			verify(pathIndexingRealm, times(1)).workingDirectory();
 			verify(fileDao, times(1)).getAllFromRealm(eq(realmName), any());
 			verify(file, atLeastOnce()).getPath();
 			clearInvocations(file);

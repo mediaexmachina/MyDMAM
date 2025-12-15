@@ -16,48 +16,27 @@
  */
 package media.mexm.mydmam.configuration;
 
-import static java.text.Normalizer.normalize;
-import static java.text.Normalizer.Form.NFKD;
-import static media.mexm.mydmam.App.REPLACE_NORMALIZED;
-import static media.mexm.mydmam.entity.FileEntity.MAX_NAME_SIZE;
-
 import java.time.Duration;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.regex.Pattern;
 
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Validated
 @Slf4j
-public record PathIndexingConf(@Valid Map<String, PathIndexingRealm> realms,
-							   Duration timeBetweenScans,
-							   String spoolScans,
-							   String spoolEvents) {
+public record PathIndexingConf(@Valid Map<TechnicalName, PathIndexingRealm> realms,
+							   @DefaultValue("1h") @NotNull Duration timeBetweenScans,
+							   @DefaultValue("pathindexing") @NotEmpty String spoolEvents) {
 
-	private static final Pattern REMOVE_NON_VALID_CHARS = Pattern.compile("[^a-z^A-Z^0-9^\\-^\\_]+"); // NOSONAR S5869
-
-	public static String correctName(final String rawname, final String fieldName) {
-		Objects.requireNonNull(rawname, "You must setup " + fieldName);
-
-		final var normalized = REPLACE_NORMALIZED.matcher(normalize(rawname.trim(), NFKD)).replaceAll("");
-		final var name = REMOVE_NON_VALID_CHARS.matcher(normalized).replaceAll("_");
-
-		if (name.isEmpty()) {
-			throw new IllegalArgumentException("You must setup " + fieldName);
+	public PathIndexingConf {
+		if (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative()) {
+			throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
 		}
-
-		return name.substring(0, Math.min(name.length(), MAX_NAME_SIZE));
-	}
-
-	public String getSpoolEvents() {
-		return Optional.ofNullable(spoolEvents)
-				.filter(t -> t.isEmpty() == false)
-				.orElse("pathindexing");
 	}
 
 }

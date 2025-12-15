@@ -16,8 +16,6 @@
  */
 package media.mexm.mydmam.component;
 
-import static media.mexm.mydmam.configuration.PathIndexingConf.correctName;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,16 +59,16 @@ public class Indexer implements DisposableBean {
 		for (final var entry : Optional.ofNullable(pathIndexing.realms())
 				.orElse(Map.of())
 				.entrySet()) {
-			final var realmName = correctName(entry.getKey(), "realm name");
+			final var realmName = entry.getKey().name();
 
-			final var oWorkingDirectory = entry.getValue().getValidWorkingDirectory(realmName);
-			if (oWorkingDirectory.isEmpty()) {
+			final var workingDirectory = entry.getValue().workingDirectory();
+			if (workingDirectory == null) {
 				continue;
 			}
 
 			log.info("Prepare indexer for realm={}, on {}",
-					realmName, oWorkingDirectory.get().getAbsolutePath());
-			final var realmIndexer = new RealmIndexer(realmName, oWorkingDirectory.get(), explainSearchResults);
+					realmName, workingDirectory.getAbsolutePath());
+			final var realmIndexer = new RealmIndexer(realmName, workingDirectory, explainSearchResults);
 			indexerByRealmName.put(realmName, realmIndexer);
 		}
 	}

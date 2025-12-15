@@ -28,6 +28,7 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
@@ -120,6 +121,8 @@ class PendingActivityServiceTest {
 		when(activityHandler.canHandle(asset, eventType)).thenReturn(true);
 
 		when(configuration.getRealmNames()).thenReturn(Set.of(realmName));
+		when(configuration.getRealmByName(realmName)).thenReturn(Optional.ofNullable(realm));
+		when(realm.spoolProcessAsset()).thenReturn("spool");
 		when(file.isDirectory()).thenReturn(false);
 		when(mediaAssetService.getFromWatchfolder(realmName, storageName, file)).thenReturn(asset);
 		when(internalObjectMapper.writeValueAsString(Set.of(handlerName))).thenReturn(previousHandlersNames);
@@ -230,6 +233,7 @@ class PendingActivityServiceTest {
 			when(entity.getFile()).thenReturn(fileEntity);
 			when(entity.getPreviousHandlers()).thenReturn(previousHandlersNames);
 			when(entity.getHandlerName()).thenReturn(handlerName);
+			when(fileEntity.getRealm()).thenReturn(realmName);
 			when(internalObjectMapper.readValue(previousHandlersNames, TYPE_LIST_STRING))
 					.thenReturn(List.of(handlerName + "-previous"));
 			when(mediaAssetService.getFromFileEntry(fileEntity)).thenReturn(asset);
@@ -267,6 +271,8 @@ class PendingActivityServiceTest {
 			verify(internalObjectMapper, times(1)).readValue(previousHandlersNames, TYPE_LIST_STRING);
 			verify(mediaAssetService, times(1)).getFromFileEntry(fileEntity);
 			verify(activityHandler, atLeastOnce()).getHandlerName();
+			verify(configuration, atLeastOnce()).getRealmByName(realmName);
+			verify(realm, atLeastOnce()).spoolProcessAsset();
 		}
 
 	}

@@ -64,12 +64,12 @@ class RealmStorageWatchedFilesDbTest {
 	@BeforeEach
 	void init() {
 		when(storage.scan()).thenReturn(scan);
-		when(storage.getDefaultMaxDeep()).thenReturn(0);
+		when(storage.maxDeep()).thenReturn(0);
 
 		db = new RealmStorageWatchedFilesDb(pathIndexerService, realmName, storageName, storage);
 
 		verify(storage, atLeastOnce()).scan();
-		verify(storage, atLeastOnce()).getDefaultMaxDeep();
+		verify(storage, atLeastOnce()).maxDeep();
 		verify(scan, times(1)).createFileSystem();
 	}
 

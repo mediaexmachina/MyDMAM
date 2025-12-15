@@ -16,8 +16,6 @@
  */
 package media.mexm.mydmam.component;
 
-import static media.mexm.mydmam.configuration.PathIndexingConf.correctName;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -61,17 +59,17 @@ public class AuditTrail {
 		for (final var entry : Optional.ofNullable(pathIndexing.realms())
 				.orElse(Map.of())
 				.entrySet()) {
-			final var realmName = correctName(entry.getKey(), "realm name");
+			final var realmName = entry.getKey().name();
 
-			final var oWorkingDirectory = entry.getValue().getValidWorkingDirectory(realmName);
-			if (oWorkingDirectory.isEmpty()) {
+			final var workingDirectory = entry.getValue().workingDirectory();
+			if (workingDirectory == null) {
 				continue;
 			}
 
 			log.info("Prepare audit trail for realm={}, on {}",
-					realmName, oWorkingDirectory.get().getAbsolutePath());
+					realmName, workingDirectory.getAbsolutePath());
 
-			final var sqlite = new AuditTrailSQLite(realmName, oWorkingDirectory.get(), sqliteConfig);
+			final var sqlite = new AuditTrailSQLite(realmName, workingDirectory, sqliteConfig);
 			final var realmAuditTrail = new RealmAuditTrail(
 					jobkitEngine,
 					objectMapper,

@@ -18,28 +18,26 @@ package media.mexm.mydmam.configuration;
 
 import java.time.Duration;
 
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
 
 @Validated
 public record PathIndexingStorage(@Valid @NotNull ObservedFolder scan,
-								  @Valid @PositiveOrZero @Max(100) int maxDeep,
+								  @Valid @PositiveOrZero @Max(100) @DefaultValue("10") int maxDeep,
 								  Duration timeBetweenScans,
-								  String spoolScans) {
+								  @DefaultValue("pathindexing") @NotEmpty String spoolScans) {
 
-	public static final int DEFAULT_MAX_DEEP = 10;
-
-	public int getDefaultMaxDeep() {
-		if (maxDeep == 0) {
-			return DEFAULT_MAX_DEEP;
-		} else {
-			return maxDeep;
+	public PathIndexingStorage {
+		if (timeBetweenScans != null && (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative())) {
+			throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
 		}
-
 	}
+
 }
