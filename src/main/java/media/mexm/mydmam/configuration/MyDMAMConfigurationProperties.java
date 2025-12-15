@@ -36,7 +36,7 @@ import jakarta.validation.constraints.NotEmpty;
 
 @ConfigurationProperties(prefix = "mydmam")
 @Validated
-public record MyDMAMConfigurationProperties(@Valid PathIndexingConf pathindexing,
+public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
 											String instancename,
 											@DefaultValue("audittrail") @NotEmpty String auditTrailSpoolName,
 											@DefaultValue("false") boolean explainSearchResults,
@@ -61,7 +61,7 @@ public record MyDMAMConfigurationProperties(@Valid PathIndexingConf pathindexing
 
 	public Set<String> getRealmNames() {
 		try {
-			return pathindexing().realms().keySet()
+			return infra().realms().keySet()
 					.stream()
 					.map(TechnicalName::name)
 					.collect(toUnmodifiableSet());
@@ -73,7 +73,7 @@ public record MyDMAMConfigurationProperties(@Valid PathIndexingConf pathindexing
 	public Optional<PathIndexingRealm> getRealmByName(final String realmName) {
 		requireNonNull(realmName);
 		try {
-			return Optional.ofNullable(pathindexing().realms().get(new TechnicalName(realmName)));
+			return Optional.ofNullable(infra().realms().get(new TechnicalName(realmName)));
 		} catch (final NullPointerException e) {
 			return empty();
 		}

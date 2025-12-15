@@ -70,7 +70,7 @@ public class PathIndexer {
 				})
 				.findFirst()
 				.ifPresent(entry -> {
-					final var spoolEvents = configuration.pathindexing().spoolEvents();
+					final var spoolEvents = configuration.infra().spoolEvents();
 
 					jobKitEngine.runOneShot(
 							"Manual scan for " + realm + ":" + storage,
@@ -96,13 +96,13 @@ public class PathIndexer {
 		record KV(RealmStorageFolderActivity key, Watchfolders value) {
 		}
 
-		final var pathIndexingConf = configuration.pathindexing();
-		if (pathIndexingConf == null) {
+		final var infra = configuration.infra();
+		if (infra == null) {
 			return Map.of();
 		}
-		final var spoolEvents = pathIndexingConf.spoolEvents();
+		final var spoolEvents = infra.spoolEvents();
 
-		return Optional.ofNullable(pathIndexingConf.realms())
+		return Optional.ofNullable(infra.realms())
 				.orElse(Map.of())
 				.entrySet()
 				.stream()
@@ -124,7 +124,7 @@ public class PathIndexer {
 
 								final var timeBetweenScans = Optional.ofNullable(storage.timeBetweenScans())
 										.or(() -> Optional.ofNullable(realmConf.timeBetweenScans()))
-										.orElse(pathIndexingConf.timeBetweenScans());
+										.orElse(infra.timeBetweenScans());
 
 								log.debug(
 										"Prepare Watchfolder for {}:{} with mockTimeBetweenScans={}, spoolScans={} spoolEvents={}",

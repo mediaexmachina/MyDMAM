@@ -40,7 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.configuration.PathIndexingConf;
+import media.mexm.mydmam.configuration.InfraConf;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.TechnicalName;
@@ -65,7 +65,7 @@ class PathIndexerTest {
 	@Mock
 	MyDMAMConfigurationProperties configuration;
 	@Mock
-	PathIndexingConf pathIndexingConf;
+	InfraConf infra;
 
 	private FlatJobKitEngine jobKitEngine;
 	private PathIndexer pi;
@@ -95,9 +95,9 @@ class PathIndexerTest {
 			piRealm = new PathIndexingRealm(Map.of(new TechnicalName(storage), piStorage),
 					duration, spoolEvents, null);
 
-			when(configuration.pathindexing()).thenReturn(pathIndexingConf);
-			when(pathIndexingConf.spoolEvents()).thenReturn(spoolEvents);
-			when(pathIndexingConf.realms()).thenReturn(Map.of(new TechnicalName(realm), piRealm));
+			when(configuration.infra()).thenReturn(infra);
+			when(infra.spoolEvents()).thenReturn(spoolEvents);
+			when(infra.realms()).thenReturn(Map.of(new TechnicalName(realm), piRealm));
 
 			pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
 			pi.startScans();
@@ -105,10 +105,10 @@ class PathIndexerTest {
 
 		@AfterEach
 		void ends() {
-			verify(configuration, atLeastOnce()).pathindexing();
-			verify(pathIndexingConf, atLeastOnce()).spoolEvents();
-			verify(pathIndexingConf, atLeastOnce()).realms();
-			verify(pathIndexingConf, atLeastOnce()).timeBetweenScans();
+			verify(configuration, atLeastOnce()).infra();
+			verify(infra, atLeastOnce()).spoolEvents();
+			verify(infra, atLeastOnce()).realms();
+			verify(infra, atLeastOnce()).timeBetweenScans();
 			assertFalse(jobKitEngine.isEmptyActiveServicesList());
 
 			assertThat(jobKitEngine.getEndEventsList()).size().isGreaterThan(0);
@@ -131,8 +131,8 @@ class PathIndexerTest {
 		void testScanNow() {
 			pi.scanNow(realm, storage);
 
-			verify(configuration, atLeastOnce()).pathindexing();
-			verify(pathIndexingConf, atLeastOnce()).spoolEvents();
+			verify(configuration, atLeastOnce()).infra();
+			verify(infra, atLeastOnce()).spoolEvents();
 			verify(pathIndexerService, times(1)).updateFoundedFiles(
 					any(), eq(realm), eq(storage), any(), any());
 		}
@@ -159,7 +159,7 @@ class PathIndexerTest {
 		@Test
 		void testScanNow() {
 			pi.scanNow(realm, storage);
-			verify(configuration, times(1)).pathindexing();
+			verify(configuration, times(1)).infra();
 		}
 
 		@AfterEach

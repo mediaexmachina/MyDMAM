@@ -45,12 +45,12 @@ public class Indexer implements DisposableBean {
 	JobKitEngine jobKit;
 
 	public void init() throws IOException {
-		final var pathIndexing = conf.pathindexing();
-		if (pathIndexing == null) {
+		final var infra = conf.infra();
+		if (infra == null) {
 			return;
 		}
 
-		for (final var entry : Optional.ofNullable(pathIndexing.realms())
+		for (final var entry : Optional.ofNullable(infra.realms())
 				.orElse(Map.of())
 				.entrySet()) {
 			final var realmName = entry.getKey().name();

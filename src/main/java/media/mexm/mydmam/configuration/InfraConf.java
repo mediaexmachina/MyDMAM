@@ -29,11 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Validated
 @Slf4j
-public record PathIndexingConf(@Valid Map<TechnicalName, PathIndexingRealm> realms,
-							   @DefaultValue("1h") @NotNull Duration timeBetweenScans,
-							   @DefaultValue("pathindexing") @NotEmpty String spoolEvents) {
+public record InfraConf(@Valid Map<TechnicalName, PathIndexingRealm> realms,
+						@DefaultValue("1h") @NotNull Duration timeBetweenScans,
+						@DefaultValue("pathindexing") @NotEmpty String spoolEvents) {
 
-	public PathIndexingConf {
+	public InfraConf {
 		if (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative()) {
 			throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
 		}

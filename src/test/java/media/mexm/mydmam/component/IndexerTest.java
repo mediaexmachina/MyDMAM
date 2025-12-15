@@ -51,7 +51,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.configuration.PathIndexingConf;
+import media.mexm.mydmam.configuration.InfraConf;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.entity.FileEntity;
@@ -81,7 +81,7 @@ class IndexerTest {
 	FlatJobKitEngine flatJobKitEngine;
 
 	@Mock
-	PathIndexingConf pathindexing;
+	InfraConf infra;
 	@Mock
 	PathIndexingRealm pathIndexingRealm;
 
@@ -117,49 +117,49 @@ class IndexerTest {
 		indexer.init();
 		assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
-		verify(conf, times(1)).pathindexing();
+		verify(conf, times(1)).infra();
 	}
 
 	@Test
 	void testInit_noWorkingDir() throws IOException {
-		when(conf.pathindexing()).thenReturn(pathindexing);
-		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
+		when(conf.infra()).thenReturn(infra);
+		when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
 		when(pathIndexingRealm.workingDirectory()).thenReturn(null);
 
 		indexer.init();
 		assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
-		verify(conf, times(1)).pathindexing();
-		verify(pathindexing, times(1)).realms();
+		verify(conf, times(1)).infra();
+		verify(infra, times(1)).realms();
 		verify(pathIndexingRealm, times(1)).workingDirectory();
 	}
 
 	@Test
 	void testInitGetIndexerByRealm() throws IOException {
-		when(conf.pathindexing()).thenReturn(pathindexing);
-		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
+		when(conf.infra()).thenReturn(infra);
+		when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
 		when(pathIndexingRealm.workingDirectory()).thenReturn(realmWorkingDirectory);
 		indexer.init();
 		assertThat(indexer.getIndexerByRealm(realmName)).isNotEmpty();
 		assertThat(indexer.getIndexerByRealm(badRealmName)).isEmpty();
 
-		verify(conf, times(1)).pathindexing();
-		verify(pathindexing, times(1)).realms();
+		verify(conf, times(1)).infra();
+		verify(infra, times(1)).realms();
 		verify(pathIndexingRealm, times(1)).workingDirectory();
 	}
 
 	@Test
 	void testDestroy() throws IOException {
-		when(conf.pathindexing()).thenReturn(pathindexing);
-		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
+		when(conf.infra()).thenReturn(infra);
+		when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
 		when(pathIndexingRealm.workingDirectory()).thenReturn(realmWorkingDirectory);
 
 		indexer.init();
 		indexer.destroy();
 		assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
-		verify(conf, times(1)).pathindexing();
-		verify(pathindexing, times(1)).realms();
+		verify(conf, times(1)).infra();
+		verify(infra, times(1)).realms();
 		verify(pathIndexingRealm, times(1)).workingDirectory();
 	}
 
@@ -214,8 +214,8 @@ class IndexerTest {
 
 		@Test
 		void testReset() throws IOException {
-			when(conf.pathindexing()).thenReturn(pathindexing);
-			when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
+			when(conf.infra()).thenReturn(infra);
+			when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), pathIndexingRealm));
 			when(pathIndexingRealm.workingDirectory()).thenReturn(realmWorkingDirectory);
 
 			indexer.init();
@@ -243,8 +243,8 @@ class IndexerTest {
 			assertThat(searchResult).size().isEqualTo(1);
 			assertThat(searchResult.get(0).name()).isEqualTo(fileName);
 
-			verify(conf, times(1)).pathindexing();
-			verify(pathindexing, times(1)).realms();
+			verify(conf, times(1)).infra();
+			verify(infra, times(1)).realms();
 			verify(pathIndexingRealm, times(1)).workingDirectory();
 			verify(fileDao, times(1)).getAllFromRealm(eq(realmName), any());
 			verify(file, atLeastOnce()).getPath();

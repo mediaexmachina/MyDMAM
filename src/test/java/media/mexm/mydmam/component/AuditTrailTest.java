@@ -39,7 +39,7 @@ import org.sqlite.SQLiteConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.configuration.PathIndexingConf;
+import media.mexm.mydmam.configuration.InfraConf;
 import media.mexm.mydmam.configuration.PathIndexingRealm;
 import media.mexm.mydmam.configuration.TechnicalName;
 import tv.hd3g.commons.testtools.Fake;
@@ -71,28 +71,28 @@ class AuditTrailTest {
 
 	@Autowired
 	AuditTrail auditTrail;
-	PathIndexingConf pathIndexingConf;
+	InfraConf infra;
 
 	@BeforeEach
 	void init() {
-		pathIndexingConf = new PathIndexingConf(
+		infra = new InfraConf(
 				Map.of(new TechnicalName(realmName), pathIndexingRealm),
 				Duration.ofHours(1),
 				null);
 
 		when(pathIndexingRealm.workingDirectory())
 				.thenReturn(workingDirectory);
-		when(conf.pathindexing()).thenReturn(pathIndexingConf);
+		when(conf.infra()).thenReturn(infra);
 		when(conf.auditTrailSpoolName()).thenReturn(auditTrailSpoolName);
 	}
 
 	@Test
 	void testGetAuditTrailByRealm_emptyConf() {
-		when(conf.pathindexing()).thenReturn(null);
+		when(conf.infra()).thenReturn(null);
 
 		auditTrail.init();
 
-		verify(conf, times(1)).pathindexing();
+		verify(conf, times(1)).infra();
 		assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
 	}
 
@@ -102,7 +102,7 @@ class AuditTrailTest {
 
 		auditTrail.init();
 
-		verify(conf, times(1)).pathindexing();
+		verify(conf, times(1)).infra();
 		verify(pathIndexingRealm, times(1)).workingDirectory();
 		assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
 	}
@@ -111,7 +111,7 @@ class AuditTrailTest {
 	void testGetAuditTrailByRealm() {
 		auditTrail.init();
 
-		verify(conf, times(1)).pathindexing();
+		verify(conf, times(1)).infra();
 		verify(pathIndexingRealm, times(1)).workingDirectory();
 
 		final var realmAuditTrail = auditTrail.getAuditTrailByRealm(realmName);

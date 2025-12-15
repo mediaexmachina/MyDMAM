@@ -38,7 +38,7 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 class MyDMAMConfigurationPropertiesTest {
 
 	@Mock
-	PathIndexingConf pathindexing;
+	InfraConf pathindexing;
 	@Mock
 	PathIndexingRealm realm;
 
