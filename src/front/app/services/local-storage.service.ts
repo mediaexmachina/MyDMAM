@@ -37,4 +37,30 @@ export class LocalStorageService {
             localStorage.setItem("realm", value);
         }
     }
+
+    private getByDefault(key: string, defaultValue: string): string {
+        var r = localStorage.getItem(key);
+        if (r == null) {
+            localStorage.setItem(key, defaultValue);
+            return defaultValue;
+        }
+        return r;
+    }
+
+    private getByDefaultNumber(key: string, defaultValue: number): number {
+        return Number.parseInt(this.getByDefault(key, String(defaultValue)));
+    }
+
+    private setNumber(key: string, value: number): void {
+        localStorage.setItem(key, String(value));
+    }
+
+    public getNavigateListResultCount(defaultValue:number): number {
+        return this.getByDefaultNumber("navigateListResultCount", defaultValue);
+    }
+
+    public setNavigateListResultCount(value: number): void {
+        this.setNumber("navigateListResultCount", Math.abs(value));
+    }
+
 }

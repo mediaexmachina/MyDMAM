@@ -14,7 +14,7 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-import { Component, signal, inject, computed } from '@angular/core';
+import { Component, signal, inject, computed, WritableSignal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -36,31 +36,34 @@ export class NavigatorFolderComponent {
     readonly fileSystemService = inject(FileSystemService);
     readonly numberFormat = new Intl.NumberFormat('en-US');
     private readonly maxPageCount = 10;
+    readonly defaultListResultCount = 20;
 
-    readonly storage:string;
-    dirListResponse = signal<FileResponse|null>(null);
-    listResultCount = signal(20);
-    breadcrumbSplitPath = computed(this.splitPath.bind(this));
-    pageNavigate = computed(this.computePageNavigate.bind(this));
-    pageNavigatePreviousButton = computed(this.computePageNavigatePreviousButton.bind(this));
-    pageNavigateNextButton = computed(this.computePageNavigateNextButton.bind(this));
+    readonly storage = signal<string>("");
+    readonly dirListResponse = signal<FileResponse|null>(null);
+    readonly listResultCount:WritableSignal<number>;
+    readonly breadcrumbSplitPath = computed(this.splitPath.bind(this));
+    readonly pageNavigate = computed(this.computePageNavigate.bind(this));
+    readonly pageNavigatePreviousButton = computed(this.computePageNavigatePreviousButton.bind(this));
+    readonly pageNavigateNextButton = computed(this.computePageNavigateNextButton.bind(this));
 
     constructor() {
-        this.storage = this.route.snapshot.params['storage'];
+        this.listResultCount = signal(this.localStorageService.getNavigateListResultCount(this.defaultListResultCount));
 
-        const hashPath = this.route.snapshot.params['hashPath']
-        if (hashPath != undefined) {
+        this.route.paramMap.subscribe(params => {
+            const storage = params.get('storage') || "";
+            this.storage.set(storage);
+
+            const hashPath = params.get('hashPath') || "";
             this.list(hashPath);
-        } else {
-            this.fileSystemService.listRoot(this.storage, 0, this.listResultCount()).then(r => this.dirListResponse.set(r));
-        }
+        });
     }
 
     list(hashPath:string, skip: number = 0):void {
+        console.log(this.listResultCount());
         if (hashPath == "") {
-            this.fileSystemService.listRoot(this.storage, skip, this.listResultCount()).then(r => this.dirListResponse.set(r));
+            this.fileSystemService.listRoot(this.storage(), skip, this.listResultCount()).then(r => this.dirListResponse.set(r));
         } else {
-            this.fileSystemService.list(this.storage, hashPath, skip, this.listResultCount()).then(r => this.dirListResponse.set(r));
+            this.fileSystemService.list(this.storage(), hashPath, skip, this.listResultCount()).then(r => this.dirListResponse.set(r));
         }
     }
 
@@ -85,7 +88,7 @@ export class NavigatorFolderComponent {
 
             result.push({
                 "name": name,
-                "hashPath": this.fileSystemService.hashPath(this.storage, fullPath),
+                "hashPath": this.fileSystemService.hashPath(this.storage(), fullPath),
             });
         }
         return result;
@@ -190,6 +193,7 @@ export class NavigatorFolderComponent {
     onChangeDropdrownListResultCount(event: Event):void {
         const value = parseInt((event.target as HTMLSelectElement).value);
         this.listResultCount.set(value);
+        this.localStorageService.setNavigateListResultCount(value);
 
         const dirListResponse = this.dirListResponse();
         if (dirListResponse == null) {

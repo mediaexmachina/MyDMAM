@@ -63,18 +63,16 @@
 <nav class="breadcrumb">
     @if (dirList?.path != "/") {
             <span class="navigateto">
-                <a [routerLink]="['/navigator', storage, dirList?.parentHashPath]"
+                <a [routerLink]="['/navigator', storage(), dirList?.parentHashPath]"
                     (click)="list(dirList?.parentHashPath || '')">Go to parent directory</a>:
             </span>
 
             <span class="storage">
-                <a [routerLink]="['/navigator', storage]"
-                    (click)="list(fileSystemService.hashPath(storage, '/'))">{{ dirList?.storage }}</a>
+                <a [routerLink]="['/navigator', storage()]">{{ dirList?.storage }}</a>
             </span>
             @for (item of breadcrumbSplitPath(); track item) {
                 <span class="item">
-                    <a [routerLink]="['/navigator', storage, item['hashPath']]"
-                        (click)="list(item['hashPath'])">
+                    <a [routerLink]="['/navigator', storage(), item['hashPath']]">
                         {{ item['name'] }}
                     </a>
                 </span>
@@ -92,7 +90,7 @@
     @for (fileItem of dirList?.list; track fileItem.hashPath) {
     <li>
         <span class="navigateto">
-            <a [class]="{'directory': fileItem.directory}" [routerLink]="['/navigator', storage, fileItem.hashPath]" (click)="list(fileItem.hashPath)">{{ fileItem.name }}</a>
+            <a [class]="{'directory': fileItem.directory}" [routerLink]="['/navigator', storage(), fileItem.hashPath]">{{ fileItem.name }}</a>
         </span>
         @if (fileItem.directory) {
             <span>Directory</span>
@@ -145,11 +143,14 @@
 
         </ul>
     </section>
+
 } @else if (dirList?.currentItem == null || dirList?.currentItem?.directory) {
     <p style="text-align: center;">Currently displaying all items.</p>
 }
 
-@if (dirList?.currentItem == null || dirList?.currentItem?.directory) {
+@if ((dirList?.currentItem == null || dirList?.currentItem?.directory)
+      && ((dirList?.listSize || 0) > this.defaultListResultCount
+           || dirList?.listSize != dirList?.total)) {
     <div class="dropdrown-list-result-count">
         <select name="dropdrown-list-result-count" (change)="onChangeDropdrownListResultCount($event)">
             @let actualListResultCount = listResultCount();
