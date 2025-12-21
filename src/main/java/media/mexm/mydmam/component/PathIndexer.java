@@ -126,7 +126,7 @@ public class PathIndexer {
 										.orElse(infra.timeBetweenScans());
 
 								log.debug(
-										"Prepare Watchfolder for {}:{} with mockTimeBetweenScans={}, spoolScans={} spoolEvents={}",
+										"Prepare Watchfolder for {}:{} with timeBetweenScans={}, spoolScans={} spoolEvents={}",
 										realmName, storageName, timeBetweenScans, spoolScans, spoolEvents);
 
 								final var folderActivity = new RealmStorageFolderActivity(
