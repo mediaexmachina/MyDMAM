@@ -34,13 +34,13 @@
                     }
                 </div>
             } @else if (currentItem?.justDetected) {
-                <div class="just-detected">Just detected file (at least {{ numberFormat.format(currentItem?.length || 0) }} bytes), pending check...</div>
+                <div class="just-detected">Just detected file (at least <app-span-file-size [size]="currentItem?.length || 0"></app-span-file-size>), pending check...</div>
             } @else {
-                <div>File ({{ numberFormat.format(currentItem?.length || 0) }} bytes)</div>
+                <div>File (<app-span-file-size [size]="currentItem?.length || 0"></app-span-file-size>)</div>
             }
 
             <div [class.just-detected]="currentItem?.justDetected">
-                Modified the {{ currentItem?.modified | date:'medium' }}.
+                Modified <app-span-date-time [date]="currentItem?.modified || 0"></app-span-date-time>.
             </div>
         </aside>
 
@@ -97,12 +97,12 @@
             <span></span>
         } @else if (fileItem.justDetected) {
             <span class="just-detected">Just detected file</span>
-            <span class="just-detected">At least {{ numberFormat.format(fileItem.length || 0) }} bytes</span>
+            <span class="just-detected">At least <app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
         } @else {
             <span>Regular file</span>
-            <span>{{ numberFormat.format(fileItem.length || 0) }} bytes</span>
+            <span><app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
         }
-        <span>{{ fileItem.modified | date:'medium' }}</span>
+        <app-span-date-time [date]="fileItem.modified"></app-span-date-time>
     </li>
     }
 </ul>

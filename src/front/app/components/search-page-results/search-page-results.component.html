@@ -21,17 +21,100 @@
 
     @if (searchResult.result.totalFounded == 0) {
         <p>No results found.</p>
-    } @else if (searchResult.result.totalFounded == searchResult.result.foundedFiles.length) {
-        <p>Display {{ searchResult.result.totalFounded }}
-            @if (searchResult.result.totalFounded == 1) {
-                result:
-            } @else {
-                results:
-            }
-        </p>
     } @else {
-        <p>Found {{ searchResult.result.totalFounded }} results, display only the {{ searchResult.result.foundedFiles.length }} bests.</p>
+        @if (searchResult.result.totalFounded == searchResult.result.foundedFiles.length) {
+            <p>Display {{ searchResult.result.totalFounded }}
+                @if (searchResult.result.totalFounded == 1) {
+                    result:
+                } @else {
+                    results:
+                }
+            </p>
+        } @else {
+            <p>Found {{ searchResult.result.totalFounded }} results, display only the {{ searchResult.result.foundedFiles.length }} bests.</p>
+        }
     }
+
+    @let currentSearchConstraints = searchConstraints();
+    @if (currentSearchConstraints == null) {
+        <button (click)="createSearchConstraints($event)">Set search constraints</button>
+    } @else {
+        <h3>Search constraints:</h3>
+
+        <ul>
+            <li>
+                <app-search-constraint-condition-editor
+                    [labelStateIgnore]="'Files and directories'"
+                    [labelStateMust]="'Directories only'"
+                    [labelStateMustNot]="'Files only'"
+                    [condition]="currentSearchConstraints.fileConstraints.directory"
+                    (onChange)="onChangeSearchConstraintsCondition($event, 'directory')">
+                </app-search-constraint-condition-editor>
+            </li>
+
+            <li>
+                <app-search-constraints-storage-editor
+                    [storageList]="storageList()"
+                    [condition]="currentSearchConstraints.fileConstraints.storages"
+                    (onChange)="onChangeSearchConstraintsStorages($event)">
+                </app-search-constraints-storage-editor>
+            </li>
+
+            <li>
+                <app-search-constraints-parent-path-editor
+                    [parentPath]="currentSearchConstraints.fileConstraints.parentPath"
+                    (onChange)="onChangeSearchConstraintsParentPath($event)">
+                </app-search-constraints-parent-path-editor>
+            </li>
+
+            <li>
+                <app-search-constraint-date-range-editor
+                    [range]="currentSearchConstraints.fileConstraints.date"
+                    (onChange)="onChangeSearchConstraintsRange($event, 'date')">
+                </app-search-constraint-date-range-editor>
+            </li>
+
+            <li>
+                <app-search-constraints-size-range-editor
+                    [range]="currentSearchConstraints.fileConstraints.size"
+                    (onChange)="onChangeSearchConstraintsRange($event, 'size')">
+                </app-search-constraints-size-range-editor>
+            </li>
+
+            <li>
+                <app-search-constraint-condition-editor
+                    [labelStateIgnore]="'No hidden constraint'"
+                    [labelStateMust]="'Only hidden'"
+                    [labelStateMustNot]="'Never hidden'"
+                    [condition]="currentSearchConstraints.fileConstraints.hidden"
+                    (onChange)="onChangeSearchConstraintsCondition($event, 'hidden')">
+                </app-search-constraint-condition-editor>
+            </li>
+
+            <li>
+                <app-search-constraint-condition-editor
+                    [labelStateIgnore]="'No link constraint'"
+                    [labelStateMust]="'Only links'"
+                    [labelStateMustNot]="'Never links'"
+                    [condition]="currentSearchConstraints.fileConstraints.link"
+                    (onChange)="onChangeSearchConstraintsCondition($event, 'link')">
+                </app-search-constraint-condition-editor>
+            </li>
+
+            <li>
+                <app-search-constraint-condition-editor
+                    [labelStateIgnore]="'No special files constraint'"
+                    [labelStateMust]="'Only special files'"
+                    [labelStateMustNot]="'Never special files'"
+                    [condition]="currentSearchConstraints.fileConstraints.special"
+                    (onChange)="onChangeSearchConstraintsCondition($event, 'special')">
+                </app-search-constraint-condition-editor>
+            </li>
+        </ul>
+
+        <button (click)="removeSearchConstraints($event)">Remove search constraints</button>
+    }
+
 
     <ul>
         @for (item of searchResult.result.foundedFiles; track item.hashPath) {
@@ -46,8 +129,8 @@
                         @if (relatedFile.directory) {
                             Directory
                         } @else {
-                            Regular file: {{ numberFormat.format(relatedFile.length || 0) }} bytes,
-                            modified the {{ relatedFile.modified | date:'medium' }}
+                            Regular file: <app-span-file-size [size]="relatedFile.length || 0"></app-span-file-size>,
+                            modified <app-span-date-time [date]="relatedFile.modified"></app-span-date-time>
                         }
                     </div>
                     <div>

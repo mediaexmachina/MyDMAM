@@ -15,12 +15,22 @@
  *
  */
 
-import { Injectable } from '@angular/core';
+import { Injectable, WritableSignal, effect, signal } from '@angular/core';
+import { DateTimeStyleToDisplay } from '../enums/date-time-style-to-display.enum';
 
 @Injectable({
     providedIn: 'root'
 })
 export class LocalStorageService {
+
+    readonly dateStyleToDisplay: WritableSignal<DateTimeStyleToDisplay>;
+
+    constructor() {
+        this.dateStyleToDisplay = signal(this.getByDefaultNumber("dateStyleToDisplay", DateTimeStyleToDisplay.SIMPLIFIED_VIEW));
+        effect(() => {
+            this.setNumber("dateStyleToDisplay", this.dateStyleToDisplay());
+        });
+    }
 
     public getSelectedRealm(): string {
         var r = localStorage.getItem("realm");

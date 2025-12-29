@@ -15,17 +15,18 @@
  *
  */
 import { Component, signal, inject, computed, WritableSignal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { FileSystemService } from '../../services/file-system.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 
 import { FileResponse } from '../../dto/file-response.interface';
+import { SpanDateTimeComponent } from "../toolkit/span-date-time.component";
+import { SpanFileSizeComponent } from "../toolkit/span-file-size.component";
 
 @Component({
   selector: 'app-navigator-folder',
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, SpanDateTimeComponent, SpanFileSizeComponent],
   templateUrl: './navigator-folder.component.html',
   styleUrl: './navigator-folder.component.css'
 })
@@ -34,7 +35,6 @@ export class NavigatorFolderComponent {
     readonly route = inject(ActivatedRoute);
     readonly localStorageService = inject(LocalStorageService);
     readonly fileSystemService = inject(FileSystemService);
-    readonly numberFormat = new Intl.NumberFormat('en-US');
     private readonly maxPageCount = 10;
     readonly defaultListResultCount = 20;
 
