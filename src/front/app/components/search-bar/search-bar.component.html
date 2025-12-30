@@ -14,4 +14,31 @@
     Copyright (C) Media ex Machina 2025
 
 -->
-<input type="text" placeholder="Search..." (keyup.enter)="onSearchSubmit($event)" [value]="q()" />
+<div>
+
+<div>
+    <input
+        #topsearchinput
+        type="text"
+        placeholder="Search..."
+        (keyup.enter)="onSearchSubmit($event)"
+        (input)="suggestion()"
+        [value]="q()" />
+</div>
+
+@if (suggestionMenuOpened()) {
+    @let searchResult = searchResponse();
+    @let selectedItemHashPath = selectedSuggestionMenuItemHashPath();
+    <ul>
+        @for (item of searchResult?.result?.foundedFiles; track item.hashPath) {
+            <li [class.selected]="selectedItemHashPath == item.hashPath">
+                <a class="searchSuggestionItem"
+                    [routerLink]="['/navigator', item.storage, item.hashPath]"
+                    [queryParams]="{ q: q() }">
+                    {{ item.name }}
+                </a>
+            </li>
+        }
+    </ul>
+}
+</div>
