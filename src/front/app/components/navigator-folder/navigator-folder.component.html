@@ -70,7 +70,7 @@
             <span class="storage">
                 <a [routerLink]="['/navigator', storage()]">{{ dirList?.storage }}</a>
             </span>
-            @for (item of breadcrumbSplitPath(); track item) {
+            @for (item of breadcrumbSplitPath(); track item['hashPath']) {
                 <span class="item">
                     <a [routerLink]="['/navigator', storage(), item['hashPath']]">
                         {{ item['name'] }}

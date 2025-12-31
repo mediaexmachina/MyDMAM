@@ -59,7 +59,6 @@ export class NavigatorFolderComponent {
     }
 
     list(hashPath:string, skip: number = 0):void {
-        console.log(this.listResultCount());
         if (hashPath == "") {
             this.fileSystemService.listRoot(this.storage(), skip, this.listResultCount()).then(r => this.dirListResponse.set(r));
         } else {
