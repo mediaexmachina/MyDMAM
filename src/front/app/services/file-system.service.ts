@@ -23,6 +23,7 @@ import { FileResponse } from '../dto/file-response.interface';
 import { RealmListResponse } from '../dto/realm-list-response.interface';
 import { StorageListResponse } from '../dto/storage-list-response.interface';
 import { LocalStorageService } from './local-storage.service';
+import { SortOrder } from '../dto/sort-order.enum';
 
 @Injectable({
   providedIn: 'root'
@@ -43,21 +44,44 @@ export class FileSystemService {
             "GET", `/filesystem/list/${realm}`);
     }
 
-    public async listRoot(storage:string, skip:number = 0, limit:number = 0): Promise<FileResponse|null> {
+    public async listRoot(
+                        storage:string,
+                        skip:number = 0,
+                        limit:number = 0,
+                        sortByName:SortOrder = SortOrder.none,
+                        sortByType:SortOrder = SortOrder.none,
+                        sortByDate:SortOrder = SortOrder.none,
+                        sortBySize:SortOrder = SortOrder.none): Promise<FileResponse|null> {
         const realm = this.localStorageService.getSelectedRealm();
         const params = {
             skip: skip,
-            limit: limit
+            limit: limit,
+            sortByName: SortOrder[sortByName],
+            sortByType: SortOrder[sortByType],
+            sortByDate: SortOrder[sortByDate],
+            sortBySize: SortOrder[sortBySize]
         }
         return this.backendAPIService.requestAsyncAPI<FileResponse>(
             "GET", `/filesystem/list/${realm}/${storage}`, params);
     }
 
-    public async list(storage:string, hashPath:string, skip:number = 0, limit:number = 0): Promise<FileResponse|null> {
+    public async list(
+                    storage:string,
+                    hashPath:string,
+                    skip:number = 0,
+                    limit:number = 0,
+                    sortByName:SortOrder = SortOrder.none,
+                    sortByType:SortOrder = SortOrder.none,
+                    sortByDate:SortOrder = SortOrder.none,
+                    sortBySize:SortOrder = SortOrder.none): Promise<FileResponse|null> {
         const realm = this.localStorageService.getSelectedRealm();
         const params = {
             skip: skip,
-            limit: limit
+            limit: limit,
+            sortByName: SortOrder[sortByName],
+            sortByType: SortOrder[sortByType],
+            sortByDate: SortOrder[sortByDate],
+            sortBySize: SortOrder[sortBySize]
         }
         return this.backendAPIService.requestAsyncAPI<FileResponse>(
             "GET", `/filesystem/list/${realm}/${storage}/${hashPath}`, params);

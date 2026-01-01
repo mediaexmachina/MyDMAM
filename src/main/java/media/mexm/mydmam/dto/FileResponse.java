@@ -18,6 +18,8 @@ package media.mexm.mydmam.dto;
 
 import java.util.List;
 
+import media.mexm.mydmam.repository.FileSort;
+
 public record FileResponse(String realm,
 						   String storage,
 						   FileItemResponse currentItem,
@@ -26,5 +28,6 @@ public record FileResponse(String realm,
 						   int listSize,
 						   int skipCount,
 						   int total,
+						   FileSort sort,
 						   List<FileItemResponse> list) {
 }

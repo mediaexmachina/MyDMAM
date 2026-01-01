@@ -17,6 +17,7 @@
 package media.mexm.mydmam.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -38,12 +39,18 @@ public class FileDaoImpl implements FileDao {
 
 	@Override
 	@Transactional
-	public List<FileEntity> getByParentHashPath(final String parentHashPath, final int from, final int size) {
-		return entityManager.createQuery("""
-				SELECT f FROM FileEntity f
-				WHERE f.parentHashPath = :parentHashPath
-				""", FileEntity.class)
-				.setParameter("parentHashPath", parentHashPath)
+	public List<FileEntity> getByParentHashPath(final String parentHashPath,
+												final int from,
+												final int size,
+												final Optional<FileSort> oSort) {
+		final var criteriaBuilder = entityManager.getCriteriaBuilder();
+		final var criteriaQuery = criteriaBuilder.createQuery(FileEntity.class);
+		final var root = criteriaQuery.from(FileEntity.class);
+		criteriaQuery.select(root);
+		criteriaQuery.where(criteriaBuilder.equal(root.get("parentHashPath"), parentHashPath));
+		oSort.ifPresent(sort -> criteriaQuery.orderBy(sort.makeOrderBy(root, criteriaBuilder)));
+
+		return entityManager.createQuery(criteriaQuery)
 				.setFirstResult(from)
 				.setMaxResults(size)
 				.getResultList();

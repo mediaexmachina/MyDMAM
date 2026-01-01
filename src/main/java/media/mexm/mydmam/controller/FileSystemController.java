@@ -50,6 +50,8 @@ import media.mexm.mydmam.dto.StorageListResponse;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.repository.FileRepository;
+import media.mexm.mydmam.repository.FileSort;
+import media.mexm.mydmam.tools.SortOrder;
 
 @RestController
 @Validated
@@ -86,8 +88,17 @@ public class FileSystemController {
 												 @RequestParam(required = false,
 															   defaultValue = "0") @Min(0) final Integer skip,
 												 @RequestParam(required = false,
-															   defaultValue = "0") @Min(0) final Integer limit) {
-		return list(realm, storage, hashPath(realm, storage, "/"), skip, limit);
+															   defaultValue = "0") @Min(0) final Integer limit,
+												 @RequestParam(required = false,
+															   defaultValue = "none") final SortOrder sortByName,
+												 @RequestParam(required = false,
+															   defaultValue = "none") final SortOrder sortByType,
+												 @RequestParam(required = false,
+															   defaultValue = "none") final SortOrder sortByDate,
+												 @RequestParam(required = false,
+															   defaultValue = "none") final SortOrder sortBySize) {
+		return list(realm, storage, hashPath(realm, storage, "/"),
+				skip, limit, sortByName, sortByType, sortByDate, sortBySize);
 	}
 
 	@GetMapping("/list/{realm}/{storage}/{hashPath}")
@@ -98,9 +109,22 @@ public class FileSystemController {
 											 @RequestParam(required = false,
 														   defaultValue = "0") @Min(0) final Integer skip,
 											 @RequestParam(required = false,
-														   defaultValue = "0") @Min(0) final Integer limit) {
+														   defaultValue = "0") @Min(0) final Integer limit,
+											 @RequestParam(required = false,
+														   defaultValue = "none") final SortOrder sortByName,
+											 @RequestParam(required = false,
+														   defaultValue = "none") final SortOrder sortByType,
+											 @RequestParam(required = false,
+														   defaultValue = "none") final SortOrder sortByDate,
+											 @RequestParam(required = false,
+														   defaultValue = "none") final SortOrder sortBySize) {
 		final var maxAllowedEntries = min(conf.dirListMaxSize(), limit == 0 ? conf.dirListMaxSize() : limit);
-		final var resultItemList = fileDao.getByParentHashPath(hashPath.toLowerCase(), skip, maxAllowedEntries);
+		final var sort = new FileSort(sortByName, sortByType, sortByDate, sortBySize);
+		final var resultItemList = fileDao.getByParentHashPath(
+				hashPath.toLowerCase(),
+				skip,
+				maxAllowedEntries,
+				Optional.ofNullable(sort));
 		final var listSize = resultItemList.size();
 		final var totalSize = fileDao.countParentHashPathItems(realm, storage, hashPath.toLowerCase());
 		final var oFileParent = Optional.ofNullable(fileRepository.getByHashPath(hashPath.toLowerCase()));
@@ -132,6 +156,7 @@ public class FileSystemController {
 							listSize,
 							skip,
 							totalSize,
+							sort,
 							resultItemList.stream().map(e -> createFromEntity(e, realm, storage)).toList()),
 					OK);
 		} catch (final IllegalArgumentException e) {

@@ -23,15 +23,18 @@ import { LocalStorageService } from '../../services/local-storage.service';
 import { FileResponse } from '../../dto/file-response.interface';
 import { SpanDateTimeComponent } from "../toolkit/span-date-time.component";
 import { SpanFileSizeComponent } from "../toolkit/span-file-size.component";
+import { SortOrder } from '../../dto/sort-order.enum';
+import { NavigatorColumnSortComponent } from "./navigator-column-sort.component";
 
 @Component({
   selector: 'app-navigator-folder',
-  imports: [RouterLink, SpanDateTimeComponent, SpanFileSizeComponent],
+  imports: [RouterLink, SpanDateTimeComponent, SpanFileSizeComponent, NavigatorColumnSortComponent],
   templateUrl: './navigator-folder.component.html',
   styleUrl: './navigator-folder.component.css'
 })
 export class NavigatorFolderComponent {
 
+    readonly _SortOrder = SortOrder;
     readonly route = inject(ActivatedRoute);
     readonly localStorageService = inject(LocalStorageService);
     readonly fileSystemService = inject(FileSystemService);
@@ -45,6 +48,13 @@ export class NavigatorFolderComponent {
     readonly pageNavigate = computed(this.computePageNavigate.bind(this));
     readonly pageNavigatePreviousButton = computed(this.computePageNavigatePreviousButton.bind(this));
     readonly pageNavigateNextButton = computed(this.computePageNavigateNextButton.bind(this));
+
+    private currentSortOrder = {
+        name: SortOrder.none,
+        type: SortOrder.none,
+        size: SortOrder.none,
+        date: SortOrder.none
+    };
 
     constructor() {
         this.listResultCount = signal(this.localStorageService.getNavigateListResultCount(this.defaultListResultCount));
@@ -60,9 +70,38 @@ export class NavigatorFolderComponent {
 
     list(hashPath:string, skip: number = 0):void {
         if (hashPath == "") {
-            this.fileSystemService.listRoot(this.storage(), skip, this.listResultCount()).then(r => this.dirListResponse.set(r));
+            this.fileSystemService.listRoot(
+                this.storage(),
+                skip,
+                this.listResultCount(),
+                this.currentSortOrder["name"],
+                this.currentSortOrder["type"],
+                this.currentSortOrder["date"],
+                this.currentSortOrder["size"])
+                .then(r => this.dirListResponse.set(r));
         } else {
-            this.fileSystemService.list(this.storage(), hashPath, skip, this.listResultCount()).then(r => this.dirListResponse.set(r));
+            this.fileSystemService.list(
+                this.storage(),
+                hashPath,
+                skip,
+                this.listResultCount(),
+                this.currentSortOrder["name"],
+                this.currentSortOrder["type"],
+                this.currentSortOrder["date"],
+                this.currentSortOrder["size"])
+                .then(r => this.dirListResponse.set(r));
+        }
+    }
+
+    listRefresh() {
+        const dirListResponse = this.dirListResponse();
+        if (dirListResponse == null) {
+            return;
+        }
+        if (dirListResponse.currentItem != null) {
+            this.list(dirListResponse.currentItem.hashPath);
+        } else {
+            this.list("");
         }
     }
 
@@ -193,16 +232,12 @@ export class NavigatorFolderComponent {
         const value = parseInt((event.target as HTMLSelectElement).value);
         this.listResultCount.set(value);
         this.localStorageService.setNavigateListResultCount(value);
+        this.listRefresh();
+    }
 
-        const dirListResponse = this.dirListResponse();
-        if (dirListResponse == null) {
-            return;
-        }
-        if (dirListResponse.currentItem != null) {
-            this.list(dirListResponse.currentItem.hashPath);
-        } else {
-            this.list("");
-        }
+    changeSort(order:SortOrder, colName:"name"|"type"|"size"|"date"):void {
+        this.currentSortOrder[colName] = order;
+        this.listRefresh();
     }
 
 }

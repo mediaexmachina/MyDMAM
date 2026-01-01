@@ -4,6 +4,7 @@
   FROM THE JAVA SIDE OF THIS PROJECT
 */
 import { FileItemResponse } from './file-item-response.interface';
+import { FileSort } from './file-sort.interface';
 
 export interface FileResponse {
     realm: string;
@@ -14,5 +15,6 @@ export interface FileResponse {
     listSize: number;
     skipCount: number;
     total: number;
+    sort: FileSort;
     list: Array<FileItemResponse>;
 }

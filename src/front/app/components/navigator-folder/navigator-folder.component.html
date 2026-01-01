@@ -86,26 +86,57 @@
     }
 </nav>
 
-<ul class="dirlist">
-    @for (fileItem of dirList?.list; track fileItem.hashPath) {
-    <li>
-        <span class="navigateto">
-            <a [class]="{'directory': fileItem.directory}" [routerLink]="['/navigator', storage(), fileItem.hashPath]">{{ fileItem.name }}</a>
-        </span>
-        @if (fileItem.directory) {
-            <span>Directory</span>
-            <span></span>
-        } @else if (fileItem.justDetected) {
-            <span class="just-detected">Just detected file</span>
-            <span class="just-detected">At least <app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
-        } @else {
-            <span>Regular file</span>
-            <span><app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
+@if (dirList?.listSize || 0 > 0) {
+    <ul class="dirlist">
+        <li>
+            <span class="navigateto">
+                <app-navigator-column-sort
+                    name="Name"
+                    [sortOrder]="dirList?.sort?.name || _SortOrder.none"
+                    (onChangeSort)="changeSort($event, 'name')">
+                </app-navigator-column-sort>
+            </span>
+            <span>
+                <app-navigator-column-sort
+                    name="Type"
+                    [sortOrder]="dirList?.sort?.type || _SortOrder.none"
+                    (onChangeSort)="changeSort($event, 'type')">
+                </app-navigator-column-sort></span>
+            <span>
+                <app-navigator-column-sort
+                    name="Size"
+                    [sortOrder]="dirList?.sort?.size || _SortOrder.none"
+                    (onChangeSort)="changeSort($event, 'size')">
+                </app-navigator-column-sort></span>
+            <span>
+                <app-navigator-column-sort
+                    name="Date"
+                    [sortOrder]="dirList?.sort?.date || _SortOrder.none"
+                    (onChangeSort)="changeSort($event, 'date')">
+                </app-navigator-column-sort>
+            </span>
+        </li>
+
+        @for (fileItem of dirList?.list; track fileItem.hashPath) {
+        <li>
+            <span class="navigateto">
+                <a [class]="{'directory': fileItem.directory}" [routerLink]="['/navigator', storage(), fileItem.hashPath]">{{ fileItem.name }}</a>
+            </span>
+            @if (fileItem.directory) {
+                <span>Directory</span>
+                <span></span>
+            } @else if (fileItem.justDetected) {
+                <span class="just-detected">Just detected file</span>
+                <span class="just-detected">At least <app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
+            } @else {
+                <span>Regular file</span>
+                <span><app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
+            }
+            <app-span-date-time [date]="fileItem.modified"></app-span-date-time>
+        </li>
         }
-        <app-span-date-time [date]="fileItem.modified"></app-span-date-time>
-    </li>
-    }
-</ul>
+    </ul>
+}
 
 @if (dirList?.listSize != dirList?.total) {
     <section class="paginate">

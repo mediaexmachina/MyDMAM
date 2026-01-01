@@ -17,13 +17,14 @@
 package media.mexm.mydmam.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.tools.FileEntityConsumer;
 
 public interface FileDao {
 
-	List<FileEntity> getByParentHashPath(String parentHashPath, int from, int size);
+	List<FileEntity> getByParentHashPath(String parentHashPath, int from, int size, Optional<FileSort> sort);
 
 	int countParentHashPathItems(String realm, String storage, String parentHashPath);
 

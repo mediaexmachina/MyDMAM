@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.repository;
 
+import static java.util.Optional.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -94,10 +95,12 @@ class FileDaoImplTest {
 		reset(firstDetectionFile);
 	}
 
+	// TODO test getByParentHashPath with Optional<FileSort> oSort
+
 	@Test
 	void testGetByParentHashPath() {
 		final var size = (ITEMS_TO_ADD - from) / 2;
-		final var result = fileDao.getByParentHashPath(parentHashPath, from, size);
+		final var result = fileDao.getByParentHashPath(parentHashPath, from, size, empty());
 		assertEquals(size, result.size());
 		assertFalse(result.isEmpty());
 		assertEquals("/" + basePath + "/" + baseName + from, result.get(0).getPath());

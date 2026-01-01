@@ -17,6 +17,7 @@
 package media.mexm.mydmam.controller;
 
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
+import static media.mexm.mydmam.tools.SortOrder.none;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +62,7 @@ import media.mexm.mydmam.dto.StorageListResponse;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.repository.FileRepository;
+import media.mexm.mydmam.repository.FileSort;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
@@ -123,6 +126,7 @@ class FileSystemControllerTest {
 	HttpHeaders baseHeaders;
 	long modified;
 	String parentHashPath;
+	FileSort fileSort;
 
 	@BeforeEach
 	void init() {
@@ -131,6 +135,7 @@ class FileSystemControllerTest {
 		modified = System.currentTimeMillis();
 		hashPath = hashPath.toLowerCase();
 		parentHashPath = hashPath(realm, storage, "/" + basePath);
+		fileSort = new FileSort(none, none, none, none);
 
 		when(file.getHashPath()).thenReturn(hashPath);
 		when(file.getLength()).thenReturn(0l);
@@ -205,7 +210,7 @@ class FileSystemControllerTest {
 
 	@Test
 	void testList() throws Exception {
-		when(fileDao.getByParentHashPath(hashPath, skip, limit))
+		when(fileDao.getByParentHashPath(any(), anyInt(), anyInt(), any()))
 				.thenReturn(List.of(fileChildren0, fileChildren1));
 		when(fileDao.countParentHashPathItems(realm, storage, hashPath)).thenReturn(totalSize);
 		when(fileRepository.getByHashPath(hashPath)).thenReturn(file);
@@ -226,7 +231,7 @@ class FileSystemControllerTest {
 
 		final var response = objectMapper.readValue(content, FileResponse.class);
 
-		verify(fileDao, times(1)).getByParentHashPath(hashPath, skip, limit);
+		verify(fileDao, times(1)).getByParentHashPath(hashPath, skip, limit, Optional.ofNullable(fileSort));
 		verify(fileDao, times(1)).countParentHashPathItems(realm, storage, hashPath);
 		verify(fileRepository, times(1)).getByHashPath(hashPath);
 
@@ -262,7 +267,7 @@ class FileSystemControllerTest {
 
 	@Test
 	void testList_badRealm() throws Exception {
-		when(fileDao.getByParentHashPath(any(), anyInt(), anyInt())).thenReturn(List.of());
+		when(fileDao.getByParentHashPath(any(), anyInt(), anyInt(), any())).thenReturn(List.of());
 		when(fileDao.countParentHashPathItems(any(), any(), any())).thenReturn(0);
 		when(fileRepository.getByHashPath(any(String.class))).thenReturn(file);
 
@@ -280,7 +285,7 @@ class FileSystemControllerTest {
 	void testListRoot() throws Exception {
 		final var computedHashPath = hashPath(realm, storage, "/");
 
-		when(fileDao.getByParentHashPath(any(), anyInt(), anyInt())).thenReturn(List.of());
+		when(fileDao.getByParentHashPath(any(), anyInt(), anyInt(), any())).thenReturn(List.of());
 		when(fileDao.countParentHashPathItems(any(), any(), any())).thenReturn(0);
 		when(fileRepository.getByHashPath(any(String.class))).thenReturn(file);
 
@@ -311,7 +316,7 @@ class FileSystemControllerTest {
 		assertThat(response.total()).isZero();
 		assertThat(response.list()).isEmpty();
 
-		verify(fileDao, times(1)).getByParentHashPath(computedHashPath, skip, limit);
+		verify(fileDao, times(1)).getByParentHashPath(computedHashPath, skip, limit, Optional.ofNullable(fileSort));
 		verify(fileDao, times(1)).countParentHashPathItems(realm, storage, computedHashPath);
 		verify(fileRepository, times(1)).getByHashPath(computedHashPath);
 
