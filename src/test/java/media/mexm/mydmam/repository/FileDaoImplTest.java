@@ -24,6 +24,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import jakarta.transaction.Transactional;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.tools.SortOrder;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.transfertfiles.CachedFileAttributes;
@@ -70,14 +72,25 @@ class FileDaoImplTest {
 	@Fake(min = ITEMS_TO_ADD / 10, max = ITEMS_TO_ADD - 1)
 	int from;
 
+	@Fake
+	SortOrder soName;
+	@Fake
+	SortOrder soType;
+	@Fake
+	SortOrder soDate;
+	@Fake
+	SortOrder soSize;
+
 	String parentPath;
 	String parentHashPath;
+	FileSort sort;
 
 	@BeforeEach
 	@Transactional
 	void init() {
 		parentPath = "/" + basePath;
 		parentHashPath = FileEntity.hashPath(realm, storage, parentPath);
+		sort = new FileSort(soName, soType, soDate, soSize);
 
 		fileRepository.deleteAll();
 
@@ -95,8 +108,6 @@ class FileDaoImplTest {
 		reset(firstDetectionFile);
 	}
 
-	// TODO test getByParentHashPath with Optional<FileSort> oSort
-
 	@Test
 	void testGetByParentHashPath() {
 		final var size = (ITEMS_TO_ADD - from) / 2;
@@ -104,6 +115,28 @@ class FileDaoImplTest {
 		assertEquals(size, result.size());
 		assertFalse(result.isEmpty());
 		assertEquals("/" + basePath + "/" + baseName + from, result.get(0).getPath());
+	}
+
+	/**
+	 * Lazy check
+	 */
+	@Test
+	void testGetByParentHashPath_sort() {
+		final var result = fileDao.getByParentHashPath(parentHashPath, 0, ITEMS_TO_ADD, Optional.ofNullable(sort));
+		assertEquals(ITEMS_TO_ADD, result.size());
+
+		final var allPaths = result.stream().map(FileEntity::getPath).toList();
+		assertThat(allPaths).contains("/" + basePath + "/" + baseName + from);
+	}
+
+	/**
+	 * Lazy check
+	 */
+	@Test
+	void testGetByParentHashPath_sort2() {
+		final var size = (ITEMS_TO_ADD - from) / 2;
+		final var result = fileDao.getByParentHashPath(parentHashPath, from, size, Optional.ofNullable(sort));
+		assertEquals(size, result.size());
 	}
 
 	@Test

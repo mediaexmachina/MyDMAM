@@ -29,7 +29,7 @@ public enum SortOrder {
 
 	public <T> Optional<Order> applyOrder(final String attributeName,
 										  final Root<T> root,
-										  final CriteriaBuilder criteriaBuilder) { // TODO test
+										  final CriteriaBuilder criteriaBuilder) {
 		if (equals(asc)) {
 			return Optional.ofNullable(criteriaBuilder.asc(root.get(attributeName)));
 		} else if (equals(desc)) {

@@ -30,7 +30,6 @@ public record FileSort(SortOrder name,
 					   SortOrder type,
 					   SortOrder date,
 					   SortOrder size) {
-	// TODO test
 
 	public List<Order> makeOrderBy(final Root<FileEntity> root, final CriteriaBuilder criteriaBuilder) {
 		return Stream.of(
