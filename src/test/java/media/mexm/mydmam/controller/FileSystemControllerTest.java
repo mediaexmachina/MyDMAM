@@ -16,12 +16,18 @@
  */
 package media.mexm.mydmam.controller;
 
+import static media.mexm.mydmam.dto.StorageCategory.DAS;
+import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
+import static media.mexm.mydmam.dto.StorageCategory.NAS;
+import static media.mexm.mydmam.dto.StorageStateClass.OFFLINE;
+import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static media.mexm.mydmam.tools.SortOrder.none;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -34,10 +40,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -55,10 +64,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 import media.mexm.mydmam.component.AuditTrail;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
+import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.configuration.RealmConf;
+import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.dto.FileItemResponse;
 import media.mexm.mydmam.dto.FileResponse;
 import media.mexm.mydmam.dto.RealmListResponse;
+import media.mexm.mydmam.dto.StorageCategory;
 import media.mexm.mydmam.dto.StorageListResponse;
+import media.mexm.mydmam.dto.StorageState;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.repository.FileRepository;
@@ -78,12 +93,15 @@ class FileSystemControllerTest {
 	private static final ResultMatcher CONTENT_TYPE = content().contentType(REQUEST_MAPPING.produces()[0]);
 	private static final ResultMatcher STATUS_OK = status().isOk();
 	private static final ResultMatcher STATUS_BAD_REQUEST = status().isBadRequest();
+	private static final StorageState emptyStorageState = new StorageState("", "", EXTERNAL, OFFLINE);
 
 	@Autowired
 	MockMvc mvc;
 	@Autowired
 	ObjectMapper objectMapper;
 
+	@MockitoBean
+	MyDMAMConfigurationProperties conf;
 	@MockitoBean
 	FileRepository fileRepository;
 	@MockitoBean
@@ -137,6 +155,8 @@ class FileSystemControllerTest {
 		parentHashPath = hashPath(realm, storage, "/" + basePath);
 		fileSort = new FileSort(none, none, none, none);
 
+		when(conf.dirListMaxSize()).thenReturn(100);
+
 		when(file.getHashPath()).thenReturn(hashPath);
 		when(file.getLength()).thenReturn(0l);
 		when(file.getModified()).thenReturn(new Timestamp(modified));
@@ -187,25 +207,116 @@ class FileSystemControllerTest {
 		verify(fileRepository, times(1)).getAllRealms();
 	}
 
-	@Test
-	void testGetStorages() throws Exception {
-		when(fileRepository.getAllStoragesByRealm(realm)).thenReturn(Set.of(storage, storage1));
+	@Nested
+	class GetStorages {
 
-		final var content = mvc.perform(get(BASE_MAPPING + "/list/" + realm)
-				.headers(baseHeaders))
-				.andExpect(STATUS_OK)
-				.andExpect(CONTENT_TYPE)
-				.andExpect(jsonPath("$.realm").exists())
-				.andExpect(jsonPath("$.storages").exists())
-				.andReturn()
-				.getResponse()
-				.getContentAsString();
+		@Mock
+		RealmConf realmConf;
+		@Mock
+		PathIndexingStorage piStorageIndexedInDb;
+		@Mock
+		PathIndexingStorage piStorageIndexedOutOfDb;
 
-		final var response = objectMapper.readValue(content, StorageListResponse.class);
-		assertThat(response.realm()).isEqualTo(realm);
-		assertThat(response.storages()).containsExactlyInAnyOrder(storage, storage1);
+		@Fake
+		String storageNameIndexedOutOfDb;
+		@Fake
+		String description;
+		@Fake
+		String location;
+		@Fake
+		boolean storageCategoryNas;
 
-		verify(fileRepository, times(1)).getAllStoragesByRealm(realm);
+		StorageCategory storageCategory;
+		StorageState expectedStorageState;
+
+		@BeforeEach
+		void init() {
+			when(fileRepository.getAllStoragesByRealm(realm)).thenReturn(Set.of(storage, storage1));
+		}
+
+		@Test
+		void testNoState() throws Exception {
+			final var content = mvc.perform(get(BASE_MAPPING + "/list/" + realm)
+					.headers(baseHeaders))
+					.andExpect(STATUS_OK)
+					.andExpect(CONTENT_TYPE)
+					.andExpect(jsonPath("$.realm").exists())
+					.andExpect(jsonPath("$.storages").exists())
+					.andExpect(jsonPath("$.storageStates").exists())
+					.andReturn()
+					.getResponse()
+					.getContentAsString();
+
+			final var response = objectMapper.readValue(content, StorageListResponse.class);
+			assertThat(response.realm()).isEqualTo(realm);
+			assertThat(response.storages()).containsExactlyInAnyOrder(storage, storage1);
+
+			assertThat(response.storageStates())
+					.containsKeys(storage, storage1)
+					.containsEntry(storage, emptyStorageState)
+					.containsEntry(storage1, emptyStorageState)
+					.size().isEqualTo(2);
+
+			verify(fileRepository, times(1)).getAllStoragesByRealm(realm);
+		}
+
+		@Test
+		void testWithState() throws Exception {
+			when(conf.getRealmByName(realm)).thenReturn(Optional.ofNullable(realmConf));
+			when(realmConf.storages()).thenReturn(Map.of(
+					new TechnicalName(storage), piStorageIndexedInDb,
+					new TechnicalName(storageNameIndexedOutOfDb), piStorageIndexedOutOfDb));
+
+			when(piStorageIndexedInDb.location()).thenReturn(location);
+			when(piStorageIndexedOutOfDb.location()).thenReturn(location);
+
+			when(piStorageIndexedInDb.description()).thenReturn(description);
+			when(piStorageIndexedOutOfDb.description()).thenReturn(description);
+
+			storageCategory = storageCategoryNas ? NAS : DAS;
+			when(piStorageIndexedInDb.getCategory()).thenReturn(storageCategory);
+			when(piStorageIndexedOutOfDb.getCategory()).thenReturn(storageCategory);
+
+			when(piStorageIndexedInDb.getStorageStateClass()).thenReturn(ONLINE);
+			when(piStorageIndexedOutOfDb.getStorageStateClass()).thenReturn(ONLINE);
+
+			final var content = mvc.perform(get(BASE_MAPPING + "/list/" + realm)
+					.headers(baseHeaders))
+					.andExpect(STATUS_OK)
+					.andExpect(CONTENT_TYPE)
+					.andExpect(jsonPath("$.realm").exists())
+					.andExpect(jsonPath("$.storages").exists())
+					.andExpect(jsonPath("$.storageStates").exists())
+					.andReturn()
+					.getResponse()
+					.getContentAsString();
+
+			final var response = objectMapper.readValue(content, StorageListResponse.class);
+			assertThat(response.realm()).isEqualTo(realm);
+			assertThat(response.storages()).containsExactlyInAnyOrder(storage, storage1);
+
+			expectedStorageState = new StorageState(description, location, storageCategory, ONLINE);
+			assertThat(response.storageStates())
+					.containsKeys(storage, storage1, storageNameIndexedOutOfDb)
+					.containsEntry(storage, expectedStorageState)
+					.containsEntry(storage1, emptyStorageState)
+					.containsEntry(storageNameIndexedOutOfDb, expectedStorageState)
+					.size().isEqualTo(3);
+
+			verify(fileRepository, times(1)).getAllStoragesByRealm(realm);
+			verify(conf, times(1)).getRealmByName(realm);
+			verify(realmConf, times(1)).storages();
+
+			Stream.of(piStorageIndexedInDb,
+					piStorageIndexedOutOfDb)
+					.forEach(piStorage -> {
+						verify(piStorage, times(1)).location();
+						verify(piStorage, times(1)).description();
+						verify(piStorage, times(1)).getCategory();
+						verify(piStorage, times(1)).getStorageStateClass();
+					});
+
+		}
 	}
 
 	@Test
@@ -263,6 +374,7 @@ class FileSystemControllerTest {
 			verify(f, atLeastOnce()).isWatchMarkedAsDone();
 		}
 
+		verify(conf, atLeast(1)).dirListMaxSize();
 	}
 
 	@Test
@@ -326,6 +438,8 @@ class FileSystemControllerTest {
 		verify(file, atLeastOnce()).getRealm();
 		verify(file, atLeastOnce()).getStorage();
 		verify(file, atLeastOnce()).isDirectory();
+
+		verify(conf, atLeast(1)).dirListMaxSize();
 	}
 
 }

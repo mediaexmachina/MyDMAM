@@ -58,6 +58,10 @@ class PathIndexerTest {
 	String storage;
 	@Fake
 	String spoolEvents;
+	@Fake
+	String description;
+	@Fake
+	String location;
 
 	@Mock
 	PathIndexerService pathIndexerService;
@@ -84,11 +88,13 @@ class PathIndexerTest {
 		@BeforeEach
 		void init() {
 			piStorage = new PathIndexingStorage(
-					new File(".").getAbsolutePath(), 10,
+					description, location,
+					new File(".").getAbsolutePath(),
+					10,
 					duration,
 					0,
 					null, null, null, null, null, null, null, null, false, false,
-					Duration.ZERO, false, "pathindexing");
+					Duration.ZERO, false, "pathindexing", false);
 			piRealm = new RealmConf(Map.of(new TechnicalName(storage), piStorage),
 					duration, spoolEvents, null);
 

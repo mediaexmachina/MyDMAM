@@ -16,6 +16,9 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static media.mexm.mydmam.dto.StorageCategory.DAS;
+import static media.mexm.mydmam.dto.StorageCategory.NAS;
+import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 import static tv.hd3g.transfertfiles.AbstractFile.normalizePath;
 
 import java.io.File;
@@ -29,12 +32,16 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.PositiveOrZero;
+import media.mexm.mydmam.dto.StorageCategory;
+import media.mexm.mydmam.dto.StorageStateClass;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
 import tv.hd3g.transfertfiles.AbstractFileSystemURL;
 import tv.hd3g.transfertfiles.URLAccess;
 
 @Validated
-public record PathIndexingStorage(@NotEmpty String path,
+public record PathIndexingStorage(@DefaultValue("") String description,
+								  @DefaultValue("") String location,
+								  @NotEmpty String path,
 								  @Valid @PositiveOrZero @Max(100) @DefaultValue("10") int maxDeep,
 								  @DefaultValue("1h") Duration timeBetweenScans,
 								  @DefaultValue("10") int retryAfterTimeFactor,
@@ -50,7 +57,10 @@ public record PathIndexingStorage(@NotEmpty String path,
 								  @DefaultValue("false") boolean allowedLinks,
 								  @DefaultValue("20s") Duration minFixedStateTime,
 								  @DefaultValue("false") boolean noScans,
-								  @DefaultValue("pathindexing") @NotEmpty String spoolScans) {
+								  @DefaultValue("pathindexing") @NotEmpty String spoolScans,
+								  @DefaultValue("false") boolean disablePathCheckOnBoot) {
+
+	private static final String FILE_PROTOCOL = "file://";
 
 	public PathIndexingStorage {
 		if (timeBetweenScans != null && (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative())) {
@@ -60,13 +70,15 @@ public record PathIndexingStorage(@NotEmpty String path,
 		try {
 			final var localPath = new File(path);
 			if (localPath.exists()) {
-				final var newTargetFolder = "file://localhost" + normalizePath(localPath.getCanonicalFile()
+				final var newTargetFolder = FILE_PROTOCOL + "localhost" + normalizePath(localPath.getCanonicalFile()
 						.getAbsolutePath());
 				path = newTargetFolder;
 			} else {
 				new URLAccess(path);
 			}
-			new AbstractFileSystemURL(path).close();
+			if (disablePathCheckOnBoot == false) {
+				new AbstractFileSystemURL(path).close();
+			}
 		} catch (final Exception e) {
 			throw new IllegalArgumentException(
 					"Can't found directory, or it doesn't seem to be an valid URL: \"" + path + "\"", e);
@@ -99,6 +111,17 @@ public record PathIndexingStorage(@NotEmpty String path,
 		observedFolder.setTargetFolder(path);
 		observedFolder.setTimeBetweenScans(timeBetweenScans);
 		return observedFolder;
+	}
+
+	public StorageCategory getCategory() {
+		return path.startsWith(FILE_PROTOCOL) ? DAS : NAS;
+	}
+
+	/**
+	 * No specific class attribute here, now.
+	 */
+	public StorageStateClass getStorageStateClass() {
+		return ONLINE;
 	}
 
 }

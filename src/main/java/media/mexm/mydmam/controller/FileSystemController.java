@@ -17,8 +17,12 @@
 package media.mexm.mydmam.controller;
 
 import static java.lang.Math.min;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 import static media.mexm.mydmam.App.CONTROLLER_BASE_MAPPING_API_PATH;
 import static media.mexm.mydmam.dto.FileItemResponse.createFromEntity;
+import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
+import static media.mexm.mydmam.dto.StorageStateClass.OFFLINE;
 import static media.mexm.mydmam.entity.FileEntity.HASH_STRING_LEN;
 import static media.mexm.mydmam.entity.FileEntity.MAX_NAME_SIZE;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
@@ -26,7 +30,10 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,9 +51,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.dto.FileResponse;
 import media.mexm.mydmam.dto.RealmListResponse;
 import media.mexm.mydmam.dto.StorageListResponse;
+import media.mexm.mydmam.dto.StorageState;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.repository.FileRepository;
@@ -77,8 +86,39 @@ public class FileSystemController {
 	@GetMapping("/list/{realm}")
 	@Transactional
 	public ResponseEntity<StorageListResponse> getStorages(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm) {
-		final var list = fileRepository.getAllStoragesByRealm(realm).stream().sorted().toList();
-		return new ResponseEntity<>(new StorageListResponse(realm, list), OK);
+		final var storageDatabaseList = fileRepository.getAllStoragesByRealm(realm).stream().sorted().toList();
+
+		final var configuredStorageStates = conf.getRealmByName(realm)
+				.stream()
+				.map(RealmConf::storages)
+				.map(Map::entrySet)
+				.flatMap(Set::stream)
+				.collect(toUnmodifiableMap(
+						entry -> entry.getKey().name(),
+						entry -> {
+							final var pathIndexingStorage = entry.getValue();
+							final var description = pathIndexingStorage.description();
+							final var location = pathIndexingStorage.location();
+							final var category = pathIndexingStorage.getCategory();
+							final var stateClass = pathIndexingStorage.getStorageStateClass();
+							return new StorageState(description, location, category, stateClass);
+						}));
+
+		final var notConfiguredStoragesNames = storageDatabaseList.stream()
+				.filter(name -> configuredStorageStates.containsKey(name) == false)
+				.collect(toUnmodifiableMap(
+						name -> name,
+						_ -> new StorageState("", "", EXTERNAL, OFFLINE)));
+
+		final var allStorageStates = new HashMap<>(configuredStorageStates);
+		allStorageStates.putAll(notConfiguredStoragesNames);
+
+		return new ResponseEntity<>(
+				new StorageListResponse(
+						realm,
+						storageDatabaseList,
+						unmodifiableMap(allStorageStates)),
+				OK);
 	}
 
 	@GetMapping("/list/{realm}/{storage}")

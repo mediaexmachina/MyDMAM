@@ -15,28 +15,58 @@
  *
  */
 
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal, Signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { LocalStorageService } from '../../services/local-storage.service';
 import { FileSystemService } from '../../services/file-system.service';
 import { StorageListResponse } from '../../dto/storage-list-response.interface';
+import { StorageState } from '../../dto/storage-state.interface';
+import { StorageStateClass } from '../../dto/storage-state-class.enum';
+import { StorageCategory } from '../../dto/storage-category.enum';
+import { FirstUpperCasePipe } from '../../pipes/first-upper-case-pipe';
 
 @Component({
     selector: 'app-navigator-storage',
-    imports: [RouterLink],
+    imports: [RouterLink, FirstUpperCasePipe],
     templateUrl: './navigator-storage.component.html',
-    styleUrl: './navigator-storage.component.css'
+    styles: `
+        ul {
+            padding-inline-start: 0;
+        }
+        li {
+            display: flex;
+            flex-wrap: wrap;
+            padding-top: .75rem;
+            padding-bottom: .75rem;
+            padding-left: 1em;
+            padding-right: 1em;
+        }
+        .row > * {
+            width: 100%;
+            max-width: 100%;
+        }
+    `
 })
 export class NavigatorStorageComponent {
 
+    readonly _StorageStateClass = StorageStateClass;
+    readonly _StorageCategory = StorageCategory;
     readonly localStorageService = inject(LocalStorageService);
     readonly fileSystemService = inject(FileSystemService);
-
-    storageListResponse: StorageListResponse | null = null;
+    readonly storageListResponse = signal<StorageListResponse | null>(null);
+    readonly storageStateNames = computed(() => Object.keys(this.storageListResponse()?.storageStates || {}));
 
     constructor() {
-        this.fileSystemService.getStorages().then(s => this.storageListResponse = s);
+        this.fileSystemService.getStorages().then(s => this.storageListResponse.set(s));
     }
 
+    protected getStorageStateByName(name:string):StorageState {
+        const storageStates = this.storageListResponse()?.storageStates || {};
+        return storageStates[name];
+    }
+
+    protected isStoragePresentInDatabase(name:string):boolean {
+        return (this.storageListResponse()?.storages || []).indexOf(name) != -1;
+    }
 }

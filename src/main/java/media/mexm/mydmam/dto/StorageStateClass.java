@@ -11,16 +11,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
- * Copyright (C) Media ex Machina 2025
+ * Copyright (C) Media ex Machina 2026
  *
  */
 package media.mexm.mydmam.dto;
 
-import java.util.List;
-import java.util.Map;
-
-public record StorageListResponse(String realm,
-								  List<String> storages,
-								  Map<String, StorageState> storageStates) {
-
+public enum StorageStateClass {
+	/**
+	 * Content are directly accessible
+	 */
+	ONLINE,
+	/**
+	 * Content accessibility is limited by retrieval files before process
+	 */
+	NEARLINE,
+	/**
+	 * Content are not automatically accessible
+	 */
+	OFFLINE;
 }

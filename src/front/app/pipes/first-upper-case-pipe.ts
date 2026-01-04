@@ -11,31 +11,23 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
- * Copyright (C) Media ex Machina 2025
+ * Copyright (C) Media ex Machina 2026
  *
  */
+import { Pipe, PipeTransform } from '@angular/core';
 
-ul {
-    display: flex;
-    flex-direction: row;
-    margin-top: 0.2em;
-    margin-bottom: 0px;
-    align-items: center;
-}
+@Pipe({
+    name: 'firstUpperCase',
+})
+export class FirstUpperCasePipe implements PipeTransform {
 
-a, a:visited, a:active {
-    text-align: center;
-    display: list-item;
-    min-width: 6em;
-    margin: 0.2em 0.6em;
-    padding: 0.5em;
-    border: 0.15em solid rgba(0, 0, 0, 0.2);
+    transform(value: string|null): string {
+        if (value == null || value == "") {
+            return "";
+        } else if (value.length == 1) {
+            return value.toUpperCase();
+        }
+        return value[0].toUpperCase() + value.substring(1);
+    }
 
-    text-decoration: none;
-    color: black;
-}
-
-a:hover {
-    color: rgb(2, 65, 211);
-    background-color: rgba(0, 0, 0, 0.06);
 }

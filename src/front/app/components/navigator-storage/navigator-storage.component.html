@@ -14,12 +14,67 @@
     Copyright (C) Media ex Machina 2025
 
 -->
-
-@if (storageListResponse != null) {
 <p>Available storages indexed on database:</p>
+
+@let storageNames = storageStateNames();
+@if (storageNames.length > 0) {
 <ul>
-    @for (storage of storageListResponse.storages; track storage) {
-    <li><a [routerLink]="['/navigator', storage]">{{ storage }}</a></li>
+    @for (name of storageNames; track name) {
+        <li>
+            @let storageState = getStorageStateByName(name);
+            @let category = storageState.category;
+            @let stateClass = storageState.stateClass;
+            @let description = storageState.description;
+            @let location = storageState.location;
+
+            <span class="col" style="width: 10%">
+                @if (isStoragePresentInDatabase(name)) {
+                    <a [routerLink]="['/navigator', name]" style="font-weight: 600;">
+                        {{ name | firstUpperCase }}
+                    </a>
+                } @else {
+                    {{ name | firstUpperCase }}
+                }
+            </span>
+
+            <span class="col" style="width: 40%;">
+                @if(description != "") {
+                    {{ description | firstUpperCase }}
+                }
+                @if(description != "" && location != "") {
+                    -
+                }
+                @if(location != "") {
+                    Location: {{ location | firstUpperCase }}.
+                }
+            </span>
+
+            <span class="col" style="width: 50%;">
+                @if (category == _StorageCategory.EXTERNAL && stateClass == _StorageStateClass.OFFLINE) {
+                    Present in database, but non accessible from this instance.
+                } @else {
+                    @if (category == _StorageCategory.DAS) {
+                        Locally mounted / direct-attached storage.
+                    } @else if (category == _StorageCategory.NAS) {
+                        Network-attached storage
+                    } @else {
+                        Storage non accessible from this instance.
+                    }
+
+                    @if (isStoragePresentInDatabase(name) == false) {
+                        But, no items indexed in database.
+                    }
+
+                    @if (stateClass == _StorageStateClass.NEARLINE) {
+                        Content accessibility is limited by retrieval files before process (nearline).
+                    } @else if (stateClass == _StorageStateClass.OFFLINE) {
+                        Content are not automatically accessible (offline).
+                    }
+                }
+            </span>
+        </li>
     }
-</ul>
+    </ul>
+} @else {
+    No storages found.
 }

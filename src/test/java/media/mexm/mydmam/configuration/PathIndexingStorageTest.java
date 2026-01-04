@@ -16,6 +16,9 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static media.mexm.mydmam.dto.StorageCategory.DAS;
+import static media.mexm.mydmam.dto.StorageCategory.NAS;
+import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 import static org.apache.commons.io.FilenameUtils.getFullPathNoEndSeparator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -72,27 +75,33 @@ class PathIndexingStorageTest {
 	String realmName;
 	@Fake
 	String storageName;
+	@Fake
+	String description;
+	@Fake
+	String location;
 
 	String path;
 	PathIndexingStorage pis;
 	Duration timeBetweenScans;
 	Duration minFixedStateTime;
 	ObservedFolder observedFolder;
+	boolean disablePathCheckOnBoot;
 
 	@BeforeEach
 	void init() {
 		path = new File(".").getAbsolutePath();
 		timeBetweenScans = Duration.ofMillis(timeBetweenScansDuration);
 		minFixedStateTime = Duration.ofMillis(timeBetweenScansDuration);
-
+		disablePathCheckOnBoot = false;
 		makePis();
 	}
 
 	void makePis() {
-		pis = new PathIndexingStorage(path, maxDeep, timeBetweenScans, retryAfterTimeFactor, allowedExtentions,
+		pis = new PathIndexingStorage(description, location,
+				path, maxDeep, timeBetweenScans, retryAfterTimeFactor, allowedExtentions,
 				blockedExtentions, ignoreRelativePaths, ignoreFiles, allowedFileNames, allowedDirNames,
 				blockedFileNames, blockedDirNames, allowedHidden, allowedLinks, minFixedStateTime, noScans,
-				spoolScans);
+				spoolScans, disablePathCheckOnBoot);
 	}
 
 	@Test
@@ -145,6 +154,24 @@ class PathIndexingStorageTest {
 		assertThat(observedFolder.getSpoolScans()).isEqualTo(spoolScans);
 		assertThat(observedFolder.getTargetFolder()).contains(getFullPathNoEndSeparator(path));
 		assertThat(observedFolder.getTimeBetweenScans()).isEqualTo(timeBetweenScans);
+	}
+
+	@Test
+	void testGetCategory_das() {
+		assertThat(pis.getCategory()).isEqualTo(DAS);
+	}
+
+	@Test
+	void testGetCategory_nas() {
+		disablePathCheckOnBoot = true;
+		path = "ftp://localhost";
+		makePis();
+		assertThat(pis.getCategory()).isEqualTo(NAS);
+	}
+
+	@Test
+	void testGetStorageStateClass_online() {
+		assertThat(pis.getStorageStateClass()).isEqualTo(ONLINE);
 	}
 
 }
