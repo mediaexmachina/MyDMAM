@@ -4,7 +4,7 @@
   FROM THE JAVA SIDE OF THIS PROJECT
 */
 export enum StorageCategory {
-    DAS,
-    NAS,
-    EXTERNAL,
+    DAS = "DAS",
+    NAS = "NAS",
+    EXTERNAL = "EXTERNAL",
 }

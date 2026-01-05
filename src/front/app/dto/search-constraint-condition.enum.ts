@@ -4,7 +4,7 @@
   FROM THE JAVA SIDE OF THIS PROJECT
 */
 export enum SearchConstraintCondition {
-    MUST,
-    MUST_NOT,
-    IGNORE,
+    MUST = "MUST",
+    MUST_NOT = "MUST_NOT",
+    IGNORE = "IGNORE",
 }

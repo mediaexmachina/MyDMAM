@@ -35,7 +35,7 @@ public record ClassFieldToAngular(String fieldName,
 
 	public String makeDefinitionLine() {
 		if (isEnum) {
-			return "    " + fieldName + ",";
+			return "    " + fieldName + " = \"" + fieldName + "\",";
 		}
 		return "    " + fieldName + ": " + angularType + ";";
 	}

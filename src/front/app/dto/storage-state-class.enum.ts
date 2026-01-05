@@ -4,7 +4,7 @@
   FROM THE JAVA SIDE OF THIS PROJECT
 */
 export enum StorageStateClass {
-    ONLINE,
-    NEARLINE,
-    OFFLINE,
+    ONLINE = "ONLINE",
+    NEARLINE = "NEARLINE",
+    OFFLINE = "OFFLINE",
 }

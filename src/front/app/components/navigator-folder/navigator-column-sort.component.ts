@@ -30,8 +30,8 @@ export class NavigatorColumnSortComponent {
     readonly sortOrder = input.required<SortOrder>();
     readonly onChangeSort = output<SortOrder>();
 
-    private readonly isAsc = computed(() => { return this.sortOrder().toString() == SortOrder[1].toString() });
-    private readonly isDesc = computed(() => { return this.sortOrder().toString() == SortOrder[2].toString() });
+    private readonly isAsc = computed(() => { return this.sortOrder() == SortOrder.asc });
+    private readonly isDesc = computed(() => { return this.sortOrder() == SortOrder.desc });
 
     readonly sortLabel = computed(() => {
         const name = this.name();

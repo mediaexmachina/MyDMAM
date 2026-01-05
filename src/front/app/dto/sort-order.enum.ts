@@ -4,7 +4,7 @@
   FROM THE JAVA SIDE OF THIS PROJECT
 */
 export enum SortOrder {
-    none,
-    asc,
-    desc,
+    none = "none",
+    asc = "asc",
+    desc = "desc",
 }
