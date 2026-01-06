@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 import static java.util.stream.Stream.concat;
 import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_LIST_STRING;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,12 +39,17 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.PendingActivityJob;
+import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.component.AboutInstance;
 import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
+import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.PendingActivityEntity;
+import media.mexm.mydmam.repository.FileDao;
+import media.mexm.mydmam.repository.FileRepository;
 import media.mexm.mydmam.repository.PendingActivityDao;
+import media.mexm.mydmam.tools.FileEntityConsumer;
 import tv.hd3g.jobkit.engine.JobKitEngine;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
@@ -55,6 +61,10 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
 	@Autowired
 	PendingActivityDao pendingActivityDao;
+	@Autowired
+	FileRepository fileRepository;
+	@Autowired
+	FileDao fileDao;
 	@Autowired
 	JobKitEngine jobKitEngine;
 	@Autowired
@@ -68,22 +78,10 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 	@Autowired
 	AboutInstance aboutInstance;
 
-	@Override
-	public void startsActivities(final String realmName,
-								 final String storageName,
-								 final RealmConf realm,
-								 final Set<? extends FileAttributesReference> files,
-								 final ActivityEventType eventType) {
-		final var assets = files.stream()
-				.filter(not(FileAttributesReference::isDirectory))
-				.map(f -> mediaAssetService.getFromWatchfolder(realmName, storageName, f))
-				.toList();
-		if (assets.isEmpty()) {
-			return;
-		}
-
+	private void runAssetsActivities(final RealmConf realm,
+									 final ActivityEventType eventType,
+									 final List<MediaAsset> assets) {
 		assets.forEach(asset -> {
-
 			final var selectedHandlers = activityHandlers.stream()
 					.filter(activityHandler -> activityHandler.canHandle(asset, eventType))
 					.toList();
@@ -110,8 +108,108 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 						pendingActivityDao,
 						this));
 			});
-		});
 
+			if (selectedHandlers.isEmpty()) {
+				log.trace("Nothing to run for: \"{}\", previousHandlers={}, activityHandlers count={}",
+						asset, previousHandlers, activityHandlers.size());
+			}
+		});
+	}
+
+	@Override
+	public void startsActivities(final String realmName,
+								 final String storageName,
+								 final RealmConf realm,
+								 final Set<? extends FileAttributesReference> files,
+								 final ActivityEventType eventType) {
+		final var assets = files.stream()
+				.filter(not(FileAttributesReference::isDirectory))
+				.map(f -> mediaAssetService.getFromWatchfolder(realmName, storageName, f, mediaAssetService))
+				.toList();
+		if (assets.isEmpty()) {
+			return;
+		}
+
+		runAssetsActivities(realm, eventType, assets);
+
+	}
+
+	@Override
+	@Transactional
+	public void startsActivities(final String realmName,
+								 final Set<String> hashPaths,
+								 final boolean recursive,
+								 final ActivityEventType eventType) {
+		if (hashPaths.isEmpty()) {
+			throw new IllegalArgumentException("No hashPaths to run activities");
+		}
+
+		final var realm = configuration.getRealmByName(realmName)
+				.orElseThrow(() -> new IllegalArgumentException("Invalid/not configured realm " + realmName));
+
+		if (recursive) {
+			log.info("Starts activities \"{}\" on realm \"{}\": {}", eventType, realmName, hashPaths);
+		} else {
+			log.info("Starts activities \"{}\" on realm \"{}\", recursive from {}", eventType, realmName, hashPaths);
+		}
+
+		final var availableStorageNames = realm.getOnlineDASStorageNames();
+		if (availableStorageNames.isEmpty()) {
+			throw new IllegalStateException(
+					"No available storages for this selected realm \"" + realmName + "\" to run activities");
+		}
+		log.debug("availableStorageNames={}", availableStorageNames);
+
+		final var filteredFileList = fileRepository.getByHashPath(hashPaths)
+				.stream()
+				.filter(f -> {
+					if (f.getRealm().equals(realmName) == false) {
+						throw new IllegalStateException("Invalid realm (\"" + realmName + "\") for file " + f);
+					}
+					return true;
+				})
+				.filter(f -> availableStorageNames.contains(f.getStorage()))
+				.toList();
+
+		log.trace("filteredFileList={}", filteredFileList);
+
+		final var assetsFiles = filteredFileList.stream()
+				.filter(not(FileEntity::isDirectory))
+				.map(f -> mediaAssetService.getFromFileEntry(f, mediaAssetService))
+				.toList();
+
+		log.trace("assets count = {}", assetsFiles.size());
+		if (assetsFiles.isEmpty() == false) {
+			runAssetsActivities(realm, eventType, assetsFiles);
+		}
+
+		final var parentHashPaths = filteredFileList.stream()
+				.filter(FileEntity::isDirectory)
+				.map(FileEntity::getHashPath)
+				.collect(toUnmodifiableSet());
+
+		log.trace("parentHashPaths={}", parentHashPaths);
+		if (parentHashPaths.isEmpty()) {
+			return;
+		}
+
+		final var subDirAssets = new ArrayList<MediaAsset>();
+
+		final FileEntityConsumer onFile = fileEntry -> {
+			if (fileEntry.isDirectory()) {
+				return;
+			}
+			subDirAssets.add(mediaAssetService.getFromFileEntry(fileEntry, mediaAssetService));
+		};
+
+		fileDao.getByParentHashPath(realmName, parentHashPaths, onFile, recursive);
+
+		log.trace("subDir assets count = {}", subDirAssets.size());
+		if (subDirAssets.isEmpty()) {
+			return;
+		}
+
+		runAssetsActivities(realm, eventType, subDirAssets);
 	}
 
 	static Set<String> getHandlersNames(final List<ActivityHandler> selectedHandlers) {
@@ -183,7 +281,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 															.distinct()
 															.toList()));
 
-							final var asset = mediaAssetService.getFromFileEntry(file);
+							final var asset = mediaAssetService.getFromFileEntry(file, mediaAssetService);
 							final var spoolName = configuration.getRealmByName(file.getRealm())
 									.map(RealmConf::spoolProcessAsset)
 									.orElseThrow(() -> new IllegalStateException(

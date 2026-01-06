@@ -33,6 +33,11 @@ public interface PendingActivityService {
 						  Set<? extends FileAttributesReference> files,
 						  ActivityEventType eventType);
 
+	void startsActivities(String realmName,
+						  Set<String> hashPaths,
+						  boolean recursive,
+						  ActivityEventType eventType);
+
 	void cleanupFiles(String realmName,
 					  String storageName,
 					  RealmConf realm,

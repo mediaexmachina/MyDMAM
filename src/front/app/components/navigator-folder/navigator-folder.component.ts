@@ -25,6 +25,7 @@ import { SpanDateTimeComponent } from "../toolkit/span-date-time.component";
 import { SpanFileSizeComponent } from "../toolkit/span-file-size.component";
 import { SortOrder } from '../../dto/sort-order.enum';
 import { NavigatorColumnSortComponent } from "./navigator-column-sort.component";
+import { AssetService } from '../../services/asset.service';
 
 @Component({
   selector: 'app-navigator-folder',
@@ -38,6 +39,7 @@ export class NavigatorFolderComponent {
     readonly route = inject(ActivatedRoute);
     readonly localStorageService = inject(LocalStorageService);
     readonly fileSystemService = inject(FileSystemService);
+    readonly assetService = inject(AssetService);
     private readonly maxPageCount = 10;
     readonly defaultListResultCount = 20;
 
@@ -238,6 +240,15 @@ export class NavigatorFolderComponent {
     changeSort(order:SortOrder, colName:"name"|"type"|"size"|"date"):void {
         this.currentSortOrder[colName] = order;
         this.listRefresh();
+    }
+
+    resetActivitiesOnClick(e: Event, recursive:boolean) {
+        e.preventDefault();
+        const currentItem = this.dirListResponse()?.currentItem;
+        if (currentItem == null) {
+            return;
+        }
+        this.assetService.resetActivities([currentItem.hashPath], recursive);
     }
 
 }

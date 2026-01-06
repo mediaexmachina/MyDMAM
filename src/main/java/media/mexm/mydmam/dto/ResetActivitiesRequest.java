@@ -11,13 +11,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
- * Copyright (C) Media ex Machina 2025
+ * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.activity;
+package media.mexm.mydmam.dto;
 
-public enum ActivityEventType {
-	NEW_FOUNDED_FILE,
-	UPDATED_FILE,
-	MANUAL_RESET;
+import java.util.Set;
+
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+public record ResetActivitiesRequest(@NotEmpty Set<String> hashPaths, @NotNull boolean recursive) {
+
 }

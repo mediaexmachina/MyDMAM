@@ -16,6 +16,9 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static java.util.stream.Collectors.toUnmodifiableSet;
+import static media.mexm.mydmam.dto.StorageCategory.DAS;
+import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 import static org.apache.commons.io.FileUtils.forceMkdir;
 
 import java.io.File;
@@ -23,7 +26,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
@@ -60,6 +65,17 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
 		if (timeBetweenScans != null && (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative())) {
 			throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
 		}
+	}
+
+	public Set<String> getOnlineDASStorageNames() {
+		return storages()
+				.entrySet()
+				.stream()
+				.filter(entry -> (entry.getValue().getCategory() == DAS))
+				.filter(entry -> (entry.getValue().getStorageStateClass() == ONLINE))
+				.map(Entry::getKey)
+				.map(TechnicalName::name)
+				.collect(toUnmodifiableSet());
 	}
 
 }

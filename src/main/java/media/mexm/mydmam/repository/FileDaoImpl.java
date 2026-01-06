@@ -16,8 +16,10 @@
  */
 package media.mexm.mydmam.repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -33,6 +35,8 @@ import media.mexm.mydmam.tools.FileEntityConsumer;
 @Slf4j
 public class FileDaoImpl implements FileDao {
 
+	private static final String PARENT_HASH_PATH_PARAM = "parentHashPath";
+	private static final String REALM_PARAM = "realm";
 	@Autowired
 	@PersistenceContext
 	EntityManager entityManager;
@@ -47,13 +51,48 @@ public class FileDaoImpl implements FileDao {
 		final var criteriaQuery = criteriaBuilder.createQuery(FileEntity.class);
 		final var root = criteriaQuery.from(FileEntity.class);
 		criteriaQuery.select(root);
-		criteriaQuery.where(criteriaBuilder.equal(root.get("parentHashPath"), parentHashPath));
+		criteriaQuery.where(criteriaBuilder.equal(root.get(PARENT_HASH_PATH_PARAM), parentHashPath));
 		oSort.ifPresent(sort -> criteriaQuery.orderBy(sort.makeOrderBy(root, criteriaBuilder)));
 
 		return entityManager.createQuery(criteriaQuery)
 				.setFirstResult(from)
 				.setMaxResults(size)
 				.getResultList();
+	}
+
+	@Override
+	@Transactional
+	public void getByParentHashPath(final String realm,
+									final Set<String> parentHashPaths,
+									final FileEntityConsumer onFile,
+									final boolean recursive) {
+		final var currentDirContent = new ArrayList<FileEntity>();
+		final var parentHashPathToSeek = new ArrayList<>(parentHashPaths);
+
+		final var maxDeep = recursive ? 100 : 1;
+		for (var deep = 0; deep < maxDeep; deep++) {
+			/**
+			 * Should be optimized with WITH RECURSIVE Hibernate
+			 */
+			currentDirContent.addAll(entityManager.createQuery("""
+					SELECT f FROM FileEntity f
+					WHERE f.parentHashPath IN :parentHashPath
+					AND f.realm = :realm
+					""", FileEntity.class)
+					.setParameter(PARENT_HASH_PATH_PARAM, parentHashPathToSeek)
+					.setParameter(REALM_PARAM, realm)
+					.getResultList());
+
+			parentHashPathToSeek.clear();
+			parentHashPathToSeek.addAll(currentDirContent.stream()
+					.filter(FileEntity::isDirectory)
+					.map(FileEntity::getHashPath)
+					.toList());
+
+			currentDirContent.forEach(onFile::accept);
+			currentDirContent.clear();
+		}
+
 	}
 
 	@Override
@@ -65,8 +104,8 @@ public class FileDaoImpl implements FileDao {
 				AND f.realm = :realm
 				AND f.storage = :storage
 				""", Long.class)
-				.setParameter("parentHashPath", parentHashPath)
-				.setParameter("realm", realm)
+				.setParameter(PARENT_HASH_PATH_PARAM, parentHashPath)
+				.setParameter(REALM_PARAM, realm)
 				.setParameter("storage", storage)
 				.getSingleResult()
 				.intValue();
@@ -79,7 +118,7 @@ public class FileDaoImpl implements FileDao {
 				SELECT f FROM FileEntity f
 				WHERE f.realm = :realm
 				""", FileEntity.class)
-				.setParameter("realm", realm)
+				.setParameter(REALM_PARAM, realm)
 				.getResultStream()
 				.forEach(onFile);
 	}

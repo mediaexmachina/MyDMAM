@@ -24,9 +24,10 @@ public interface MediaAssetService {
 
 	MediaAsset getFromWatchfolder(String realmName,
 								  String storageName,
-								  FileAttributesReference file);
+								  FileAttributesReference file,
+								  MediaAssetService injectedService);
 
-	MediaAsset getFromFileEntry(FileEntity file);
+	MediaAsset getFromFileEntry(FileEntity file, MediaAssetService injectedService);
 
 	void purgeAssetArtefacts(String realmName, String storageName, FileAttributesReference file);
 

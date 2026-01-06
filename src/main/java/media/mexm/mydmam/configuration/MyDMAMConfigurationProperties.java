@@ -39,6 +39,7 @@ import jakarta.validation.constraints.NotEmpty;
 public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
 											String instancename,
 											@DefaultValue("audittrail") @NotEmpty String auditTrailSpoolName,
+											@DefaultValue("async-api") @NotEmpty String asyncAPISpoolName,
 											@DefaultValue("false") boolean explainSearchResults,
 											@DefaultValue("10000") @Min(0) int resetBatchSizeIndexer,
 											@DefaultValue("100") @Min(1) int dirListMaxSize,

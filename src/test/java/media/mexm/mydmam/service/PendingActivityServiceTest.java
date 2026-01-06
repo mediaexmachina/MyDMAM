@@ -18,7 +18,11 @@ package media.mexm.mydmam.service;
 
 import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_LIST_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -52,7 +56,10 @@ import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.PendingActivityEntity;
+import media.mexm.mydmam.repository.FileDao;
+import media.mexm.mydmam.repository.FileRepository;
 import media.mexm.mydmam.repository.PendingActivityDao;
+import media.mexm.mydmam.tools.FileEntityConsumer;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
@@ -75,6 +82,10 @@ class PendingActivityServiceTest {
 	InternalObjectMapper internalObjectMapper;
 	@MockitoBean
 	AboutInstance aboutInstance;
+	@MockitoBean
+	FileRepository fileRepository;
+	@MockitoBean
+	FileDao fileDao;
 
 	@Mock
 	RealmConf realm;
@@ -124,11 +135,16 @@ class PendingActivityServiceTest {
 		when(configuration.getRealmByName(realmName)).thenReturn(Optional.ofNullable(realm));
 		when(realm.spoolProcessAsset()).thenReturn("spool");
 		when(file.isDirectory()).thenReturn(false);
-		when(mediaAssetService.getFromWatchfolder(realmName, storageName, file)).thenReturn(asset);
+		when(mediaAssetService.getFromWatchfolder(realmName, storageName, file, mediaAssetService)).thenReturn(asset);
+		when(mediaAssetService.getFromFileEntry(fileEntity, mediaAssetService)).thenReturn(asset);
 		when(internalObjectMapper.writeValueAsString(Set.of(handlerName))).thenReturn(previousHandlersNames);
 		when(aboutInstance.getInstanceName()).thenReturn(hostName);
 		when(aboutInstance.getPid()).thenReturn(pid);
 		when(asset.getHashPath()).thenReturn(hashPathItem);
+
+		when(fileEntity.getRealm()).thenReturn(realmName);
+		when(fileEntity.getStorage()).thenReturn(storageName);
+		when(fileEntity.getHashPath()).thenReturn(hashPathItem);
 	}
 
 	@AfterEach
@@ -144,37 +160,159 @@ class PendingActivityServiceTest {
 		assertTrue(jobKitEngine.getEndEventsList().isEmpty());
 	}
 
-	@Test
-	void testStartsActivities_onlyDir() {
-		when(file.isDirectory()).thenReturn(true);
-		pas.startsActivities(realmName, storageName, realm, Set.of(file), eventType);
-		verify(file, times(1)).isDirectory();
+	@Nested
+	class HashPathsActivities {
+
+		@Mock
+		FileEntity subFileEntry;
+		@Fake
+		boolean recursive;
+		Set<String> hashPaths;
+
+		@BeforeEach
+		void init() {
+			hashPaths = Set.of(hashPathItem);
+			when(realm.getOnlineDASStorageNames()).thenReturn(Set.of(storageName));
+			when(fileRepository.getByHashPath(hashPaths)).thenReturn(Set.of(fileEntity));
+			when(activityHandler.canHandle(asset, eventType)).thenReturn(false);
+		}
+
+		@Test
+		void testEmpty() {
+			final Set<String> emptySet = Set.of();
+			assertThrows(IllegalArgumentException.class,
+					() -> pas.startsActivities(realmName, emptySet, recursive, eventType));
+		}
+
+		@Test
+		void testBadRealm() {
+			assertThrows(IllegalArgumentException.class,
+					() -> pas.startsActivities("NOPE", hashPaths, recursive, eventType));
+		}
+
+		@Test
+		void testNoStorages() {
+			when(realm.getOnlineDASStorageNames()).thenReturn(Set.of());
+			assertThrows(IllegalStateException.class,
+					() -> pas.startsActivities(realmName, hashPaths, recursive, eventType));
+			verify(realm, times(1)).getOnlineDASStorageNames();
+		}
+
+		@Test
+		void testFile_invalidRealm() {
+			when(fileEntity.getRealm()).thenReturn("NOPE");
+
+			assertThrows(IllegalStateException.class,
+					() -> pas.startsActivities(realmName, hashPaths, recursive, eventType));
+
+			verify(realm, times(1)).getOnlineDASStorageNames();
+			verify(fileRepository, times(1)).getByHashPath(hashPaths);
+			verify(fileEntity, atLeastOnce()).getRealm();
+		}
+
+		@Test
+		void testFile() {
+			when(fileEntity.isDirectory()).thenReturn(false);
+
+			pas.startsActivities(realmName, hashPaths, recursive, eventType);
+
+			verify(realm, times(1)).getOnlineDASStorageNames();
+			verify(fileRepository, times(1)).getByHashPath(hashPaths);
+			verify(fileEntity, atLeastOnce()).getRealm();
+			verify(fileEntity, atLeastOnce()).isDirectory();
+			verify(fileEntity, atLeastOnce()).getStorage();
+			verify(mediaAssetService, atLeastOnce()).getFromFileEntry(fileEntity, mediaAssetService);
+
+			verify(activityHandler, times(1)).canHandle(asset, eventType);
+		}
+
+		@Test
+		void testDirectory_withFiles() {
+			when(fileEntity.isDirectory()).thenReturn(true);
+			when(subFileEntry.isDirectory()).thenReturn(false);
+			when(mediaAssetService.getFromFileEntry(subFileEntry, mediaAssetService)).thenReturn(asset);
+
+			doAnswer(invocation -> {
+				final var args = invocation.getArguments();
+				((FileEntityConsumer) args[2]).accept(subFileEntry);
+				return null;
+			}).when(fileDao).getByParentHashPath(eq(realmName), eq(hashPaths), any(), eq(recursive));
+
+			pas.startsActivities(realmName, hashPaths, recursive, eventType);
+
+			verify(fileDao, times(1)).getByParentHashPath(eq(realmName), eq(hashPaths), any(), eq(recursive));
+			verify(realm, times(1)).getOnlineDASStorageNames();
+			verify(fileRepository, times(1)).getByHashPath(hashPaths);
+			verify(fileEntity, atLeastOnce()).getRealm();
+			verify(fileEntity, atLeastOnce()).isDirectory();
+			verify(fileEntity, atLeastOnce()).getStorage();
+			verify(fileEntity, atLeastOnce()).getHashPath();
+			verify(subFileEntry, atLeastOnce()).isDirectory();
+			verify(mediaAssetService, atLeastOnce()).getFromFileEntry(subFileEntry, mediaAssetService);
+			verify(activityHandler, times(1)).canHandle(asset, eventType);
+		}
+
+		@Test
+		void testDirectory_withDirs() {
+			when(fileEntity.isDirectory()).thenReturn(true);
+			when(subFileEntry.isDirectory()).thenReturn(true);
+
+			doAnswer(invocation -> {
+				final var args = invocation.getArguments();
+				((FileEntityConsumer) args[2]).accept(subFileEntry);
+				return null;
+			}).when(fileDao).getByParentHashPath(eq(realmName), eq(hashPaths), any(), eq(recursive));
+
+			pas.startsActivities(realmName, hashPaths, recursive, eventType);
+
+			verify(fileDao, times(1)).getByParentHashPath(eq(realmName), eq(hashPaths), any(), eq(recursive));
+			verify(realm, times(1)).getOnlineDASStorageNames();
+			verify(fileRepository, times(1)).getByHashPath(hashPaths);
+			verify(fileEntity, atLeastOnce()).getRealm();
+			verify(fileEntity, atLeastOnce()).isDirectory();
+			verify(fileEntity, atLeastOnce()).getStorage();
+			verify(fileEntity, atLeastOnce()).getHashPath();
+			verify(subFileEntry, atLeastOnce()).isDirectory();
+		}
+
 	}
 
-	@Test
-	void testStartsActivities_empty() {// NOSONAR S2699
-		pas.startsActivities(realmName, storageName, realm, Set.of(), eventType);
-	}
+	@Nested
+	class FileActivities {
 
-	@Test
-	void testStartsActivities() throws Exception {
-		pas.startsActivities(realmName, storageName, realm, Set.of(file), eventType);
+		@Test
+		void testStartsActivities_onlyDir() {
+			when(file.isDirectory()).thenReturn(true);
 
-		verify(file, atLeastOnce()).isDirectory();
-		verify(mediaAssetService, times(1)).getFromWatchfolder(realmName, storageName, file);
-		verify(realm, atLeastOnce()).spoolProcessAsset();
-		verify(activityHandler, times(1)).canHandle(asset, eventType);
-		verify(activityHandler, atLeastOnce()).getHandlerName();
-		verify(asset, atLeastOnce()).getHashPath();
-		verify(asset, atLeastOnce()).getName();
-		verify(internalObjectMapper, times(1)).writeValueAsString(Set.of(handlerName));
-		verify(aboutInstance, atLeastOnce()).getInstanceName();
-		verify(aboutInstance, atLeastOnce()).getPid();
-		verify(pendingActivityDao, times(1))
-				.declateActivity(hashPathItem, activityHandler, eventType, previousHandlersNames, hostName, pid);
+			pas.startsActivities(realmName, storageName, realm, Set.of(file), eventType);
+			verify(file, times(1)).isDirectory();
+		}
 
-		verify(activityHandler, times(1)).handle(asset, eventType);
-		verify(pendingActivityDao, times(1)).endsActivity(hashPathItem, activityHandler);
+		@Test
+		void testStartsActivities_empty() {// NOSONAR S2699
+			pas.startsActivities(realmName, storageName, realm, Set.of(), eventType);
+		}
+
+		@Test
+		void testStartsActivities() throws Exception {
+			pas.startsActivities(realmName, storageName, realm, Set.of(file), eventType);
+
+			verify(file, atLeastOnce()).isDirectory();
+			verify(mediaAssetService, times(1)).getFromWatchfolder(realmName, storageName, file, mediaAssetService);
+			verify(realm, atLeastOnce()).spoolProcessAsset();
+			verify(activityHandler, times(1)).canHandle(asset, eventType);
+			verify(activityHandler, atLeastOnce()).getHandlerName();
+			verify(asset, atLeastOnce()).getHashPath();
+			verify(asset, atLeastOnce()).getName();
+			verify(internalObjectMapper, times(1)).writeValueAsString(Set.of(handlerName));
+			verify(aboutInstance, atLeastOnce()).getInstanceName();
+			verify(aboutInstance, atLeastOnce()).getPid();
+			verify(pendingActivityDao, times(1))
+					.declateActivity(hashPathItem, activityHandler, eventType, previousHandlersNames, hostName, pid);
+
+			verify(activityHandler, times(1)).handle(asset, eventType);
+			verify(pendingActivityDao, times(1)).endsActivity(hashPathItem, activityHandler);
+		}
 	}
 
 	@Test
@@ -233,10 +371,8 @@ class PendingActivityServiceTest {
 			when(entity.getFile()).thenReturn(fileEntity);
 			when(entity.getPreviousHandlers()).thenReturn(previousHandlersNames);
 			when(entity.getHandlerName()).thenReturn(handlerName);
-			when(fileEntity.getRealm()).thenReturn(realmName);
 			when(internalObjectMapper.readValue(previousHandlersNames, TYPE_LIST_STRING))
 					.thenReturn(List.of(handlerName + "-previous"));
-			when(mediaAssetService.getFromFileEntry(fileEntity)).thenReturn(asset);
 		}
 
 		@Test
@@ -269,7 +405,7 @@ class PendingActivityServiceTest {
 			verify(entity, atLeastOnce()).getHandlerName();
 			verify(fileEntity, atLeastOnce()).getRealm();
 			verify(internalObjectMapper, times(1)).readValue(previousHandlersNames, TYPE_LIST_STRING);
-			verify(mediaAssetService, times(1)).getFromFileEntry(fileEntity);
+			verify(mediaAssetService, times(1)).getFromFileEntry(fileEntity, mediaAssetService);
 			verify(activityHandler, atLeastOnce()).getHandlerName();
 			verify(configuration, atLeastOnce()).getRealmByName(realmName);
 			verify(realm, atLeastOnce()).spoolProcessAsset();

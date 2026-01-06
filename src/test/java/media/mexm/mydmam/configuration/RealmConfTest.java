@@ -16,12 +16,21 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static media.mexm.mydmam.dto.StorageCategory.DAS;
+import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
+import static media.mexm.mydmam.dto.StorageCategory.NAS;
+import static media.mexm.mydmam.dto.StorageStateClass.NEARLINE;
+import static media.mexm.mydmam.dto.StorageStateClass.OFFLINE;
+import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 import static org.apache.commons.io.FileUtils.forceDelete;
 import static org.apache.commons.io.FileUtils.getTempDirectory;
 import static org.apache.commons.io.FileUtils.touch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
@@ -158,6 +167,28 @@ class RealmConfTest {
 		timeBetweenScans = Duration.ofMillis(-duration);
 		assertThrows(IllegalArgumentException.class,
 				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory));
+	}
+
+	@Test
+	void testGetOnlineDASStorageNames() {
+		when(piStorage.getCategory()).thenReturn(NAS);
+		when(piStorage.getStorageStateClass()).thenReturn(NEARLINE);
+		assertThat(conf.getOnlineDASStorageNames()).isEmpty();
+
+		when(piStorage.getCategory()).thenReturn(EXTERNAL);
+		assertThat(conf.getOnlineDASStorageNames()).isEmpty();
+
+		when(piStorage.getCategory()).thenReturn(DAS);
+		assertThat(conf.getOnlineDASStorageNames()).isEmpty();
+
+		when(piStorage.getStorageStateClass()).thenReturn(OFFLINE);
+		assertThat(conf.getOnlineDASStorageNames()).isEmpty();
+
+		when(piStorage.getStorageStateClass()).thenReturn(ONLINE);
+		assertThat(conf.getOnlineDASStorageNames()).containsExactly(storageName);
+
+		verify(piStorage, atLeastOnce()).getCategory();
+		verify(piStorage, atLeastOnce()).getStorageStateClass();
 	}
 
 }

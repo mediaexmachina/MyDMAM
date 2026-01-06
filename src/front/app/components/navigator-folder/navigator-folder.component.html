@@ -60,31 +60,51 @@
     }
 </article>
 
-<nav class="breadcrumb">
-    @if (dirList?.path != "/") {
-            <span class="navigateto">
-                <a [routerLink]="['/navigator', storage(), dirList?.parentHashPath]"
-                    (click)="list(dirList?.parentHashPath || '')">Go to parent directory</a>:
-            </span>
 
-            <span class="storage">
-                <a [routerLink]="['/navigator', storage()]">{{ dirList?.storage }}</a>
-            </span>
-            @for (item of breadcrumbSplitPath(); track item['hashPath']) {
-                <span class="item">
-                    <a [routerLink]="['/navigator', storage(), item['hashPath']]">
-                        {{ item['name'] }}
-                    </a>
+<section class="item-toolbox">
+    <nav class="breadcrumb">
+        @if (dirList?.path != "/") {
+                <span class="navigateto">
+                    <a [routerLink]="['/navigator', storage(), dirList?.parentHashPath]"
+                        (click)="list(dirList?.parentHashPath || '')">Go to parent directory</a>:
                 </span>
-            } @empty {
-                <span class="item"></span>
-            }
-    } @else {
-        <div class="navigateto">
-            <a [routerLink]="['/navigator']">Change storage</a>
-        </div>
-    }
-</nav>
+
+                <span class="storage">
+                    <a [routerLink]="['/navigator', storage()]">{{ dirList?.storage }}</a>
+                </span>
+                @for (item of breadcrumbSplitPath(); track item['hashPath']) {
+                    <span class="item">
+                        <a [routerLink]="['/navigator', storage(), item['hashPath']]">
+                            {{ item['name'] }}
+                        </a>
+                    </span>
+                } @empty {
+                    <span class="item"></span>
+                }
+        } @else {
+            <div class="navigateto">
+                <a [routerLink]="['/navigator']">Change storage</a>
+            </div>
+        }
+    </nav>
+
+    <nav class="actions">
+        @if (dirList?.currentItem?.directory) {
+            Metadata analysis and extraction reprocess on:
+            <button (click)="resetActivitiesOnClick($event, false)">
+                This directory content only
+            </button>
+            <button (click)="resetActivitiesOnClick($event, true)">
+                This directory and sub-directories content
+            </button>
+        } @else {
+            <button (click)="resetActivitiesOnClick($event, false)">
+                Metadata analysis and extraction reprocess
+            </button>
+        }
+    </nav>
+</section>
+
 
 @if (dirList?.listSize || 0 > 0) {
     <ul class="dirlist">

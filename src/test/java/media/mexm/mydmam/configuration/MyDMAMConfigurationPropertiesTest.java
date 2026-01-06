@@ -52,6 +52,8 @@ class MyDMAMConfigurationPropertiesTest {
 	@Fake
 	String auditTrailSpoolName;
 	@Fake
+	String asyncAPISpoolName;
+	@Fake
 	boolean explainSearchResults;
 	@Fake
 	int resetBatchSizeIndexer;
@@ -73,6 +75,7 @@ class MyDMAMConfigurationPropertiesTest {
 				pathindexing,
 				instancename,
 				auditTrailSpoolName,
+				asyncAPISpoolName,
 				explainSearchResults,
 				resetBatchSizeIndexer,
 				dirListMaxSize,
@@ -86,6 +89,7 @@ class MyDMAMConfigurationPropertiesTest {
 				pathindexing,
 				null,
 				auditTrailSpoolName,
+				asyncAPISpoolName,
 				explainSearchResults,
 				resetBatchSizeIndexer,
 				dirListMaxSize,
@@ -101,6 +105,7 @@ class MyDMAMConfigurationPropertiesTest {
 				pathindexing,
 				instancename,
 				auditTrailSpoolName,
+				asyncAPISpoolName,
 				explainSearchResults,
 				resetBatchSizeIndexer,
 				dirListMaxSize,
@@ -112,6 +117,7 @@ class MyDMAMConfigurationPropertiesTest {
 				pathindexing,
 				instancename,
 				auditTrailSpoolName,
+				asyncAPISpoolName,
 				explainSearchResults,
 				resetBatchSizeIndexer,
 				dirListMaxSize,

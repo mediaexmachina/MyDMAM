@@ -15,9 +15,22 @@
  *
  */
 
+section.item-toolbox {
+    margin-top: 0.6em;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+section.item-toolbox nav {
+    flex: 1 0 0;
+}
+
 nav.breadcrumb {
     display: inline-block;
-    margin-top: 0.6em;
+}
+
+nav.actions {
+    text-align: right;
 }
 
 a {
