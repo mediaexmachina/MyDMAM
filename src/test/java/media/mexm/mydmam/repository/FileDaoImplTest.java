@@ -69,7 +69,7 @@ class FileDaoImplTest {
 	long modified;
 	@Mock
 	CachedFileAttributes firstDetectionFile;
-	@Fake(min = ITEMS_TO_ADD / 10, max = ITEMS_TO_ADD - 1)
+	@Fake(min = ITEMS_TO_ADD / 10, max = ITEMS_TO_ADD - 10)
 	int from;
 
 	@Fake
