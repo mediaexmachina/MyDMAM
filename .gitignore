@@ -11,10 +11,6 @@ target/
 !**/src/main/**
 !**/src/test/**
 
-# Compiled output
-src/main/resources/static/**
-src/main/resources/prerendered-routes.json
-
 # Working dir
 /**/*proxy.conf.json
 

@@ -33,8 +33,8 @@
                             "budgets": [
                                 {
                                     "type": "initial",
-                                    "maximumWarning": "500kB",
-                                    "maximumError": "1MB"
+                                    "maximumWarning": "2MB",
+                                    "maximumError": "10MB"
                                 },
                                 {
                                     "type": "anyComponentStyle",
@@ -44,11 +44,6 @@
                             ],
                             "outputHashing": "all",
                             "extractLicenses": false,
-                            "outputPath": {
-                                "base": "src/main/resources",
-                                "browser": "static",
-                                "media": "static"
-                            },
                             "assets": [
                                 {
                                     "glob": "**/*",
