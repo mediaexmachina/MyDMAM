@@ -39,5 +39,16 @@ CREATE TABLE `pending_activity` (
   PRIMARY KEY (`id`),
   KEY `pending_activity_worker_host_idx` (`worker_host`),
   KEY `pending_activity_updated_idx` (`updated`),
-  CONSTRAINT fk_file_id FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE
+  CONSTRAINT pending_activity_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `asset_summary` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `create_date` datetime NOT NULL,
+  `file_id` int NOT NULL,
+  `mime_type` varchar(128),
+  `specifications` varchar(2048),
+  PRIMARY KEY (`id`),
+  KEY `asset_summary_mime_type_idx` (`mime_type`),
+  CONSTRAINT asset_summary_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

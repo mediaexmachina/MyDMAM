@@ -20,4 +20,5 @@ public enum ActivityEventType {
 	NEW_FOUNDED_FILE,
 	UPDATED_FILE,
 	MANUAL_RESET;
+
 }

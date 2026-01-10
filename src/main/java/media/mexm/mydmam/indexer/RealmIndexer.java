@@ -16,10 +16,14 @@
  */
 package media.mexm.mydmam.indexer;
 
+import static java.lang.Integer.MAX_VALUE;
 import static java.text.Normalizer.normalize;
 import static java.text.Normalizer.Form.NFKD;
+import static java.util.Collections.unmodifiableSet;
+import static java.util.Objects.requireNonNull;
 import static media.mexm.mydmam.App.REPLACE_NORMALIZED;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
+import static media.mexm.mydmam.indexer.NamedIndexField.ASSET_MAGICMIME;
 import static media.mexm.mydmam.indexer.NamedIndexField.DOCUMENT_TYPE;
 import static media.mexm.mydmam.indexer.NamedIndexField.DOCUMENT_TYPE_FILE;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_BASE_NAME;
@@ -34,10 +38,12 @@ import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_HASH_PATH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_PATH;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_SPECIAL;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_STORAGE;
+import static media.mexm.mydmam.indexer.SearchConstraintCondition.IGNORE;
 import static org.apache.commons.io.FileUtils.forceMkdir;
 import static org.apache.commons.io.FilenameUtils.getBaseName;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
+import static org.apache.lucene.document.IntField.newExactQuery;
 import static org.apache.lucene.search.BooleanClause.Occur.MUST;
 import static org.apache.lucene.search.BooleanClause.Occur.SHOULD;
 
@@ -45,6 +51,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -68,6 +75,7 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
@@ -75,7 +83,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.tools.DelayedSync;
+import media.mexm.mydmam.tools.DelayedSyncConfiguration;
 import tv.hd3g.jobkit.watchfolder.WatchedFiles;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
@@ -90,17 +101,37 @@ public class RealmIndexer {
 	private final Directory fsDirectoryIndex;
 	private final StandardAnalyzer analyzer;
 	private final boolean computeExplainOnResults;
+	private final Function<FileEntity, MediaAsset> mediaAssetProvider;
+	private final DelayedSync<UpdateDocument> delayedSyncDocument;
+
+	private record UpdateDocument(Document document, Term termToUpdate) {
+	}
 
 	public RealmIndexer(final String realmName,
 						final File workingDir,
-						final boolean computeExplainOnResults) throws IOException {
+						final boolean computeExplainOnResults,
+						final Function<FileEntity, MediaAsset> mediaAssetProvider,
+						final DelayedSyncConfiguration delayedSyncConfiguration) throws IOException {
 		this.realmName = realmName;
 		indexDir = new File(workingDir, "index");
 		this.computeExplainOnResults = computeExplainOnResults;
+		this.mediaAssetProvider = mediaAssetProvider;
 
 		forceMkdir(indexDir);
 		fsDirectoryIndex = FSDirectory.open(indexDir.toPath());
 		analyzer = new StandardAnalyzer();
+
+		delayedSyncDocument = new DelayedSync<>(
+				requireNonNull(delayedSyncConfiguration, "\"delayedSyncConfiguration\" can't to be null"),
+				updateDocumentList -> write(
+						writer -> {
+							log.debug("Update {} document(s) in \"{}\" Lucene index",
+									updateDocumentList.size(), indexDir);
+							for (final var docUpd : updateDocumentList) {
+								writer.updateDocument(docUpd.termToUpdate, docUpd.document);
+							}
+							writer.commit();
+						}));
 	}
 
 	public synchronized void close() {
@@ -113,11 +144,12 @@ public class RealmIndexer {
 
 	private synchronized void write(final LuceneWriterConsumer cWriter) {
 		try {
-			log.debug("Open Lucene index on \"{}\" for writing", indexDir);
+			log.info("Open Lucene index on \"{}\" in write mode", indexDir);
 			final var indexWriterConfig = new IndexWriterConfig(analyzer);
 			final var writer = new IndexWriter(fsDirectoryIndex, indexWriterConfig);
 			cWriter.accept(writer);
 			writer.close();
+			log.debug("Close Lucene index on \"{}\" in write mode", indexDir);
 		} catch (final IOException e) {
 			throw new UncheckedIOException("Can't write to Lucene index on " + indexDir.getAbsolutePath(), e);
 		}
@@ -178,14 +210,30 @@ public class RealmIndexer {
 		return document;
 	}
 
+	private void toDocument(final Document document, final MediaAsset asset) {
+		document.add(new StringField(ASSET_MAGICMIME, asset.getMimeType(), NO));
+	}
+
 	private Document toDocument(final FileEntity file) {
 		if (file.getRealm().equals(realmName) == false) {
 			throw new IllegalArgumentException("Invalid realm (wants " + realmName + ") for " + file);
 		}
+
 		return toDocument(
 				file.toFileAttributesReference(true),
 				file.getStorage(),
 				file.getHashPath());
+	}
+
+	public void updateAsset(final MediaAsset asset) {
+		final var file = asset.getFile();
+		if (file.getRealm().equals(realmName) == false) {
+			throw new IllegalArgumentException("Invalid realm (wants " + realmName + ") for " + file);
+		}
+		final var document = toDocument(file);
+		toDocument(document, asset);
+
+		delayedSyncDocument.add(new UpdateDocument(document, new Term(FILE_HASH_PATH, file.getHashPath())));
 	}
 
 	/**
@@ -196,12 +244,16 @@ public class RealmIndexer {
 		write(writer -> writer.deleteDocuments(new TermQuery(new Term(DOCUMENT_TYPE, DOCUMENT_TYPE_FILE))));
 
 		return new ResetSession(
-				this::toDocument,
+				file -> {
+					final var document = toDocument(file);
+					toDocument(document, mediaAssetProvider.apply(file));
+					return document;
+				},
 				docList -> write(writer -> writer.addDocuments(docList)),
 				batchSize);
 	}
 
-	public void update(final WatchedFiles scanResult, final String storageName) {
+	public void updateIndexAfterScan(final WatchedFiles scanResult, final String storageName) {
 		if (scanResult.founded().isEmpty()
 			&& scanResult.updated().isEmpty()
 			&& scanResult.losted().isEmpty()) {
@@ -309,6 +361,41 @@ public class RealmIndexer {
 	}
 
 	private static final Function<Query, BooleanClause> toBooleanMustClause = query -> new BooleanClause(query, MUST);
+
+	public Set<String> getHashPathsByRecursiveSearch(final String storage,
+													 final String parentPath,
+													 final SearchConstraintCondition directory) {
+		try (var reader = DirectoryReader.open(fsDirectoryIndex)) {
+			final var searcher = new IndexSearcher(reader);
+
+			final var booleanQuery = new BooleanQuery.Builder();
+			booleanQuery.add(new TermQuery(new Term(DOCUMENT_TYPE, DOCUMENT_TYPE_FILE)), MUST);
+			booleanQuery.add(new TermQuery(new Term(FILE_STORAGE, storage)), MUST);
+			booleanQuery.add(new PrefixQuery(new Term(FILE_PARENT_PATH, parentPath)), MUST);
+
+			if (directory.equals(IGNORE) == false) {
+				booleanQuery.add(newExactQuery(FILE_DIRECTORY, directory.getIndexedValue()), MUST);
+			}
+
+			final var query = booleanQuery.build();
+
+			final var storedFields = searcher.storedFields();
+			final var sortedTopDoc = searcher.search(query, MAX_VALUE);
+			if (sortedTopDoc.scoreDocs.length == 0) {
+				return Set.of();
+			}
+
+			final var result = new HashSet<String>(sortedTopDoc.scoreDocs.length);
+			for (final var scoredDoc : sortedTopDoc.scoreDocs) {
+				final var doc = storedFields.document(scoredDoc.doc, Set.of(FILE_HASH_PATH));
+				result.add(doc.getField(FILE_HASH_PATH).stringValue());
+			}
+
+			return unmodifiableSet(result);
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Can't read from Lucene index on " + indexDir.getAbsolutePath(), e);
+		}
+	}
 
 	public SearchResult openSearch(final String q,
 								   final Optional<FileSearchConstraints> oConstraints,

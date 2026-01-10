@@ -33,6 +33,7 @@ import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 
 @ConfigurationProperties(prefix = "mydmam")
 @Validated
@@ -78,6 +79,18 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
 		} catch (final NullPointerException e) {
 			return empty();
 		}
+	}
+
+	/**
+	 * Must exists, else thrown an Exception
+	 */
+	public RealmStorageConfiguredEnv getRealmAndStorage(final String realmName, final String storageName) {
+		final var realm = getRealmByName(realmName)
+				.orElseThrow(() -> new IllegalArgumentException("Can't found realm" + realmName));
+		final var storage = realm.getStorageByName(storageName)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"Can't found storageName" + storageName + " for realm " + realmName));
+		return new RealmStorageConfiguredEnv(realmName, storageName, realm, storage);
 	}
 
 }

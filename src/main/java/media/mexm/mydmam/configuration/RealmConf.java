@@ -36,13 +36,17 @@ import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.dto.StorageCategory;
+import media.mexm.mydmam.dto.StorageStateClass;
+import media.mexm.mydmam.tools.DelayedSyncConfiguration;
 
 @Validated
 @Slf4j
 public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
 						Duration timeBetweenScans,
 						@DefaultValue("processasset") @NotEmpty String spoolProcessAsset,
-						File workingDirectory) {
+						File workingDirectory,
+						DelayedSyncConfiguration delayedSync) {
 
 	public RealmConf {
 		storages = Optional.ofNullable(storages).orElse(Map.of());
@@ -65,17 +69,49 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
 		if (timeBetweenScans != null && (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative())) {
 			throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
 		}
+
+		if (delayedSync == null) {
+			delayedSync = new DelayedSyncConfiguration(1000, Duration.ofMinutes(1));
+		}
 	}
 
 	public Set<String> getOnlineDASStorageNames() {
+		return getStorageNames(Set.of(DAS), Set.of(ONLINE));
+	}
+
+	/**
+	 * @param limitCategory empty = all
+	 * @param limitStorageClasses empty = all
+	 */
+	public Set<String> getStorageNames(final Set<StorageCategory> limitCategory,
+									   final Set<StorageStateClass> limitStorageClasses) {
 		return storages()
 				.entrySet()
 				.stream()
-				.filter(entry -> (entry.getValue().getCategory() == DAS))
-				.filter(entry -> (entry.getValue().getStorageStateClass() == ONLINE))
+				.filter(entry -> {
+					if (limitCategory.isEmpty()) {
+						return true;
+					}
+					return limitCategory.contains(entry.getValue().getCategory());
+				})
+				.filter(entry -> {
+					if (limitStorageClasses.isEmpty()) {
+						return true;
+					}
+					return limitStorageClasses.contains(entry.getValue().getStorageStateClass());
+				})
 				.map(Entry::getKey)
 				.map(TechnicalName::name)
 				.collect(toUnmodifiableSet());
+	}
+
+	public Optional<PathIndexingStorage> getStorageByName(final String storage) {
+		return storages()
+				.entrySet()
+				.stream()
+				.filter(entry -> entry.getKey().toString().equals(storage))
+				.map(Entry::getValue)
+				.findFirst();
 	}
 
 }

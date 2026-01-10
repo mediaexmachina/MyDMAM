@@ -16,50 +16,79 @@
  */
 package media.mexm.mydmam.activity;
 
+import java.util.Optional;
 import java.util.Set;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.indexer.RealmIndexer;
+import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.repository.PendingActivityDao;
 import media.mexm.mydmam.service.PendingActivityService;
 import tv.hd3g.jobkit.engine.Job;
 
 @Slf4j
-public record PendingActivityJob(String spoolName,
+public record PendingActivityJob(RealmStorageConfiguredEnv configuredEnv,
 								 MediaAsset asset,
 								 ActivityHandler activityHandler,
 								 ActivityEventType eventType,
 								 Set<String> previousHandlers,
+								 String previousHandlersJson,
 								 PendingActivityDao pendingActivityDao,
-								 PendingActivityService pendingActivityService) implements Job {
+								 PendingActivityService pendingActivityService,
+								 Optional<RealmIndexer> oIndexer) implements Job {
 
-	public PendingActivityJob evolve(final ActivityHandler activityHandler) {
+	public PendingActivityJob evolve(final ActivityHandler activityHandler,
+									 final Set<String> previousHandlers,
+									 final String previousHandlersJson) {
 		return new PendingActivityJob(
-				spoolName,
+				configuredEnv,
 				asset,
 				activityHandler,
 				eventType,
 				previousHandlers,
+				previousHandlersJson,
 				pendingActivityDao,
-				pendingActivityService);
+				pendingActivityService,
+				oIndexer);
 	}
 
 	@Override
 	public void run() throws Exception {
-		log.debug("Start media asset activity on: {}", asset);
+		if (pendingActivityDao.haveDeclaredActivity(asset.getFile(), activityHandler) == false) {
+			log.info("Cancel media asset activity {} on: {} as {}",
+					activityHandler.getHandlerName(),
+					asset,
+					eventType);
 
-		activityHandler.handle(asset, eventType);
+			pendingActivityService.continueAssetActivity(this);
+			return;
+		}
 
-		pendingActivityDao.endsActivity(asset.getHashPath(), activityHandler);
+		log.info("Start media asset activity {} on: {}, as {}",
+				activityHandler.getHandlerName(),
+				asset,
+				eventType);
 
-		log.trace("Ends media asset activity on: {}", asset);
+		final var result = activityHandler.handle(asset, eventType, configuredEnv);
+
+		if (result.updateIndex()) {
+			oIndexer.ifPresent(indexer -> indexer.updateAsset(asset));
+		}
+
+		pendingActivityDao.endsActivity(asset.getFile(), activityHandler);
+
+		log.debug("Ends media asset activity {} on: {}, as {}",
+				activityHandler.getHandlerName(),
+				asset,
+				eventType);
 
 		pendingActivityService.continueAssetActivity(this);
 	}
 
 	@Override
 	public void onJobFail(final Exception e) {
-		pendingActivityDao.endsActivity(asset.getHashPath(), activityHandler);
+		pendingActivityDao.endsActivity(asset.getFile(), activityHandler);
 
 		log.error("Can't run media asset activity on: {}", asset, e);
 	}
@@ -71,7 +100,7 @@ public record PendingActivityJob(String spoolName,
 
 	@Override
 	public String getJobSpoolname() {
-		return spoolName;
+		return configuredEnv.realm().spoolProcessAsset();
 	}
 
 }

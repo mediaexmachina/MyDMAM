@@ -16,13 +16,20 @@
  */
 package media.mexm.mydmam.service;
 
+import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
+import static media.mexm.mydmam.entity.FileEntity.hashPath;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.asset.DatabaseUpdateDirection;
 import media.mexm.mydmam.asset.MediaAsset;
-import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.repository.AssetSummaryDao;
+import media.mexm.mydmam.repository.AssetSummaryRepository;
+import media.mexm.mydmam.repository.FileRepository;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @Slf4j
@@ -30,19 +37,25 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 public class MediaAssetServiceImpl implements MediaAssetService {
 
 	@Autowired
-	Indexer indexer;
+	FileRepository fileRepository;
+	@Autowired
+	AssetSummaryRepository assetSummaryRepository;
+	@Autowired
+	AssetSummaryDao assetSummaryDao;
 
 	@Override
 	public MediaAsset getFromWatchfolder(final String realmName,
 										 final String storageName,
 										 final FileAttributesReference file,
 										 final MediaAssetService injectedService) {
-		return new MediaAsset(injectedService, realmName, storageName, file.getPath());
+		final var hashPath = hashPath(realmName, storageName, file.getPath());
+		final var fileEntity = fileRepository.getByHashPath(hashPath, realmName);
+		return getFromFileEntry(fileEntity, injectedService);
 	}
 
 	@Override
 	public MediaAsset getFromFileEntry(final FileEntity file, final MediaAssetService injectedService) {
-		return new MediaAsset(injectedService, file.getRealm(), file.getStorage(), file.getPath());
+		return new MediaAsset(injectedService, file);
 	}
 
 	@Override
@@ -52,6 +65,22 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 		/**
 		 * TO BE IMPLEMENTED
 		 */
+	}
+
+	@Override
+	@Transactional
+	public String updateMimeType(final MediaAsset asset, final DatabaseUpdateDirection direction) {
+		final var file = asset.getFile();
+
+		if (direction == PUSH_TO_DB) {
+			final var mimeType = asset.getMimeType();
+			assetSummaryDao.updateMimeType(file, mimeType);
+			return mimeType;
+		} else if (assetSummaryDao.getForFile(file)) {
+			return file.getAssetSummary().getMimeType();
+		} else {
+			return null;
+		}
 	}
 
 }

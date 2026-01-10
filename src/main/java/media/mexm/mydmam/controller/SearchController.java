@@ -98,7 +98,7 @@ public class SearchController {
 					.map(FileSearchResult::hashPath)
 					.distinct()
 					.collect(toUnmodifiableSet());
-			relatedFiles = fileRepository.getByHashPath(hashPathsToResolve).stream()
+			relatedFiles = fileRepository.getByHashPath(hashPathsToResolve, realm).stream()
 					.map(f -> createFromEntity(f, realm, f.getStorage()))
 					.collect(toUnmodifiableMap(FileItemResponse::hashPath, identity()));
 		}

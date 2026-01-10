@@ -26,6 +26,8 @@ import org.sqlite.SQLiteConfig.JournalMode;
 import org.sqlite.SQLiteConfig.SynchronousMode;
 import org.sqlite.SQLiteConfig.TempStore;
 
+import eu.medsea.mimeutil.MimeUtil2;
+
 @Configuration
 @EnableTransactionManagement
 @ComponentScan(basePackages = { "tv.hd3g.jobkit.mod" })
@@ -41,6 +43,20 @@ public class MyDMAMSetup {
 		sqliteConfig.setSynchronous(SynchronousMode.NORMAL);
 		sqliteConfig.setTempStore(TempStore.MEMORY);
 		return sqliteConfig;
+	}
+
+	@Bean("magicMimeUtil")
+	MimeUtil2 getMagicMimeMimeDetector() {
+		final var muMagic = new MimeUtil2();
+		muMagic.registerMimeDetector("eu.medsea.mimeutil.detector.MagicMimeMimeDetector");
+		return muMagic;
+	}
+
+	@Bean("extensionMimeUtil")
+	MimeUtil2 getExtensionMimeDetector() {
+		final var muMagic = new MimeUtil2();
+		muMagic.registerMimeDetector("eu.medsea.mimeutil.detector.ExtensionMimeDetector");
+		return muMagic;
 	}
 
 }

@@ -40,8 +40,8 @@ import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.repository.FileRepository;
 import tv.hd3g.jobkit.engine.JobKitEngine;
@@ -91,7 +91,7 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 
 		Map<String, FileEntity> entitiesByHashKey;
 		if (detectedByhashKey.isEmpty() == false) {
-			entitiesByHashKey = fileRepository.getByHashPath(detectedByhashKey.keySet()).stream()
+			entitiesByHashKey = fileRepository.getByHashPath(detectedByhashKey.keySet(), realmName).stream()
 					.collect(toUnmodifiableMap(FileEntity::getHashPath, wf -> wf));
 		} else {
 			entitiesByHashKey = new HashMap<>();
@@ -225,12 +225,12 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 					fileActivitytoAuditTrail(realmName, storageName, rat, "updated", scanResult.updated());
 				});
 
+		indexer.getIndexerByRealm(realmName)
+				.ifPresent(index -> index.updateIndexAfterScan(scanResult, storageName));
+
 		pendingActivityService.startsActivities(realmName, storageName, realm, scanResult.founded(), NEW_FOUNDED_FILE);
 		pendingActivityService.startsActivities(realmName, storageName, realm, scanResult.updated(), UPDATED_FILE);
 		pendingActivityService.cleanupFiles(realmName, storageName, realm, scanResult.losted());
-
-		indexer.getIndexerByRealm(realmName)
-				.ifPresent(index -> index.update(scanResult, storageName));
 	}
 
 	@Override

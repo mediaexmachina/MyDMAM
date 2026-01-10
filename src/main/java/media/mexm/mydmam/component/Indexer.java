@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.indexer.RealmIndexer;
 import media.mexm.mydmam.repository.FileDao;
+import media.mexm.mydmam.service.MediaAssetService;
 import tv.hd3g.jobkit.engine.JobKitEngine;
 
 @Component
@@ -43,6 +44,8 @@ public class Indexer implements DisposableBean {
 	FileDao fileDao;
 	@Autowired
 	JobKitEngine jobKit;
+	@Autowired
+	MediaAssetService mediaAssetService;
 
 	public void init() throws IOException {
 		final var infra = conf.infra();
@@ -62,7 +65,12 @@ public class Indexer implements DisposableBean {
 
 			log.info("Prepare indexer for realm={}, on {}",
 					realmName, workingDirectory.getAbsolutePath());
-			final var realmIndexer = new RealmIndexer(realmName, workingDirectory, conf.explainSearchResults());
+			final var realmIndexer = new RealmIndexer(
+					realmName,
+					workingDirectory,
+					conf.explainSearchResults(),
+					fileEntity -> mediaAssetService.getFromFileEntry(fileEntity, mediaAssetService),
+					entry.getValue().delayedSync());
 			indexerByRealmName.put(realmName, realmIndexer);
 		}
 	}

@@ -18,9 +18,13 @@ package media.mexm.mydmam.controller;
 
 import static java.lang.Math.min;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
+import static java.util.stream.Collectors.toUnmodifiableSet;
+import static java.util.stream.Stream.concat;
 import static media.mexm.mydmam.App.CONTROLLER_BASE_MAPPING_API_PATH;
 import static media.mexm.mydmam.dto.FileItemResponse.createFromEntity;
+import static media.mexm.mydmam.dto.FileMetadatasReponse.createFromAssetSummaryEntity;
 import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
 import static media.mexm.mydmam.dto.StorageStateClass.OFFLINE;
 import static media.mexm.mydmam.entity.FileEntity.HASH_STRING_LEN;
@@ -32,6 +36,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
@@ -46,17 +51,21 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
+import media.mexm.mydmam.dto.FileMetadatasReponse;
 import media.mexm.mydmam.dto.FileResponse;
 import media.mexm.mydmam.dto.RealmListResponse;
 import media.mexm.mydmam.dto.StorageListResponse;
 import media.mexm.mydmam.dto.StorageState;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.repository.AssetSummaryDao;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.repository.FileRepository;
 import media.mexm.mydmam.repository.FileSort;
@@ -75,6 +84,10 @@ public class FileSystemController {
 	FileRepository fileRepository;
 	@Autowired
 	FileDao fileDao;
+	@Autowired
+	AssetSummaryDao assetSummaryDao;
+	@Autowired
+	InternalObjectMapper internalObjectMapper;
 
 	@GetMapping("/list")
 	@Transactional
@@ -130,6 +143,8 @@ public class FileSystemController {
 												 @RequestParam(required = false,
 															   defaultValue = "0") @Min(0) final Integer limit,
 												 @RequestParam(required = false,
+															   defaultValue = "0") @Min(0) @Max(1) final Integer summaries,
+												 @RequestParam(required = false,
 															   defaultValue = "none") final SortOrder sortByName,
 												 @RequestParam(required = false,
 															   defaultValue = "none") final SortOrder sortByType,
@@ -138,7 +153,7 @@ public class FileSystemController {
 												 @RequestParam(required = false,
 															   defaultValue = "none") final SortOrder sortBySize) {
 		return list(realm, storage, hashPath(realm, storage, "/"),
-				skip, limit, sortByName, sortByType, sortByDate, sortBySize);
+				skip, limit, summaries, sortByName, sortByType, sortByDate, sortBySize);
 	}
 
 	@GetMapping("/list/{realm}/{storage}/{hashPath}")
@@ -150,6 +165,8 @@ public class FileSystemController {
 														   defaultValue = "0") @Min(0) final Integer skip,
 											 @RequestParam(required = false,
 														   defaultValue = "0") @Min(0) final Integer limit,
+											 @RequestParam(required = false,
+														   defaultValue = "0") @Min(0) @Max(1) final Integer summaries,
 											 @RequestParam(required = false,
 														   defaultValue = "none") final SortOrder sortByName,
 											 @RequestParam(required = false,
@@ -167,7 +184,7 @@ public class FileSystemController {
 				Optional.ofNullable(sort));
 		final var listSize = resultItemList.size();
 		final var totalSize = fileDao.countParentHashPathItems(realm, storage, hashPath.toLowerCase());
-		final var oFileParent = Optional.ofNullable(fileRepository.getByHashPath(hashPath.toLowerCase()));
+		final var oFileParent = Optional.ofNullable(fileRepository.getByHashPath(hashPath.toLowerCase(), realm));
 
 		final var listParentPath = resultItemList.stream()
 				.map(FileEntity::getPath)
@@ -177,9 +194,26 @@ public class FileSystemController {
 				.orElse(null);
 
 		final var parentPath = Optional.ofNullable(listParentPath)
-				.map(p -> "" + FilenameUtils.getFullPathNoEndSeparator(p))
+				.map(FilenameUtils::getFullPathNoEndSeparator)
 				.orElse("/");
 		final var parentHashPath = hashPath(realm, storage, parentPath);
+
+		final Map<String, FileMetadatasReponse> metadatas;
+		if (summaries == 1) {
+			final var allEntitiesIds = concat(resultItemList.stream(), oFileParent.stream())
+					.filter(not(FileEntity::isDirectory))
+					.map(FileEntity::getId)
+					.distinct()
+					.collect(toUnmodifiableSet());
+
+			metadatas = assetSummaryDao.getAssetSummariesByFileId(allEntitiesIds, realm)
+					.entrySet()
+					.stream()
+					.collect(toUnmodifiableMap(Entry::getKey,
+							f -> createFromAssetSummaryEntity(f.getValue(), internalObjectMapper)));
+		} else {
+			metadatas = Map.of();
+		}
 
 		try {
 			final var currentItem = oFileParent
@@ -197,7 +231,10 @@ public class FileSystemController {
 							skip,
 							totalSize,
 							sort,
-							resultItemList.stream().map(e -> createFromEntity(e, realm, storage)).toList()),
+							resultItemList.stream()
+									.map(fileEntity -> createFromEntity(fileEntity, realm, storage))
+									.toList(),
+							metadatas),
 					OK);
 		} catch (final IllegalArgumentException e) {
 			log.debug("Invalid query for {}: {}", hashPath, e.getMessage());

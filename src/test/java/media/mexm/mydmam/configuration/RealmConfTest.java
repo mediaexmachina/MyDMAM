@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static java.util.function.Predicate.not;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
 import static media.mexm.mydmam.dto.StorageCategory.NAS;
@@ -28,6 +29,7 @@ import static org.apache.commons.io.FileUtils.touch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,14 +39,20 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
+import media.mexm.mydmam.dto.StorageCategory;
+import media.mexm.mydmam.dto.StorageStateClass;
+import media.mexm.mydmam.tools.DelayedSyncConfiguration;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
@@ -55,6 +63,8 @@ class RealmConfTest {
 	Duration mockTimeBetweenScans;
 	@Mock
 	PathIndexingStorage piStorage;
+	@Mock
+	DelayedSyncConfiguration delayedSyncConfiguration;
 
 	@Fake
 	String spool;
@@ -76,7 +86,8 @@ class RealmConfTest {
 				Map.of(new TechnicalName(storageName), piStorage),
 				mockTimeBetweenScans,
 				spool,
-				workingDirectory);
+				workingDirectory,
+				delayedSyncConfiguration);
 	}
 
 	@AfterEach
@@ -103,6 +114,7 @@ class RealmConfTest {
 				Map.of(),
 				mockTimeBetweenScans,
 				spool,
+				null,
 				null);
 
 		final var result = conf.storages().entrySet().stream().toList();
@@ -111,7 +123,7 @@ class RealmConfTest {
 
 	@Test
 	void testStoragesStream_null() {
-		conf = new RealmConf(null, mockTimeBetweenScans, spool, null);
+		conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null);
 
 		final var result = conf.storages().entrySet().stream().toList();
 		assertThat(result).isEmpty();
@@ -119,7 +131,7 @@ class RealmConfTest {
 
 	@Test
 	void testGetValidWorkingDirectory_empty() {
-		conf = new RealmConf(null, mockTimeBetweenScans, spool, null);
+		conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null);
 		assertThat(conf.workingDirectory()).isNull();
 	}
 
@@ -147,26 +159,27 @@ class RealmConfTest {
 				map,
 				mockTimeBetweenScans,
 				spool,
-				workingDirectory));
+				workingDirectory,
+				delayedSyncConfiguration));
 	}
 
 	@Test
 	void testTimeBetweenScans() {
 		final var map = Map.of(new TechnicalName(storageName), piStorage);
 
-		conf = new RealmConf(map, null, spool, workingDirectory);
+		conf = new RealmConf(map, null, spool, workingDirectory, delayedSyncConfiguration);
 		assertThat(conf.timeBetweenScans()).isNull();
 
 		timeBetweenScans = Duration.ofMillis(duration);
-		conf = new RealmConf(map, timeBetweenScans, spool, workingDirectory);
+		conf = new RealmConf(map, timeBetweenScans, spool, workingDirectory, delayedSyncConfiguration);
 		assertThat(conf.timeBetweenScans()).isEqualTo(Duration.ofMillis(duration));
 
 		timeBetweenScans = Duration.ZERO;
 		assertThrows(IllegalArgumentException.class,
-				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory));
+				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, delayedSyncConfiguration));
 		timeBetweenScans = Duration.ofMillis(-duration);
 		assertThrows(IllegalArgumentException.class,
-				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory));
+				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, delayedSyncConfiguration));
 	}
 
 	@Test
@@ -189,6 +202,68 @@ class RealmConfTest {
 
 		verify(piStorage, atLeastOnce()).getCategory();
 		verify(piStorage, atLeastOnce()).getStorageStateClass();
+	}
+
+	@Nested
+	class StorageNames {
+
+		@Fake
+		StorageCategory sCategory;
+		@Fake
+		StorageStateClass sClasses;
+
+		StorageCategory notSCategory;
+		StorageStateClass notSClasses;
+
+		@BeforeEach
+		void init() {
+			notSCategory = Stream.of(StorageCategory.values()).filter(not(f -> f.equals(sCategory))).findFirst().get();
+			notSClasses = Stream.of(StorageStateClass.values()).filter(not(f -> f.equals(sClasses))).findFirst().get();
+
+			when(piStorage.getCategory()).thenReturn(sCategory);
+			when(piStorage.getStorageStateClass()).thenReturn(sClasses);
+		}
+
+		@AfterEach
+		void ends() {
+			verify(piStorage, atLeast(0)).getCategory();
+			verify(piStorage, atLeast(0)).getStorageStateClass();
+		}
+
+		@Test
+		void testAll_default() {
+			assertThat(conf.getStorageNames(Set.of(), Set.of())).containsExactly(storageName);
+		}
+
+		@Test
+		void testAll_set() {
+			assertThat(conf.getStorageNames(
+					Set.of(DAS, NAS, EXTERNAL),
+					Set.of(ONLINE, NEARLINE, OFFLINE)))
+							.containsExactly(storageName);
+		}
+
+		@Test
+		void testBad_all() {
+			assertThat(conf.getStorageNames(Set.of(notSCategory), Set.of(notSClasses))).isEmpty();
+		}
+
+		@Test
+		void testBad_category() {
+			assertThat(conf.getStorageNames(Set.of(notSCategory), Set.of())).isEmpty();
+		}
+
+		@Test
+		void testBad_classes() {
+			assertThat(conf.getStorageNames(Set.of(), Set.of(notSClasses))).isEmpty();
+		}
+
+	}
+
+	@Test
+	void testGetStorageByName() {
+		assertThat(conf.getStorageByName(storageName)).contains(piStorage);
+		assertThat(conf.getStorageByName("NOPE")).isEmpty();
 	}
 
 }

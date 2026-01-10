@@ -23,6 +23,7 @@ import static java.lang.Math.round;
 
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,6 +37,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -127,6 +129,10 @@ public class FileEntity {
 
 	@OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
 	private final Set<PendingActivityEntity> pendingActivities = new HashSet<>();
+
+	@Setter
+	@OneToOne(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE, optional = true)
+	private AssetSummaryEntity assetSummary;
 
 	/**
 	 * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE
@@ -222,10 +228,23 @@ public class FileEntity {
 		builder.append(realm);
 		builder.append(", storage=");
 		builder.append(storage);
+		builder.append(", path=");
+		builder.append(path);
 		builder.append(", hashPath=");
 		builder.append(hashPath);
 		builder.append("]");
 		return builder.toString();
 	}
 
+	public static final Comparator<? super FileEntity> FILE_FULL_PATH_COMPARATOR = (l, r) -> {
+		var rCompare = l.getRealm().compareTo(r.getRealm());
+		if (rCompare != 0) {
+			return rCompare;
+		}
+		rCompare = l.getStorage().compareTo(r.getStorage());
+		if (rCompare != 0) {
+			return rCompare;
+		}
+		return l.getPath().compareTo(r.getPath());
+	};
 }

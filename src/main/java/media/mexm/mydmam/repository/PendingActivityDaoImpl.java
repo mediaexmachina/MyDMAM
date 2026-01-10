@@ -16,10 +16,16 @@
  */
 package media.mexm.mydmam.repository;
 
+import static jakarta.transaction.Transactional.TxType.REQUIRES_NEW;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
+
 import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +35,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
+import media.mexm.mydmam.activity.PendingActivityJob;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.PendingActivityEntity;
@@ -51,75 +57,119 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
 	MyDMAMConfigurationProperties conf;
 
 	@Override
-	@Transactional
-	public void declateActivity(final String hashPathItem,
-								final ActivityHandler activityHandler,
-								final ActivityEventType eventType,
-								final String previousHandlers,
-								final String hostName,
-								final long pid) {
-		entityManager.createQuery("""
-				SELECT f FROM FileEntity f
-				WHERE f.hashPath = :hashPath
-				""", FileEntity.class)
-				.setParameter("hashPath", hashPathItem)
-				.getResultStream()
-				.map(f -> new PendingActivityEntity(
-						activityHandler,
-						eventType,
-						previousHandlers,
-						f,
+	@Transactional(REQUIRES_NEW)
+	public void declateActivities(final List<PendingActivityJob> allActivitiesJobs,
+								  final String hostName,
+								  final long pid) {
+		final var toAdd = allActivitiesJobs.stream()
+				.map(a -> new PendingActivityEntity(
+						a.activityHandler(),
+						a.eventType(),
+						a.previousHandlersJson(),
+						a.asset().getFile(),
 						hostName,
 						pid))
-				.forEach(pa -> entityManager.persist(pa));
+				.toList();
+
+		pendingActivityRepository.saveAllAndFlush(toAdd);
 	}
 
-	FileEntity getByHashPath(final String hashPath) {
-		return Optional.ofNullable(fileRepository.getByHashPath(hashPath))
-				.orElseThrow(() -> new IllegalStateException("Can't found file with hashPath " + hashPath));
+	@Override
+	@Transactional(REQUIRES_NEW)
+	public void endsActivity(final FileEntity file, final ActivityHandler activityHandler) {
+		final var doneActivities = entityManager.createQuery("""
+				SELECT pa FROM PendingActivityEntity pa
+				WHERE pa.file.id = :file_id
+				AND pa.handlerName = :handlerName
+				""", PendingActivityEntity.class)
+				.setParameter("file_id", file.getId())
+				.setParameter("handlerName", activityHandler.getHandlerName())
+				.getResultList();
+
+		if (doneActivities.isEmpty()) {
+			log.warn("Can't found activities \"{}\" for {}", activityHandler.getHandlerName(), file);
+		} else {
+			log.debug("Remove activities {}", doneActivities);
+			pendingActivityRepository.deleteAll(doneActivities);
+		}
+
+	}
+
+	@Override
+	@Transactional(REQUIRES_NEW)
+	public boolean haveDeclaredActivity(final FileEntity file, final ActivityHandler activityHandler) {
+		final var haveActivities = entityManager.createQuery("""
+				SELECT COUNT(pa) FROM PendingActivityEntity pa
+				WHERE pa.file.id = :file_id
+				AND pa.handlerName = :handlerName
+				""", Long.class)
+				.setParameter("file_id", file.getId())
+				.setParameter("handlerName", activityHandler.getHandlerName())
+				.getSingleResult()
+				.intValue();
+
+		return haveActivities > 0;
 	}
 
 	@Override
 	@Transactional
-	public void endsActivity(final String hashPath, final ActivityHandler activityHandler) {
-		Optional.ofNullable(fileRepository.getByHashPath(hashPath))
-				.stream()
-				.map(FileEntity::getPendingActivities)
-				.flatMap(Set::stream)
-				.filter(pa -> pa.getHandlerName().equalsIgnoreCase(activityHandler.getHandlerName()))
-				.forEach(pendingActivityRepository::delete);
+	public Map<FileEntity, Set<PendingActivityEntity>> getFilesAndPendingActivityByFileId(final Collection<Integer> ids) {
+		final var items = entityManager.createQuery("""
+				SELECT new map(f as kFileEntity, pa as kPendingActivityEntity)
+				FROM FileEntity f
+				LEFT JOIN PendingActivityEntity pa ON pa.file = f
+				WHERE f.id IN :ids
+				""", Map.class)
+				.setParameter("ids", ids)
+				.getResultList();
+
+		if (items.size() != ids.size()) {
+			log.warn("Invalid items get: ids={}, but get only {}", ids.size(), items.size());
+		}
+
+		return items.stream()
+				.collect(groupingBy(f -> (FileEntity) f.get("kFileEntity"),
+						HashMap::new,
+						mapping(f -> (PendingActivityEntity) f.get("kPendingActivityEntity"),
+								toSet())));
 	}
 
 	@Override
-	@Transactional
-	public List<PendingActivityEntity> getPendingActivities(final Set<String> realms, final String hostName) {
+	@Transactional(REQUIRES_NEW)
+	public List<Integer> getFilesAndWithResetPendingActivities(final Set<String> realms,
+															   final String hostName,
+															   final long pid) {
 		final var olderThan = new Timestamp(System.currentTimeMillis()
 											- conf.pendingActivityMaxAgeGraceRestart().toMillis());
 
-		return entityManager.createQuery("""
-				SELECT pa FROM PendingActivityEntity pa
-				WHERE (pa.workerHost = :workerHost OR pa.updated < :olderThan)
-				AND pa.file.realm IN :realms
-				""", PendingActivityEntity.class)
+		final var files = entityManager.createQuery("""
+				SELECT DISTINCT(f)
+				FROM FileEntity f
+				LEFT JOIN PendingActivityEntity pa ON pa.file = f
+				WHERE pa IS NOT NULL
+				AND (pa.workerHost = :workerHost OR pa.updated < :olderThan)
+				AND f.realm IN :realms
+				""", FileEntity.class)
 				.setParameter("workerHost", hostName)
 				.setParameter("olderThan", olderThan)
 				.setParameter("realms", realms)
 				.getResultList();
-	}
 
-	@Override
-	@Transactional
-	public void resetPendingActivity(final PendingActivityEntity pendingActivity,
-									 final String hostName,
-									 final long pid) {
-		pendingActivity.reset(hostName, pid);
-		pendingActivityRepository.saveAndFlush(pendingActivity);
-	}
+		entityManager.createQuery("""
+				UPDATE PendingActivityEntity pa
+				SET pa.workerHost = :workerHost,
+				    pa.workerPid = :workerPid,
+				    pa.updated = CURRENT_TIMESTAMP()
+				WHERE pa.file IN :files
+				""")
+				.setParameter("workerHost", hostName)
+				.setParameter("workerPid", pid)
+				.setParameter("files", files)
+				.executeUpdate();
 
-	@Override
-	@Transactional
-	public void deletePendingActivities(final Collection<PendingActivityEntity> pendingActivities) {
-		pendingActivityRepository.deleteAll(pendingActivities);
+		return files.stream()
+				.map(FileEntity::getId)
+				.toList();
 	}
 
 }

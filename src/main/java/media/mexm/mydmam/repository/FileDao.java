@@ -18,7 +18,6 @@ package media.mexm.mydmam.repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.tools.FileEntityConsumer;
@@ -30,7 +29,5 @@ public interface FileDao {
 	int countParentHashPathItems(String realm, String storage, String parentHashPath);
 
 	void getAllFromRealm(String realm, FileEntityConsumer onFile);
-
-	void getByParentHashPath(String realm, Set<String> parentHashPaths, FileEntityConsumer onFile, boolean recursive);
 
 }

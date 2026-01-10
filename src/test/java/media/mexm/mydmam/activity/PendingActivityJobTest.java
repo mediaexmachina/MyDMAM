@@ -18,11 +18,13 @@ package media.mexm.mydmam.activity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +33,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.configuration.RealmConf;
+import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.indexer.RealmIndexer;
+import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.repository.PendingActivityDao;
 import media.mexm.mydmam.service.PendingActivityService;
 import tv.hd3g.commons.testtools.Fake;
@@ -49,6 +56,16 @@ class PendingActivityJobTest {
 	PendingActivityDao pendingActivityDao;
 	@Mock
 	PendingActivityService pendingActivityService;
+	@Mock
+	RealmIndexer realmIndexer;
+	@Mock
+	RealmConf realm;
+	@Mock
+	PathIndexingStorage storage;
+	@Mock
+	HandlingResult handlingResult;
+	@Mock
+	FileEntity file;
 
 	@Fake
 	ActivityEventType eventType;
@@ -60,33 +77,53 @@ class PendingActivityJobTest {
 	String handlerName;
 	@Fake
 	String assetName;
+	@Fake
+	String assetHashPath;
+	@Fake
+	String realmName;
+	@Fake
+	String storageName;
+	@Fake
+	String previousHandlersJson;
 
 	Set<String> previousHandlers;
 	PendingActivityJob job;
+	RealmStorageConfiguredEnv configuredEnv;
 	Exception e;
+	Optional<RealmIndexer> oIndexer;
 
 	@BeforeEach
-	void init() {
+	void init() throws Exception {
+		oIndexer = Optional.ofNullable(realmIndexer);
+		configuredEnv = new RealmStorageConfiguredEnv(realmName, storageName, realm, storage);
+
 		when(asset.getHashPath()).thenReturn(assetHashPath);
+		when(asset.getFile()).thenReturn(file);
 		when(activityHandler.getHandlerName()).thenReturn(handlerName);
+		when(activityHandler.handle(asset, eventType, configuredEnv)).thenReturn(handlingResult);
+		when(pendingActivityDao.haveDeclaredActivity(file, activityHandler)).thenReturn(true);
+		when(handlingResult.updateIndex()).thenReturn(true);
 		when(asset.getName()).thenReturn(assetName);
+		when(realm.spoolProcessAsset()).thenReturn(spoolName);
 
 		previousHandlers = new HashSet<>(Set.of(previousHandler));
 		job = new PendingActivityJob(
-				spoolName,
+				configuredEnv,
 				asset,
 				activityHandler,
 				eventType,
 				previousHandlers,
+				previousHandlersJson,
 				pendingActivityDao,
-				pendingActivityService);
+				pendingActivityService,
+				oIndexer);
 		e = new Exception("For tests purpose");
 	}
 
 	@Test
 	void testEvolve() {
-		final var evolved = job.evolve(newActivityHandler);
-		assertEquals(spoolName, evolved.spoolName());
+		final var evolved = job.evolve(newActivityHandler, previousHandlers, previousHandlersJson);
+		assertEquals(configuredEnv, evolved.configuredEnv());
 		assertEquals(asset, evolved.asset());
 		assertEquals(newActivityHandler, evolved.activityHandler());
 		assertEquals(eventType, evolved.eventType());
@@ -95,24 +132,36 @@ class PendingActivityJobTest {
 		assertEquals(pendingActivityService, evolved.pendingActivityService());
 	}
 
-	@Fake
-	String assetHashPath;
-
 	@Test
 	void testRun() throws Exception {
 		job.run();
 
-		verify(activityHandler, times(1)).handle(asset, eventType);
-		verify(asset, times(1)).getHashPath();
-		verify(pendingActivityDao, times(1)).endsActivity(assetHashPath, activityHandler);
+		verify(activityHandler, times(1)).handle(asset, eventType, configuredEnv);
+		verify(activityHandler, atLeastOnce()).getHandlerName();
+		verify(asset, atLeastOnce()).getFile();
+		verify(pendingActivityDao, times(1)).haveDeclaredActivity(file, activityHandler);
+		verify(pendingActivityDao, times(1)).endsActivity(file, activityHandler);
+		verify(pendingActivityService, times(1)).continueAssetActivity(job);
+		verify(realmIndexer, times(1)).updateAsset(asset);
+		verify(handlingResult, times(1)).updateIndex();
+	}
+
+	@Test
+	void testRun_butNoDeclared() throws Exception {
+		when(pendingActivityDao.haveDeclaredActivity(file, activityHandler)).thenReturn(false);
+		job.run();
+
+		verify(pendingActivityDao, times(1)).haveDeclaredActivity(file, activityHandler);
+		verify(activityHandler, times(1)).getHandlerName();
+		verify(asset, times(1)).getFile();
 		verify(pendingActivityService, times(1)).continueAssetActivity(job);
 	}
 
 	@Test
 	void testOnJobFail() {
 		job.onJobFail(e);
-		verify(pendingActivityDao, times(1)).endsActivity(assetHashPath, activityHandler);
-		verify(asset, times(1)).getHashPath();
+		verify(asset, times(1)).getFile();
+		verify(pendingActivityDao, times(1)).endsActivity(file, activityHandler);
 	}
 
 	@Test
@@ -126,6 +175,7 @@ class PendingActivityJobTest {
 	@Test
 	void testGetJobSpoolname() {
 		assertEquals(spoolName, job.getJobSpoolname());
+		verify(realm, times(1)).spoolProcessAsset();
 	}
 
 }

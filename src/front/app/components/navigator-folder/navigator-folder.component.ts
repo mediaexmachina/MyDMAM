@@ -26,6 +26,7 @@ import { SpanFileSizeComponent } from "../toolkit/span-file-size.component";
 import { SortOrder } from '../../dto/sort-order.enum';
 import { NavigatorColumnSortComponent } from "./navigator-column-sort.component";
 import { AssetService } from '../../services/asset.service';
+import { FileMetadatasReponse } from '../../dto/file-metadatas-reponse.interface';
 
 @Component({
   selector: 'app-navigator-folder',
@@ -76,6 +77,7 @@ export class NavigatorFolderComponent {
                 this.storage(),
                 skip,
                 this.listResultCount(),
+                true,
                 this.currentSortOrder["name"],
                 this.currentSortOrder["type"],
                 this.currentSortOrder["date"],
@@ -87,6 +89,7 @@ export class NavigatorFolderComponent {
                 hashPath,
                 skip,
                 this.listResultCount(),
+                true,
                 this.currentSortOrder["name"],
                 this.currentSortOrder["type"],
                 this.currentSortOrder["date"],
@@ -245,10 +248,20 @@ export class NavigatorFolderComponent {
     resetActivitiesOnClick(e: Event, recursive:boolean) {
         e.preventDefault();
         const currentItem = this.dirListResponse()?.currentItem;
-        if (currentItem == null) {
-            return;
+        const parentHashPath = this.dirListResponse()?.parentHashPath;
+        if (currentItem != null) {
+            this.assetService.resetActivities([currentItem.hashPath], recursive);
+        } else if (this.dirListResponse()?.path == "/" && parentHashPath != null) {
+            this.assetService.resetActivities([parentHashPath], recursive);
         }
-        this.assetService.resetActivities([currentItem.hashPath], recursive);
+    }
+
+    getFileType(hashPath:string):string {
+        const metadatas = this.dirListResponse()?.metadatas || {};
+        if (hashPath in metadatas) {
+            return metadatas[hashPath].mimeType;
+        }
+        return "File";
     }
 
 }

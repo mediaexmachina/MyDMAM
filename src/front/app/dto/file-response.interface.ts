@@ -4,6 +4,7 @@
   FROM THE JAVA SIDE OF THIS PROJECT
 */
 import { FileItemResponse } from './file-item-response.interface';
+import { FileMetadatasReponse } from './file-metadatas-reponse.interface';
 import { FileSort } from './file-sort.interface';
 
 export interface FileResponse {
@@ -17,4 +18,5 @@ export interface FileResponse {
     total: number;
     sort: FileSort;
     list: Array<FileItemResponse>;
+    metadatas: Record<string, FileMetadatasReponse>;
 }

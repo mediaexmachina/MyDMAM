@@ -26,11 +26,27 @@ import media.mexm.mydmam.entity.FileEntity;
 
 public interface FileRepository extends JpaRepository<FileEntity, Long> {
 
-	@Query("SELECT f FROM FileEntity f WHERE f.hashPath = :hashPath")
-	FileEntity getByHashPath(String hashPath);
+	@Query("SELECT f FROM FileEntity f WHERE f.hashPath = :hashPath AND f.realm = :realm")
+	FileEntity getByHashPath(String hashPath, String realm);
 
-	@Query("SELECT f FROM FileEntity f WHERE f.hashPath IN :hashPath")
-	Set<FileEntity> getByHashPath(Set<String> hashPath);
+	@Query("SELECT f FROM FileEntity f WHERE f.hashPath IN :hashPath AND f.realm = :realm")
+	Set<FileEntity> getByHashPath(Set<String> hashPath, String realm);
+
+	@Query("""
+			SELECT f FROM FileEntity f
+			WHERE f.hashPath IN :hashPath
+			AND f.realm = :realm
+			AND f.storage IN :storages
+			""")
+	Set<FileEntity> getByHashPath(Set<String> hashPath, String realm, Set<String> storages);
+
+	@Query("""
+			SELECT f FROM FileEntity f
+			WHERE f.parentHashPath IN :parentHashPath
+			AND f.realm = :realm
+			AND f.storage IN :storages
+			""")
+	Set<FileEntity> getByParentHashPath(Set<String> parentHashPath, String realm, Set<String> storages);
 
 	@Query("""
 			SELECT f FROM FileEntity f

@@ -19,11 +19,12 @@ package media.mexm.mydmam.indexer;
 import java.util.Objects;
 import java.util.Optional;
 
-public class NamedIndexField {
+public final class NamedIndexField {
 
 	public static final String DOCUMENT_TYPE = "type";
 
 	public static final NamedIndexField FILE = new NamedIndexField("file");
+	public static final NamedIndexField ASSET = new NamedIndexField("asset");
 	public static final String DOCUMENT_TYPE_FILE = FILE.toString();
 	public static final String FILE_STORAGE = new NamedIndexField(FILE, "storage").toString();
 	public static final String FILE_DIRECTORY = new NamedIndexField(FILE, "directory").toString();
@@ -37,6 +38,7 @@ public class NamedIndexField {
 	public static final String FILE_HASH_PATH = new NamedIndexField(FILE, "hashPath").toString();
 	public static final String FILE_PARENT_PATH = new NamedIndexField(FILE, "parentPath").toString();
 	public static final String FILE_PARENT_HASH_PATH = new NamedIndexField(FILE, "parentHashPath").toString();
+	public static final String ASSET_MAGICMIME = new NamedIndexField(ASSET, "magicmime").toString();
 
 	private final Optional<NamedIndexField> oParent;
 	private final String name;

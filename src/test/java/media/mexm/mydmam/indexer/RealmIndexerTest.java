@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.indexer;
 
+import static java.time.Duration.ZERO;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
@@ -30,22 +31,28 @@ import static org.apache.commons.io.FileUtils.getTempDirectory;
 import static org.apache.commons.io.FilenameUtils.getBaseName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,7 +61,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
+import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.tools.DelayedSyncConfiguration;
 import net.datafaker.Faker;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -67,6 +76,8 @@ class RealmIndexerTest {
 
 	@Fake
 	String realmName;
+	@Fake
+	String badRealm;
 	@Fake
 	String storageName;
 	@Fake
@@ -83,15 +94,24 @@ class RealmIndexerTest {
 	long length;
 	@Fake
 	boolean exists;
+	@Fake
+	String mimeType;
 
 	String fileName;
 	String path;
 	String parentPath;
 	String fileHashPath;
 	long lastModified;
+	FileEntity fileEntity;
 
 	@Mock
 	CachedFileAttributes file;
+	@Mock
+	Function<FileEntity, MediaAsset> mediaAssetProvider;
+	@Mock
+	MediaAsset mediaAsset;
+	@Mock
+	DelayedSyncConfiguration delayedSyncConfiguration;
 
 	File workingDir;
 	RealmIndexer ri;
@@ -103,6 +123,9 @@ class RealmIndexerTest {
 	SearchConstraintCondition specialConstraint;
 	SearchConstraintRange constraintDateRange;
 	SearchConstraintRange constraintSizeRange;
+
+	String parentPathConstraint;
+	String parentHashPathConstraint;
 
 	@BeforeEach
 	void init() throws Exception {
@@ -127,20 +150,30 @@ class RealmIndexerTest {
 		workingDir = new File(getTempDirectory(), "mydmam_" + realmName + "_test-indexer");
 		forceMkdir(workingDir);
 
-		ri = new RealmIndexer(realmName, workingDir, false);
+		when(delayedSyncConfiguration.maxDelay()).thenReturn(ZERO);
+		when(delayedSyncConfiguration.maxEntries()).thenReturn(1);
+
+		ri = new RealmIndexer(realmName, workingDir, false, mediaAssetProvider, delayedSyncConfiguration);
+		fileEntity = new FileEntity(realmName, storageName, file);
+		clearInvocations(file);
+		when(mediaAssetProvider.apply(fileEntity)).thenReturn(mediaAsset);
+		when(mediaAsset.getMimeType()).thenReturn(mimeType);
 	}
 
 	@AfterEach
 	void ends() {
 		ri.close();
 		deleteQuietly(workingDir);
+
+		verify(delayedSyncConfiguration, atLeastOnce()).maxEntries();
+		verify(delayedSyncConfiguration, atLeastOnce()).maxDelay();
 	}
 
 	@Test
 	void testComputeExplainOnResults() throws IOException {// NOSONAR S5961
 		ri.close();
-		ri = new RealmIndexer(realmName, workingDir, true);
-		ri.update(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
+		ri = new RealmIndexer(realmName, workingDir, true, mediaAssetProvider, delayedSyncConfiguration);
+		ri.updateIndexAfterScan(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
 
 		assertThat(ri.openSearch(getBaseName(fileName), empty(), 10)
 				.foundedFiles().stream().findFirst().map(FileSearchResult::explain)
@@ -186,7 +219,7 @@ class RealmIndexerTest {
 	@Test
 	void testOpenSearch() {// NOSONAR S5961
 		final var scanResult = new WatchedFiles(Set.of(makeFalseFile(), file, makeFalseFile()), Set.of(), Set.of(), 0);
-		ri.update(scanResult, storageName);
+		ri.updateIndexAfterScan(scanResult, storageName);
 
 		var results = ri.openSearch(getBaseName(fileName), empty(), 10).foundedFiles();
 		assertThat(results).size().isEqualTo(1);
@@ -242,10 +275,10 @@ class RealmIndexerTest {
 		final var watchedFiles = new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0);
 
 		when(file.getName()).thenReturn("fromstorage1");
-		ri.update(watchedFiles, "storage1");
+		ri.updateIndexAfterScan(watchedFiles, "storage1");
 
 		when(file.getName()).thenReturn("fromstorage2");
-		ri.update(watchedFiles, "storage2");
+		ri.updateIndexAfterScan(watchedFiles, "storage2");
 
 		var results = ri.openSearch("fromsto", empty(), 10).foundedFiles();
 
@@ -288,7 +321,7 @@ class RealmIndexerTest {
 		when(file.isHidden()).thenReturn(hidden);
 		when(file.isLink()).thenReturn(link);
 		when(file.isSpecial()).thenReturn(special);
-		ri.update(watchedFiles, storageName);
+		ri.updateIndexAfterScan(watchedFiles, storageName);
 
 		final var results = ri.openSearch("basename", empty(), 10).foundedFiles();
 		assertThat(results.stream().findFirst().map(FileSearchResult::hashPath).orElse(null)).isEqualTo(fileHashPath);
@@ -356,7 +389,7 @@ class RealmIndexerTest {
 
 	@Test
 	void testOpenSearch_length_size_constraints() {
-		ri.update(new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0), storageName);
+		ri.updateIndexAfterScan(new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0), storageName);
 
 		constraintDateRange = new SearchConstraintRange(true, lastModified - 1, lastModified + 1);
 		constraintSizeRange = new SearchConstraintRange(false, length - 1, length + 1);
@@ -404,12 +437,9 @@ class RealmIndexerTest {
 								.isEmpty();
 	}
 
-	String parentPathConstraint;
-	String parentHashPathConstraint;
-
 	@Test
 	void testOpenSearch_parentpath_constraints() {
-		ri.update(new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0), storageName);
+		ri.updateIndexAfterScan(new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0), storageName);
 
 		parentPathConstraint = "/";
 		assertThatFoundWithParentPathHashConstraints();
@@ -458,14 +488,14 @@ class RealmIndexerTest {
 	@Test
 	void testFile_add_delete_update() {
 		final var scanResultAdd = new WatchedFiles(Set.of(file, makeFalseFile()), Set.of(), Set.of(), 0);
-		ri.update(scanResultAdd, storageName);
+		ri.updateIndexAfterScan(scanResultAdd, storageName);
 
 		assertThat(ri.openSearch(getBaseName(fileName), empty(), 10).foundedFiles().stream().findFirst().map(
 				FileSearchResult::hashPath).orElse(null))
 						.isEqualTo(fileHashPath);
 
 		final var scanResultLosted = new WatchedFiles(Set.of(), Set.of(file), Set.of(), 0);
-		ri.update(scanResultLosted, storageName);
+		ri.updateIndexAfterScan(scanResultLosted, storageName);
 		assertThat(ri.openSearch(getBaseName(fileName), empty(), 10).foundedFiles())
 				.isEmpty();
 
@@ -474,7 +504,7 @@ class RealmIndexerTest {
 				IGNORE, IGNORE, IGNORE, IGNORE,
 				NO_RANGE, constraintSizeRange, List.of(), null, null);
 
-		ri.update(scanResultAdd, storageName);
+		ri.updateIndexAfterScan(scanResultAdd, storageName);
 		assertThat(ri.openSearch(getBaseName(fileName), Optional.ofNullable(constraint), 10).foundedFiles().stream()
 				.findFirst()
 				.map(FileSearchResult::hashPath).orElse(null))
@@ -483,7 +513,7 @@ class RealmIndexerTest {
 		final var scanResultUpdated = new WatchedFiles(Set.of(), Set.of(), Set.of(file), 0);
 		when(file.length()).thenReturn(1l);
 
-		ri.update(scanResultUpdated, storageName);
+		ri.updateIndexAfterScan(scanResultUpdated, storageName);
 
 		assertThat(ri.openSearch(getBaseName(fileName), empty(), 10).foundedFiles().stream().findFirst().map(
 				FileSearchResult::hashPath).orElse(null))
@@ -497,11 +527,12 @@ class RealmIndexerTest {
 	@Test
 	void testReset() {
 		final var scanResult = new WatchedFiles(Set.of(makeFalseFile(), makeFalseFile()), Set.of(), Set.of(), 0);
-		ri.update(scanResult, storageName);
+		ri.updateIndexAfterScan(scanResult, storageName);
 		assertThat(ri.openSearch("*", empty(), 10).foundedFiles()).size().isEqualTo(2);
 
 		final var session = ri.reset(10);
-		session.accept(new FileEntity(realmName, storageName, file));
+
+		session.accept(fileEntity);
 		session.close();
 
 		final var results = ri.openSearch("*", empty(), 10).foundedFiles();
@@ -516,8 +547,108 @@ class RealmIndexerTest {
 		assertThat(result0.storage()).isEqualTo(storageName);
 		assertThat(result0.explain()).isNull();
 
-		verify(file, atLeastOnce()).getPath();
+		verify(mediaAssetProvider, times(1)).apply(fileEntity);
+		verify(mediaAsset, atLeastOnce()).getMimeType();
+	}
+
+	@Test
+	void testReset_badRealm() {
+		fileEntity = new FileEntity(badRealm, storageName, file);
 		clearInvocations(file);
+		final var session = ri.reset(10);
+		assertThrows(IllegalArgumentException.class,
+				() -> session.accept(fileEntity));
+	}
+
+	@Nested
+	class RecursiveSearch {
+
+		WatchedFiles scanResult;
+
+		@BeforeEach
+		void init() {
+			scanResult = new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0);
+		}
+
+		@AfterEach
+		void ends() {
+			reset(file);
+		}
+
+		@Test
+		void testFounded() {
+			ri.updateIndexAfterScan(scanResult, storageName);
+			final var result = ri.getHashPathsByRecursiveSearch(
+					storageName,
+					"/",
+					IGNORE);
+
+			assertThat(result).hasSize(1).contains(fileHashPath);
+		}
+
+		@Test
+		void testNotFounded() {
+			ri.updateIndexAfterScan(scanResult, storageName);
+			final var result = ri.getHashPathsByRecursiveSearch(
+					storageName,
+					"/nope",
+					IGNORE);
+
+			assertThat(result).isEmpty();
+		}
+
+		@Test
+		void testNoIndex() {
+			assertThrows(UncheckedIOException.class,
+					() -> ri.getHashPathsByRecursiveSearch(storageName, "/", IGNORE));
+		}
+
+		@Test
+		void testFounded_directory() {
+			scanResult = new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0);
+			ri.updateIndexAfterScan(scanResult, storageName);
+			final var result = ri.getHashPathsByRecursiveSearch(
+					storageName,
+					"/",
+					directory ? MUST : MUST_NOT);
+
+			assertThat(result).hasSize(1).contains(fileHashPath);
+
+			assertThat(ri.getHashPathsByRecursiveSearch(
+					storageName,
+					"/",
+					directory ? MUST_NOT : MUST)).isEmpty();
+
+		}
+
+	}
+
+	@Test
+	void testUpdateAsset() {
+		when(mediaAsset.getFile()).thenReturn(fileEntity);
+
+		ri.updateIndexAfterScan(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
+		ri.updateAsset(mediaAsset);
+
+		final var results = ri.openSearch(getBaseName(fileName), empty(), 10).foundedFiles();
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.get(0).hashPath())
+				.isEqualTo(fileHashPath);
+
+		verify(mediaAsset, times(1)).getFile();
+		verify(mediaAsset, times(1)).getMimeType();
+		reset(file);
+	}
+
+	@Test
+	void testUpdateAsset_badRealm() {
+		fileEntity = new FileEntity(badRealm, storageName, file);
+		when(mediaAsset.getFile()).thenReturn(fileEntity);
+
+		assertThrows(IllegalArgumentException.class,
+				() -> ri.updateAsset(mediaAsset));
+		verify(mediaAsset, times(1)).getFile();
+		reset(file);
 	}
 
 }

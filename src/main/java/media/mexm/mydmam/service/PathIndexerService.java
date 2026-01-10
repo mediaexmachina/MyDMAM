@@ -20,8 +20,8 @@ import java.time.Duration;
 import java.util.Set;
 
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
-import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.configuration.RealmConf;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
 import tv.hd3g.jobkit.watchfolder.WatchedFileScanner;
 import tv.hd3g.jobkit.watchfolder.WatchedFiles;
@@ -55,4 +55,5 @@ public interface PathIndexerService {
 								  RealmAuditTrail auditTrail,
 								  String event,
 								  Set<? extends FileAttributesReference> items);
+
 }

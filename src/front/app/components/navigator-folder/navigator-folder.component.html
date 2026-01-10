@@ -36,7 +36,7 @@
             } @else if (currentItem?.justDetected) {
                 <div class="just-detected">Just detected file (at least <app-span-file-size [size]="currentItem?.length || 0"></app-span-file-size>), pending check...</div>
             } @else {
-                <div>File (<app-span-file-size [size]="currentItem?.length || 0"></app-span-file-size>)</div>
+                <div>{{ getFileType(currentItem?.hashPath || "") }} (<app-span-file-size [size]="currentItem?.length || 0"></app-span-file-size>)</div>
             }
 
             <div [class.just-detected]="currentItem?.justDetected">
@@ -97,6 +97,14 @@
             <button (click)="resetActivitiesOnClick($event, true)">
                 This directory and sub-directories content
             </button>
+        } @else if (dirList?.path == "/") {
+            Metadata analysis and extraction reprocess on:
+            <button (click)="resetActivitiesOnClick($event, false)">
+                This storage root content only
+            </button>
+            <button (click)="resetActivitiesOnClick($event, true)">
+                The full storage
+            </button>
         } @else {
             <button (click)="resetActivitiesOnClick($event, false)">
                 Metadata analysis and extraction reprocess
@@ -149,7 +157,7 @@
                 <span class="just-detected">Just detected file</span>
                 <span class="just-detected">At least <app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
             } @else {
-                <span>Regular file</span>
+                <span>{{ getFileType(fileItem.hashPath || "") }}</span>
                 <span><app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
             }
             <app-span-date-time [date]="fileItem.modified"></app-span-date-time>

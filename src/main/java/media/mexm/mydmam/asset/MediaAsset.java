@@ -16,14 +16,23 @@
  */
 package media.mexm.mydmam.asset;
 
-import java.util.Objects;
+import static java.util.Objects.requireNonNull;
+import static media.mexm.mydmam.asset.DatabaseUpdateDirection.GET_FROM_DB;
+import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.apache.commons.io.FilenameUtils;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.service.MediaAssetService;
+import tv.hd3g.transfertfiles.AbstractFileSystemURL;
+import tv.hd3g.transfertfiles.local.LocalFile;
 
 @Slf4j
 public class MediaAsset {
@@ -31,50 +40,68 @@ public class MediaAsset {
 	@Getter
 	private final MediaAssetService service;
 	@Getter
-	private final String realmName;
-	@Getter
-	private final String storageName;
-	@Getter
-	private final String path;
-
-	private String hashPath;
-	private String name;
+	private final FileEntity file;
+	private String mimeType;
 
 	public MediaAsset(final MediaAssetService service,
-					  final String realmName,
-					  final String storageName,
-					  final String path) {
-		this.service = Objects.requireNonNull(service, "\"service\" can't to be null");
-		this.realmName = Objects.requireNonNull(realmName, "\"realmName\" can't to be null");
-		this.storageName = Objects.requireNonNull(storageName, "\"storageName\" can't to be null");
-		this.path = Objects.requireNonNull(path, "\"path\" can't to be null");
+					  final FileEntity file) {
+		this.service = requireNonNull(service, "\"service\" can't to be null");
+		this.file = requireNonNull(file, "\"file\" can't to be null");
 	}
 
-	public synchronized String getHashPath() {
-		if (hashPath == null) {
-			hashPath = FileEntity.hashPath(realmName, storageName, path);
-		}
-		return hashPath;
+	public String getHashPath() {
+		return file.getHashPath();
 	}
 
-	public synchronized String getName() {
-		if (name == null) {
-			name = FilenameUtils.getName(path);
+	public String getName() {
+		return FilenameUtils.getName(file.getPath());
+	}
+
+	public synchronized String getMimeType() {
+		if (mimeType == null) {
+			mimeType = service.updateMimeType(this, GET_FROM_DB);
 		}
-		return name;
+		return mimeType;
+	}
+
+	public synchronized void setMimeType(final String mimeType) {
+		requireNonNull(mimeType, "\"mimeType\" can't to be null");
+		if (mimeType.equals(this.mimeType)) {
+			return;
+		}
+		this.mimeType = mimeType;
+		service.updateMimeType(this, PUSH_TO_DB);
 	}
 
 	@Override
 	public String toString() {
 		final var builder = new StringBuilder();
 		builder.append("realmName=");
-		builder.append(realmName);
+		builder.append(file.getRealm());
 		builder.append(", storageName=");
-		builder.append(storageName);
+		builder.append(file.getStorage());
 		builder.append(", path=\"");
-		builder.append(path);
+		builder.append(file.getPath());
 		builder.append("\"");
 		return builder.toString();
+	}
+
+	/**
+	 * Please do checks before call: StorageCategory must be DAS.
+	 * @return only local file, else throw UnsupportedOperationException
+	 */
+	public File getLocalInternalFile(final PathIndexingStorage storage) {
+		try (final var fileSystem = new AbstractFileSystemURL(storage.path())) {
+			final var aFile = fileSystem.getFromPath(file.getPath());
+
+			if (aFile instanceof final LocalFile localFile) {
+				return localFile.getInternalFile();
+			} else {
+				throw new UnsupportedOperationException("Can't manage non-local files from " + fileSystem.getClass());
+			}
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Can't access to file system", e);
+		}
 	}
 
 }

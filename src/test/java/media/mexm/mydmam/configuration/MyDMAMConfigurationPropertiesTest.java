@@ -18,13 +18,17 @@ package media.mexm.mydmam.configuration;
 
 import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,12 +45,13 @@ class MyDMAMConfigurationPropertiesTest {
 	InfraConf pathindexing;
 	@Mock
 	RealmConf realm;
+	@Mock
+	PathIndexingStorage storage;
 
 	@Fake
 	String realmName;
 	@Fake
 	String otherRealm;
-
 	@Fake
 	String instancename;
 	@Fake
@@ -63,6 +68,9 @@ class MyDMAMConfigurationPropertiesTest {
 	int searchResultMaxSize;
 	@Fake
 	long pendingActivityMaxAgeGraceRestartDuration;
+	@Fake
+	String storageName;
+
 	Duration pendingActivityMaxAgeGraceRestart;
 
 	MyDMAMConfigurationProperties c;
@@ -150,6 +158,26 @@ class MyDMAMConfigurationPropertiesTest {
 		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
 		assertThat(c.getRealmByName(otherRealm)).isEmpty();
 		verify(pathindexing, times(1)).realms();
+	}
+
+	@Test
+	void testGetRealmAndStorage() {
+		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+		assertThrows(IllegalArgumentException.class, () -> c.getRealmAndStorage(otherRealm, storageName));
+
+		when(realm.getStorageByName(storageName)).thenReturn(Optional.empty());
+		assertThrows(IllegalArgumentException.class, () -> c.getRealmAndStorage(realmName, storageName));
+
+		when(realm.getStorageByName(storageName)).thenReturn(Optional.ofNullable(storage));
+		final var confEnv = c.getRealmAndStorage(realmName, storageName);
+		assertNotNull(confEnv);
+		assertEquals(confEnv.realm(), realm);
+		assertEquals(confEnv.realmName(), realmName);
+		assertEquals(confEnv.storage(), storage);
+		assertEquals(confEnv.storageName(), storageName);
+
+		verify(pathindexing, atLeastOnce()).realms();
+		verify(realm, atLeastOnce()).getStorageByName(storageName);
 	}
 
 }

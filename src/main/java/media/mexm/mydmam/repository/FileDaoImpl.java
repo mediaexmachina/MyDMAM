@@ -16,10 +16,8 @@
  */
 package media.mexm.mydmam.repository;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -58,41 +56,6 @@ public class FileDaoImpl implements FileDao {
 				.setFirstResult(from)
 				.setMaxResults(size)
 				.getResultList();
-	}
-
-	@Override
-	@Transactional
-	public void getByParentHashPath(final String realm,
-									final Set<String> parentHashPaths,
-									final FileEntityConsumer onFile,
-									final boolean recursive) {
-		final var currentDirContent = new ArrayList<FileEntity>();
-		final var parentHashPathToSeek = new ArrayList<>(parentHashPaths);
-
-		final var maxDeep = recursive ? 100 : 1;
-		for (var deep = 0; deep < maxDeep; deep++) {
-			/**
-			 * Should be optimized with WITH RECURSIVE Hibernate
-			 */
-			currentDirContent.addAll(entityManager.createQuery("""
-					SELECT f FROM FileEntity f
-					WHERE f.parentHashPath IN :parentHashPath
-					AND f.realm = :realm
-					""", FileEntity.class)
-					.setParameter(PARENT_HASH_PATH_PARAM, parentHashPathToSeek)
-					.setParameter(REALM_PARAM, realm)
-					.getResultList());
-
-			parentHashPathToSeek.clear();
-			parentHashPathToSeek.addAll(currentDirContent.stream()
-					.filter(FileEntity::isDirectory)
-					.map(FileEntity::getHashPath)
-					.toList());
-
-			currentDirContent.forEach(onFile::accept);
-			currentDirContent.clear();
-		}
-
 	}
 
 	@Override

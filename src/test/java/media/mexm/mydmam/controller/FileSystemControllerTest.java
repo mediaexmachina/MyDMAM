@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.controller;
 
+import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_MAP_STRING_STRING;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
 import static media.mexm.mydmam.dto.StorageCategory.NAS;
@@ -24,9 +25,11 @@ import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static media.mexm.mydmam.tools.SortOrder.none;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.times;
@@ -45,6 +48,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -64,6 +68,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 import media.mexm.mydmam.component.AuditTrail;
+import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
@@ -74,7 +79,9 @@ import media.mexm.mydmam.dto.RealmListResponse;
 import media.mexm.mydmam.dto.StorageCategory;
 import media.mexm.mydmam.dto.StorageListResponse;
 import media.mexm.mydmam.dto.StorageState;
+import media.mexm.mydmam.entity.AssetSummaryEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.repository.AssetSummaryDao;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.repository.FileRepository;
 import media.mexm.mydmam.repository.FileSort;
@@ -108,6 +115,10 @@ class FileSystemControllerTest {
 	FileDao fileDao;
 	@MockitoBean
 	AuditTrail auditTrail;
+	@MockitoBean
+	AssetSummaryDao assetSummaryDao;
+	@MockitoBean
+	InternalObjectMapper internalObjectMapper;
 
 	@Mock
 	HttpServletRequest request;
@@ -117,6 +128,8 @@ class FileSystemControllerTest {
 	FileEntity fileChildren0;
 	@Mock
 	FileEntity fileChildren1;
+	@Mock
+	AssetSummaryEntity assetSummaryEntity;
 
 	@Fake
 	String realm;
@@ -140,6 +153,14 @@ class FileSystemControllerTest {
 	int totalSize;
 	@Fake
 	long length;
+	@Fake
+	String specifications;
+	@Fake
+	String specKey;
+	@Fake
+	String specValue;
+	@Fake
+	String mimeType;
 
 	HttpHeaders baseHeaders;
 	long modified;
@@ -320,68 +341,10 @@ class FileSystemControllerTest {
 	}
 
 	@Test
-	void testList() throws Exception {
-		when(fileDao.getByParentHashPath(any(), anyInt(), anyInt(), any()))
-				.thenReturn(List.of(fileChildren0, fileChildren1));
-		when(fileDao.countParentHashPathItems(realm, storage, hashPath)).thenReturn(totalSize);
-		when(fileRepository.getByHashPath(hashPath)).thenReturn(file);
-
-		final var content = mvc.perform(get(BASE_MAPPING + "/list/" + realm + "/" + storage + "/" + hashPath)
-				.headers(baseHeaders)
-				.queryParam("skip", String.valueOf(skip))
-				.queryParam("limit", String.valueOf(limit)))
-				.andExpect(STATUS_OK)
-				.andExpect(CONTENT_TYPE)
-				.andExpect(jsonPath("$.realm").exists())
-				.andExpect(jsonPath("$.storage").exists())
-				.andExpect(jsonPath("$.currentItem").exists())
-				.andExpect(jsonPath("$.list").exists())
-				.andReturn()
-				.getResponse()
-				.getContentAsString();
-
-		final var response = objectMapper.readValue(content, FileResponse.class);
-
-		verify(fileDao, times(1)).getByParentHashPath(hashPath, skip, limit, Optional.ofNullable(fileSort));
-		verify(fileDao, times(1)).countParentHashPathItems(realm, storage, hashPath);
-		verify(fileRepository, times(1)).getByHashPath(hashPath);
-
-		assertThat(response.realm()).isEqualTo(realm);
-		assertThat(response.storage()).isEqualTo(storage);
-		assertThat(response.currentItem())
-				.isEqualTo(new FileItemResponse(true, baseName, hashPath, modified, -1, false));
-		assertThat(response.path()).isEqualTo("/" + basePath + "/" + baseName);
-		assertThat(response.parentHashPath()).isEqualTo(parentHashPath);
-		assertThat(response.listSize()).isEqualTo(2);
-		assertThat(response.skipCount()).isEqualTo(skip);
-		assertThat(response.total()).isEqualTo(totalSize);
-		assertThat(response.list()).size().isEqualTo(2);
-
-		assertTrue(response.list().stream().anyMatch(f -> f.hashPath().equals(hashPath + "filechildren0")));
-		assertTrue(response.list().stream().anyMatch(f -> f.hashPath().equals(hashPath + "filechildren1")));
-
-		for (final var f : Set.of(file, fileChildren0, fileChildren1)) {
-			verify(f, atLeastOnce()).getHashPath();
-			verify(f, atLeastOnce()).getModified();
-			verify(f, atLeastOnce()).getPath();
-			verify(f, atLeastOnce()).getRealm();
-			verify(f, atLeastOnce()).getStorage();
-			verify(f, atLeastOnce()).isDirectory();
-		}
-
-		for (final var f : Set.of(fileChildren0, fileChildren1)) {
-			verify(f, atLeastOnce()).getLength();
-			verify(f, atLeastOnce()).isWatchMarkedAsDone();
-		}
-
-		verify(conf, atLeast(1)).dirListMaxSize();
-	}
-
-	@Test
 	void testList_badRealm() throws Exception {
 		when(fileDao.getByParentHashPath(any(), anyInt(), anyInt(), any())).thenReturn(List.of());
 		when(fileDao.countParentHashPathItems(any(), any(), any())).thenReturn(0);
-		when(fileRepository.getByHashPath(any(String.class))).thenReturn(file);
+		when(fileRepository.getByHashPath(any(String.class), anyString())).thenReturn(file);
 
 		when(file.getRealm()).thenReturn(realm1);
 
@@ -399,7 +362,7 @@ class FileSystemControllerTest {
 
 		when(fileDao.getByParentHashPath(any(), anyInt(), anyInt(), any())).thenReturn(List.of());
 		when(fileDao.countParentHashPathItems(any(), any(), any())).thenReturn(0);
-		when(fileRepository.getByHashPath(any(String.class))).thenReturn(file);
+		when(fileRepository.getByHashPath(any(String.class), anyString())).thenReturn(file);
 
 		final var content = mvc.perform(get(BASE_MAPPING + "/list/" + realm + "/" + storage)
 				.headers(baseHeaders)
@@ -411,6 +374,7 @@ class FileSystemControllerTest {
 				.andExpect(jsonPath("$.storage").exists())
 				.andExpect(jsonPath("$.currentItem").exists())
 				.andExpect(jsonPath("$.list").exists())
+				.andExpect(jsonPath("$.metadatas").exists())
 				.andReturn()
 				.getResponse()
 				.getContentAsString();
@@ -427,10 +391,11 @@ class FileSystemControllerTest {
 		assertThat(response.skipCount()).isEqualTo(skip);
 		assertThat(response.total()).isZero();
 		assertThat(response.list()).isEmpty();
+		assertThat(response.metadatas()).isEmpty();
 
 		verify(fileDao, times(1)).getByParentHashPath(computedHashPath, skip, limit, Optional.ofNullable(fileSort));
 		verify(fileDao, times(1)).countParentHashPathItems(realm, storage, computedHashPath);
-		verify(fileRepository, times(1)).getByHashPath(computedHashPath);
+		verify(fileRepository, times(1)).getByHashPath(computedHashPath, realm);
 
 		verify(file, atLeastOnce()).getHashPath();
 		verify(file, atLeastOnce()).getModified();
@@ -442,4 +407,122 @@ class FileSystemControllerTest {
 		verify(conf, atLeast(1)).dirListMaxSize();
 	}
 
+	@Nested
+	class Lists {
+
+		@BeforeEach
+		void init() {
+			when(fileDao.getByParentHashPath(any(), anyInt(), anyInt(), any()))
+					.thenReturn(List.of(fileChildren0, fileChildren1));
+			when(fileDao.countParentHashPathItems(realm, storage, hashPath)).thenReturn(totalSize);
+			when(fileRepository.getByHashPath(hashPath, realm)).thenReturn(file);
+
+		}
+
+		@AfterEach
+		void ends() {
+			verify(fileDao, times(1)).getByParentHashPath(hashPath, skip, limit, Optional.ofNullable(fileSort));
+			verify(fileDao, times(1)).countParentHashPathItems(realm, storage, hashPath);
+			verify(fileRepository, times(1)).getByHashPath(hashPath, realm);
+
+			for (final var f : Set.of(file, fileChildren0, fileChildren1)) {
+				verify(f, atLeastOnce()).getHashPath();
+				verify(f, atLeastOnce()).getModified();
+				verify(f, atLeastOnce()).getPath();
+				verify(f, atLeastOnce()).getRealm();
+				verify(f, atLeastOnce()).getStorage();
+				verify(f, atLeastOnce()).isDirectory();
+			}
+
+			for (final var f : Set.of(fileChildren0, fileChildren1)) {
+				verify(f, atLeastOnce()).getLength();
+				verify(f, atLeastOnce()).isWatchMarkedAsDone();
+			}
+
+			verify(conf, atLeast(1)).dirListMaxSize();
+		}
+
+		private void checkResponse(final FileResponse response) {
+			assertThat(response.realm()).isEqualTo(realm);
+			assertThat(response.storage()).isEqualTo(storage);
+			assertThat(response.currentItem())
+					.isEqualTo(new FileItemResponse(true, baseName, hashPath, modified, -1, false));
+			assertThat(response.path()).isEqualTo("/" + basePath + "/" + baseName);
+			assertThat(response.parentHashPath()).isEqualTo(parentHashPath);
+			assertThat(response.listSize()).isEqualTo(2);
+			assertThat(response.skipCount()).isEqualTo(skip);
+			assertThat(response.total()).isEqualTo(totalSize);
+			assertThat(response.list()).size().isEqualTo(2);
+			assertTrue(response.list().stream().anyMatch(f -> f.hashPath().equals(hashPath + "filechildren0")));
+			assertTrue(response.list().stream().anyMatch(f -> f.hashPath().equals(hashPath + "filechildren1")));
+		}
+
+		@Test
+		void testList() throws Exception {
+			final var content = mvc.perform(get(BASE_MAPPING + "/list/" + realm + "/" + storage + "/" + hashPath)
+					.headers(baseHeaders)
+					.queryParam("skip", String.valueOf(skip))
+					.queryParam("limit", String.valueOf(limit)))
+					.andExpect(STATUS_OK)
+					.andExpect(CONTENT_TYPE)
+					.andExpect(jsonPath("$.realm").exists())
+					.andExpect(jsonPath("$.storage").exists())
+					.andExpect(jsonPath("$.currentItem").exists())
+					.andExpect(jsonPath("$.list").exists())
+					.andExpect(jsonPath("$.metadatas").exists())
+					.andReturn()
+					.getResponse()
+					.getContentAsString();
+
+			final var response = objectMapper.readValue(content, FileResponse.class);
+			checkResponse(response);
+			assertThat(response.metadatas()).isEmpty();
+
+		}
+
+		@Test
+		void testList_withMetadatas() throws Exception {
+			when(fileChildren0.getId()).thenReturn(0);
+			when(fileChildren1.getId()).thenReturn(1);
+
+			when(assetSummaryDao.getAssetSummariesByFileId(Set.of(0, 1), realm))
+					.thenReturn(Map.of(hashPath, assetSummaryEntity));
+			when(assetSummaryEntity.getSpecifications()).thenReturn(specifications);
+			when(assetSummaryEntity.getMimeType()).thenReturn(mimeType);
+			when(internalObjectMapper.readValue(specifications, TYPE_MAP_STRING_STRING))
+					.thenReturn(Map.of(specKey, specValue));
+
+			final var content = mvc.perform(get(BASE_MAPPING + "/list/" + realm + "/" + storage + "/" + hashPath)
+					.headers(baseHeaders)
+					.queryParam("skip", String.valueOf(skip))
+					.queryParam("limit", String.valueOf(limit))
+					.queryParam("summaries", "1"))
+					.andExpect(STATUS_OK)
+					.andExpect(CONTENT_TYPE)
+					.andExpect(jsonPath("$.realm").exists())
+					.andExpect(jsonPath("$.storage").exists())
+					.andExpect(jsonPath("$.currentItem").exists())
+					.andExpect(jsonPath("$.list").exists())
+					.andExpect(jsonPath("$.metadatas").exists())
+					.andReturn()
+					.getResponse()
+					.getContentAsString();
+
+			final var response = objectMapper.readValue(content, FileResponse.class);
+			checkResponse(response);
+			assertThat(response.metadatas()).hasSize(1);
+
+			final var metadatas = response.metadatas();
+			final var specs = metadatas.get(hashPath).specifications();
+			assertEquals(specValue, specs.get(specKey));
+
+			verify(fileChildren0, times(1)).getId();
+			verify(fileChildren1, times(1)).getId();
+			verify(assetSummaryDao, times(1)).getAssetSummariesByFileId(Set.of(0, 1), realm);
+			verify(assetSummaryEntity, times(1)).getSpecifications();
+			verify(assetSummaryEntity, times(1)).getMimeType();
+			verify(internalObjectMapper, times(1)).readValue(specifications, TYPE_MAP_STRING_STRING);
+		}
+
+	}
 }

@@ -27,6 +27,8 @@ import org.sqlite.SQLiteConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
+import media.mexm.mydmam.audittrail.AuditTrailObjectType;
 import media.mexm.mydmam.audittrail.AuditTrailSQLite;
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
@@ -83,6 +85,25 @@ public class AuditTrail {
 			return Optional.empty();
 		}
 		return Optional.ofNullable(auditTrailByRealmName.get(realm));
+	}
+
+	/**
+	 * Do nothing if no AuditTrail for this realm
+	 */
+	public void asyncPersistForRealm(final String realm,
+									 final String issuer,
+									 final String event,
+									 final AuditTrailObjectType objectType,
+									 final String objectReference,
+									 final Object objectPayload) {
+		getAuditTrailByRealm(realm)
+				.ifPresent(rat -> rat.asyncPersist(
+						issuer,
+						event,
+						new AuditTrailBatchInsertObject(
+								objectType,
+								objectReference,
+								objectPayload)));
 	}
 
 }

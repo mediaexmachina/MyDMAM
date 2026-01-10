@@ -18,27 +18,26 @@ package media.mexm.mydmam.repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
+import media.mexm.mydmam.activity.PendingActivityJob;
+import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.PendingActivityEntity;
 
 public interface PendingActivityDao {
 
-	void declateActivity(String hashPathItem,
-						 ActivityHandler activityHandler,
-						 ActivityEventType eventType,
-						 String previousHandlers,
-						 String hostName,
-						 long pid);
+	void declateActivities(List<PendingActivityJob> allActivitiesJobs, String hostName, long pid);
 
-	void endsActivity(String hashPath, ActivityHandler activityHandler);
+	void endsActivity(FileEntity file, ActivityHandler activityHandler);
 
-	List<PendingActivityEntity> getPendingActivities(Set<String> realms, String hostName);
+	boolean haveDeclaredActivity(FileEntity file, ActivityHandler activityHandler);
 
-	void resetPendingActivity(PendingActivityEntity pendingActivity, String hostName, long pid);
+	Map<FileEntity, Set<PendingActivityEntity>> getFilesAndPendingActivityByFileId(Collection<Integer> ids);
 
-	void deletePendingActivities(Collection<PendingActivityEntity> pendingActivities);
+	List<Integer> getFilesAndWithResetPendingActivities(Set<String> realms,
+														String hostName,
+														long pid);
 
 }

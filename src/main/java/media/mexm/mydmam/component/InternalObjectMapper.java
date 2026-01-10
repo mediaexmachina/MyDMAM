@@ -17,6 +17,7 @@
 package media.mexm.mydmam.component;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class InternalObjectMapper {
 
 	public static final TypeReference<List<String>> TYPE_LIST_STRING = new TypeReference<>() {};
+	public static final TypeReference<Map<String, String>> TYPE_MAP_STRING_STRING = new TypeReference<>() {};
 
 	@Autowired
 	ObjectMapper objectMapper;

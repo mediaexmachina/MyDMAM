@@ -110,11 +110,4 @@ public class PendingActivityEntity {
 		workerPid = pid;
 	}
 
-	public PendingActivityEntity reset(final String host, final long pid) {
-		workerHost = host;
-		workerPid = pid;
-		updated.setTime(System.currentTimeMillis());
-		return this;
-	}
-
 }

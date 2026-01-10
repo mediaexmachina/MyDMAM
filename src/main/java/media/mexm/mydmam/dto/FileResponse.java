@@ -17,6 +17,7 @@
 package media.mexm.mydmam.dto;
 
 import java.util.List;
+import java.util.Map;
 
 import media.mexm.mydmam.repository.FileSort;
 
@@ -29,5 +30,6 @@ public record FileResponse(String realm,
 						   int skipCount,
 						   int total,
 						   FileSort sort,
-						   List<FileItemResponse> list) {
+						   List<FileItemResponse> list,
+						   Map<String, FileMetadatasReponse> metadatas) {
 }

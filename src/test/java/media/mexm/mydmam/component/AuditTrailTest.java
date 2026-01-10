@@ -38,8 +38,9 @@ import org.sqlite.SQLiteConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
+import media.mexm.mydmam.audittrail.AuditTrailObjectType;
 import media.mexm.mydmam.configuration.InfraConf;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.TechnicalName;
 import tv.hd3g.commons.testtools.Fake;
@@ -68,6 +69,16 @@ class AuditTrailTest {
 	String realmName;
 	@Fake
 	File workingDirectory;
+	@Fake
+	String issuer;
+	@Fake
+	String event;
+	@Fake
+	AuditTrailObjectType objectType;
+	@Fake
+	String objectReference;
+	@Fake
+	String objectPayload;
 
 	@Autowired
 	AuditTrail auditTrail;
@@ -117,6 +128,19 @@ class AuditTrailTest {
 		final var realmAuditTrail = auditTrail.getAuditTrailByRealm(realmName);
 		assertThat(realmAuditTrail).isNotEmpty();
 
+	}
+
+	/**
+	 * Should write a better test...
+	 */
+	@Test
+	void testAsyncPersistForRealm() {
+		auditTrail.init();
+
+		auditTrail.asyncPersistForRealm(realmName, issuer, event, objectType, objectReference, objectPayload);
+
+		verify(conf, times(1)).infra();
+		verify(realmConf, times(1)).workingDirectory();
 	}
 
 }

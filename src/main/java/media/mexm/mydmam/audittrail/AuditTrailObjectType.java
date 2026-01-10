@@ -17,5 +17,6 @@
 package media.mexm.mydmam.audittrail;
 
 public enum AuditTrailObjectType {
-	FILE;
+	FILE,
+	FILE_MIME_TYPE;
 }

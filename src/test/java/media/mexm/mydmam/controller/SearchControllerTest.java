@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -152,7 +153,7 @@ class SearchControllerTest {
 
 		when(indexer.getIndexerByRealm(realm)).thenReturn(Optional.ofNullable(realmIndexer));
 		when(realmIndexer.openSearch(any(), any(), anyInt())).thenReturn(searchResult);
-		when(fileRepository.getByHashPath(anySet())).thenReturn(Set.of(fileEntity));
+		when(fileRepository.getByHashPath(anySet(), anyString())).thenReturn(Set.of(fileEntity));
 
 		when(fileEntity.getRealm()).thenReturn(realm);
 		when(fileEntity.getStorage()).thenReturn(faker.numerify("storage###"));
@@ -253,7 +254,7 @@ class SearchControllerTest {
 
 		verify(indexer, times(1)).getIndexerByRealm(realm);
 		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), conf.searchResultMaxSize());
-		verify(fileRepository, times(1)).getByHashPath(Set.of(hashPath));
+		verify(fileRepository, times(1)).getByHashPath(Set.of(hashPath), realm);
 	}
 
 	@Test

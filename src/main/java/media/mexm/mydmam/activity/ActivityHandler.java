@@ -16,7 +16,13 @@
  */
 package media.mexm.mydmam.activity;
 
+import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
+
+import java.util.Set;
+
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.dto.StorageStateClass;
+import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 
 /**
  * An ActivityHandler must be stateless
@@ -27,8 +33,17 @@ public interface ActivityHandler {
 		return getClass().getSimpleName();
 	}
 
-	boolean canHandle(MediaAsset asset, ActivityEventType eventType);
+	/**
+	 * If empty => all is supported
+	 */
+	default Set<StorageStateClass> getSupportedStorageStateClasses() {
+		return Set.of(ONLINE);
+	}
 
-	void handle(MediaAsset asset, ActivityEventType eventType) throws Exception; // NOSONAR S112
+	boolean canHandle(MediaAsset asset, ActivityEventType eventType, RealmStorageConfiguredEnv storedOn);
+
+	HandlingResult handle(MediaAsset asset,
+						  ActivityEventType eventType,
+						  RealmStorageConfiguredEnv storedOn) throws Exception; // NOSONAR S112
 
 }

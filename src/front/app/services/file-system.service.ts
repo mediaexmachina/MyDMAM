@@ -48,6 +48,7 @@ export class FileSystemService {
                         storage:string,
                         skip:number = 0,
                         limit:number = 0,
+                        summaries: boolean = true,
                         sortByName:SortOrder = SortOrder.none,
                         sortByType:SortOrder = SortOrder.none,
                         sortByDate:SortOrder = SortOrder.none,
@@ -56,6 +57,7 @@ export class FileSystemService {
         const params = {
             skip: skip,
             limit: limit,
+            summaries: summaries ? "1" : "0",
             sortByName: SortOrder[sortByName],
             sortByType: SortOrder[sortByType],
             sortByDate: SortOrder[sortByDate],
@@ -70,6 +72,7 @@ export class FileSystemService {
                     hashPath:string,
                     skip:number = 0,
                     limit:number = 0,
+                    summaries: boolean = true,
                     sortByName:SortOrder = SortOrder.none,
                     sortByType:SortOrder = SortOrder.none,
                     sortByDate:SortOrder = SortOrder.none,
@@ -78,6 +81,7 @@ export class FileSystemService {
         const params = {
             skip: skip,
             limit: limit,
+            summaries: summaries ? "1" : "0",
             sortByName: SortOrder[sortByName],
             sortByType: SortOrder[sortByType],
             sortByDate: SortOrder[sortByDate],

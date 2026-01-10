@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.service;
 
+import media.mexm.mydmam.asset.DatabaseUpdateDirection;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.entity.FileEntity;
 import tv.hd3g.transfertfiles.FileAttributesReference;
@@ -30,5 +31,7 @@ public interface MediaAssetService {
 	MediaAsset getFromFileEntry(FileEntity file, MediaAssetService injectedService);
 
 	void purgeAssetArtefacts(String realmName, String storageName, FileAttributesReference file);
+
+	String updateMimeType(MediaAsset asset, DatabaseUpdateDirection direction);
 
 }
