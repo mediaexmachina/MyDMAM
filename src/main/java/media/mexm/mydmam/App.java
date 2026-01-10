@@ -40,5 +40,5 @@ public class App {
 		}
 		SpringApplication.run(App.class, args);
 	}
-
+	// TODO update mime-util version
 }

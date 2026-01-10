@@ -16,6 +16,8 @@
  */
 package media.mexm.mydmam.configuration;
 
+import java.util.Optional;
+
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -25,6 +27,9 @@ import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.JournalMode;
 import org.sqlite.SQLiteConfig.SynchronousMode;
 import org.sqlite.SQLiteConfig.TempStore;
+
+import eu.medsea.mimeutil.MimeUtil;
+import eu.medsea.mimeutil.detector.MagicMimeMimeDetector;
 
 @Configuration
 @EnableTransactionManagement
@@ -43,4 +48,13 @@ public class MyDMAMSetup {
 		return sqliteConfig;
 	}
 
+	@Bean
+	MagicMimeMimeDetector getMagicMimeMimeDetector() { // TODO test
+		final var detector = "eu.medsea.mimeutil.detector.MagicMimeMimeDetector";
+		return Optional.ofNullable((MagicMimeMimeDetector) MimeUtil.getMimeDetector(detector))
+				.orElseGet(() -> {
+					MimeUtil.registerMimeDetector(detector);
+					return (MagicMimeMimeDetector) MimeUtil.getMimeDetector(detector);
+				});
+	}
 }
