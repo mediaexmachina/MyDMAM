@@ -26,7 +26,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import org.apache.lucene.document.Document;
@@ -40,6 +39,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
+import media.mexm.mydmam.component.FileEntityIndexConverter;
 import media.mexm.mydmam.entity.FileEntity;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -48,7 +48,7 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 class ResetSessionTest {
 
 	@Mock
-	Function<FileEntity, Document> fileToDocument;
+	FileEntityIndexConverter converter;
 	@Mock
 	Consumer<List<Document>> documentsSaver;
 	@Mock
@@ -61,12 +61,12 @@ class ResetSessionTest {
 	@Fake(min = 10, max = 100)
 	int batchSize;
 
-	ResetSession rs;
+	ResetIndexSession rs;
 
 	@BeforeEach
 	void init() {
-		when(fileToDocument.apply(oneFile)).thenReturn(oneDocument);
-		rs = new ResetSession(fileToDocument, documentsSaver, batchSize);
+		when(converter.makeDocument()).thenReturn(oneDocument);
+		rs = new ResetIndexSession(converter, documentsSaver, batchSize);
 	}
 
 	@Nested
@@ -91,14 +91,15 @@ class ResetSessionTest {
 		@AfterEach
 		void init() {
 			final var documentsFiles = files.stream().collect(toUnmodifiableMap(f -> f, _ -> mock(Document.class)));
-			documentsFiles.forEach((file, document) -> when(fileToDocument.apply(file)).thenReturn(document));
+			documentsFiles.forEach((file, document) -> when(converter.makeDocument()).thenReturn(document));
 
 			files.forEach(rs::accept);
 			rs.close();
 
 			files.forEach(Mockito::verifyNoInteractions);
 
-			documentsFiles.forEach((file, _) -> verify(fileToDocument, times(1)).apply(file));
+			verify(converter, times(documentsFiles.size())).makeDocument();
+			documentsFiles.forEach((file, document) -> verify(converter, times(1)).toDocument(file, document));
 			verify(documentsSaver, atLeastOnce()).accept(documentsSaverListCaptor.capture());
 
 			final var allSavedDocumements = documentsSaverListCaptor.getAllValues()
@@ -123,7 +124,7 @@ class ResetSessionTest {
 	@Test
 	void testAccept() {
 		rs.accept(oneFile);
-		verify(fileToDocument, times(1)).apply(oneFile);
+		verify(converter, times(1)).toDocument(oneFile, oneDocument);
 	}
 
 	@Test
@@ -136,7 +137,8 @@ class ResetSessionTest {
 		rs.accept(oneFile);
 		rs.close();
 
-		verify(fileToDocument, times(1)).apply(oneFile);
+		verify(converter, times(1)).makeDocument();
+		verify(converter, times(1)).toDocument(oneFile, oneDocument);
 		verify(documentsSaver, times(1)).accept(documentsSaverListCaptor.capture());
 		assertThat(documentsSaverListCaptor.getValue()).size().isEqualTo(1);
 		assertThat(documentsSaverListCaptor.getValue().get(0)).isEqualTo(oneDocument);

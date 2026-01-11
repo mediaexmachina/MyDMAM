@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.apache.lucene.document.Document;
 
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.component.FileEntityIndexConverter;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.tools.FileEntityConsumer;
 
@@ -35,16 +35,16 @@ import media.mexm.mydmam.tools.FileEntityConsumer;
  * Not thread safe.
  */
 @Slf4j
-public class ResetSession implements AutoCloseable, FileEntityConsumer {
+public class ResetIndexSession implements AutoCloseable, FileEntityConsumer {
 
-	private final Function<FileEntity, Document> fileToDocument;
+	private final FileEntityIndexConverter converter;
 	private final Consumer<List<Document>> documentsSaver;
 	private final LinkedBlockingQueue<Document> queue;
 
-	ResetSession(final Function<FileEntity, Document> fileToDocument,
-				 final Consumer<List<Document>> documentsSaver,
-				 final int batchSize) {
-		this.fileToDocument = Objects.requireNonNull(fileToDocument);
+	ResetIndexSession(final FileEntityIndexConverter converter,
+					  final Consumer<List<Document>> documentsSaver,
+					  final int batchSize) {
+		this.converter = Objects.requireNonNull(converter);
 		this.documentsSaver = Objects.requireNonNull(documentsSaver);
 		queue = new LinkedBlockingQueue<>(batchSize);
 		log.debug("Prepare reset session with a batchSize of {}", batchSize);
@@ -56,7 +56,10 @@ public class ResetSession implements AutoCloseable, FileEntityConsumer {
 			close();
 		}
 		log.trace("Add file {}", file);
-		queue.add(fileToDocument.apply(file));
+
+		final var document = converter.makeDocument();
+		converter.toDocument(file, document);
+		queue.add(document);
 	}
 
 	@Override

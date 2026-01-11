@@ -50,11 +50,12 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.InfraConf;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.pathindexing.WatchedFilesIndexDocumentUpdater;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.tools.FileEntityConsumer;
 import net.datafaker.Faker;
@@ -76,7 +77,8 @@ class IndexerTest {
 	FileDao fileDao;
 	@MockitoBean
 	PathIndexer pathIndexer;
-
+	@Autowired
+	FileAttributesReferenceIndexConverter fileIndexConverter;
 	@Autowired
 	FlatJobKitEngine flatJobKitEngine;
 
@@ -220,7 +222,14 @@ class IndexerTest {
 
 			indexer.init();
 			final var realmIndexer = indexer.getIndexerByRealm(realmName).get();
-			realmIndexer.update(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
+
+			realmIndexer.update(
+					new WatchedFilesIndexDocumentUpdater(
+							realmName,
+							storageName,
+							new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0),
+							fileIndexConverter));
+
 			var searchResult = realmIndexer.openSearch("*", Optional.empty(), 10).foundedFiles();
 			assertThat(searchResult).size().isEqualTo(1);
 			assertThat(searchResult.get(0).name()).isEqualTo(fileName);

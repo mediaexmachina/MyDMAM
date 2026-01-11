@@ -18,26 +18,14 @@ package media.mexm.mydmam.indexer;
 
 import static java.text.Normalizer.normalize;
 import static java.text.Normalizer.Form.NFKD;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toUnmodifiableMap;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.App.REPLACE_NORMALIZED;
-import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static media.mexm.mydmam.indexer.NamedIndexField.DOCUMENT_TYPE;
-import static media.mexm.mydmam.indexer.NamedIndexField.DOCUMENT_TYPE_FILE;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_BASE_NAME;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DATE;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_DIRECTORY;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_HASH_PATH;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_HIDDEN;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_LENGTH;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_LINK;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_NAME;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_HASH_PATH;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_PARENT_PATH;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_SPECIAL;
-import static media.mexm.mydmam.indexer.NamedIndexField.FILE_STORAGE;
 import static org.apache.commons.io.FileUtils.forceMkdir;
-import static org.apache.commons.io.FilenameUtils.getBaseName;
-import static org.apache.lucene.document.Field.Store.NO;
-import static org.apache.lucene.document.Field.Store.YES;
 import static org.apache.lucene.search.BooleanClause.Occur.MUST;
 import static org.apache.lucene.search.BooleanClause.Occur.SHOULD;
 
@@ -46,6 +34,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -53,10 +42,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -75,9 +60,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.entity.FileEntity;
-import tv.hd3g.jobkit.watchfolder.WatchedFiles;
-import tv.hd3g.transfertfiles.FileAttributesReference;
+import media.mexm.mydmam.component.FileEntityIndexConverter;
 
 @Slf4j
 public class RealmIndexer {
@@ -90,13 +73,25 @@ public class RealmIndexer {
 	private final Directory fsDirectoryIndex;
 	private final StandardAnalyzer analyzer;
 	private final boolean computeExplainOnResults;
+	private final Map<String, DocumentSearchDefinition> documentSearchDefinitionByTypeName;
 
 	public RealmIndexer(final String realmName,
 						final File workingDir,
-						final boolean computeExplainOnResults) throws IOException {
+						final boolean computeExplainOnResults,
+						final List<DocumentSearchDefinition> documentSearchDefinitionList) throws IOException {
 		this.realmName = realmName;
 		indexDir = new File(workingDir, "index");
 		this.computeExplainOnResults = computeExplainOnResults;
+
+		documentSearchDefinitionByTypeName = documentSearchDefinitionList.stream()
+				.map(DocumentSearchDefinition::getDocumentTypeName)
+				.distinct()
+				.collect(toUnmodifiableMap(
+						identity(),
+						typeName -> documentSearchDefinitionList.stream()
+								.filter(dsd -> dsd.getDocumentTypeName().equals(typeName))
+								.findFirst()
+								.get()));
 
 		forceMkdir(indexDir);
 		fsDirectoryIndex = FSDirectory.open(indexDir.toPath());
@@ -153,90 +148,59 @@ public class RealmIndexer {
 				.toList();
 	}
 
-	private Document toDocument(final FileAttributesReference file, final String storageName, final String hashPath) {
-		final var document = new Document();
-		log.trace("Make Lucene document on {}:{}:{}", realmName, storageName, hashPath);
-
-		document.add(new StringField(DOCUMENT_TYPE, DOCUMENT_TYPE_FILE, YES));
-		document.add(new StringField(FILE_HASH_PATH, hashPath, YES));
-		document.add(new StringField(FILE_STORAGE, storageName, YES));
-		document.add(new StringField(FILE_NAME, file.getName(), YES));
-		document.add(new StringField(FILE_PARENT_PATH, file.getParentPath(), YES));
-
-		normalizeSearchString(getBaseName(file.getName()))
-				.forEach(baseName -> document.add(new StringField(FILE_BASE_NAME, baseName, NO)));
-
-		document.add(new IntField(FILE_DIRECTORY, file.isDirectory() ? 1 : 0, NO));
-		document.add(new IntField(FILE_HIDDEN, file.isHidden() ? 1 : 0, NO));
-		document.add(new IntField(FILE_LINK, file.isLink() ? 1 : 0, NO));
-		document.add(new IntField(FILE_SPECIAL, file.isSpecial() ? 1 : 0, NO));
-
-		document.add(new LongField(FILE_DATE, file.lastModified(), NO));
-		document.add(new LongField(FILE_LENGTH, file.length(), NO));
-		document.add(new StringField(FILE_PARENT_HASH_PATH,
-				hashPath(realmName, storageName, file.getParentPath()), NO));
-		return document;
-	}
-
-	private Document toDocument(final FileEntity file) {
-		if (file.getRealm().equals(realmName) == false) {
-			throw new IllegalArgumentException("Invalid realm (wants " + realmName + ") for " + file);
-		}
-		return toDocument(
-				file.toFileAttributesReference(true),
-				file.getStorage(),
-				file.getHashPath());
-	}
-
 	/**
 	 * Never forget to close() session a the end.
 	 */
-	public ResetSession reset(final int batchSize) {
+	public ResetIndexSession reset(final int batchSize, final FileEntityIndexConverter converter) {
 		log.info("Wipe all file type documents on a reset session for realm {}", realmName);
-		write(writer -> writer.deleteDocuments(new TermQuery(new Term(DOCUMENT_TYPE, DOCUMENT_TYPE_FILE))));
 
-		return new ResetSession(
-				this::toDocument,
+		write(writer -> writer.deleteDocuments(
+				new TermQuery(new Term(DOCUMENT_TYPE, converter.getDocumentTypeName()))));
+
+		return new ResetIndexSession(
+				converter,
 				docList -> write(writer -> writer.addDocuments(docList)),
 				batchSize);
 	}
 
-	public void update(final WatchedFiles scanResult, final String storageName) {
-		if (scanResult.founded().isEmpty()
-			&& scanResult.updated().isEmpty()
-			&& scanResult.losted().isEmpty()) {
-			return;
-		}
-
-		log.info("Start to update Lucene index \"{}\" with founded={}, updated={}, losted={}.",
-				indexDir,
-				scanResult.founded().size(),
-				scanResult.updated().size(),
-				scanResult.losted().size());
+	public <T> void update(final IndexedDocumentUpdater<T> documentUpdater) { // TODO test
+		final var indexerType = documentUpdater.getConverter();
 
 		write(writer -> {
-			if (scanResult.founded().isEmpty() == false) {
-				log.trace("Add to update Lucene index \"{}\": {}", indexDir, scanResult.founded());
 
-				writer.addDocuments(scanResult.founded().stream()
-						.map(f -> toDocument(f, storageName, hashPath(realmName, storageName, f.getPath())))
-						.toList());
+			final var documentsToAdd = documentUpdater.itemsToAdd()
+					.map(item -> {
+						final var document = indexerType.makeDocument();
+						indexerType.toDocument(item, document);
+						return document;
+					})
+					.toList();
+
+			if (documentsToAdd.isEmpty() == false) {
+				log.debug("Add to lucene index \"{}\": {} document(s)", indexDir, documentsToAdd.size());
+				writer.addDocuments(documentsToAdd);
 			}
 
-			for (final var file : scanResult.updated()) {
-				log.trace("Update Lucene index \"{}\": {}", indexDir, file);
+			documentUpdater.itemsToUpdate()
+					.forEach(item -> {
+						log.trace("Update lucene index \"{}\": {}", indexDir, item);
 
-				final var hashPath = hashPath(realmName, storageName, file.getPath());
-				writer.updateDocument(new Term(FILE_HASH_PATH, hashPath), toDocument(file, storageName, hashPath));
-			}
+						final var document = indexerType.makeDocument();
+						indexerType.toDocument(item, document);
+						try {
+							writer.updateDocument(indexerType.makeDocumentReferenceTerm(item), document);
+						} catch (final IOException e) {
+							throw new UncheckedIOException(e);
+						}
+					});
 
-			if (scanResult.losted().isEmpty() == false) {
-				log.trace("Remove from Lucene index \"{}\": {}", indexDir, scanResult.losted());
+			final var documentsToDelete = documentUpdater.itemsToDelete()
+					.map(indexerType::makeDocumentReferenceTerm)
+					.toArray(Term[]::new);
 
-				final var terms = scanResult.losted().stream()
-						.map(f -> new Term(FILE_HASH_PATH, hashPath(realmName, storageName, f.getPath())))
-						.toArray(Term[]::new);
-				writer.deleteDocuments(terms);
+			if (documentsToDelete.length > 0) {
+				log.debug("Remove from lucene index \"{}\": {} document(s)", indexDir, documentsToDelete.length);
+				writer.deleteDocuments(documentsToDelete);
 			}
 
 			writer.commit();
@@ -247,7 +211,7 @@ public class RealmIndexer {
 	private SearchResult processSearch(final Optional<FileSearchConstraints> oFileSearchConstraints,
 									   final Query query,
 									   final int limit) {
-		try (var reader = DirectoryReader.open(fsDirectoryIndex)) {
+		try (final var reader = DirectoryReader.open(fsDirectoryIndex)) {
 			final var searcher = new IndexSearcher(reader);
 
 			final var builder = new BooleanQuery.Builder();
@@ -262,12 +226,17 @@ public class RealmIndexer {
 
 			Explanation explain = null;
 			for (final var scoredDoc : sortedTopDoc.scoreDocs) {
-				final var doc = storedFields.document(scoredDoc.doc,
-						Set.of(FILE_HASH_PATH,
-								FILE_STORAGE,
-								FILE_NAME,
-								FILE_PARENT_PATH,
-								DOCUMENT_TYPE));
+
+				final var fieldsToLoad = Stream.concat(
+						Stream.of(DOCUMENT_TYPE),
+						documentSearchDefinitionByTypeName.values()
+								.stream()
+								.map(DocumentSearchDefinition::getStoredFieldsAddedToDocument)
+								.flatMap(Set::stream)
+								.distinct())
+						.collect(toUnmodifiableSet());
+
+				final var doc = storedFields.document(scoredDoc.doc, fieldsToLoad);
 
 				if (computeExplainOnResults) {
 					explain = searcher.explain(finalQuery, scoredDoc.doc);
@@ -277,23 +246,17 @@ public class RealmIndexer {
 						.map(IndexableField::stringValue)
 						.orElseThrow();
 
-				if (documentType.equals(DOCUMENT_TYPE_FILE)) {
-					final var hashPath = doc.getField(FILE_HASH_PATH);
-					final var storage = doc.getField(FILE_STORAGE);
-					final var name = doc.getField(FILE_NAME);
-					final var parentPath = doc.getField(FILE_PARENT_PATH);
-
-					foundedFiles.add(new FileSearchResult(
-							hashPath.stringValue(),
-							storage.stringValue(),
-							name.stringValue(),
-							parentPath.stringValue(),
-							scoredDoc.score,
-							Optional.ofNullable(explain).map(Explanation::toString).orElse(null)));
-
-				} else {
+				final var searchDefinition = documentSearchDefinitionByTypeName.get(documentType);
+				if (searchDefinition == null) {
 					log.warn("Can't manage this document type: {}", documentType);
+					continue;
 				}
+
+				searchDefinition.addStoredFieldsToSearchResult(
+						doc,
+						scoredDoc.score,
+						Optional.ofNullable(explain).map(Explanation::toString).orElse(null),
+						foundedFiles::add);
 			}
 
 			return new SearchResult(foundedFiles.stream().sorted().toList(), totalFounded);
@@ -321,7 +284,9 @@ public class RealmIndexer {
 			 */
 			addShouldBooleanBoostedQuery(mainQuery, new WildcardQuery(new Term(FILE_NAME, q)), 10f);
 			addShouldBooleanBoostedQuery(mainQuery, new WildcardQuery(new Term(FILE_BASE_NAME, q)), 8f);
-		} else {
+		} else
+
+		{
 			/**
 			 * Exact file name match
 			 */

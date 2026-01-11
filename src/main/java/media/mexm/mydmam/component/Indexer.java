@@ -18,6 +18,7 @@ package media.mexm.mydmam.component;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
+import media.mexm.mydmam.indexer.DocumentSearchDefinition;
 import media.mexm.mydmam.indexer.RealmIndexer;
 import media.mexm.mydmam.repository.FileDao;
 import tv.hd3g.jobkit.engine.JobKitEngine;
@@ -43,6 +45,10 @@ public class Indexer implements DisposableBean {
 	FileDao fileDao;
 	@Autowired
 	JobKitEngine jobKit;
+	@Autowired
+	FileEntityIndexConverter fileEntityIndexConverter;
+	@Autowired
+	List<DocumentSearchDefinition> documentSearchDefinitionList;
 
 	public void init() throws IOException {
 		final var infra = conf.infra();
@@ -62,7 +68,11 @@ public class Indexer implements DisposableBean {
 
 			log.info("Prepare indexer for realm={}, on {}",
 					realmName, workingDirectory.getAbsolutePath());
-			final var realmIndexer = new RealmIndexer(realmName, workingDirectory, conf.explainSearchResults());
+			final var realmIndexer = new RealmIndexer(
+					realmName,
+					workingDirectory,
+					conf.explainSearchResults(),
+					documentSearchDefinitionList);
 			indexerByRealmName.put(realmName, realmIndexer);
 		}
 	}
@@ -85,7 +95,7 @@ public class Indexer implements DisposableBean {
 			indexerByRealmName.forEach((realm, indexer) -> {
 				log.info("Start to reset indexes on realm {}", realm);
 
-				try (var session = indexer.reset(conf.resetBatchSizeIndexer())) {
+				try (var session = indexer.reset(conf.resetBatchSizeIndexer(), fileEntityIndexConverter)) {
 					fileDao.getAllFromRealm(realm, session);
 				} catch (final Exception e) {
 					log.error("Can't run reset", e);

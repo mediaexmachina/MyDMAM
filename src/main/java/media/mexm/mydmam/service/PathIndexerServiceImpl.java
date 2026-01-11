@@ -38,11 +38,13 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
 import media.mexm.mydmam.component.AuditTrail;
+import media.mexm.mydmam.component.FileAttributesReferenceIndexConverter;
 import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.pathindexing.WatchedFilesIndexDocumentUpdater;
 import media.mexm.mydmam.repository.FileRepository;
 import tv.hd3g.jobkit.engine.JobKitEngine;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
@@ -68,6 +70,8 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 	PendingActivityService pendingActivityService;
 	@Autowired
 	Indexer indexer;
+	@Autowired
+	FileAttributesReferenceIndexConverter fileIndexConverter;
 
 	@Override
 	@Transactional
@@ -230,7 +234,8 @@ public class PathIndexerServiceImpl implements PathIndexerService {
 		pendingActivityService.cleanupFiles(realmName, storageName, realm, scanResult.losted());
 
 		indexer.getIndexerByRealm(realmName)
-				.ifPresent(index -> index.update(scanResult, storageName));
+				.ifPresent(index -> index.update(new WatchedFilesIndexDocumentUpdater(
+						realmName, storageName, scanResult, fileIndexConverter)));
 	}
 
 	@Override
