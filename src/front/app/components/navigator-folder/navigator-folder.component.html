@@ -160,7 +160,9 @@
                 <span>{{ getFileType(fileItem.hashPath || "") }}</span>
                 <span><app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
             }
-            <app-span-date-time [date]="fileItem.modified"></app-span-date-time>
+            <span>
+                <app-span-date-time [date]="fileItem.modified"></app-span-date-time>
+            </span>
         </li>
         }
     </ul>
