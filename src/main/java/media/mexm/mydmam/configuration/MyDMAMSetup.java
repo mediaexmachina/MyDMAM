@@ -27,6 +27,7 @@ import org.sqlite.SQLiteConfig.SynchronousMode;
 import org.sqlite.SQLiteConfig.TempStore;
 
 import eu.medsea.mimeutil.MimeUtil2;
+import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 
 @Configuration
 @EnableTransactionManagement
@@ -57,6 +58,11 @@ public class MyDMAMSetup {
 		final var muMagic = new MimeUtil2();
 		muMagic.registerMimeDetector("eu.medsea.mimeutil.detector.ExtensionMimeDetector");
 		return muMagic;
+	}
+
+	@Bean
+	ExecutableFinder getExecutableFinder() { // TODO test
+		return new ExecutableFinder();
 	}
 
 }

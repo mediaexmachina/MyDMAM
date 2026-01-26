@@ -33,6 +33,7 @@ import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 
 @ConfigurationProperties(prefix = "mydmam")
@@ -45,7 +46,8 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
 											@DefaultValue("10000") @Min(0) int resetBatchSizeIndexer,
 											@DefaultValue("100") @Min(1) int dirListMaxSize,
 											@DefaultValue("100") @Min(1) int searchResultMaxSize,
-											@DefaultValue("24h") Duration pendingActivityMaxAgeGraceRestart) {
+											@DefaultValue("24h") Duration pendingActivityMaxAgeGraceRestart,
+											@DefaultValue @Valid @NotNull MagickConf magick) {
 
 	public MyDMAMConfigurationProperties {
 		if (instancename == null || instancename.isEmpty()) {

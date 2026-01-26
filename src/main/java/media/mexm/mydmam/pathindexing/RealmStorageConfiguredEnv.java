@@ -16,6 +16,8 @@
  */
 package media.mexm.mydmam.pathindexing;
 
+import static media.mexm.mydmam.dto.StorageCategory.DAS;
+
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
 
@@ -23,5 +25,17 @@ public record RealmStorageConfiguredEnv(String realmName,
 										String storageName,
 										RealmConf realm,
 										PathIndexingStorage storage) {
+
+	public boolean isDAS() {// TODO test
+		return DAS.equals(storage().getCategory());
+	}
+
+	public boolean haveWorkingDir() {// TODO test
+		return realm.workingDirectory() != null;
+	}
+
+	public boolean haveRenderedDir() {// TODO test
+		return realm.renderedMetadataDirectory() != null;
+	}
 
 }

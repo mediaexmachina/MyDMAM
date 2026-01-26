@@ -83,4 +83,13 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 		}
 	}
 
+	@Override
+	@Transactional
+	public Map<File, AssetRenderedFileEntity> declareRenderedStaticFiles(final List<File> workingFiles,
+																		 final int index,
+																		 final String previewType) {
+		// TODO move files ! + implements
+		return Map.of();
+	}
+
 }

@@ -19,9 +19,11 @@ package media.mexm.mydmam.configuration;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
+import static org.apache.commons.io.FileUtils.forceDelete;
 import static org.apache.commons.io.FileUtils.forceMkdir;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
@@ -46,25 +48,14 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
 						Duration timeBetweenScans,
 						@DefaultValue("processasset") @NotEmpty String spoolProcessAsset,
 						File workingDirectory,
+						File renderedMetadataDirectory,
 						DelayedSyncConfiguration delayedSync) {
 
 	public RealmConf {
 		storages = Optional.ofNullable(storages).orElse(Map.of());
 
-		if (workingDirectory != null) {
-			try {
-				if (workingDirectory.exists() == false) {
-					log.info("Create working directory \"{}\"", workingDirectory.getAbsolutePath());
-					forceMkdir(workingDirectory);
-				} else if (workingDirectory.isDirectory() == false
-						   || workingDirectory.canRead() == false
-						   || workingDirectory.canWrite() == false) {
-					throw new IOException("Can't read/write or it's not a directory");
-				}
-			} catch (final IOException e) {
-				throw new UncheckedIOException("Invalid workingDirectory: " + workingDirectory, e);
-			}
-		}
+		checkDirectory(workingDirectory, "workingDirectory");
+		checkDirectory(renderedMetadataDirectory, "renderedMetadataDirectory");
 
 		if (timeBetweenScans != null && (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative())) {
 			throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
@@ -72,6 +63,24 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
 
 		if (delayedSync == null) {
 			delayedSync = new DelayedSyncConfiguration(1000, Duration.ofMinutes(1));
+		}
+	}
+
+	static void checkDirectory(final File directory, final String name) { // TODO update test
+		if (directory == null) {
+			return;
+		}
+		try {
+			if (directory.exists() == false) {
+				log.info("Create {} \"{}\"", name, directory.getAbsolutePath());
+				forceMkdir(directory);
+			} else if (directory.isDirectory() == false
+					   || directory.canRead() == false
+					   || directory.canWrite() == false) {
+				throw new IOException("Can't read/write " + directory + " or it's not a directory, for " + name);
+			}
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Invalid directory: " + directory + ", for " + name, e);
 		}
 	}
 
@@ -112,6 +121,20 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
 				.filter(entry -> entry.getKey().toString().equals(storage))
 				.map(Entry::getValue)
 				.findFirst();
+	}
+
+	public File makeWorkingFile(final String name, final Class<?> referer) {
+		try {
+			if (workingDirectory == null) {
+				throw new FileNotFoundException("No workingDirectory is set for realm");
+			}
+			final var result = File.createTempFile(referer.getSimpleName(), name, workingDirectory).getCanonicalFile();
+			log.debug("Create/prepare temp file for realm: {}" + result);
+			forceDelete(result);
+			return result;
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Can't prepare a temp file in " + workingDirectory, e);
+		}
 	}
 
 }

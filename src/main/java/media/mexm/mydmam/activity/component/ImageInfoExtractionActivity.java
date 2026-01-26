@@ -1,0 +1,144 @@
+/*
+ * This file is part of mydmam.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * Copyright (C) Media ex Machina 2026
+ *
+ */
+package media.mexm.mydmam.activity.component;
+
+import java.util.Map;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.activity.ActivityEventType;
+import media.mexm.mydmam.activity.HandlingResult;
+import media.mexm.mydmam.activity.MetadataExtractorHandler;
+import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.component.AuditTrail;
+import media.mexm.mydmam.component.ImageMagick;
+import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
+
+@Component
+@Slf4j
+public class ImageInfoExtractionActivity implements MetadataExtractorHandler { // TODO test
+
+	private static final String PREVIEW_TYPE = "image-format";
+
+	@Autowired
+	AuditTrail auditTrail;
+	@Autowired
+	ImageMagick imageMagick;
+
+	@Override
+	public Set<String> getManagedMimeTypes() {
+		return Set.of(
+				"image/jpeg",
+				"image/png",
+				"image/bmp",
+				"image/gif",
+				"image/vnd.adobe.photoshop",
+				"image/tiff",
+				"application/postscript",
+				"image/jp2",
+				"application/dicom",
+				"image/x-icon",
+				"image/pict",
+				"image/vndwapwbmp",
+				"image/x-pcx",
+				"image/x-portable-bitmap",
+				"image/x-xbm",
+				"image/xpm",
+				"image/cineon",
+				"image/dpx",
+				"image/tga",
+				"image/exr",
+				"image/vnd.radiance",
+				"image/webp",
+				"image/sgi",
+				"image/x-palm-pixmap",
+				"image/x-g3-fax",
+				"image/jpcd",
+				"image/x-sct",
+				"image/jbig",
+				"image/x-miff",
+				"image/x-sun");
+	}
+
+	@Override
+	public Set<String> getProducedPreviewTypes() {
+		return Set.of(PREVIEW_TYPE);
+	}
+
+	@Override
+	public String getMetadataOriginName() {
+		return "imagemagick";
+	}
+
+	@Override
+	public boolean canHandle(final MediaAsset asset,
+							 final ActivityEventType eventType,
+							 final RealmStorageConfiguredEnv storedOn) {
+		return imageMagick.isEnabled()
+			   && storedOn.isDAS()
+			   && storedOn.haveWorkingDir()
+			   && storedOn.haveRenderedDir()
+			   && canHandleMimeType(asset);
+	}
+
+	@Override
+	public HandlingResult handle(final MediaAsset asset,
+								 final ActivityEventType eventType,
+								 final RealmStorageConfiguredEnv storedOn) throws Exception {
+		final var assetFile = asset.getLocalInternalFile(storedOn.storage());
+		final var workingFile = makeWorkingFile("identify.json.gz", asset, storedOn);
+
+		final var jsonNode = imageMagick.extractIdentifyJsonFile(
+				assetFile,
+				workingFile);
+
+		asset.declareRenderedStaticFile(workingFile, 0, PREVIEW_TYPE);
+
+		final var version = jsonNode.read("$.version", String.class).orElse("<unset>");
+		if (version.equals("1.0") == false) {
+			throw new IllegalArgumentException("Can't support JSON version " + version);
+		}
+
+		jsonNode.read("$.image.mimeType", String.class).ifPresent(asset::setMimeType);
+
+		final var width = jsonNode.read("$.image.geometry.width", Integer.class).map(String::valueOf).orElse("0");
+		final var height = jsonNode.read("$.image.geometry.height", Integer.class).map(String::valueOf).orElse("0");
+		final var colorspace = jsonNode.read("$.image.colorspace", String.class).orElse(null);
+		final var orientation = jsonNode.read("$.image.orientation", String.class).orElse(null);
+		final var type = jsonNode.read("$.image.type", String.class).map(String::toLowerCase).orElse(null);
+
+		final var entries = Map.of(
+				"width", width,
+				"height", height,
+				"colorspace", colorspace,
+				"orientation", orientation,
+				"type", type);
+
+		asset.createFileMetadataEntries(this, "technical", 0, entries);
+		asset.setSummarySpecifications(Map.of(
+				"width", width,
+				"height", height));
+
+		log.debug("Found properties for {}: {}", asset, entries);
+
+		return new HandlingResult(true);
+	}
+
+}

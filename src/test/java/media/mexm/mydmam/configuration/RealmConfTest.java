@@ -77,6 +77,7 @@ class RealmConfTest {
 
 	Duration timeBetweenScans;
 	File workingDirectory;
+	File renderedMetadataDirectory;
 	RealmConf conf;
 
 	@BeforeEach
@@ -87,6 +88,7 @@ class RealmConfTest {
 				mockTimeBetweenScans,
 				spool,
 				workingDirectory,
+				renderedMetadataDirectory,
 				delayedSyncConfiguration);
 	}
 
@@ -115,6 +117,7 @@ class RealmConfTest {
 				mockTimeBetweenScans,
 				spool,
 				null,
+				null,
 				null);
 
 		final var result = conf.storages().entrySet().stream().toList();
@@ -123,7 +126,7 @@ class RealmConfTest {
 
 	@Test
 	void testStoragesStream_null() {
-		conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null);
+		conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null, null);
 
 		final var result = conf.storages().entrySet().stream().toList();
 		assertThat(result).isEmpty();
@@ -131,7 +134,7 @@ class RealmConfTest {
 
 	@Test
 	void testGetValidWorkingDirectory_empty() {
-		conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null);
+		conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null, null);
 		assertThat(conf.workingDirectory()).isNull();
 	}
 
@@ -160,6 +163,7 @@ class RealmConfTest {
 				mockTimeBetweenScans,
 				spool,
 				workingDirectory,
+				renderedMetadataDirectory,
 				delayedSyncConfiguration));
 	}
 
@@ -167,19 +171,23 @@ class RealmConfTest {
 	void testTimeBetweenScans() {
 		final var map = Map.of(new TechnicalName(storageName), piStorage);
 
-		conf = new RealmConf(map, null, spool, workingDirectory, delayedSyncConfiguration);
+		conf = new RealmConf(map, null, spool, workingDirectory, renderedMetadataDirectory,
+				delayedSyncConfiguration);
 		assertThat(conf.timeBetweenScans()).isNull();
 
 		timeBetweenScans = Duration.ofMillis(duration);
-		conf = new RealmConf(map, timeBetweenScans, spool, workingDirectory, delayedSyncConfiguration);
+		conf = new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
+				delayedSyncConfiguration);
 		assertThat(conf.timeBetweenScans()).isEqualTo(Duration.ofMillis(duration));
 
 		timeBetweenScans = Duration.ZERO;
 		assertThrows(IllegalArgumentException.class,
-				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, delayedSyncConfiguration));
+				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
+						delayedSyncConfiguration));
 		timeBetweenScans = Duration.ofMillis(-duration);
 		assertThrows(IllegalArgumentException.class,
-				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, delayedSyncConfiguration));
+				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
+						delayedSyncConfiguration));
 	}
 
 	@Test

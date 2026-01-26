@@ -17,7 +17,6 @@
 package media.mexm.mydmam.activity.component;
 
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE_MIME_TYPE;
-import static media.mexm.mydmam.dto.StorageCategory.DAS;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -44,7 +43,7 @@ public class MimeTypeActivity implements ActivityHandler {
 	public boolean canHandle(final MediaAsset asset,
 							 final ActivityEventType eventType,
 							 final RealmStorageConfiguredEnv storedOn) {
-		return DAS.equals(storedOn.storage().getCategory());
+		return storedOn.isDAS();
 	}
 
 	@Override

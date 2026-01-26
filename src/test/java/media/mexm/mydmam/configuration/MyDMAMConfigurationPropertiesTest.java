@@ -47,6 +47,8 @@ class MyDMAMConfigurationPropertiesTest {
 	RealmConf realm;
 	@Mock
 	PathIndexingStorage storage;
+	@Mock
+	MagickConf magick;
 
 	@Fake
 	String realmName;
@@ -88,7 +90,8 @@ class MyDMAMConfigurationPropertiesTest {
 				resetBatchSizeIndexer,
 				dirListMaxSize,
 				searchResultMaxSize,
-				pendingActivityMaxAgeGraceRestart);
+				pendingActivityMaxAgeGraceRestart,
+				magick);
 	}
 
 	@Test
@@ -102,7 +105,8 @@ class MyDMAMConfigurationPropertiesTest {
 				resetBatchSizeIndexer,
 				dirListMaxSize,
 				searchResultMaxSize,
-				pendingActivityMaxAgeGraceRestart);
+				pendingActivityMaxAgeGraceRestart,
+				magick);
 		assertThat(c.instancename()).isNotEmpty();
 	}
 
@@ -118,7 +122,8 @@ class MyDMAMConfigurationPropertiesTest {
 				resetBatchSizeIndexer,
 				dirListMaxSize,
 				searchResultMaxSize,
-				pendingActivityMaxAgeGraceRestart));
+				pendingActivityMaxAgeGraceRestart,
+				magick));
 
 		pendingActivityMaxAgeGraceRestart = Duration.ZERO;
 		assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
@@ -130,7 +135,8 @@ class MyDMAMConfigurationPropertiesTest {
 				resetBatchSizeIndexer,
 				dirListMaxSize,
 				searchResultMaxSize,
-				pendingActivityMaxAgeGraceRestart));
+				pendingActivityMaxAgeGraceRestart,
+				magick));
 	}
 
 	@Test

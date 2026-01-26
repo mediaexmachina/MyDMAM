@@ -96,7 +96,7 @@ class PathIndexerTest {
 					null, null, null, null, null, null, null, null, false, false,
 					Duration.ZERO, false, "pathindexing", false);
 			piRealm = new RealmConf(Map.of(new TechnicalName(storage), piStorage),
-					duration, spoolEvents, null, null);
+					duration, spoolEvents, null, null, null);
 
 			when(configuration.infra()).thenReturn(infra);
 			when(infra.spoolEvents()).thenReturn(spoolEvents);
