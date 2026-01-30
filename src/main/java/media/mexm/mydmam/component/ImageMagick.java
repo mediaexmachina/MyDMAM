@@ -21,19 +21,17 @@ import static java.lang.Runtime.getRuntime;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.io.FileUtils.forceMkdir;
+import static org.apache.commons.io.FileUtils.write;
 import static tv.hd3g.processlauncher.CapturedStreams.BOTH_STDOUT_STDERR;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.zip.GZIPOutputStream;
 
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -206,7 +204,7 @@ public class ImageMagick {
 		}
 	}
 
-	public JsonPathHelper extractIdentifyJsonFile(final File source, final File saveJsonGzipDest) throws IOException {
+	public JsonPathHelper extractIdentifyJsonFile(final File source, final File saveJsonDest) throws IOException {
 		checkDisabled();
 		log.info("Start to read image from {}", source);
 
@@ -229,10 +227,9 @@ public class ImageMagick {
 		final var selectedNode = jsonItems.get(0);
 
 		final var cleanedJson = objectMapper.writeValueAsString(selectedNode);
-		try (final var fso = new GZIPOutputStream(new FileOutputStream(saveJsonGzipDest))) {
-			log.info("Write extracted JSON to {}", saveJsonGzipDest);
-			IOUtils.write(cleanedJson, fso, UTF_8);
-		}
+
+		log.info("Write extracted JSON to {}", saveJsonDest);
+		write(saveJsonDest, cleanedJson, UTF_8, false);
 
 		return new JsonPathHelper(JsonPath.parse(cleanedJson));
 	}

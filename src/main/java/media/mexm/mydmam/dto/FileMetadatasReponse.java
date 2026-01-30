@@ -16,27 +16,33 @@
  */
 package media.mexm.mydmam.dto;
 
-import static java.util.function.Predicate.not;
-import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_MAP_STRING_STRING;
+import static java.util.stream.Collectors.toUnmodifiableSet;
+import static media.mexm.mydmam.dto.FileMetadatasSummaryResponse.createFromAssetSummaryEntity;
 
-import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import media.mexm.mydmam.component.InternalObjectMapper;
+import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.AssetSummaryEntity;
 
-public record FileMetadatasReponse(String mimeType, Map<String, String> specifications) {
+public record FileMetadatasReponse(FileMetadatasSummaryResponse summary,
+								   Set<FileMetadatasRenderedReponse> rendered) {// TODO test
 
-	public static FileMetadatasReponse createFromAssetSummaryEntity(final AssetSummaryEntity assetSummaryEntity,
-																	final InternalObjectMapper objectMapper) {
-		final var specifications = Optional.ofNullable(assetSummaryEntity.getSpecifications())
-				.filter(not(String::isEmpty))
-				.map(s -> objectMapper.readValue(s, TYPE_MAP_STRING_STRING))
-				.orElse(Map.of());
+	public static FileMetadatasReponse createFromEntities(final AssetSummaryEntity assetSummaryEntity,
+														  final Set<AssetRenderedFileEntity> renderedFiles,
+														  final InternalObjectMapper objectMapper) {
+		final var summaryResponse = Optional.ofNullable(assetSummaryEntity)
+				.map(s -> createFromAssetSummaryEntity(s, objectMapper))
+				.orElse(null);
 
-		return new FileMetadatasReponse(
-				assetSummaryEntity.getMimeType(),
-				specifications);
+		final var renderedReponse = Optional.ofNullable(renderedFiles)
+				.stream()
+				.flatMap(Set::stream)
+				.map(AssetRenderedFileEntity::toRenderedReponse)
+				.collect(toUnmodifiableSet());
+
+		return new FileMetadatasReponse(summaryResponse, renderedReponse);
 	}
 
 }

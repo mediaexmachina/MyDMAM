@@ -17,7 +17,7 @@
 package media.mexm.mydmam.dto;
 
 import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_MAP_STRING_STRING;
-import static media.mexm.mydmam.dto.FileMetadatasReponse.createFromAssetSummaryEntity;
+import static media.mexm.mydmam.dto.FileMetadatasSummaryResponse.createFromAssetSummaryEntity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,7 +35,7 @@ import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
 @ExtendWith(MockToolsExtendsJunit.class)
-class FileMetadatasReponseTest {
+class FileMetadatasSummaryReponseTest {
 
 	@Mock
 	AssetSummaryEntity assetSummaryEntity;

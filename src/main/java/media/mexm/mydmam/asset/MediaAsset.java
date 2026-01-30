@@ -23,6 +23,7 @@ import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +31,6 @@ import org.apache.commons.io.FilenameUtils;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.activity.MetadataExtractorHandler;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
@@ -46,7 +46,7 @@ public class MediaAsset {// TODO update tests
 	@Getter
 	private final FileEntity file;
 	private String mimeType;
-	private Map<File, AssetRenderedFileEntity> renderedFiles;
+	private Map<AssetRenderedFileEntity, File> renderedFiles;
 
 	public MediaAsset(final MediaAssetService service,
 					  final FileEntity file) {
@@ -109,22 +109,28 @@ public class MediaAsset {// TODO update tests
 		}
 	}
 
-	public synchronized void declareRenderedStaticFile(final File workingFile,
+	public synchronized void declareRenderedStaticFile(final DeclaredRenderedFile declaredRenderedFile,
 													   final int index,
-													   final String previewType) {
-		declareRenderedStaticFiles(List.of(workingFile), index, previewType);
+													   final String previewType) throws IOException {
+		declareRenderedStaticFiles(List.of(declaredRenderedFile), index, previewType);
 	}
 
-	public synchronized void declareRenderedStaticFiles(final List<File> workingFiles,
+	public synchronized void declareRenderedStaticFiles(final Collection<DeclaredRenderedFile> declaredRenderedFiles,
 														final int index,
-														final String previewType) {
-		final var declaredFiles = service.declareRenderedStaticFiles(workingFiles, index, previewType);
+														final String previewType) throws IOException {
+		final var declaredFiles = service.declareRenderedStaticFiles(this, declaredRenderedFiles, index, previewType);
 
 		if (renderedFiles == null) {
 			renderedFiles = declaredFiles;
 		} else {
 			renderedFiles.putAll(declaredFiles);
 		}
+	}
+
+	public Map<File, AssetRenderedFileEntity> getRenderedFiles() {// TODO2 implements
+		if (renderedFiles == null) {
+		}
+		return Map.of();
 	}
 
 	public synchronized void createFileMetadataEntries(final MetadataExtractorHandler originHandler,
@@ -137,12 +143,6 @@ public class MediaAsset {// TODO update tests
 
 	public synchronized void setSummarySpecifications(final Map<String, String> entries) {
 		// TODO2 implement
-	}
-
-	public Map<File, AssetRenderedFileEntity> getRenderedFiles() {// TODO2 implements
-		if (renderedFiles == null) {
-		}
-		return Map.of();
 	}
 
 }

@@ -14,13 +14,13 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.activity;
+package media.mexm.mydmam.asset;
 
 import java.io.File;
 import java.util.Optional;
 import java.util.Set;
 
-import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 
 public interface MetadataExtractorHandler extends ActivityHandler {

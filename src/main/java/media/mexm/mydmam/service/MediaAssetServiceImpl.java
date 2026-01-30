@@ -16,8 +16,19 @@
  */
 package media.mexm.mydmam.service;
 
+import static jakarta.transaction.Transactional.TxType.REQUIRES_NEW;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
+import static org.apache.commons.io.FileUtils.moveFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,8 +36,14 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.asset.DatabaseUpdateDirection;
+import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.component.MimeTypeDetector;
+import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
+import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.repository.AssetRenderedFileDao;
+import media.mexm.mydmam.repository.AssetRenderedFileRepository;
 import media.mexm.mydmam.repository.AssetSummaryDao;
 import media.mexm.mydmam.repository.AssetSummaryRepository;
 import media.mexm.mydmam.repository.FileRepository;
@@ -37,11 +54,19 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 public class MediaAssetServiceImpl implements MediaAssetService {
 
 	@Autowired
+	MyDMAMConfigurationProperties configuration;
+	@Autowired
 	FileRepository fileRepository;
 	@Autowired
 	AssetSummaryRepository assetSummaryRepository;
 	@Autowired
 	AssetSummaryDao assetSummaryDao;
+	@Autowired
+	AssetRenderedFileRepository assetRenderedFileRepository;
+	@Autowired
+	AssetRenderedFileDao assetRenderedFileDao;
+	@Autowired
+	MimeTypeDetector mimeTypeDetector;
 
 	@Override
 	public MediaAsset getFromWatchfolder(final String realmName,
@@ -84,12 +109,66 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 	}
 
 	@Override
-	@Transactional
-	public Map<File, AssetRenderedFileEntity> declareRenderedStaticFiles(final List<File> workingFiles,
+	@Transactional(REQUIRES_NEW)
+	public Map<AssetRenderedFileEntity, File> declareRenderedStaticFiles(final MediaAsset asset,
+																		 final Collection<DeclaredRenderedFile> declaredRenderedFiles,
 																		 final int index,
-																		 final String previewType) {
-		// TODO move files ! + implements
-		return Map.of();
+																		 final String previewType) throws IOException {
+		if (declaredRenderedFiles.isEmpty()) {
+			return Map.of();
+		}
+
+		final var fileEntity = asset.getFile();
+		final var renderedMetadataDirectory = Objects.requireNonNull(configuration.getRealmByName(fileEntity.getRealm())
+				.get()
+				.renderedMetadataDirectory());
+
+		final var distinctFileNamesCount = (int) declaredRenderedFiles.stream()
+				.map(DeclaredRenderedFile::getName)
+				.distinct()
+				.count();
+		if (distinctFileNamesCount != declaredRenderedFiles.size()) {
+			throw new IOException("Can't add files with same names: " + declaredRenderedFiles);
+		}
+
+		final var toCreate = declaredRenderedFiles.stream()
+				.map(rendered -> rendered.makeAssetRenderedFileEntity(fileEntity, index, previewType))
+				.toList();
+
+		assetRenderedFileRepository.saveAllAndFlush(toCreate);
+		final var createdEtags = toCreate.stream()
+				.map(AssetRenderedFileEntity::getEtag)
+				.collect(toUnmodifiableSet());
+		final var created = assetRenderedFileRepository.getRenderedForFileByEtags(fileEntity.getId(), createdEtags);
+
+		final var result = new HashMap<AssetRenderedFileEntity, File>();
+		for (final var renderedFileEntity : created) {
+			final var name = renderedFileEntity.getName();
+
+			final var declaredRenderedFile = declaredRenderedFiles.stream()
+					.filter(f -> f.getName().equals(name))
+					.findFirst()
+					.orElseThrow(() -> new IllegalStateException(
+							"Can't found " + name + " from " + declaredRenderedFiles));
+
+			final var renderedFile = new File(renderedMetadataDirectory + renderedFileEntity.getRelativePath())
+					.getAbsoluteFile()
+					.getCanonicalFile();
+
+			if (renderedFile.exists()) {
+				throw new IOException("Can't move move rendered file " + renderedFileEntity + " to " + renderedFile
+									  + ", file exists");
+			}
+
+			log.debug("Start to move rendered file from \"{}\" to \"{}\" [via {}]",
+					declaredRenderedFile.getWorkingFile(), renderedFile, renderedFileEntity);
+
+			moveFile(declaredRenderedFile.getWorkingFile(), renderedFile);
+
+			result.put(renderedFileEntity, renderedFile);
+		}
+
+		return unmodifiableMap(result);
 	}
 
 }

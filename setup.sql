@@ -54,3 +54,19 @@ CREATE TABLE `asset_summary` (
   KEY `asset_summary_file_id_idx` (`file_id`),
   CONSTRAINT asset_summary_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `asset_renderedfile` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `create_date` datetime NOT NULL,
+  `file_id` int NOT NULL,
+  `name` varchar(256) NOT NULL,
+  `indexref` int NOT NULL,
+  `length` bigint NOT NULL,
+  `preview_type` varchar(128) NOT NULL,
+  `mime_type` varchar(128) NOT NULL,
+  `encoded` varchar(16) NOT NULL,
+  `etag` bigint NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `asset_renderedfile_file_id_idx` (`file_id`),
+  CONSTRAINT asset_renderedfile_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

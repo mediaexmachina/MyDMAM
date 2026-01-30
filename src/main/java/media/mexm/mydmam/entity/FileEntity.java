@@ -134,6 +134,9 @@ public class FileEntity {
 	@OneToOne(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE, optional = true)
 	private AssetSummaryEntity assetSummary;
 
+	@OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
+	private final Set<AssetRenderedFileEntity> assetRenderedFiles = new HashSet<>();
+
 	/**
 	 * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE
 	 */

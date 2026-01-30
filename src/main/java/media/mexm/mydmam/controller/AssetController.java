@@ -43,8 +43,7 @@ import tv.hd3g.jobkit.engine.JobKitEngine;
 @RestController
 @Validated
 @Slf4j
-@RequestMapping(value = CONTROLLER_BASE_MAPPING_API_PATH + "/asset",
-				produces = APPLICATION_JSON_VALUE)
+@RequestMapping(value = CONTROLLER_BASE_MAPPING_API_PATH + "/asset")
 public class AssetController {
 
 	@Autowired
@@ -54,7 +53,7 @@ public class AssetController {
 	@Autowired
 	JobKitEngine jobKitEngine;
 
-	@PostMapping(value = "/reset-activities/{realm}")
+	@PostMapping(value = "/reset-activities/{realm}", produces = APPLICATION_JSON_VALUE)
 	@Transactional
 	public ResponseEntity<Void> resetActivities(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
 												@RequestBody @Validated final ResetActivitiesRequest request) {

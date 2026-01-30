@@ -16,8 +16,15 @@
  */
 package media.mexm.mydmam.service;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+
 import media.mexm.mydmam.asset.DatabaseUpdateDirection;
+import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
@@ -34,4 +41,10 @@ public interface MediaAssetService {
 
 	String updateMimeType(MediaAsset asset, DatabaseUpdateDirection direction);
 
+	Map<AssetRenderedFileEntity, File> declareRenderedStaticFiles(MediaAsset asset,
+																  Collection<DeclaredRenderedFile> declaredRenderedFiles,
+																  int index,
+																  String previewType) throws IOException;
+
+	// TODO Map<FileEntity, Set<AssetRenderedFileEntity>> getAllRenderedFiles(final Set<String> fileHashpaths, String realm);
 }

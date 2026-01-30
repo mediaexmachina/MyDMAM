@@ -78,6 +78,7 @@ export class NavigatorFolderComponent {
                 skip,
                 this.listResultCount(),
                 true,
+                true,
                 this.currentSortOrder["name"],
                 this.currentSortOrder["type"],
                 this.currentSortOrder["date"],
@@ -89,6 +90,7 @@ export class NavigatorFolderComponent {
                 hashPath,
                 skip,
                 this.listResultCount(),
+                true,
                 true,
                 this.currentSortOrder["name"],
                 this.currentSortOrder["type"],
@@ -259,7 +261,7 @@ export class NavigatorFolderComponent {
     getFileType(hashPath:string):string {
         const metadatas = this.dirListResponse()?.metadatas || {};
         if (hashPath in metadatas) {
-            return metadatas[hashPath].mimeType;
+            return metadatas[hashPath].summary.mimeType;
         }
         return "File";
     }

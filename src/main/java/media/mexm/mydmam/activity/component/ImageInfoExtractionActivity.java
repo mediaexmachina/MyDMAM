@@ -25,10 +25,12 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.HandlingResult;
-import media.mexm.mydmam.activity.MetadataExtractorHandler;
+import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.asset.MetadataExtractorHandler;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.ImageMagick;
+import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 
 @Component
@@ -41,6 +43,8 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler { /
 	AuditTrail auditTrail;
 	@Autowired
 	ImageMagick imageMagick;
+	@Autowired
+	MimeTypeDetector mimeTypeDetector;
 
 	@Override
 	public Set<String> getManagedMimeTypes() {
@@ -103,13 +107,15 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler { /
 								 final ActivityEventType eventType,
 								 final RealmStorageConfiguredEnv storedOn) throws Exception {
 		final var assetFile = asset.getLocalInternalFile(storedOn.storage());
-		final var workingFile = makeWorkingFile("identify.json.gz", asset, storedOn);
+		final var workingFile = makeWorkingFile("identify.json", asset, storedOn);
 
 		final var jsonNode = imageMagick.extractIdentifyJsonFile(
 				assetFile,
 				workingFile);
 
-		asset.declareRenderedStaticFile(workingFile, 0, PREVIEW_TYPE);
+		asset.declareRenderedStaticFile(
+				new DeclaredRenderedFile(workingFile, "identify.json", true, mimeTypeDetector),
+				0, PREVIEW_TYPE);
 
 		final var version = jsonNode.read("$.version", String.class).orElse("<unset>");
 		if (version.equals("1.0") == false) {
