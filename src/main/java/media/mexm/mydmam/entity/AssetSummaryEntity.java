@@ -38,8 +38,8 @@ import lombok.ToString;
 @Entity
 @Table(name = AssetSummaryEntity.TABLE_NAME,
 	   indexes = {
-				   @Index(columnList = "uuid", name = AssetSummaryEntity.TABLE_NAME + "_uuid_idx"),
-				   @Index(columnList = "mime_type", name = AssetSummaryEntity.TABLE_NAME + "_mime_type_idx")
+				   @Index(columnList = "mime_type", name = AssetSummaryEntity.TABLE_NAME + "_mime_type_idx"),
+				   @Index(columnList = "file_id", name = AssetSummaryEntity.TABLE_NAME + "_file_id_idx")
 	   })
 @Getter
 @ToString

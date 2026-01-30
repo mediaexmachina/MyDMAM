@@ -42,7 +42,8 @@ import media.mexm.mydmam.activity.ActivityHandler;
 @Table(name = PendingActivityEntity.TABLE_NAME,
 	   indexes = {
 				   @Index(columnList = "worker_host", name = PendingActivityEntity.TABLE_NAME + "_worker_host_idx"),
-				   @Index(columnList = "updated", name = PendingActivityEntity.TABLE_NAME + "_updated_idx")
+				   @Index(columnList = "updated", name = PendingActivityEntity.TABLE_NAME + "_updated_idx"),
+				   @Index(columnList = "file_id", name = PendingActivityEntity.TABLE_NAME + "_file_id_idx")
 	   })
 @Getter
 @ToString
