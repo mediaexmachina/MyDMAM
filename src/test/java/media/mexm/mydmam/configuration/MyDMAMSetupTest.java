@@ -27,7 +27,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.sqlite.SQLiteConfig;
 
 import eu.medsea.mimeutil.MimeUtil2;
+import media.mexm.mydmam.tools.ImageMagick;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
+import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 
 @SpringBootTest(webEnvironment = WebEnvironment.NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
@@ -40,6 +42,10 @@ class MyDMAMSetupTest {
 	MimeUtil2 magicMimeUtil;
 	@Autowired
 	MimeUtil2 extensionMimeUtil;
+	@Autowired
+	ExecutableFinder executableFinder;
+	@Autowired
+	ImageMagick imageMagick;
 
 	@Test
 	void testGetSqliteConfig() {
@@ -55,6 +61,16 @@ class MyDMAMSetupTest {
 	@Test
 	void testGetExtensionMimeDetector() {
 		assertThat(extensionMimeUtil.getClass()).isAssignableTo(MimeUtil2.class);
+	}
+
+	@Test
+	void testGetExecutableFinder() {
+		assertThat(executableFinder.getClass()).isAssignableTo(ExecutableFinder.class);
+	}
+
+	@Test
+	void testGetImageMagick() {
+		assertThat(imageMagick.getClass()).isAssignableTo(ImageMagick.class);
 	}
 
 }

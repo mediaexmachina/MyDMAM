@@ -26,15 +26,15 @@ public record RealmStorageConfiguredEnv(String realmName,
 										RealmConf realm,
 										PathIndexingStorage storage) {
 
-	public boolean isDAS() {// TODO test
-		return DAS.equals(storage().getCategory());
+	public boolean isDAS() {
+		return DAS.equals(storage.getCategory());
 	}
 
-	public boolean haveWorkingDir() {// TODO test
+	public boolean haveWorkingDir() {
 		return realm.workingDirectory() != null;
 	}
 
-	public boolean haveRenderedDir() {// TODO test
+	public boolean haveRenderedDir() {
 		return realm.renderedMetadataDirectory() != null;
 	}
 

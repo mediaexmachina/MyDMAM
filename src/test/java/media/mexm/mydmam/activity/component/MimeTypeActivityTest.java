@@ -17,9 +17,6 @@
 package media.mexm.mydmam.activity.component;
 
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE_MIME_TYPE;
-import static media.mexm.mydmam.dto.StorageCategory.DAS;
-import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
-import static media.mexm.mydmam.dto.StorageCategory.NAS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
@@ -82,17 +79,13 @@ class MimeTypeActivityTest {
 
 	@Test
 	void testCanHandle() {
-		when(storedOn.storage()).thenReturn(pathIndexingStorage);
-
-		when(pathIndexingStorage.getCategory()).thenReturn(DAS);
+		when(storedOn.isDAS()).thenReturn(true);
 		assertTrue(mta.canHandle(asset, eventType, storedOn));
 
-		when(pathIndexingStorage.getCategory()).thenReturn(NAS, EXTERNAL);
-		assertFalse(mta.canHandle(asset, eventType, storedOn));
+		when(storedOn.isDAS()).thenReturn(false);
 		assertFalse(mta.canHandle(asset, eventType, storedOn));
 
-		verify(storedOn, atLeastOnce()).storage();
-		verify(pathIndexingStorage, atLeastOnce()).getCategory();
+		verify(storedOn, times(2)).isDAS();
 	}
 
 	@Test

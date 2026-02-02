@@ -14,7 +14,7 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.component;
+package media.mexm.mydmam.tools;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static java.lang.Runtime.getRuntime;
@@ -32,9 +32,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
@@ -42,8 +39,9 @@ import com.jayway.jsonpath.JsonPath;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.component.XmlMapperWrapper;
+import media.mexm.mydmam.configuration.MagickConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.tools.JsonPathHelper;
 import tv.hd3g.processlauncher.CapturedStdOutErrTextRetention;
 import tv.hd3g.processlauncher.ExecutionTimeLimiter;
 import tv.hd3g.processlauncher.ProcesslauncherBuilder;
@@ -51,36 +49,43 @@ import tv.hd3g.processlauncher.cmdline.CommandLine;
 import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 import tv.hd3g.processlauncher.cmdline.Parameters;
 
-@Component
 @Slf4j
 public class ImageMagick {
 
+	public static final String EXEC_NAME = "magick";
 	private static final String POLICY_RESOURCE = "resource";
 	private static final String POLICY_CODER = "coder";
-	public static final String EXEC_NAME = "magick";
+
 	private final ExecutableFinder executableFinder;
-	private final ExecutionTimeLimiter executionTimeLimiter;
-	private final File magickConfigurationDir;
+	private final ScheduledExecutorService maxExecTimeScheduler;
+	private final MyDMAMConfigurationProperties configuration;
+	private final XmlMapperWrapper xmlMapper;
 	private final ObjectMapper objectMapper;
+
+	private File magickConfigurationDir;
+	private ExecutionTimeLimiter executionTimeLimiter;
 
 	@Getter
 	private String magickVersion;
 	@Getter
 	private boolean enabled;
 
-	public ImageMagick(@Autowired final ExecutableFinder executableFinder,
-					   @Autowired final ScheduledExecutorService maxExecTimeScheduler,
-					   @Autowired final MyDMAMConfigurationProperties configuration,
-					   @Autowired final XmlMapperWrapper xmlMapper,
-					   @Autowired final ObjectMapper objectMapper) {
+	public ImageMagick(final ExecutableFinder executableFinder,
+					   final ScheduledExecutorService maxExecTimeScheduler,
+					   final MyDMAMConfigurationProperties configuration,
+					   final XmlMapperWrapper xmlMapper,
+					   final ObjectMapper objectMapper) {
 		this.executableFinder = executableFinder;
+		this.maxExecTimeScheduler = maxExecTimeScheduler;
+		this.configuration = configuration;
+		this.xmlMapper = xmlMapper;
 		this.objectMapper = objectMapper;
+		enabled = false;
+	}
+
+	public void init() {
 		final var magickConf = configuration.magick();
 		if (magickConf == null) {
-			enabled = false;
-			magickVersion = null;
-			magickConfigurationDir = null;
-			executionTimeLimiter = null;
 			return;
 		}
 
@@ -93,58 +98,11 @@ public class ImageMagick {
 			execFile = executableFinder.get(EXEC_NAME);
 		} catch (final FileNotFoundException e) {
 			log.warn("Can't found ImageMagick binary ({}), disable all operations with it", EXEC_NAME);
-			enabled = false;
-			magickVersion = null;
-			magickConfigurationDir = null;
 			return;
 		}
 
-		try {
-			magickConfigurationDir = new File(magickConf.confDir())
-					.getAbsoluteFile()
-					.getCanonicalFile();
-			forceMkdir(magickConfigurationDir);
-
-			final var tempDir = new File(magickConf.tempDir())
-					.getAbsoluteFile()
-					.getCanonicalFile();
-			forceMkdir(tempDir);
-
-			log.debug("Write to {} the policy.xml file, with {} as temp directory", magickConfigurationDir, tempDir);
-
-			final var maxThreadCount = magickConf.maxThreadCount();
-			final var availableProcessors = getRuntime().availableProcessors();
-			final var usableProcessors = availableProcessors == 1 ? 1 : availableProcessors / 2;
-			final var cpuCount = maxThreadCount == 0 ? usableProcessors : maxThreadCount;
-
-			final List<Policy> policies = List.of(
-					new PolicyRight(POLICY_CODER, "none", "HTTP"),
-					new PolicyRight(POLICY_CODER, "none", "HTTPS"),
-					new PolicyRight(POLICY_CODER, "none", "FTP"),
-					new PolicyRight("delegate", "none", "*"),
-					new PolicyRight("filter", "none", "*"),
-					new PolicyRight("path", "none", "@*"),
-					new PolicyRight("module", "none", "{MSL,MVG,PS,SVG,URL,XPS}"),
-					new PolicyKV(POLICY_RESOURCE, "time", String.valueOf(magickMaxExecTimeSeconds)),
-					new PolicyKV(POLICY_RESOURCE, "thread", String.valueOf(cpuCount)),
-					new PolicyKV(POLICY_RESOURCE, "memory", magickConf.maxMemory() + "MiB"),
-					new PolicyKV(POLICY_RESOURCE, "map", magickConf.maxMap() + "MiB"),
-					new PolicyKV(POLICY_RESOURCE, "disk", magickConf.maxDisk() + "MiB"),
-					new PolicyKV(POLICY_RESOURCE, "width", magickConf.maxWidth() + "P"),
-					new PolicyKV(POLICY_RESOURCE, "height", magickConf.maxHeight() + "P"),
-					new PolicyKV(POLICY_RESOURCE, "temporary-path", tempDir.getPath()),
-					new PolicyKV("cache", "synchronize", "true"),
-					new PolicyKV("system", "memory-map", "anonymous"),
-					new PolicyKV("system", "max-memory-request", magickConf.maxMemoryRequest() + "MiB"));
-
-			xmlMapper.getXmlMapper().writer()
-					.withRootName("policymap")
-					.with(INDENT_OUTPUT)
-					.writeValue(new File(magickConfigurationDir, "policy.xml"), new Policymap(policies));
-
-		} catch (final IOException e) {
-			throw new UncheckedIOException("Can't write policy.xml file", e);
-		}
+		final var tempDir = prepareTempDir(magickConf);
+		magickConfigurationDir = preparePolicyFile(xmlMapper, magickConf, magickMaxExecTimeSeconds, tempDir);
 
 		try {
 			magickVersion = getVersion();
@@ -157,7 +115,74 @@ public class ImageMagick {
 			enabled = true;
 		} catch (final IOException e) {
 			log.error("Can't exec ImageMagick, disable all operations with it", e);
-			enabled = false;
+		}
+	}
+
+	/**
+	 * @return configurationDir
+	 */
+	private static File preparePolicyFile(final XmlMapperWrapper xmlMapper,
+										  final MagickConf magickConf,
+										  final long magickMaxExecTimeSeconds,
+										  final File tempDir) {
+		try {
+			final var configurationDir = new File(magickConf.confDir())
+					.getAbsoluteFile()
+					.getCanonicalFile();
+			forceMkdir(configurationDir);
+
+			final var policyFile = new File(configurationDir, "policy.xml");
+
+			if (policyFile.exists() == false) {
+				log.info("Write to {} the policy file", policyFile);
+
+				final var maxThreadCount = magickConf.maxThreadCount();
+				final var availableProcessors = getRuntime().availableProcessors();
+				final var usableProcessors = availableProcessors == 1 ? 1 : availableProcessors / 2;
+				final var cpuCount = maxThreadCount == 0 ? usableProcessors : maxThreadCount;
+
+				final List<Policy> policies = List.of(
+						new PolicyRight(POLICY_CODER, "none", "HTTP"),
+						new PolicyRight(POLICY_CODER, "none", "HTTPS"),
+						new PolicyRight(POLICY_CODER, "none", "FTP"),
+						new PolicyRight("delegate", "none", "*"),
+						new PolicyRight("filter", "none", "*"),
+						new PolicyRight("path", "none", "@*"),
+						new PolicyRight("module", "none", "{MSL,MVG,PS,SVG,URL,XPS}"),
+						new PolicyKV(POLICY_RESOURCE, "time", String.valueOf(magickMaxExecTimeSeconds)),
+						new PolicyKV(POLICY_RESOURCE, "thread", String.valueOf(cpuCount)),
+						new PolicyKV(POLICY_RESOURCE, "memory", magickConf.maxMemory() + "MiB"),
+						new PolicyKV(POLICY_RESOURCE, "map", magickConf.maxMap() + "MiB"),
+						new PolicyKV(POLICY_RESOURCE, "disk", magickConf.maxDisk() + "MiB"),
+						new PolicyKV(POLICY_RESOURCE, "width", magickConf.maxWidth() + "P"),
+						new PolicyKV(POLICY_RESOURCE, "height", magickConf.maxHeight() + "P"),
+						new PolicyKV(POLICY_RESOURCE, "temporary-path", tempDir.getPath()),
+						new PolicyKV("cache", "synchronize", "true"),
+						new PolicyKV("system", "memory-map", "anonymous"),
+						new PolicyKV("system", "max-memory-request", magickConf.maxMemoryRequest() + "MiB"));
+
+				xmlMapper.getXmlMapper().writer()
+						.withRootName("policymap")
+						.with(INDENT_OUTPUT)
+						.writeValue(policyFile, new Policymap(policies));
+			}
+			return configurationDir;
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Can't prepare/write policy.xml file", e);
+		}
+	}
+
+	private static File prepareTempDir(final MagickConf magickConf) {
+		final File tempDir;
+		try {
+			tempDir = new File(magickConf.tempDir())
+					.getAbsoluteFile()
+					.getCanonicalFile();
+			forceMkdir(tempDir);
+			log.debug("Use {} as temp directory", tempDir);
+			return tempDir;
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Can't prepare magick temp directory: " + magickConf.tempDir(), e);
 		}
 	}
 

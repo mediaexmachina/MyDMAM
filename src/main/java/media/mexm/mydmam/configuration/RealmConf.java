@@ -66,7 +66,7 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
 		}
 	}
 
-	static void checkDirectory(final File directory, final String name) { // TODO update test
+	static void checkDirectory(final File directory, final String name) {
 		if (directory == null) {
 			return;
 		}
@@ -129,7 +129,7 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
 				throw new FileNotFoundException("No workingDirectory is set for realm");
 			}
 			final var result = File.createTempFile(referer.getSimpleName(), name, workingDirectory).getCanonicalFile();
-			log.debug("Create/prepare temp file for realm: {}" + result);
+			log.debug("Create/prepare temp file for realm: {}", result);
 			forceDelete(result);
 			return result;
 		} catch (final IOException e) {

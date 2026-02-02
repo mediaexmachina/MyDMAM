@@ -26,18 +26,16 @@ import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.entity.AssetSummaryEntity;
 
 public record FileMetadatasSummaryResponse(String mimeType,
-										  Map<String, String> specifications) { // TODO move test
+										   Map<String, String> specifications) {
 
-	public static FileMetadatasSummaryResponse createFromAssetSummaryEntity(final AssetSummaryEntity assetSummaryEntity,
-																		   final InternalObjectMapper objectMapper) {
+	public FileMetadatasSummaryResponse(final AssetSummaryEntity assetSummaryEntity,
+										final InternalObjectMapper objectMapper) {
 		final var specifications = Optional.ofNullable(assetSummaryEntity.getSpecifications())
 				.filter(not(String::isEmpty))
 				.map(s -> objectMapper.readValue(s, TYPE_MAP_STRING_STRING))
 				.orElse(Map.of());
 
-		return new FileMetadatasSummaryResponse(
-				assetSummaryEntity.getMimeType(),
-				specifications);
+		this(assetSummaryEntity.getMimeType(), specifications);
 	}
 
 }

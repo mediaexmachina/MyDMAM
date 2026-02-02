@@ -26,7 +26,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lombok.Getter;
 
 @Component
-public class XmlMapperWrapper { // TODO test
+public class XmlMapperWrapper {
 
 	@Getter
 	private final XmlMapper xmlMapper;

@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.asset;
 
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 import static media.mexm.mydmam.asset.DatabaseUpdateDirection.GET_FROM_DB;
 import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
@@ -24,8 +25,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -39,7 +41,7 @@ import tv.hd3g.transfertfiles.AbstractFileSystemURL;
 import tv.hd3g.transfertfiles.local.LocalFile;
 
 @Slf4j
-public class MediaAsset {// TODO update tests
+public class MediaAsset {
 
 	@Getter
 	private final MediaAssetService service;
@@ -112,7 +114,7 @@ public class MediaAsset {// TODO update tests
 	public synchronized void declareRenderedStaticFile(final DeclaredRenderedFile declaredRenderedFile,
 													   final int index,
 													   final String previewType) throws IOException {
-		declareRenderedStaticFiles(List.of(declaredRenderedFile), index, previewType);
+		declareRenderedStaticFiles(Set.of(declaredRenderedFile), index, previewType);
 	}
 
 	public synchronized void declareRenderedStaticFiles(final Collection<DeclaredRenderedFile> declaredRenderedFiles,
@@ -121,16 +123,17 @@ public class MediaAsset {// TODO update tests
 		final var declaredFiles = service.declareRenderedStaticFiles(this, declaredRenderedFiles, index, previewType);
 
 		if (renderedFiles == null) {
-			renderedFiles = declaredFiles;
+			renderedFiles = new HashMap<>(declaredFiles);
 		} else {
 			renderedFiles.putAll(declaredFiles);
 		}
 	}
 
-	public Map<File, AssetRenderedFileEntity> getRenderedFiles() {// TODO2 implements
+	public Map<AssetRenderedFileEntity, File> getRenderedFiles() {// TODO2 implements
 		if (renderedFiles == null) {
+			return Map.of();
 		}
-		return Map.of();
+		return unmodifiableMap(renderedFiles);
 	}
 
 	public synchronized void createFileMetadataEntries(final MetadataExtractorHandler originHandler,

@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import media.mexm.mydmam.service.PendingActivityService;
+import media.mexm.mydmam.tools.ImageMagick;
 
 @Component
 public class Startup implements InitializingBean {
@@ -33,9 +34,12 @@ public class Startup implements InitializingBean {
 	AuditTrail auditTrail;
 	@Autowired
 	Indexer indexer;
+	@Autowired
+	ImageMagick imageMagick;
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
+		imageMagick.init();
 		auditTrail.init();
 		indexer.init();
 		pendingActivityService.restartPendingActivities();

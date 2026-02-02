@@ -25,7 +25,7 @@ import com.jayway.jsonpath.TypeRef;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public record JsonPathHelper(DocumentContext document) {// TODO test
+public record JsonPathHelper(DocumentContext document) {
 
 	public <T> Optional<T> read(final String path, final Class<T> type) {
 		try {

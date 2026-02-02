@@ -17,7 +17,6 @@
 package media.mexm.mydmam.dto;
 
 import static java.util.stream.Collectors.toUnmodifiableSet;
-import static media.mexm.mydmam.dto.FileMetadatasSummaryResponse.createFromAssetSummaryEntity;
 
 import java.util.Optional;
 import java.util.Set;
@@ -27,13 +26,13 @@ import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.AssetSummaryEntity;
 
 public record FileMetadatasReponse(FileMetadatasSummaryResponse summary,
-								   Set<FileMetadatasRenderedReponse> rendered) {// TODO test
+								   Set<FileMetadatasRenderedReponse> rendered) {
 
-	public static FileMetadatasReponse createFromEntities(final AssetSummaryEntity assetSummaryEntity,
-														  final Set<AssetRenderedFileEntity> renderedFiles,
-														  final InternalObjectMapper objectMapper) {
+	public FileMetadatasReponse(final AssetSummaryEntity assetSummaryEntity,
+								final Set<AssetRenderedFileEntity> renderedFiles,
+								final InternalObjectMapper objectMapper) {
 		final var summaryResponse = Optional.ofNullable(assetSummaryEntity)
-				.map(s -> createFromAssetSummaryEntity(s, objectMapper))
+				.map(s -> new FileMetadatasSummaryResponse(s, objectMapper))
 				.orElse(null);
 
 		final var renderedReponse = Optional.ofNullable(renderedFiles)
@@ -42,7 +41,7 @@ public record FileMetadatasReponse(FileMetadatasSummaryResponse summary,
 				.map(AssetRenderedFileEntity::toRenderedReponse)
 				.collect(toUnmodifiableSet());
 
-		return new FileMetadatasReponse(summaryResponse, renderedReponse);
+		this(summaryResponse, renderedReponse);
 	}
 
 }

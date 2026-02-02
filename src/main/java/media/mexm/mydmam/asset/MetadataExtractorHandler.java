@@ -30,7 +30,7 @@ public interface MetadataExtractorHandler extends ActivityHandler {
 	 */
 	Set<String> getManagedMimeTypes();
 
-	default boolean canHandleMimeType(final MediaAsset asset) {// TODO test
+	default boolean canHandleMimeType(final MediaAsset asset) {
 		return Optional.ofNullable(asset.getMimeType())
 				.map(mimeType -> getManagedMimeTypes().contains(mimeType))
 				.orElse(false);
@@ -38,7 +38,7 @@ public interface MetadataExtractorHandler extends ActivityHandler {
 
 	default File makeWorkingFile(final String fileName,
 								 final MediaAsset asset,
-								 final RealmStorageConfiguredEnv storedOn) {// TODO test
+								 final RealmStorageConfiguredEnv storedOn) {
 		return storedOn.realm().makeWorkingFile(
 				asset.getFile().getId() + "-" + fileName,
 				getClass());

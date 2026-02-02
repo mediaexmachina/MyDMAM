@@ -74,13 +74,11 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @SpringBootTest(webEnvironment = NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
-@ActiveProfiles({ "Default" })
+@ActiveProfiles({ "Default", "MockActivityHandler" })
 class PendingActivityServiceTest {
 
 	@MockitoBean
 	PendingActivityDao pendingActivityDao;
-	@MockitoBean
-	ActivityHandler activityHandler;
 	@MockitoBean
 	MediaAssetService mediaAssetService;
 	@MockitoBean
@@ -142,10 +140,13 @@ class PendingActivityServiceTest {
 	FlatJobKitEngine jobKitEngine;
 	@Autowired
 	PendingActivityService pas;
+	@Autowired
+	ActivityHandler activityHandler;
 
 	@BeforeEach
 	void init() throws Exception {
 		configuredEnv = new RealmStorageConfiguredEnv(realmName, storageName, realm, storage);
+
 		oIndexer = Optional.ofNullable(realmIndexer);
 
 		when(activityHandler.getHandlerName()).thenReturn(handlerName);
@@ -172,6 +173,8 @@ class PendingActivityServiceTest {
 		when(fileEntity.getRealm()).thenReturn(realmName);
 		when(fileEntity.getStorage()).thenReturn(storageName);
 		when(fileEntity.getHashPath()).thenReturn(hashPathItem);
+
+		when(storage.getStorageStateClass()).thenReturn(ONLINE);
 	}
 
 	@AfterEach
@@ -213,6 +216,7 @@ class PendingActivityServiceTest {
 			final Set<String> emptySet = Set.of();
 			assertThrows(IllegalArgumentException.class,
 					() -> pas.startsActivities(realmName, emptySet, recursive, eventType));
+			verify(activityHandler, times(3)).getSupportedStorageStateClasses();
 		}
 
 		@Test
@@ -225,6 +229,7 @@ class PendingActivityServiceTest {
 
 			verify(fileService, times(1))
 					.resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
+			verify(activityHandler, times(2)).getSupportedStorageStateClasses();
 		}
 
 		@Test
@@ -243,7 +248,7 @@ class PendingActivityServiceTest {
 			verify(fileService, times(1))
 					.resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
 			verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
-			verify(activityHandler, times(1)).getSupportedStorageStateClasses();
+			verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
 			verify(activityHandler, times(1)).canHandle(asset, eventType, configuredEnv);
 			verify(mediaAssetService, times(1)).getFromFileEntry(subFileEntry, mediaAssetService);
 			verify(aboutInstance, atLeastOnce()).getInstanceName();
@@ -251,6 +256,8 @@ class PendingActivityServiceTest {
 			verify(subFileEntry, atLeastOnce()).getRealm();
 			verify(subFileEntry, atLeastOnce()).getStorage();
 			verify(subFileEntry, atLeastOnce()).isDirectory();
+			verify(storage, atLeastOnce()).getStorageStateClass();
+			verify(storage, atLeastOnce()).getCategory();
 		}
 
 		@Test
@@ -267,7 +274,7 @@ class PendingActivityServiceTest {
 			verify(fileService, times(1))
 					.resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
 			verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
-			verify(activityHandler, times(1)).getSupportedStorageStateClasses();
+			verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
 			verify(activityHandler, times(1)).canHandle(asset, eventType, configuredEnv);
 			verify(mediaAssetService, times(1)).getFromFileEntry(subFileEntry, mediaAssetService);
 			verify(aboutInstance, atLeastOnce()).getInstanceName();
@@ -275,6 +282,8 @@ class PendingActivityServiceTest {
 			verify(subFileEntry, atLeastOnce()).getRealm();
 			verify(subFileEntry, atLeastOnce()).getStorage();
 			verify(subFileEntry, atLeastOnce()).isDirectory();
+			verify(storage, atLeastOnce()).getStorageStateClass();
+			verify(storage, atLeastOnce()).getCategory();
 		}
 
 		@Test
@@ -289,6 +298,7 @@ class PendingActivityServiceTest {
 			verify(fileService, times(1))
 					.resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
 			verify(subFileEntry, atLeastOnce()).isDirectory();
+			verify(activityHandler, times(3)).getSupportedStorageStateClasses();
 		}
 
 	}
@@ -318,7 +328,7 @@ class PendingActivityServiceTest {
 			verify(realm, atLeastOnce()).spoolProcessAsset();
 			verify(activityHandler, times(1)).canHandle(asset, eventType, configuredEnv);
 			verify(activityHandler, atLeastOnce()).getHandlerName();
-			verify(activityHandler, times(1)).getSupportedStorageStateClasses();
+			verify(activityHandler, times(2)).getSupportedStorageStateClasses();
 			verify(asset, atLeastOnce()).getName();
 			verify(asset, atLeastOnce()).getFile();
 			verify(fileEntity, atLeastOnce()).isDirectory();
@@ -330,6 +340,8 @@ class PendingActivityServiceTest {
 			verify(pendingActivityDao, times(2)).declateActivities(anyList(), eq(hostName), eq(pid));
 			verify(pendingActivityDao, times(1)).haveDeclaredActivity(fileEntity, activityHandler);
 			verify(configuration, times(1)).getRealmAndStorage(realmName, storageName);
+			verify(storage, atLeastOnce()).getStorageStateClass();
+			verify(storage, atLeastOnce()).getCategory();
 		}
 	}
 
@@ -367,6 +379,8 @@ class PendingActivityServiceTest {
 		verify(pendingActivityDao, times(2)).declateActivities(anyList(), eq(hostName), eq(pid));
 		verify(pendingActivityDao, times(1)).haveDeclaredActivity(fileEntity, activityHandler);
 		verify(realm, atLeastOnce()).spoolProcessAsset();
+		verify(storage, atLeastOnce()).getStorageStateClass();
+		verify(storage, atLeastOnce()).getCategory();
 	}
 
 	@Test
@@ -438,12 +452,16 @@ class PendingActivityServiceTest {
 			verify(realm, atLeastOnce()).spoolProcessAsset();
 			verify(asset, atLeastOnce()).getName();
 			verify(asset, atLeastOnce()).getFile();
+			verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
+			verify(storage, atLeastOnce()).getStorageStateClass();
+			verify(storage, atLeastOnce()).getCategory();
 		}
 
 		@Test
-		void test_unknownHander() { // NOSONAR S2699
+		void test_unknownHander() {
 			when(entity.getHandlerName()).thenReturn(unknownHander);
 			pas.restartPendingActivities();
+			verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
 		}
 
 	}

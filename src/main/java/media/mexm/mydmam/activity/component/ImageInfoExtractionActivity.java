@@ -29,13 +29,13 @@ import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.asset.MetadataExtractorHandler;
 import media.mexm.mydmam.component.AuditTrail;
-import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
+import media.mexm.mydmam.tools.ImageMagick;
 
 @Component
 @Slf4j
-public class ImageInfoExtractionActivity implements MetadataExtractorHandler { // TODO test
+public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
 
 	private static final String PREVIEW_TYPE = "image-format";
 
@@ -113,14 +113,14 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler { /
 				assetFile,
 				workingFile);
 
-		asset.declareRenderedStaticFile(
-				new DeclaredRenderedFile(workingFile, "identify.json", true, mimeTypeDetector),
-				0, PREVIEW_TYPE);
-
 		final var version = jsonNode.read("$.version", String.class).orElse("<unset>");
 		if (version.equals("1.0") == false) {
 			throw new IllegalArgumentException("Can't support JSON version " + version);
 		}
+
+		asset.declareRenderedStaticFile(
+				new DeclaredRenderedFile(workingFile, "identify.json", true, mimeTypeDetector),
+				0, PREVIEW_TYPE);
 
 		jsonNode.read("$.image.mimeType", String.class).ifPresent(asset::setMimeType);
 

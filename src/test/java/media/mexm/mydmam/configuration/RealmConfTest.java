@@ -17,6 +17,7 @@
 package media.mexm.mydmam.configuration;
 
 import static java.util.function.Predicate.not;
+import static media.mexm.mydmam.configuration.RealmConf.checkDirectory;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
 import static media.mexm.mydmam.dto.StorageCategory.NAS;
@@ -74,6 +75,8 @@ class RealmConfTest {
 	String realmName;
 	@Fake(min = 1, max = 10000)
 	long duration;
+	@Fake
+	String workingFileName;
 
 	Duration timeBetweenScans;
 	File workingDirectory;
@@ -272,6 +275,58 @@ class RealmConfTest {
 	void testGetStorageByName() {
 		assertThat(conf.getStorageByName(storageName)).contains(piStorage);
 		assertThat(conf.getStorageByName("NOPE")).isEmpty();
+	}
+
+	@Nested
+	class CheckDirectory {
+
+		@Fake
+		String name;
+
+		@Test
+		void testNull() {
+			checkDirectory(null, name);
+		}
+
+		@Test
+		void testDirExists() {
+			checkDirectory(workingDirectory, name);
+			assertThat(workingDirectory).exists().isDirectory();
+		}
+
+		@Test
+		void testDirNotExists() throws IOException {
+			forceDelete(workingDirectory);
+			checkDirectory(workingDirectory, name);
+			assertThat(workingDirectory).exists().isDirectory();
+		}
+
+		@Test
+		void testIsNotADir() throws IOException {
+			forceDelete(workingDirectory);
+			workingDirectory = File.createTempFile("mydmam", getClass().getSimpleName());
+			assertThrows(UncheckedIOException.class,
+					() -> checkDirectory(workingDirectory, name));
+		}
+	}
+
+	@Test
+	void testMakeWorkingFile() {
+		final var wFile = conf.makeWorkingFile(workingFileName, getClass());
+
+		assertThat(wFile)
+				.doesNotExist()
+				.hasParent(workingDirectory);
+		assertThat(wFile.getName()).contains(
+				getClass().getSimpleName(),
+				workingFileName);
+	}
+
+	@Test
+	void testMakeWorkingFile_noWorkingDirectory() throws IOException {
+		final var c = getClass();
+		forceDelete(conf.workingDirectory());
+		assertThrows(UncheckedIOException.class, () -> conf.makeWorkingFile(workingFileName, c));
 	}
 
 }

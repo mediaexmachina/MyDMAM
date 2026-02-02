@@ -17,22 +17,30 @@
 package media.mexm.mydmam.tools;
 
 import static java.lang.Long.parseLong;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
-public record HTTPRangeRequest(long start, long end, long contentLength, boolean partial) { // TODO test
+public record HTTPRangeRequest(long start, long end, long contentLength, boolean partial) {
 
 	private static final int BYTES_LENGTH = "bytes=".length();
 
 	public HTTPRangeRequest(final String rangeHeader, final long fileLength) {
 		final long start;
 		final long end;
-		if (rangeHeader == null) {
+		if (rangeHeader == null
+			|| rangeHeader.length() <= BYTES_LENGTH) {
 			start = 0;
 			end = fileLength - 1;
 		} else {
 			final var ranges = rangeHeader.split("-");
-			start = parseLong(ranges[0].substring(BYTES_LENGTH));
+			final var wantedStart = parseLong(ranges[0].substring(BYTES_LENGTH));
+			if (wantedStart > fileLength - 1) {
+				start = 0;
+			} else {
+				start = wantedStart;
+			}
 			if (ranges.length > 1) {
-				end = parseLong(ranges[1]);
+				end = max(min(parseLong(ranges[1]), fileLength - 1), start);
 			} else {
 				end = fileLength - 1;
 			}

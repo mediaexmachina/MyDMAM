@@ -16,6 +16,8 @@
  */
 package media.mexm.mydmam.asset;
 
+import static media.mexm.mydmam.entity.AssetRenderedFileEntity.GZIP_ENCODED;
+import static media.mexm.mydmam.entity.AssetRenderedFileEntity.NOT_ENCODED;
 import static org.apache.commons.io.FileUtils.copyFile;
 import static org.apache.commons.io.FileUtils.forceDelete;
 
@@ -24,46 +26,38 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPOutputStream;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
 
-@Getter
 @Slf4j
-@ToString
-@EqualsAndHashCode
-public class DeclaredRenderedFile { // TODO test
-
-	private final File workingFile;
-	private final String name;
-	private final boolean toGzip;
-	private final String mimeType;
+public record DeclaredRenderedFile(File workingFile,
+								   String name,
+								   boolean toGzip,
+								   String mimeType) {
 
 	public DeclaredRenderedFile(final File workingFile,
 								final String name,
 								final boolean toGzip,
 								final MimeTypeDetector mimeTypeDetector) throws IOException {
-		this.name = name;
-		this.toGzip = toGzip;
+		final File validatedWorkingFile;
+		final String mimeType;
 		if (toGzip) {
-			this.workingFile = new File(workingFile.getParentFile(), workingFile.getName() + ".gz");
+			validatedWorkingFile = new File(workingFile.getParentFile(), workingFile.getName() + ".gz");
 
-			try (final var fso = new GZIPOutputStream(new FileOutputStream(this.workingFile))) {
-				log.info("Gzip rendered file from \"{}\" to \"{}\"", workingFile, this.workingFile);
-				copyFile(workingFile, fso);
+			try (final var fso = new GZIPOutputStream(new FileOutputStream(validatedWorkingFile))) {
+				log.info("Gzip rendered file from \"{}\" to \"{}\"", workingFile, validatedWorkingFile);
+				copyFile(validatedWorkingFile, fso);
 			}
 
 			mimeType = mimeTypeDetector.getMimeType(workingFile);
 			forceDelete(workingFile);
 		} else {
-			this.workingFile = workingFile;
+			validatedWorkingFile = workingFile;
 			mimeType = mimeTypeDetector.getMimeType(workingFile);
 		}
-
+		this(validatedWorkingFile, name, toGzip, mimeType);
 	}
 
 	public AssetRenderedFileEntity makeAssetRenderedFileEntity(final FileEntity fileEntity,
@@ -73,7 +67,7 @@ public class DeclaredRenderedFile { // TODO test
 				fileEntity,
 				mimeType,
 				previewType,
-				toGzip ? AssetRenderedFileEntity.GZIP_ENCODED : AssetRenderedFileEntity.NOT_ENCODED,
+				toGzip ? GZIP_ENCODED : NOT_ENCODED,
 				index,
 				name,
 				workingFile.length());

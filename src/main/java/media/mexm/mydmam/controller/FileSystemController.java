@@ -25,7 +25,6 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 import static java.util.stream.Stream.concat;
 import static media.mexm.mydmam.App.CONTROLLER_BASE_MAPPING_API_PATH;
 import static media.mexm.mydmam.dto.FileItemResponse.createFromEntity;
-import static media.mexm.mydmam.dto.FileMetadatasReponse.createFromEntities;
 import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
 import static media.mexm.mydmam.dto.StorageStateClass.OFFLINE;
 import static media.mexm.mydmam.entity.FileEntity.HASH_STRING_LEN;
@@ -236,7 +235,7 @@ public class FileSystemController {
 						.distinct()
 						.collect(toUnmodifiableMap(
 								identity(),
-								f -> createFromEntities(
+								f -> new FileMetadatasReponse(
 										allSummariesByHashpath.get(f),
 										allRenderedByHashpath.get(f),
 										internalObjectMapper)));

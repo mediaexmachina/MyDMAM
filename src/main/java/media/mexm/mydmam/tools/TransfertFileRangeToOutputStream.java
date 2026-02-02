@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
  * See IOUtils.copyLarge(final InputStream input, final OutputStream output, final long inputOffset, final long length, final byte[] buffer)
  */
 public record TransfertFileRangeToOutputStream(File file,
-											   HTTPRangeRequest range) { // TODO test
+											   HTTPRangeRequest range) {
 
 	public void send(final OutputStream output) {
 		final var length = range.end() + 1 - range.start();

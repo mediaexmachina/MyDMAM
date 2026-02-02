@@ -36,7 +36,7 @@ import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 
 @Repository
 @Slf4j
-public class AssetRenderedFileDaoImpl implements AssetRenderedFileDao {// TODO test
+public class AssetRenderedFileDaoImpl implements AssetRenderedFileDao {
 
 	@Autowired
 	@PersistenceContext

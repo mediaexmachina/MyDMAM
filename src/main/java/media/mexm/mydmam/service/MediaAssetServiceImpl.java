@@ -38,11 +38,9 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.asset.DatabaseUpdateDirection;
 import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
-import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.repository.AssetRenderedFileDao;
 import media.mexm.mydmam.repository.AssetRenderedFileRepository;
 import media.mexm.mydmam.repository.AssetSummaryDao;
 import media.mexm.mydmam.repository.AssetSummaryRepository;
@@ -63,10 +61,6 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 	AssetSummaryDao assetSummaryDao;
 	@Autowired
 	AssetRenderedFileRepository assetRenderedFileRepository;
-	@Autowired
-	AssetRenderedFileDao assetRenderedFileDao;
-	@Autowired
-	MimeTypeDetector mimeTypeDetector;
 
 	@Override
 	public MediaAsset getFromWatchfolder(final String realmName,
@@ -124,7 +118,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 				.renderedMetadataDirectory());
 
 		final var distinctFileNamesCount = (int) declaredRenderedFiles.stream()
-				.map(DeclaredRenderedFile::getName)
+				.map(DeclaredRenderedFile::name)
 				.distinct()
 				.count();
 		if (distinctFileNamesCount != declaredRenderedFiles.size()) {
@@ -136,6 +130,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 				.toList();
 
 		assetRenderedFileRepository.saveAllAndFlush(toCreate);
+
 		final var createdEtags = toCreate.stream()
 				.map(AssetRenderedFileEntity::getEtag)
 				.collect(toUnmodifiableSet());
@@ -146,7 +141,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 			final var name = renderedFileEntity.getName();
 
 			final var declaredRenderedFile = declaredRenderedFiles.stream()
-					.filter(f -> f.getName().equals(name))
+					.filter(f -> f.name().equals(name))
 					.findFirst()
 					.orElseThrow(() -> new IllegalStateException(
 							"Can't found " + name + " from " + declaredRenderedFiles));
@@ -161,9 +156,9 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 			}
 
 			log.debug("Start to move rendered file from \"{}\" to \"{}\" [via {}]",
-					declaredRenderedFile.getWorkingFile(), renderedFile, renderedFileEntity);
+					declaredRenderedFile.workingFile(), renderedFile, renderedFileEntity);
 
-			moveFile(declaredRenderedFile.getWorkingFile(), renderedFile);
+			moveFile(declaredRenderedFile.workingFile(), renderedFile);
 
 			result.put(renderedFileEntity, renderedFile);
 		}

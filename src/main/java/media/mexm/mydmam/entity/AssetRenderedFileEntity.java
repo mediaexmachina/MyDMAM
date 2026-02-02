@@ -49,7 +49,7 @@ import media.mexm.mydmam.dto.FileMetadatasRenderedReponse;
 	   })
 @Getter
 @ToString
-public class AssetRenderedFileEntity { // TODO test
+public class AssetRenderedFileEntity {
 
 	public static final String GZIP_ENCODED = "gzip";
 	public static final String NOT_ENCODED = "identity";
@@ -121,15 +121,16 @@ public class AssetRenderedFileEntity { // TODO test
 		this.name = name;
 		this.length = length;
 
-		final var numbers = ByteBuffer.allocate((64 + 32 + 32 + 64) / 8);
+		final var nameb = name.getBytes(UTF_8);
+		final var numbers = ByteBuffer.allocate((64 + 32 + 32 + 64) / 8 + nameb.length);
 		numbers.putLong(length);
 		numbers.putInt(indexref);
 		numbers.putInt(file.getId());
 		numbers.putLong(createDate.getTime());
+		numbers.put(nameb);
 
 		final var crc = new CRC32();
 		crc.update(numbers.flip());
-		crc.update(name.getBytes(UTF_8));
 		etag = crc.getValue();
 	}
 

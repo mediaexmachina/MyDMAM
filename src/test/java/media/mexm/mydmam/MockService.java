@@ -36,6 +36,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.component.PathIndexer;
 import media.mexm.mydmam.component.Startup;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
@@ -85,6 +86,18 @@ class MockService {
 
 	}
 
+	@Configuration
+	@Profile({ "MockActivityHandler" })
+	static class MockActivityHandler {
+
+		@Bean
+		@Primary
+		ActivityHandler mockActivityHandler() {
+			return Mockito.mock(ActivityHandler.class);
+		}
+
+	}
+
 	/*
 	 * =========
 	 * TEST ZONE
@@ -126,6 +139,7 @@ class MockService {
 
 			verifyNoInteractions(pathIndexer);
 		}
+
 	}
 
 	@SpringBootTest
@@ -158,6 +172,20 @@ class MockService {
 			assertEquals(0, flatJobKitEngine.getEndEventsList().size());
 		}
 
+	}
+
+	@SpringBootTest
+	@ActiveProfiles({ "MockActivityHandler" })
+	static class TestMockActivityHandler {
+
+		@Autowired
+		ActivityHandler activity;
+
+		@Test
+		void test() {
+			assertTrue(isMock(activity));
+			verifyNoInteractions(activity);
+		}
 	}
 
 }

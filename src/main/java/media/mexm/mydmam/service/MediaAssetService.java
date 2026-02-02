@@ -46,5 +46,5 @@ public interface MediaAssetService {
 																  int index,
 																  String previewType) throws IOException;
 
-	// TODO Map<FileEntity, Set<AssetRenderedFileEntity>> getAllRenderedFiles(final Set<String> fileHashpaths, String realm);
+	// TODO2 Map<FileEntity, Set<AssetRenderedFileEntity>> getAllRenderedFiles(final Set<String> fileHashpaths, String realm);
 }
