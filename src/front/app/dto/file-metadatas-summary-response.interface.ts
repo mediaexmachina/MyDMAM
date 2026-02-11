@@ -5,5 +5,4 @@
 */
 export interface FileMetadatasSummaryResponse {
     mimeType: string;
-    specifications: Record<string, string>;
 }

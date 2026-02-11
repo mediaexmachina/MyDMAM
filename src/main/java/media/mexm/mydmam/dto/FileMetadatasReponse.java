@@ -21,7 +21,6 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 import java.util.Optional;
 import java.util.Set;
 
-import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.AssetSummaryEntity;
 
@@ -29,10 +28,9 @@ public record FileMetadatasReponse(FileMetadatasSummaryResponse summary,
 								   Set<FileMetadatasRenderedReponse> rendered) {
 
 	public FileMetadatasReponse(final AssetSummaryEntity assetSummaryEntity,
-								final Set<AssetRenderedFileEntity> renderedFiles,
-								final InternalObjectMapper objectMapper) {
+								final Set<AssetRenderedFileEntity> renderedFiles) {
 		final var summaryResponse = Optional.ofNullable(assetSummaryEntity)
-				.map(s -> new FileMetadatasSummaryResponse(s, objectMapper))
+				.map(FileMetadatasSummaryResponse::new)
 				.orElse(null);
 
 		final var renderedReponse = Optional.ofNullable(renderedFiles)

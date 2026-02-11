@@ -50,6 +50,8 @@ public class MediaAsset {
 	private String mimeType;
 	private Map<AssetRenderedFileEntity, File> renderedFiles;
 
+	// TODO pending commit
+
 	public MediaAsset(final MediaAssetService service,
 					  final FileEntity file) {
 		this.service = requireNonNull(service, "\"service\" can't to be null");
@@ -141,10 +143,6 @@ public class MediaAsset {
 													   final int layer,
 													   final Map<String, String> entries) {
 		originHandler.getMetadataOriginName();
-		// TODO2 implement
-	}
-
-	public synchronized void setSummarySpecifications(final Map<String, String> entries) {
 		// TODO2 implement
 	}
 

@@ -48,7 +48,6 @@ CREATE TABLE `asset_summary` (
   `create_date` datetime NOT NULL,
   `file_id` int NOT NULL,
   `mime_type` varchar(128),
-  `specifications` varchar(2048),
   PRIMARY KEY (`id`),
   KEY `asset_summary_mime_type_idx` (`mime_type`),
   KEY `asset_summary_file_id_idx` (`file_id`),

@@ -250,11 +250,6 @@ class ImageInfoExtractionActivityTest {
 							"colorspace", colorspace,
 							"orientation", orientation,
 							"type", imageType.toLowerCase()));
-
-			verify(asset, times(1))
-					.setSummarySpecifications(Map.of(
-							"width", String.valueOf(width),
-							"height", String.valueOf(height)));
 		}
 
 		@Test

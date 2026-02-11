@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.controller;
 
-import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_MAP_STRING_STRING;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
 import static media.mexm.mydmam.dto.StorageCategory.NAS;
@@ -25,7 +24,6 @@ import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static media.mexm.mydmam.tools.SortOrder.none;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,7 +68,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 import media.mexm.mydmam.component.AuditTrail;
-import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
@@ -124,8 +121,6 @@ class FileSystemControllerTest {
 	AssetSummaryDao assetSummaryDao;
 	@MockitoBean
 	AssetRenderedFileDao assetRenderedFileDao;
-	@MockitoBean
-	InternalObjectMapper internalObjectMapper;
 
 	@Mock
 	HttpServletRequest request;
@@ -162,10 +157,6 @@ class FileSystemControllerTest {
 	long length;
 	@Fake
 	String specifications;
-	@Fake
-	String specKey;
-	@Fake
-	String specValue;
 	@Fake
 	String mimeType;
 
@@ -226,8 +217,7 @@ class FileSystemControllerTest {
 				fileDao,
 				auditTrail,
 				assetSummaryDao,
-				assetRenderedFileDao,
-				internalObjectMapper);
+				assetRenderedFileDao);
 	}
 
 	@Test
@@ -529,10 +519,7 @@ class FileSystemControllerTest {
 					.thenReturn(Map.of(hashPath, assetSummaryEntity));
 			when(assetRenderedFileDao.getRenderedFilesByFileId(Set.of(0, 1), realm))
 					.thenReturn(Map.of(hashPath, Set.of(assetRenderedFileEntity)));
-			when(assetSummaryEntity.getSpecifications()).thenReturn(specifications);
 			when(assetSummaryEntity.getMimeType()).thenReturn(mimeType);
-			when(internalObjectMapper.readValue(specifications, TYPE_MAP_STRING_STRING))
-					.thenReturn(Map.of(specKey, specValue));
 
 			final var renderedReponse = new FileMetadatasRenderedReponse(previewType, index, name);
 			when(assetRenderedFileEntity.toRenderedReponse())
@@ -562,8 +549,6 @@ class FileSystemControllerTest {
 			final var metadatas = response.metadatas();
 			final var metadata = metadatas.get(hashPath);
 			assertNotNull(metadata);
-			final var specs = metadata.summary().specifications();
-			assertEquals(specValue, specs.get(specKey));
 
 			final var rendered = metadata.rendered();
 			assertThat(rendered).hasSize(1).contains(renderedReponse);
@@ -572,10 +557,8 @@ class FileSystemControllerTest {
 			verify(fileChildren1, times(1)).getId();
 			verify(assetSummaryDao, times(1)).getAssetSummariesByFileId(Set.of(0, 1), realm);
 			verify(assetRenderedFileDao, times(1)).getRenderedFilesByFileId(Set.of(0, 1), realm);
-			verify(assetSummaryEntity, times(1)).getSpecifications();
 			verify(assetSummaryEntity, times(1)).getMimeType();
 			verify(assetRenderedFileEntity, times(1)).toRenderedReponse();
-			verify(internalObjectMapper, times(1)).readValue(specifications, TYPE_MAP_STRING_STRING);
 		}
 
 	}

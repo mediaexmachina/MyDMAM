@@ -55,7 +55,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.dto.FileMetadatasReponse;
@@ -90,8 +89,9 @@ public class FileSystemController {
 	AssetSummaryDao assetSummaryDao;
 	@Autowired
 	AssetRenderedFileDao assetRenderedFileDao;
-	@Autowired
-	InternalObjectMapper internalObjectMapper;
+	// TODO2 needed ?
+	// @Autowired
+	// InternalObjectMapper internalObjectMapper;
 
 	@GetMapping("/list")
 	@Transactional
@@ -237,8 +237,7 @@ public class FileSystemController {
 								identity(),
 								f -> new FileMetadatasReponse(
 										allSummariesByHashpath.get(f),
-										allRenderedByHashpath.get(f),
-										internalObjectMapper)));
+										allRenderedByHashpath.get(f))));
 
 		try {
 			final var currentItem = oFileParent

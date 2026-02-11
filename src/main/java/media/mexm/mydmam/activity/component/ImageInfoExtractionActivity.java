@@ -138,9 +138,6 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
 				"type", type);
 
 		asset.createFileMetadataEntries(this, "technical", 0, entries);
-		asset.setSummarySpecifications(Map.of(
-				"width", width,
-				"height", height));
 
 		log.debug("Found properties for {}: {}", asset, entries);
 

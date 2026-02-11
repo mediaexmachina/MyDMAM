@@ -44,6 +44,7 @@ import lombok.ToString;
 @Getter
 @ToString
 public class AssetSummaryEntity {
+	// TODO2 merge to FileMetadata
 
 	public static final String TABLE_NAME = "asset_summary";
 
@@ -63,10 +64,6 @@ public class AssetSummaryEntity {
 	@Column(length = 128, name = "mime_type")
 	@Setter
 	private String mimeType;
-
-	@Column(length = 2048, name = "specifications")
-	@Setter
-	private String specifications;
 
 	/**
 	 * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE

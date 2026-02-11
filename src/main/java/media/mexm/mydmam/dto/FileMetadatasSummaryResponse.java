@@ -16,26 +16,14 @@
  */
 package media.mexm.mydmam.dto;
 
-import static java.util.function.Predicate.not;
-import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_MAP_STRING_STRING;
-
-import java.util.Map;
-import java.util.Optional;
-
-import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.entity.AssetSummaryEntity;
 
-public record FileMetadatasSummaryResponse(String mimeType,
-										   Map<String, String> specifications) {
+@Deprecated
+public record FileMetadatasSummaryResponse(String mimeType) {
 
-	public FileMetadatasSummaryResponse(final AssetSummaryEntity assetSummaryEntity,
-										final InternalObjectMapper objectMapper) {
-		final var specifications = Optional.ofNullable(assetSummaryEntity.getSpecifications())
-				.filter(not(String::isEmpty))
-				.map(s -> objectMapper.readValue(s, TYPE_MAP_STRING_STRING))
-				.orElse(Map.of());
-
-		this(assetSummaryEntity.getMimeType(), specifications);
+	@Deprecated
+	public FileMetadatasSummaryResponse(final AssetSummaryEntity assetSummaryEntity) {
+		this(assetSummaryEntity.getMimeType());
 	}
 
 }

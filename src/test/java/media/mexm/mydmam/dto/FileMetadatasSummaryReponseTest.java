@@ -16,19 +16,15 @@
  */
 package media.mexm.mydmam.dto;
 
-import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_MAP_STRING_STRING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import java.util.Map;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
-import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.entity.AssetSummaryEntity;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -38,34 +34,19 @@ class FileMetadatasSummaryReponseTest {
 
 	@Mock
 	AssetSummaryEntity assetSummaryEntity;
-	@Mock
-	InternalObjectMapper objectMapper;
 
 	@Fake
 	String mimeType;
-	@Fake
-	String specificationKey;
-	@Fake
-	String specificationValue;
-	@Fake
-	String specificationJson;
 
 	@Test
 	void testCreateFromAssetSummaryEntity() {
-		when(assetSummaryEntity.getSpecifications())
-				.thenReturn(specificationJson);
 		when(assetSummaryEntity.getMimeType())
 				.thenReturn(mimeType);
-		when(objectMapper.readValue(specificationJson, TYPE_MAP_STRING_STRING))
-				.thenReturn(Map.of(specificationKey, specificationValue));
 
-		final var fmr = new FileMetadatasSummaryResponse(assetSummaryEntity, objectMapper);
+		final var fmr = new FileMetadatasSummaryResponse(assetSummaryEntity);
 		assertEquals(mimeType, fmr.mimeType());
-		assertEquals(Map.of(specificationKey, specificationValue), fmr.specifications());
 
-		verify(assetSummaryEntity, times(1)).getSpecifications();
 		verify(assetSummaryEntity, times(1)).getMimeType();
-		verify(objectMapper, times(1)).readValue(specificationJson, TYPE_MAP_STRING_STRING);
 	}
 
 }

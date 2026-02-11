@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.dto;
 
-import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_MAP_STRING_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -25,14 +24,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
-import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.AssetSummaryEntity;
 import tv.hd3g.commons.testtools.Fake;
@@ -46,14 +43,8 @@ class FileMetadatasReponseTest {
 	@Mock
 	AssetRenderedFileEntity renderedFiles;
 	@Mock
-	InternalObjectMapper objectMapper;
-	@Mock
-	Map<String, String> specifications;
-	@Mock
 	FileMetadatasRenderedReponse fileMetadatasRenderedReponse;
 
-	@Fake
-	String specificationsJson;
 	@Fake
 	String mimeType;
 
@@ -61,24 +52,18 @@ class FileMetadatasReponseTest {
 
 	@Test
 	void test() {
-		when(assetSummaryEntity.getSpecifications())
-				.thenReturn(specificationsJson);
 		when(assetSummaryEntity.getMimeType())
 				.thenReturn(mimeType);
-		when(objectMapper.readValue(specificationsJson, TYPE_MAP_STRING_STRING))
-				.thenReturn(specifications);
 		when(renderedFiles.toRenderedReponse())
 				.thenReturn(fileMetadatasRenderedReponse);
 
 		fmr = new FileMetadatasReponse(
 				assetSummaryEntity,
-				Set.of(renderedFiles),
-				objectMapper);
+				Set.of(renderedFiles));
 
 		final var summary = fmr.summary();
 		assertNotNull(summary);
 		assertEquals(mimeType, summary.mimeType());
-		assertEquals(specifications, summary.specifications());
 
 		final var rendered = fmr.rendered();
 		assertNotNull(rendered);
@@ -86,15 +71,13 @@ class FileMetadatasReponseTest {
 				.hasSize(1)
 				.contains(fileMetadatasRenderedReponse);
 
-		verify(assetSummaryEntity, times(1)).getSpecifications();
 		verify(assetSummaryEntity, times(1)).getMimeType();
-		verify(objectMapper, times(1)).readValue(specificationsJson, TYPE_MAP_STRING_STRING);
 		verify(renderedFiles, times(1)).toRenderedReponse();
 	}
 
 	@Test
 	void testNotNull() {
-		fmr = new FileMetadatasReponse(null, null, objectMapper);
+		fmr = new FileMetadatasReponse((AssetSummaryEntity) null, (Set<AssetRenderedFileEntity>) null);
 
 		final var summary = fmr.summary();
 		assertNull(summary);
