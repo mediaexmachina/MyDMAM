@@ -212,6 +212,7 @@ public class RealmIndexer {
 
 	private void toDocument(final Document document, final MediaAsset asset) {
 		document.add(new StringField(ASSET_MAGICMIME, asset.getMimeType(), NO));
+		// TODO2 inject *all* db mtd to index
 	}
 
 	private Document toDocument(final FileEntity file) {

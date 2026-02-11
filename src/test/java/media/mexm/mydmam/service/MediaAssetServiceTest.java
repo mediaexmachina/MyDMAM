@@ -29,6 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -240,13 +242,15 @@ class MediaAssetServiceTest {
 			when(configuration.getRealmByName(realmName)).thenReturn(Optional.ofNullable(realmConf));
 			when(realmConf.renderedMetadataDirectory()).thenReturn(renderedMetadataDirectory);
 			when(declaredRenderedFile.name()).thenReturn(renderedName);
-			when(declaredRenderedFile.makeAssetRenderedFileEntity(file, index, previewType))
-					.thenReturn(assetRenderedFileEntity);
 			when(declaredRenderedFile.workingFile()).thenReturn(workingFile);
+			when(declaredRenderedFile.index()).thenReturn(index);
+			when(declaredRenderedFile.mimeType()).thenReturn(mimeType);
+			when(declaredRenderedFile.previewType()).thenReturn(previewType);
+			when(declaredRenderedFile.toGzip()).thenReturn(false);
 			when(assetRenderedFileEntity.getEtag()).thenReturn(etag);
 			when(assetRenderedFileEntity.getName()).thenReturn(renderedName);
 			when(assetRenderedFileEntity.getRelativePath()).thenReturn(relativePath);
-			when(assetRenderedFileRepository.getRenderedForFileByEtags(fileId, Set.of(etag)))
+			when(assetRenderedFileRepository.getRenderedForFileByEtags(eq(fileId), any()))
 					.thenReturn(Set.of(assetRenderedFileEntity));
 		}
 
@@ -257,18 +261,19 @@ class MediaAssetServiceTest {
 
 		@Test
 		void testEmpty() throws IOException {
-			final var result = mas.declareRenderedStaticFiles(asset, List.of(), index, previewType);
+			final var result = mas.declareRenderedStaticFiles(asset, List.of());
 			assertThat(result).isEmpty();
 		}
 
 		@Test
 		void testDeclare() throws IOException {
-			final var result = mas.declareRenderedStaticFiles(asset, declaredRenderedFiles, index, previewType);
+			final var result = mas.declareRenderedStaticFiles(asset, declaredRenderedFiles);
+
 			assertThat(result).hasSize(1).containsEntry(assetRenderedFileEntity, expectedRenderedFile);
 
 			verify(assetRenderedFileRepository, times(1)).saveAllAndFlush(entitiesToSaveCaptor.capture());
 			entitiesToSaveCaptor.getValue().forEach(savedEntities::add);
-			assertThat(savedEntities).hasSize(1).contains(assetRenderedFileEntity);
+			assertThat(savedEntities).hasSize(1);
 
 			assertThat(expectedRenderedFile).exists().hasContent(renderedContent);
 			assertThat(workingFile).doesNotExist();
@@ -278,13 +283,15 @@ class MediaAssetServiceTest {
 			verify(file, atLeastOnce()).getId();
 			verify(configuration, atLeastOnce()).getRealmByName(realmName);
 			verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
-			verify(assetRenderedFileEntity, atLeastOnce()).getEtag();
 			verify(assetRenderedFileEntity, atLeastOnce()).getName();
 			verify(assetRenderedFileEntity, atLeastOnce()).getRelativePath();
+			verify(assetRenderedFileRepository, times(1)).getRenderedForFileByEtags(eq(fileId), any());
 			verify(declaredRenderedFile, atLeastOnce()).name();
 			verify(declaredRenderedFile, atLeastOnce()).workingFile();
-			verify(declaredRenderedFile, times(1)).makeAssetRenderedFileEntity(file, index, previewType);
-			verify(assetRenderedFileRepository, times(1)).getRenderedForFileByEtags(fileId, Set.of(etag));
+			verify(declaredRenderedFile, atLeastOnce()).index();
+			verify(declaredRenderedFile, atLeastOnce()).mimeType();
+			verify(declaredRenderedFile, atLeastOnce()).previewType();
+			verify(declaredRenderedFile, atLeastOnce()).toGzip();
 		}
 
 		@Test
@@ -292,7 +299,7 @@ class MediaAssetServiceTest {
 			declaredRenderedFiles = List.of(declaredRenderedFile, declaredRenderedFile);
 
 			assertThrows(IOException.class,
-					() -> mas.declareRenderedStaticFiles(asset, declaredRenderedFiles, index, previewType));
+					() -> mas.declareRenderedStaticFiles(asset, declaredRenderedFiles));
 
 			verify(asset, atLeastOnce()).getFile();
 			verify(file, atLeastOnce()).getRealm();
@@ -306,22 +313,25 @@ class MediaAssetServiceTest {
 			when(declaredRenderedFile.name()).thenReturn("NOPE");
 
 			assertThrows(IllegalStateException.class,
-					() -> mas.declareRenderedStaticFiles(asset, declaredRenderedFiles, index, previewType));
+					() -> mas.declareRenderedStaticFiles(asset, declaredRenderedFiles));
 
 			verify(assetRenderedFileRepository, times(1)).saveAllAndFlush(entitiesToSaveCaptor.capture());
 			entitiesToSaveCaptor.getValue().forEach(savedEntities::add);
-			assertThat(savedEntities).hasSize(1).contains(assetRenderedFileEntity);
+			assertThat(savedEntities).hasSize(1);
 
 			verify(asset, atLeastOnce()).getFile();
 			verify(file, atLeastOnce()).getRealm();
 			verify(file, atLeastOnce()).getId();
 			verify(configuration, atLeastOnce()).getRealmByName(realmName);
 			verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
-			verify(assetRenderedFileEntity, atLeastOnce()).getEtag();
 			verify(assetRenderedFileEntity, atLeastOnce()).getName();
 			verify(declaredRenderedFile, atLeastOnce()).name();
-			verify(declaredRenderedFile, times(1)).makeAssetRenderedFileEntity(file, index, previewType);
-			verify(assetRenderedFileRepository, times(1)).getRenderedForFileByEtags(fileId, Set.of(etag));
+			verify(declaredRenderedFile, atLeastOnce()).workingFile();
+			verify(declaredRenderedFile, atLeastOnce()).index();
+			verify(declaredRenderedFile, atLeastOnce()).mimeType();
+			verify(declaredRenderedFile, atLeastOnce()).previewType();
+			verify(declaredRenderedFile, atLeastOnce()).toGzip();
+			verify(assetRenderedFileRepository, times(1)).getRenderedForFileByEtags(eq(fileId), any());
 		}
 
 		@Test
@@ -329,23 +339,26 @@ class MediaAssetServiceTest {
 			write(expectedRenderedFile, "NOPE", UTF_8, false);
 
 			assertThrows(IOException.class,
-					() -> mas.declareRenderedStaticFiles(asset, declaredRenderedFiles, index, previewType));
+					() -> mas.declareRenderedStaticFiles(asset, declaredRenderedFiles));
 
 			verify(assetRenderedFileRepository, times(1)).saveAllAndFlush(entitiesToSaveCaptor.capture());
 			entitiesToSaveCaptor.getValue().forEach(savedEntities::add);
-			assertThat(savedEntities).hasSize(1).contains(assetRenderedFileEntity);
+			assertThat(savedEntities).hasSize(1);
 
 			verify(asset, atLeastOnce()).getFile();
 			verify(file, atLeastOnce()).getRealm();
 			verify(file, atLeastOnce()).getId();
 			verify(configuration, atLeastOnce()).getRealmByName(realmName);
 			verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
-			verify(assetRenderedFileEntity, atLeastOnce()).getEtag();
 			verify(assetRenderedFileEntity, atLeastOnce()).getName();
 			verify(assetRenderedFileEntity, atLeastOnce()).getRelativePath();
 			verify(declaredRenderedFile, atLeastOnce()).name();
-			verify(declaredRenderedFile, times(1)).makeAssetRenderedFileEntity(file, index, previewType);
-			verify(assetRenderedFileRepository, times(1)).getRenderedForFileByEtags(fileId, Set.of(etag));
+			verify(declaredRenderedFile, atLeastOnce()).workingFile();
+			verify(declaredRenderedFile, atLeastOnce()).index();
+			verify(declaredRenderedFile, atLeastOnce()).mimeType();
+			verify(declaredRenderedFile, atLeastOnce()).previewType();
+			verify(declaredRenderedFile, atLeastOnce()).toGzip();
+			verify(assetRenderedFileRepository, times(1)).getRenderedForFileByEtags(eq(fileId), any());
 		}
 
 	}

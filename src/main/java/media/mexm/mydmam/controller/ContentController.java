@@ -28,7 +28,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.HEAD;
 
-import java.io.File;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +51,7 @@ import media.mexm.mydmam.component.GetFileRequestComponent;
 import media.mexm.mydmam.component.GetFileRequestComponent.GetFileRequest;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.repository.AssetRenderedFileRepository;
+import media.mexm.mydmam.service.MediaAssetService;
 
 @Controller
 @Validated
@@ -65,6 +65,8 @@ public class ContentController {
 	AssetRenderedFileRepository assetRenderedFileRepository;
 	@Autowired
 	GetFileRequestComponent getFileRequestComponent;
+	@Autowired
+	MediaAssetService mediaAssetService;
 
 	@RequestMapping(value = "/rendered/{realm}/{hashPath}/{name}", method = { GET, HEAD })
 	@ResponseBody
@@ -99,19 +101,9 @@ public class ContentController {
 			downloadedFileName = renderedFileEntityName;
 		}
 
-		final var fileToSend = new File(
-				realmConf.get().renderedMetadataDirectory() + renderedFileEntity.getRelativePath());
-		final var fileLength = renderedFileEntity.getLength();
-
-		if (fileLength != fileToSend.length()) {
-			log.error("Invalid file size from renderedFileEntity={}, file={}",
-					renderedFileEntity, fileToSend.length());
-			return new ResponseEntity<>(BAD_REQUEST);
-		}
-
 		return getFileRequestComponent.makeResponseEntity(
 				new GetFileRequest(
-						fileToSend,
+						mediaAssetService.getPhysicalRenderedFile(renderedFileEntity, realm),
 						method,
 						rangeHeader,
 						ifNoneMatch,

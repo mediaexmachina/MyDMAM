@@ -16,6 +16,8 @@
  */
 package media.mexm.mydmam.activity;
 
-public record HandlingResult(boolean updateIndex) {
-
+public class HandlingResult {
+	/**
+	 * For future needs
+	 */
 }

@@ -25,7 +25,6 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.HandlingResult;
-import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.asset.MetadataExtractorHandler;
 import media.mexm.mydmam.component.AuditTrail;
@@ -118,9 +117,7 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
 			throw new IllegalArgumentException("Can't support JSON version " + version);
 		}
 
-		asset.declareRenderedStaticFile(
-				new DeclaredRenderedFile(workingFile, "identify.json", true, mimeTypeDetector),
-				0, PREVIEW_TYPE);
+		asset.declareRenderedStaticFile(workingFile, "identify.json", true, mimeTypeDetector, 0, PREVIEW_TYPE);
 
 		jsonNode.read("$.image.mimeType", String.class).ifPresent(asset::setMimeType);
 
@@ -141,7 +138,7 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
 
 		log.debug("Found properties for {}: {}", asset, entries);
 
-		return new HandlingResult(true);
+		return new HandlingResult();
 	}
 
 }

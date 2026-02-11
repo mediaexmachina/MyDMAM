@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.asset;
 
+@Deprecated
 public enum DatabaseUpdateDirection {
 	GET_FROM_DB,
 	PUSH_TO_DB;

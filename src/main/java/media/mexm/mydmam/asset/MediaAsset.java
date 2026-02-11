@@ -16,26 +16,31 @@
  */
 package media.mexm.mydmam.asset;
 
+import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 import static media.mexm.mydmam.asset.DatabaseUpdateDirection.GET_FROM_DB;
 import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 
 import org.apache.commons.io.FilenameUtils;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.indexer.RealmIndexer;
 import media.mexm.mydmam.service.MediaAssetService;
 import tv.hd3g.transfertfiles.AbstractFileSystemURL;
 import tv.hd3g.transfertfiles.local.LocalFile;
@@ -50,12 +55,13 @@ public class MediaAsset {
 	private String mimeType;
 	private Map<AssetRenderedFileEntity, File> renderedFiles;
 
-	// TODO pending commit
+	private final LinkedList<DeclaredRenderedFile> pendingDeclaredRenderedFiles;
 
 	public MediaAsset(final MediaAssetService service,
 					  final FileEntity file) {
 		this.service = requireNonNull(service, "\"service\" can't to be null");
 		this.file = requireNonNull(file, "\"file\" can't to be null");
+		pendingDeclaredRenderedFiles = new LinkedList<>();
 	}
 
 	public String getHashPath() {
@@ -113,27 +119,52 @@ public class MediaAsset {
 		}
 	}
 
-	public synchronized void declareRenderedStaticFile(final DeclaredRenderedFile declaredRenderedFile,
+	public synchronized void declareRenderedStaticFile(final File workingFile,
+													   final String name,
+													   final boolean toGzip,
+													   final MimeTypeDetector mimeTypeDetector,
 													   final int index,
 													   final String previewType) throws IOException {
-		declareRenderedStaticFiles(Set.of(declaredRenderedFile), index, previewType);
+		pendingDeclaredRenderedFiles.add(new DeclaredRenderedFile(
+				workingFile,
+				name,
+				toGzip,
+				mimeTypeDetector,
+				index,
+				previewType));
 	}
 
-	public synchronized void declareRenderedStaticFiles(final Collection<DeclaredRenderedFile> declaredRenderedFiles,
-														final int index,
-														final String previewType) throws IOException {
-		final var declaredFiles = service.declareRenderedStaticFiles(this, declaredRenderedFiles, index, previewType);
+	public synchronized void commit(final Optional<RealmIndexer> oIndexer) throws IOException {
+		if (pendingDeclaredRenderedFiles.isEmpty()) {
+			return;
+		}
+
+		final var declaredFiles = service.declareRenderedStaticFiles(
+				this,
+				unmodifiableList(pendingDeclaredRenderedFiles));
+		pendingDeclaredRenderedFiles.clear();
 
 		if (renderedFiles == null) {
 			renderedFiles = new HashMap<>(declaredFiles);
 		} else {
 			renderedFiles.putAll(declaredFiles);
 		}
+
+		oIndexer.ifPresent(indexer -> indexer.updateAsset(this));
 	}
 
-	public Map<AssetRenderedFileEntity, File> getRenderedFiles() {// TODO2 implements
+	public synchronized Map<AssetRenderedFileEntity, File> getRenderedFiles() {
 		if (renderedFiles == null) {
-			return Map.of();
+			final var realm = file.getRealm();
+			final var allRenderedFiles = service.getAllRenderedFiles(
+					file.getHashPath(),
+					realm);
+
+			renderedFiles = new HashMap<>(
+					allRenderedFiles.stream()
+							.collect(toUnmodifiableMap(
+									identity(),
+									aRFEntity -> service.getPhysicalRenderedFile(aRFEntity, realm))));
 		}
 		return unmodifiableMap(renderedFiles);
 	}
@@ -143,7 +174,7 @@ public class MediaAsset {
 													   final int layer,
 													   final Map<String, String> entries) {
 		originHandler.getMetadataOriginName();
-		// TODO2 implement
+		// TODO2 implement createFileMetadataEntries
 	}
 
 }

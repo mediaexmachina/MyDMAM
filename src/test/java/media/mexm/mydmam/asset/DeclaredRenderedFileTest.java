@@ -17,15 +17,13 @@
 package media.mexm.mydmam.asset;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static media.mexm.mydmam.entity.AssetRenderedFileEntity.GZIP_ENCODED;
-import static media.mexm.mydmam.entity.AssetRenderedFileEntity.NOT_ENCODED;
 import static net.datafaker.Faker.instance;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.write;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.atLeastOnce;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -40,7 +38,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
 import media.mexm.mydmam.component.MimeTypeDetector;
-import media.mexm.mydmam.entity.FileEntity;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
@@ -49,8 +46,6 @@ class DeclaredRenderedFileTest {
 
 	@Mock
 	MimeTypeDetector mimeTypeDetector;
-	@Mock
-	FileEntity fileEntity;
 
 	@Fake
 	String name;
@@ -60,8 +55,6 @@ class DeclaredRenderedFileTest {
 	int index;
 	@Fake
 	String previewType;
-	@Fake
-	int fileId;
 
 	DeclaredRenderedFile drf;
 
@@ -83,32 +76,25 @@ class DeclaredRenderedFileTest {
 	@Test
 	void testMakeAssetRenderedFileEntity_plain() throws IOException {
 		when(mimeTypeDetector.getMimeType(workingFile)).thenReturn(mimeType);
-		when(fileEntity.getId()).thenReturn(fileId);
 
-		drf = new DeclaredRenderedFile(workingFile, name, false, mimeTypeDetector);
-		final var asset = drf.makeAssetRenderedFileEntity(fileEntity, index, previewType);
-		assertNotNull(asset);
+		drf = new DeclaredRenderedFile(workingFile, name, false, mimeTypeDetector, index, previewType);
 
-		assertEquals(fileEntity, asset.getFile());
-		assertEquals(mimeType, asset.getMimeType());
-		assertEquals(previewType, asset.getPreviewType());
-		assertEquals(NOT_ENCODED, asset.getEncoded());
-		assertEquals(index, asset.getIndexref());
-		assertEquals(name, asset.getName());
-		assertEquals(workingFile.length(), asset.getLength());
+		assertEquals(mimeType, drf.mimeType());
+		assertEquals(previewType, drf.previewType());
+		assertFalse(drf.toGzip());
+		assertEquals(index, drf.index());
+		assertEquals(name, drf.name());
 
 		verify(mimeTypeDetector, times(1)).getMimeType(workingFile);
-		verify(fileEntity, atLeastOnce()).getId();
 		assertThat(workingFile).exists().content().isEqualTo(content);
 	}
 
 	@Test
 	void testMakeAssetRenderedFileEntity_gzip() throws IOException {
 		when(mimeTypeDetector.getMimeType(workingFile)).thenReturn(mimeType);
-		when(fileEntity.getId()).thenReturn(fileId);
 		final var beforeSize = workingFile.length();
 
-		drf = new DeclaredRenderedFile(workingFile, name, true, mimeTypeDetector);
+		drf = new DeclaredRenderedFile(workingFile, name, true, mimeTypeDetector, index, previewType);
 		final var gzipWorkingFile = drf.workingFile();
 		assertThat(workingFile).doesNotExist().isNotEqualTo(gzipWorkingFile);
 
@@ -117,19 +103,13 @@ class DeclaredRenderedFileTest {
 		assertThatGWF.content().isNotEqualTo(content);
 		assertThatGWF.size().isBetween(1l, beforeSize);
 
-		final var asset = drf.makeAssetRenderedFileEntity(fileEntity, index, previewType);
-		assertNotNull(asset);
-
-		assertEquals(fileEntity, asset.getFile());
-		assertEquals(mimeType, asset.getMimeType());
-		assertEquals(previewType, asset.getPreviewType());
-		assertEquals(GZIP_ENCODED, asset.getEncoded());
-		assertEquals(index, asset.getIndexref());
-		assertEquals(name, asset.getName());
-		assertEquals(gzipWorkingFile.length(), asset.getLength());
+		assertEquals(mimeType, drf.mimeType());
+		assertEquals(previewType, drf.previewType());
+		assertTrue(drf.toGzip());
+		assertEquals(index, drf.index());
+		assertEquals(name, drf.name());
 
 		verify(mimeTypeDetector, times(1)).getMimeType(workingFile);
-		verify(fileEntity, atLeastOnce()).getId();
 		deleteQuietly(gzipWorkingFile);
 	}
 

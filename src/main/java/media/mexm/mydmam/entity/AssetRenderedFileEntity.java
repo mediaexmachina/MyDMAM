@@ -40,6 +40,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.ToString;
+import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.dto.FileMetadatasRenderedReponse;
 
 @Entity
@@ -106,20 +107,15 @@ public class AssetRenderedFileEntity {
 	}
 
 	public AssetRenderedFileEntity(@NotNull final FileEntity file,
-								   final String mimeType,
-								   final String previewType,
-								   final String encoded,
-								   final int indexref,
-								   final String name,
-								   final long length) {
+								   @NotNull final DeclaredRenderedFile rendered) {
 		this.file = file;
 		createDate = new Timestamp(System.currentTimeMillis());
-		this.mimeType = mimeType;
-		this.previewType = previewType;
-		this.encoded = encoded;
-		this.indexref = indexref;
-		this.name = name;
-		this.length = length;
+		mimeType = rendered.mimeType();
+		previewType = rendered.previewType();
+		encoded = rendered.toGzip() ? GZIP_ENCODED : NOT_ENCODED;
+		indexref = rendered.index();
+		name = rendered.name();
+		length = rendered.workingFile().length();
 
 		final var nameb = name.getBytes(UTF_8);
 		final var numbers = ByteBuffer.allocate((64 + 32 + 32 + 64) / 8 + nameb.length);

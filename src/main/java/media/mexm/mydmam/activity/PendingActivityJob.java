@@ -70,11 +70,10 @@ public record PendingActivityJob(RealmStorageConfiguredEnv configuredEnv,
 				asset,
 				eventType);
 
-		final var result = activityHandler.handle(asset, eventType, configuredEnv);
+		/* FOR FUTURE NEEDS final var result = */
 
-		if (result.updateIndex()) {
-			oIndexer.ifPresent(indexer -> indexer.updateAsset(asset));
-		}
+		activityHandler.handle(asset, eventType, configuredEnv);
+		asset.commit(oIndexer);
 
 		pendingActivityDao.endsActivity(asset.getFile(), activityHandler);
 

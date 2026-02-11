@@ -38,4 +38,12 @@ public interface AssetRenderedFileRepository extends JpaRepository<AssetRendered
 			""")
 	AssetRenderedFileEntity getRenderedFile(String hashPath, String realm, String name, int indexref);
 
+	@Query("""
+			SELECT arf
+			FROM AssetRenderedFileEntity arf
+			WHERE arf.file.hashPath = :hashPath
+			AND arf.file.realm = :realm
+			""")
+	Set<AssetRenderedFileEntity> getAllRenderedFiles(String hashPath, String realm);
+
 }

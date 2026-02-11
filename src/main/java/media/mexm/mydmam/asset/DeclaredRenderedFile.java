@@ -16,8 +16,6 @@
  */
 package media.mexm.mydmam.asset;
 
-import static media.mexm.mydmam.entity.AssetRenderedFileEntity.GZIP_ENCODED;
-import static media.mexm.mydmam.entity.AssetRenderedFileEntity.NOT_ENCODED;
 import static org.apache.commons.io.FileUtils.copyFile;
 import static org.apache.commons.io.FileUtils.forceDelete;
 
@@ -28,27 +26,30 @@ import java.util.zip.GZIPOutputStream;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.component.MimeTypeDetector;
-import media.mexm.mydmam.entity.AssetRenderedFileEntity;
-import media.mexm.mydmam.entity.FileEntity;
 
 @Slf4j
 public record DeclaredRenderedFile(File workingFile,
 								   String name,
 								   boolean toGzip,
-								   String mimeType) {
+								   String mimeType,
+								   int index,
+								   String previewType) {
 
 	public DeclaredRenderedFile(final File workingFile,
 								final String name,
 								final boolean toGzip,
-								final MimeTypeDetector mimeTypeDetector) throws IOException {
+								final MimeTypeDetector mimeTypeDetector,
+								final int index,
+								final String previewType) throws IOException {
 		final File validatedWorkingFile;
 		final String mimeType;
 		if (toGzip) {
+
 			validatedWorkingFile = new File(workingFile.getParentFile(), workingFile.getName() + ".gz");
 
 			try (final var fso = new GZIPOutputStream(new FileOutputStream(validatedWorkingFile))) {
 				log.info("Gzip rendered file from \"{}\" to \"{}\"", workingFile, validatedWorkingFile);
-				copyFile(validatedWorkingFile, fso);
+				copyFile(workingFile, fso);
 			}
 
 			mimeType = mimeTypeDetector.getMimeType(workingFile);
@@ -57,20 +58,7 @@ public record DeclaredRenderedFile(File workingFile,
 			validatedWorkingFile = workingFile;
 			mimeType = mimeTypeDetector.getMimeType(workingFile);
 		}
-		this(validatedWorkingFile, name, toGzip, mimeType);
-	}
-
-	public AssetRenderedFileEntity makeAssetRenderedFileEntity(final FileEntity fileEntity,
-															   final int index,
-															   final String previewType) {
-		return new AssetRenderedFileEntity(
-				fileEntity,
-				mimeType,
-				previewType,
-				toGzip ? GZIP_ENCODED : NOT_ENCODED,
-				index,
-				name,
-				workingFile.length());
+		this(validatedWorkingFile, name, toGzip, mimeType, index, previewType);
 	}
 
 }

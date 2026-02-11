@@ -152,7 +152,7 @@ class PendingActivityServiceTest {
 		when(activityHandler.getHandlerName()).thenReturn(handlerName);
 		when(activityHandler.getSupportedStorageStateClasses()).thenReturn(Set.of());
 		when(activityHandler.canHandle(asset, eventType, configuredEnv)).thenReturn(true);
-		when(activityHandler.handle(asset, eventType, configuredEnv)).thenReturn(new HandlingResult(true));
+		when(activityHandler.handle(asset, eventType, configuredEnv)).thenReturn(new HandlingResult());
 
 		when(configuration.getRealmNames()).thenReturn(Set.of(realmName));
 		when(configuration.getRealmByName(realmName)).thenReturn(Optional.ofNullable(realm));

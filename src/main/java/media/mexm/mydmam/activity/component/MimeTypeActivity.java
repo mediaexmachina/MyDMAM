@@ -64,7 +64,7 @@ public class MimeTypeActivity implements ActivityHandler {
 				asset.getHashPath(),
 				mimeType);
 
-		return new HandlingResult(true);
+		return new HandlingResult();
 	}
 
 }

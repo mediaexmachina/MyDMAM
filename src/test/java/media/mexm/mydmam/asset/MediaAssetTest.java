@@ -22,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -30,14 +32,15 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
+import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
@@ -55,13 +58,13 @@ class MediaAssetTest {
 	@Mock
 	PathIndexingStorage storage;
 	@Mock
-	DeclaredRenderedFile declaredRenderedFile;
-	@Mock
 	DeclaredRenderedFile declaredRenderedFile2;
 	@Mock
 	AssetRenderedFileEntity assetRenderedFileEntity;
 	@Mock
 	AssetRenderedFileEntity assetRenderedFileEntity2;
+	@Mock
+	MimeTypeDetector mimeTypeDetector;
 
 	@Fake
 	String realmName;
@@ -78,13 +81,17 @@ class MediaAssetTest {
 	@Fake
 	String mimeType;
 	@Fake
+	String name;
+	@Fake
 	int index;
 	@Fake
 	String previewType;
 
+	File workingFile;
 	String path;
 	File renderedFile;
 	MediaAsset ma;
+	DeclaredRenderedFile declaredRenderedFile;
 
 	@BeforeEach
 	void init() {
@@ -153,60 +160,27 @@ class MediaAssetTest {
 
 	@Test
 	void testDeclareRenderedStaticFiles() throws IOException {
+		workingFile = new File(".");
 		verifyNoInteractions(service);
 		assertThat(ma.getRenderedFiles()).isEmpty();
 		verifyNoInteractions(service);
 
 		final var declaredFiles = Map.of(assetRenderedFileEntity, renderedFile);
-		when(service.declareRenderedStaticFiles(ma, Set.of(declaredRenderedFile), index, previewType))
-				.thenReturn(declaredFiles);
 
-		ma.declareRenderedStaticFiles(Set.of(declaredRenderedFile), index, previewType);
+		declaredRenderedFile = new DeclaredRenderedFile(
+				workingFile, name, false, mimeTypeDetector, index, previewType);
 
-		verify(service, times(1)).declareRenderedStaticFiles(ma, Set.of(declaredRenderedFile), index, previewType);
+		when(service.declareRenderedStaticFiles(eq(ma), any())).thenReturn(declaredFiles);
 
-		assertThat(ma.getRenderedFiles())
-				.hasSize(1)
-				.containsEntry(assetRenderedFileEntity, renderedFile);
-	}
+		ma.declareRenderedStaticFile(workingFile, name, false, mimeTypeDetector, index, previewType);
 
-	@Test
-	void testDeclareRenderedStaticFile() throws IOException {
-		final var declaredFiles = Map.of(assetRenderedFileEntity, renderedFile);
-		when(service.declareRenderedStaticFiles(ma, Set.of(declaredRenderedFile), index, previewType))
-				.thenReturn(declaredFiles);
-
-		ma.declareRenderedStaticFile(declaredRenderedFile, index, previewType);
-
-		verify(service, times(1)).declareRenderedStaticFiles(ma, Set.of(declaredRenderedFile), index, previewType);
+		verify(service, times(1)).declareRenderedStaticFiles(ma, List.of(declaredRenderedFile));
+		verify(mimeTypeDetector, atLeastOnce()).getMimeType(workingFile);
 
 		assertThat(ma.getRenderedFiles())
 				.hasSize(1)
 				.containsEntry(assetRenderedFileEntity, renderedFile);
 	}
 
-	@Test
-	void testDeclareRenderedStaticFiles_multiple() throws IOException {
-		final var declaredFiles = Map.of(assetRenderedFileEntity, renderedFile);
-		final var declaredFiles2 = Map.of(assetRenderedFileEntity2, renderedFile);
-
-		when(service.declareRenderedStaticFiles(ma, Set.of(declaredRenderedFile), index, previewType))
-				.thenReturn(declaredFiles);
-		when(service.declareRenderedStaticFiles(ma, Set.of(declaredRenderedFile2), index, previewType))
-				.thenReturn(declaredFiles2);
-
-		ma.declareRenderedStaticFiles(Set.of(declaredRenderedFile), index, previewType);
-		ma.declareRenderedStaticFiles(Set.of(declaredRenderedFile2), index, previewType);
-
-		verify(service, times(1))
-				.declareRenderedStaticFiles(ma, Set.of(declaredRenderedFile), index, previewType);
-		verify(service, times(1))
-				.declareRenderedStaticFiles(ma, Set.of(declaredRenderedFile2), index, previewType);
-
-		assertThat(ma.getRenderedFiles())
-				.hasSize(2)
-				.containsEntry(assetRenderedFileEntity, renderedFile)
-				.containsEntry(assetRenderedFileEntity2, renderedFile);
-	}
-
+	// TODO test commit
 }

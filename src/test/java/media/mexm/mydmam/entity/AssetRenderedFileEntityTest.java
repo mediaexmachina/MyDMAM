@@ -21,6 +21,8 @@ import static java.lang.System.currentTimeMillis;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static media.mexm.mydmam.entity.AssetRenderedFileEntity.GZIP_ENCODED;
 import static media.mexm.mydmam.entity.AssetRenderedFileEntity.NOT_ENCODED;
+import static org.apache.commons.io.FileUtils.deleteQuietly;
+import static org.apache.commons.io.FileUtils.write;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Offset.offset;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,6 +31,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.zip.CRC32;
 
@@ -38,6 +42,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
+import media.mexm.mydmam.asset.DeclaredRenderedFile;
+import net.datafaker.Faker;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
@@ -55,8 +61,6 @@ class AssetRenderedFileEntityTest {
 	int indexref;
 	@Fake
 	String name;
-	@Fake
-	long length;
 	@Fake(min = 1, max = 10_000)
 	int id;
 	@Fake(min = 1, max = 10_000)
@@ -66,11 +70,20 @@ class AssetRenderedFileEntityTest {
 
 	AssetRenderedFileEntity arf;
 	long etag;
+	DeclaredRenderedFile rendered;
+	File workingFile;
+	long length;
 
 	@BeforeEach
-	void init() {
+	void init() throws IOException {
 		when(file.getId()).thenReturn(fileId);
-		arf = new AssetRenderedFileEntity(file, mimeType, previewType, encoded, indexref, name, length);
+
+		workingFile = File.createTempFile("mydmam-" + getClass().getSimpleName(), "workingFile");
+		write(workingFile, Faker.instance().lorem().paragraph(5), UTF_8);
+		length = workingFile.length();
+
+		rendered = new DeclaredRenderedFile(workingFile, name, false, mimeType, indexref, previewType);
+		arf = new AssetRenderedFileEntity(file, rendered);
 		setId();
 
 		final var nameb = name.getBytes(UTF_8);
@@ -89,6 +102,7 @@ class AssetRenderedFileEntityTest {
 	@AfterEach
 	void ends() {
 		verify(file, atLeastOnce()).getId();
+		deleteQuietly(workingFile);
 	}
 
 	void setId() {
@@ -105,12 +119,14 @@ class AssetRenderedFileEntityTest {
 	void testGetRelativePath() {
 		when(file.getId()).thenReturn(0x1234ABCD);
 
-		arf = new AssetRenderedFileEntity(file, mimeType, previewType, GZIP_ENCODED, indexref, name, length);
+		rendered = new DeclaredRenderedFile(workingFile, name, true, mimeType, indexref, previewType);
+		arf = new AssetRenderedFileEntity(file, rendered);
 		setId();
 		assertEquals("/1234/ABCD/" + id + "." + indexref + "." + name + ".gz",
 				arf.getRelativePath());
 
-		arf = new AssetRenderedFileEntity(file, mimeType, previewType, NOT_ENCODED, indexref, name, length);
+		rendered = new DeclaredRenderedFile(workingFile, name, false, mimeType, indexref, previewType);
+		arf = new AssetRenderedFileEntity(file, rendered);
 		setId();
 		assertEquals("/1234/ABCD/" + id + "." + indexref + "." + name,
 				arf.getRelativePath());
@@ -153,7 +169,11 @@ class AssetRenderedFileEntityTest {
 
 	@Test
 	void testGetEncoded() {
-		assertEquals(encoded, arf.getEncoded());
+		assertEquals(NOT_ENCODED, arf.getEncoded());
+
+		rendered = new DeclaredRenderedFile(workingFile, name, true, mimeType, indexref, previewType);
+		arf = new AssetRenderedFileEntity(file, rendered);
+		assertEquals(GZIP_ENCODED, arf.getEncoded());
 	}
 
 	@Test

@@ -24,11 +24,14 @@ import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static org.apache.commons.io.FileUtils.moveFile;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -88,6 +91,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 
 	@Override
 	@Transactional
+	@Deprecated
 	public String updateMimeType(final MediaAsset asset, final DatabaseUpdateDirection direction) {
 		final var file = asset.getFile();
 
@@ -105,9 +109,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 	@Override
 	@Transactional(REQUIRES_NEW)
 	public Map<AssetRenderedFileEntity, File> declareRenderedStaticFiles(final MediaAsset asset,
-																		 final Collection<DeclaredRenderedFile> declaredRenderedFiles,
-																		 final int index,
-																		 final String previewType) throws IOException {
+																		 final Collection<DeclaredRenderedFile> declaredRenderedFiles) throws IOException {
 		if (declaredRenderedFiles.isEmpty()) {
 			return Map.of();
 		}
@@ -126,7 +128,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 		}
 
 		final var toCreate = declaredRenderedFiles.stream()
-				.map(rendered -> rendered.makeAssetRenderedFileEntity(fileEntity, index, previewType))
+				.map(rendered -> new AssetRenderedFileEntity(fileEntity, rendered))
 				.toList();
 
 		assetRenderedFileRepository.saveAllAndFlush(toCreate);
@@ -164,6 +166,35 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 		}
 
 		return unmodifiableMap(result);
+	}
+
+	@Override
+	public Set<AssetRenderedFileEntity> getAllRenderedFiles(final String fileHashpath,
+															final String realm) {// TODO test
+		return assetRenderedFileRepository.getAllRenderedFiles(fileHashpath, realm);
+	}
+
+	@Override
+	public File getPhysicalRenderedFile(final AssetRenderedFileEntity assetRenderedFileEntity,
+										final String realm) { // TODO test
+		final var renderedMetadataDirectory = Objects.requireNonNull(configuration.getRealmByName(realm)
+				.orElseThrow()
+				.renderedMetadataDirectory());
+
+		try {
+			final var renderedFile = new File(renderedMetadataDirectory + assetRenderedFileEntity.getRelativePath())
+					.getAbsoluteFile()
+					.getCanonicalFile();
+			if (renderedFile.exists() == false) {
+				throw new FileNotFoundException(renderedFile.getPath());
+			} else if (renderedFile.length() != assetRenderedFileEntity.getLength()) {
+				throw new IOException("Invalid real file size: "
+									  + renderedFile.length() + " bytes on \"" + renderedFile + "\"");
+			}
+			return renderedFile;
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Can't access to a valid rendered file: " + assetRenderedFileEntity, e);
+		}
 	}
 
 }

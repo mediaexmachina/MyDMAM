@@ -23,6 +23,7 @@ import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.writeStringToFile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,8 +45,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,7 +52,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.activity.ActivityEventType;
-import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.MimeTypeDetector;
@@ -150,9 +148,6 @@ class ImageInfoExtractionActivityTest {
 		@Mock
 		JsonPathHelper jsonNode;
 
-		@Captor
-		ArgumentCaptor<DeclaredRenderedFile> declaredRenderedFileCaptor;
-
 		@Fake(min = 1, max = 10000)
 		int fileId;
 		@Fake
@@ -215,7 +210,7 @@ class ImageInfoExtractionActivityTest {
 		@Test
 		void testHandle() throws Exception {
 			final var handlingResult = iiea.handle(asset, eventType, storedOn);
-			assertTrue(handlingResult.updateIndex());
+			assertNotNull(handlingResult);
 
 			verify(storedOn, atLeastOnce()).storage();
 			verify(storedOn, atLeastOnce()).realm();
@@ -226,18 +221,7 @@ class ImageInfoExtractionActivityTest {
 			verify(imageMagick, times(1)).extractIdentifyJsonFile(assetFile, workingFile);
 
 			verify(asset, times(1))
-					.declareRenderedStaticFile(declaredRenderedFileCaptor.capture(), eq(0), eq("image-format"));
-			final var declaredRenderedFile = declaredRenderedFileCaptor.getValue();
-
-			assertThat(declaredRenderedFile.workingFile()).isNotEqualTo(workingFile);
-			assertThat(declaredRenderedFile.name()).isEqualTo("identify.json");
-			assertThat(declaredRenderedFile.toGzip()).isTrue();
-			assertThat(declaredRenderedFile.mimeType()).isEqualTo(mimeType);
-
-			verify(mimeTypeDetector, times(1)).getMimeType(workingFile);
-			assertThat(workingFile).doesNotExist();
-			workingFile = declaredRenderedFile.workingFile();
-			assertThat(workingFile).exists();
+					.declareRenderedStaticFile(workingFile, "identify.json", true, mimeTypeDetector, 0, "image-format");
 
 			verify(jsonNode, atLeastOnce()).read(anyString(), eq(String.class));
 			verify(jsonNode, atLeastOnce()).read(anyString(), eq(Integer.class));

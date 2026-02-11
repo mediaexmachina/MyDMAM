@@ -102,7 +102,6 @@ class PendingActivityJobTest {
 		when(activityHandler.getHandlerName()).thenReturn(handlerName);
 		when(activityHandler.handle(asset, eventType, configuredEnv)).thenReturn(handlingResult);
 		when(pendingActivityDao.haveDeclaredActivity(file, activityHandler)).thenReturn(true);
-		when(handlingResult.updateIndex()).thenReturn(true);
 		when(asset.getName()).thenReturn(assetName);
 		when(realm.spoolProcessAsset()).thenReturn(spoolName);
 
@@ -139,11 +138,10 @@ class PendingActivityJobTest {
 		verify(activityHandler, times(1)).handle(asset, eventType, configuredEnv);
 		verify(activityHandler, atLeastOnce()).getHandlerName();
 		verify(asset, atLeastOnce()).getFile();
+		verify(asset, atLeastOnce()).commit(Optional.ofNullable(realmIndexer));
 		verify(pendingActivityDao, times(1)).haveDeclaredActivity(file, activityHandler);
 		verify(pendingActivityDao, times(1)).endsActivity(file, activityHandler);
 		verify(pendingActivityService, times(1)).continueAssetActivity(job);
-		verify(realmIndexer, times(1)).updateAsset(asset);
-		verify(handlingResult, times(1)).updateIndex();
 	}
 
 	@Test

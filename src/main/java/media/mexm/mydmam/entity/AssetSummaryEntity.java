@@ -43,9 +43,11 @@ import lombok.ToString;
 	   })
 @Getter
 @ToString
+@Deprecated
 public class AssetSummaryEntity {
 	// TODO2 merge to FileMetadata
 
+	@Deprecated
 	public static final String TABLE_NAME = "asset_summary";
 
 	@Id
@@ -68,10 +70,12 @@ public class AssetSummaryEntity {
 	/**
 	 * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE
 	 */
+	@Deprecated
 	public AssetSummaryEntity() {
 		// ONLY SET FOR HIBERNATE
 	}
 
+	@Deprecated
 	public AssetSummaryEntity(@NotNull final FileEntity file) {
 		this.file = file;
 		createDate = new Timestamp(System.currentTimeMillis());

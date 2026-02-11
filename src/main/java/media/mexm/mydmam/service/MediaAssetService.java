@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 import media.mexm.mydmam.asset.DatabaseUpdateDirection;
 import media.mexm.mydmam.asset.DeclaredRenderedFile;
@@ -42,9 +43,10 @@ public interface MediaAssetService {
 	String updateMimeType(MediaAsset asset, DatabaseUpdateDirection direction);
 
 	Map<AssetRenderedFileEntity, File> declareRenderedStaticFiles(MediaAsset asset,
-																  Collection<DeclaredRenderedFile> declaredRenderedFiles,
-																  int index,
-																  String previewType) throws IOException;
+																  Collection<DeclaredRenderedFile> declaredRenderedFiles) throws IOException;
 
-	// TODO2 Map<FileEntity, Set<AssetRenderedFileEntity>> getAllRenderedFiles(final Set<String> fileHashpaths, String realm);
+	Set<AssetRenderedFileEntity> getAllRenderedFiles(String fileHashpath, String realm);
+
+	File getPhysicalRenderedFile(AssetRenderedFileEntity assetRenderedFileEntity, String realm);
+
 }

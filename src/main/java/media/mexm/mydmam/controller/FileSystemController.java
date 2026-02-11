@@ -89,9 +89,6 @@ public class FileSystemController {
 	AssetSummaryDao assetSummaryDao;
 	@Autowired
 	AssetRenderedFileDao assetRenderedFileDao;
-	// TODO2 needed ?
-	// @Autowired
-	// InternalObjectMapper internalObjectMapper;
 
 	@GetMapping("/list")
 	@Transactional
