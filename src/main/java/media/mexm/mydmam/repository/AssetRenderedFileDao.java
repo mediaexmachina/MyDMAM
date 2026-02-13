@@ -26,4 +26,10 @@ public interface AssetRenderedFileDao {
 
 	Map<String, Set<AssetRenderedFileEntity>> getRenderedFilesByFileId(final Collection<Integer> ids,
 																	   final String realm);
+
+	/**
+	 * @return Map of AssetRenderedFileEntity.relativePath to delete by realm name
+	 */
+	Map<String, Set<String>> deleteRenderedFilesByFileId(Collection<Integer> ids);
+
 }

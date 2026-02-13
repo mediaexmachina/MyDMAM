@@ -16,9 +16,9 @@
  */
 package media.mexm.mydmam.controller;
 
-import static java.lang.System.nanoTime;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.joining;
+import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.getTempDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -66,6 +67,7 @@ import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.repository.AssetRenderedFileRepository;
+import media.mexm.mydmam.service.MediaAssetService;
 import net.datafaker.Faker;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -92,6 +94,8 @@ class ContentControllerTest {
 	AssetRenderedFileRepository assetRenderedFileRepository;
 	@MockitoBean
 	GetFileRequestComponent getFileRequestComponent;
+	@MockitoBean
+	MediaAssetService mediaAssetService;
 
 	@Mock
 	HttpServletRequest request;
@@ -135,9 +139,10 @@ class ContentControllerTest {
 	String rangeHeader;
 	HttpMethod method;
 	String getAssetRenderedFilesURL;
+	File returnFile;
 
 	@BeforeEach
-	void init() {
+	void init() throws IOException {
 		renderedMetadataDirectory = getTempDirectory();
 		method = Faker.instance().random().nextBoolean() ? GET : HEAD;
 		baseHeaders = new HttpHeaders();
@@ -146,6 +151,9 @@ class ContentControllerTest {
 		rangeHeader = HttpRange.toString(ranges);
 		baseHeaders.setRange(ranges);
 		baseHeaders.setIfNoneMatch(ifNoneMatch);
+
+		returnFile = File.createTempFile("mydmam-" + getClass().getSimpleName(), "returnFile");
+		deleteQuietly(returnFile);
 
 		when(getFileRequestComponent.makeResponseEntity(any()))
 				.thenReturn(new ResponseEntity<>(valueOf(418)));
@@ -158,6 +166,8 @@ class ContentControllerTest {
 		when(renderedFileEntity.getHexETag()).thenReturn(renderedFileEntityHexETag);
 		when(renderedFileEntity.getMimeType()).thenReturn(renderedFileEntityMimeType);
 		when(renderedFileEntity.getEncoded()).thenReturn(renderedFileEntityEncoded);
+		when(mediaAssetService.getPhysicalRenderedFile(renderedFileEntity, realm))
+				.thenReturn(returnFile);
 
 		getAssetRenderedFilesURL = Stream.of(
 				BASE_MAPPING,
@@ -173,7 +183,8 @@ class ContentControllerTest {
 		verifyNoMoreInteractions(
 				request,
 				assetRenderedFileRepository,
-				getFileRequestComponent);
+				getFileRequestComponent,
+				mediaAssetService);
 	}
 
 	@Test
@@ -214,18 +225,16 @@ class ContentControllerTest {
 
 		verify(assetRenderedFileRepository, times(1)).getRenderedFile(hashPath, realm, name, index);
 
-		verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
 		verify(renderedFileEntity, atLeastOnce()).getName();
-		verify(renderedFileEntity, atLeastOnce()).getRelativePath();
-		verify(renderedFileEntity, atLeastOnce()).getLength();
 		verify(renderedFileEntity, atLeastOnce()).getHexETag();
 		verify(renderedFileEntity, atLeastOnce()).getMimeType();
 		verify(renderedFileEntity, atLeastOnce()).getEncoded();
+		verify(mediaAssetService, times(1)).getPhysicalRenderedFile(renderedFileEntity, realm);
 
 		verify(getFileRequestComponent, times(1)).makeResponseEntity(requestCaptor.capture());
 		assertThat(requestCaptor.getValue())
 				.isEqualTo(new GetFileRequest(
-						new File(renderedMetadataDirectory + renderedFileEntityRelativePath),
+						returnFile,
 						method,
 						rangeHeader,
 						ifNoneMatch,
@@ -233,26 +242,6 @@ class ContentControllerTest {
 						renderedFileEntityMimeType,
 						renderedFileEntityEncoded,
 						empty()));
-	}
-
-	@Test
-	void testGetAssetRenderedFiles_invalidSize() throws Exception {
-		when(assetRenderedFileRepository.getRenderedFile(hashPath, realm, name, index))
-				.thenReturn(renderedFileEntity);
-		when(renderedFileEntity.getLength()).thenReturn(nanoTime());
-
-		mvc.perform(request(method, getAssetRenderedFilesURL + "?index=" + index)
-				.headers(baseHeaders))
-				.andExpect(STATUS_BAD_REQUEST)
-				.andReturn()
-				.getResponse();
-
-		verify(assetRenderedFileRepository, times(1)).getRenderedFile(hashPath, realm, name, index);
-
-		verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
-		verify(renderedFileEntity, atLeastOnce()).getName();
-		verify(renderedFileEntity, atLeastOnce()).getRelativePath();
-		verify(renderedFileEntity, atLeastOnce()).getLength();
 	}
 
 	@Test
@@ -268,13 +257,11 @@ class ContentControllerTest {
 
 		verify(assetRenderedFileRepository, times(1)).getRenderedFile(hashPath, realm, name, index);
 
-		verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
 		verify(renderedFileEntity, atLeastOnce()).getName();
-		verify(renderedFileEntity, atLeastOnce()).getRelativePath();
-		verify(renderedFileEntity, atLeastOnce()).getLength();
 		verify(renderedFileEntity, atLeastOnce()).getHexETag();
 		verify(renderedFileEntity, atLeastOnce()).getMimeType();
 		verify(renderedFileEntity, atLeastOnce()).getEncoded();
+		verify(mediaAssetService, times(1)).getPhysicalRenderedFile(renderedFileEntity, realm);
 
 		verify(getFileRequestComponent, times(1)).makeResponseEntity(requestCaptor.capture());
 		final var fRequest = requestCaptor.getValue();
@@ -283,7 +270,7 @@ class ContentControllerTest {
 		assertThat(fRequest.contentType()).isEqualTo(renderedFileEntityMimeType);
 		assertThat(fRequest.method()).isEqualTo(method);
 		assertThat(fRequest.fileToSend())
-				.isEqualTo(new File(renderedMetadataDirectory + renderedFileEntityRelativePath));
+				.isEqualTo(returnFile);
 		assertThat(fRequest.rangeHeader()).isEqualTo(rangeHeader);
 		assertThat(fRequest.ifNoneMatch()).isEqualTo(ifNoneMatch);
 

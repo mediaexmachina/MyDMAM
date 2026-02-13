@@ -94,14 +94,16 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 	}
 
 	private void runAssetsActivities(final ActivityEventType eventType,
-									 final List<MediaAsset> assets) {
+									 final List<MediaAsset> sourceAssets) {
 
-		assets.forEach(asset -> {
+		sourceAssets.forEach(asset -> {
 			final var file = asset.getFile();
 			if (file.isDirectory()) {
 				throw new IllegalArgumentException("Can't run activities on directory (for " + file + ")");
 			}
 		});
+
+		final var assets = mediaAssetService.resetDetectedMetadatas(sourceAssets, mediaAssetService);
 
 		final var allActivitiesJobs = assets.stream()
 				.flatMap(asset -> {

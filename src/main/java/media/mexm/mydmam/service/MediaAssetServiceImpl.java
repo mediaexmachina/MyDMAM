@@ -18,6 +18,7 @@ package media.mexm.mydmam.service;
 
 import static jakarta.transaction.Transactional.TxType.REQUIRES_NEW;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -41,9 +43,11 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.asset.DatabaseUpdateDirection;
 import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.repository.AssetRenderedFileDao;
 import media.mexm.mydmam.repository.AssetRenderedFileRepository;
 import media.mexm.mydmam.repository.AssetSummaryDao;
 import media.mexm.mydmam.repository.AssetSummaryRepository;
@@ -63,7 +67,11 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 	@Autowired
 	AssetSummaryDao assetSummaryDao;
 	@Autowired
+	AssetRenderedFileDao assetRenderedFileDao;
+	@Autowired
 	AssetRenderedFileRepository assetRenderedFileRepository;
+	@Autowired
+	Indexer indexer;
 
 	@Override
 	public MediaAsset getFromWatchfolder(final String realmName,
@@ -170,21 +178,22 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 
 	@Override
 	public Set<AssetRenderedFileEntity> getAllRenderedFiles(final String fileHashpath,
-															final String realm) {// TODO test
+															final String realm) {
 		return assetRenderedFileRepository.getAllRenderedFiles(fileHashpath, realm);
 	}
 
 	@Override
 	public File getPhysicalRenderedFile(final AssetRenderedFileEntity assetRenderedFileEntity,
-										final String realm) { // TODO test
+										final String realm) {
 		final var renderedMetadataDirectory = Objects.requireNonNull(configuration.getRealmByName(realm)
 				.orElseThrow()
 				.renderedMetadataDirectory());
 
 		try {
-			final var renderedFile = new File(renderedMetadataDirectory + assetRenderedFileEntity.getRelativePath())
+			final var renderedFile = new File(renderedMetadataDirectory, assetRenderedFileEntity.getRelativePath())
 					.getAbsoluteFile()
 					.getCanonicalFile();
+
 			if (renderedFile.exists() == false) {
 				throw new FileNotFoundException(renderedFile.getPath());
 			} else if (renderedFile.length() != assetRenderedFileEntity.getLength()) {
@@ -195,6 +204,58 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 		} catch (final IOException e) {
 			throw new UncheckedIOException("Can't access to a valid rendered file: " + assetRenderedFileEntity, e);
 		}
+	}
+
+	@Override
+	@Transactional(REQUIRES_NEW)
+	public Collection<MediaAsset> resetDetectedMetadatas(final Collection<MediaAsset> assetsToReset,
+														 final MediaAssetService injectedService) {
+		if (assetsToReset.isEmpty()) {
+			return List.of();
+		}
+		log.debug("Reset detected metadatas on {}", assetsToReset);
+
+		final var fileIdsToReset = assetsToReset.stream()
+				.map(MediaAsset::getFile)
+				.map(FileEntity::getId)
+				.distinct()
+				.collect(toUnmodifiableSet());
+
+		assetSummaryRepository.deleteByFileId(fileIdsToReset);
+		final var relativePathsByRealmToDelete = assetRenderedFileDao.deleteRenderedFilesByFileId(fileIdsToReset);
+
+		final var deleteFilesList = relativePathsByRealmToDelete.entrySet().stream()
+				.filter(entry -> configuration.getRealmByName(entry.getKey()).isPresent())
+				.flatMap(entry -> {
+					final var renderedMetadataDirectory = configuration.getRealmByName(entry.getKey())
+							.orElseThrow()
+							.renderedMetadataDirectory();
+
+					return entry.getValue().stream()
+							.map(path -> new File(renderedMetadataDirectory, path))
+							.filter(File::exists);
+				})
+				.toList();
+
+		if (deleteFilesList.isEmpty() == false && log.isInfoEnabled()) {
+			deleteFilesList.forEach(file -> log.info("Delete rendered file on reset detected metadatas: {}", file));
+		}
+
+		final var canDeleteFilesList = deleteFilesList.stream()
+				.filter(not(File::delete))
+				.toList();
+		if (canDeleteFilesList.isEmpty() == false) {
+			log.warn("Can't delete rendered file(s) on reset detected metadatas: {}", canDeleteFilesList);
+		}
+
+		final var updatedAssets = fileRepository.getByIds(fileIdsToReset).stream()
+				.map(file -> new MediaAsset(injectedService, file))
+				.toList();
+
+		updatedAssets.forEach(asset -> indexer.getIndexerByRealm(asset.getFile().getRealm())
+				.ifPresent(realmIndexer -> realmIndexer.resetAsset(asset)));
+
+		return updatedAssets;
 	}
 
 }

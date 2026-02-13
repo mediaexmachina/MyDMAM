@@ -49,4 +49,7 @@ public interface MediaAssetService {
 
 	File getPhysicalRenderedFile(AssetRenderedFileEntity assetRenderedFileEntity, String realm);
 
+	Collection<MediaAsset> resetDetectedMetadatas(Collection<MediaAsset> assetsToReset,
+												  MediaAssetService injectedService);
+
 }

@@ -16,10 +16,21 @@
  */
 package media.mexm.mydmam.repository;
 
+import java.util.Set;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import media.mexm.mydmam.entity.AssetSummaryEntity;
 
 public interface AssetSummaryRepository extends JpaRepository<AssetSummaryEntity, Long> {
+
+	@Query("""
+			DELETE FROM AssetSummaryEntity as
+			WHERE as.file.id IN :fileIds
+			""")
+	@Modifying
+	void deleteByFileId(Set<Integer> fileIds);
 
 }

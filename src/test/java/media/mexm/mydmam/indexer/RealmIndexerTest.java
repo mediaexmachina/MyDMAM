@@ -624,6 +624,33 @@ class RealmIndexerTest {
 	}
 
 	@Test
+	void testResetAsset() {
+		when(mediaAsset.getFile()).thenReturn(fileEntity);
+
+		ri.updateIndexAfterScan(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
+		ri.resetAsset(mediaAsset);
+
+		final var results = ri.openSearch(getBaseName(fileName), empty(), 10).foundedFiles();
+		assertThat(results).size().isEqualTo(1);
+		assertThat(results.get(0).hashPath())
+				.isEqualTo(fileHashPath);
+
+		verify(mediaAsset, times(1)).getFile();
+		reset(file);
+	}
+
+	@Test
+	void testResetAsset_badRealm() {
+		fileEntity = new FileEntity(badRealm, storageName, file);
+		when(mediaAsset.getFile()).thenReturn(fileEntity);
+
+		assertThrows(IllegalArgumentException.class,
+				() -> ri.resetAsset(mediaAsset));
+		verify(mediaAsset, times(1)).getFile();
+		reset(file);
+	}
+
+	@Test
 	void testUpdateAsset() {
 		when(mediaAsset.getFile()).thenReturn(fileEntity);
 

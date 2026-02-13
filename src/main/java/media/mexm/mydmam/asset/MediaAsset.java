@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.asset;
 
-import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -30,6 +29,7 @@ import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.apache.commons.io.FilenameUtils;
@@ -134,25 +134,6 @@ public class MediaAsset {
 				previewType));
 	}
 
-	public synchronized void commit(final Optional<RealmIndexer> oIndexer) throws IOException {
-		if (pendingDeclaredRenderedFiles.isEmpty()) {
-			return;
-		}
-
-		final var declaredFiles = service.declareRenderedStaticFiles(
-				this,
-				unmodifiableList(pendingDeclaredRenderedFiles));
-		pendingDeclaredRenderedFiles.clear();
-
-		if (renderedFiles == null) {
-			renderedFiles = new HashMap<>(declaredFiles);
-		} else {
-			renderedFiles.putAll(declaredFiles);
-		}
-
-		oIndexer.ifPresent(indexer -> indexer.updateAsset(this));
-	}
-
 	public synchronized Map<AssetRenderedFileEntity, File> getRenderedFiles() {
 		if (renderedFiles == null) {
 			final var realm = file.getRealm();
@@ -169,12 +150,48 @@ public class MediaAsset {
 		return unmodifiableMap(renderedFiles);
 	}
 
+	public synchronized void commit(final Optional<RealmIndexer> oIndexer) throws IOException {
+		if (pendingDeclaredRenderedFiles.isEmpty()) {
+			return;
+		}
+
+		final var declaredFiles = service.declareRenderedStaticFiles(
+				this,
+				pendingDeclaredRenderedFiles.stream().toList());
+		pendingDeclaredRenderedFiles.clear();
+
+		if (renderedFiles == null) {
+			renderedFiles = new HashMap<>(declaredFiles);
+		} else {
+			renderedFiles.putAll(declaredFiles);
+		}
+
+		oIndexer.ifPresent(indexer -> indexer.updateAsset(this));
+	}
+
 	public synchronized void createFileMetadataEntries(final MetadataExtractorHandler originHandler,
 													   final String classifier,
 													   final int layer,
 													   final Map<String, String> entries) {
 		originHandler.getMetadataOriginName();
 		// TODO2 implement createFileMetadataEntries
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(file.getId());
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof MediaAsset)) {
+			return false;
+		}
+		final var other = (MediaAsset) obj;
+		return Objects.equals(file.getId(), other.file.getId());
 	}
 
 }

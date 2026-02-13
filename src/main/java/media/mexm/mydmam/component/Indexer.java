@@ -44,10 +44,8 @@ public class Indexer implements DisposableBean {
 	FileDao fileDao;
 	@Autowired
 	JobKitEngine jobKit;
-	@Autowired
-	MediaAssetService mediaAssetService;
 
-	public void init() throws IOException {
+	public void init(final MediaAssetService mediaAssetService) throws IOException {
 		final var infra = conf.infra();
 		if (infra == null) {
 			return;

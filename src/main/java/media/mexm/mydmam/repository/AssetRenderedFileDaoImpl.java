@@ -64,4 +64,31 @@ public class AssetRenderedFileDaoImpl implements AssetRenderedFileDao {
 						mapping(f -> (AssetRenderedFileEntity) f.get("assetRenderedFile"), toSet())));
 	}
 
+	@Override
+	@Transactional
+	public Map<String, Set<String>> deleteRenderedFilesByFileId(final Collection<Integer> ids) {
+		final var relativePathsByRealmToDelete = entityManager.createQuery("""
+				SELECT new map(f.realm AS realm, arf AS assetRenderedFile)
+				FROM FileEntity f
+				LEFT JOIN AssetRenderedFileEntity arf ON arf.file = f
+				WHERE arf.file.id IN :fileIds
+				""", Map.class)
+				.setParameter("fileIds", ids)
+				.getResultStream()
+				.collect(groupingBy(
+						f -> (String) f.get("realm"),
+						HashMap::new,
+						mapping(f -> ((AssetRenderedFileEntity) f.get("assetRenderedFile")).getRelativePath(),
+								toSet())));
+
+		entityManager.createQuery("""
+				DELETE FROM AssetRenderedFileEntity arf
+				WHERE arf.file.id IN :fileIds
+				""")
+				.setParameter("fileIds", ids)
+				.executeUpdate();
+
+		return relativePathsByRealmToDelete;
+	}
+
 }

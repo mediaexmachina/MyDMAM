@@ -163,6 +163,8 @@ class PendingActivityServiceTest {
 		when(file.isDirectory()).thenReturn(false);
 		when(mediaAssetService.getFromWatchfolder(realmName, storageName, file, mediaAssetService)).thenReturn(asset);
 		when(mediaAssetService.getFromFileEntry(fileEntity, mediaAssetService)).thenReturn(asset);
+		when(mediaAssetService.resetDetectedMetadatas(List.of(asset), mediaAssetService)).thenReturn(List.of(asset));
+
 		when(internalObjectMapper.writeValueAsString(Set.of(handlerName))).thenReturn(previousHandlersNames);
 		when(aboutInstance.getInstanceName()).thenReturn(hostName);
 		when(aboutInstance.getPid()).thenReturn(pid);
@@ -251,6 +253,7 @@ class PendingActivityServiceTest {
 			verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
 			verify(activityHandler, times(1)).canHandle(asset, eventType, configuredEnv);
 			verify(mediaAssetService, times(1)).getFromFileEntry(subFileEntry, mediaAssetService);
+			verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(asset), mediaAssetService);
 			verify(aboutInstance, atLeastOnce()).getInstanceName();
 			verify(aboutInstance, atLeastOnce()).getPid();
 			verify(subFileEntry, atLeastOnce()).getRealm();
@@ -277,6 +280,7 @@ class PendingActivityServiceTest {
 			verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
 			verify(activityHandler, times(1)).canHandle(asset, eventType, configuredEnv);
 			verify(mediaAssetService, times(1)).getFromFileEntry(subFileEntry, mediaAssetService);
+			verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(asset), mediaAssetService);
 			verify(aboutInstance, atLeastOnce()).getInstanceName();
 			verify(aboutInstance, atLeastOnce()).getPid();
 			verify(subFileEntry, atLeastOnce()).getRealm();
@@ -326,6 +330,7 @@ class PendingActivityServiceTest {
 			verify(file, atLeastOnce()).isDirectory();
 			verify(mediaAssetService, times(1)).getFromWatchfolder(realmName, storageName, file, mediaAssetService);
 			verify(realm, atLeastOnce()).spoolProcessAsset();
+			verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(asset), mediaAssetService);
 			verify(activityHandler, times(1)).canHandle(asset, eventType, configuredEnv);
 			verify(activityHandler, atLeastOnce()).getHandlerName();
 			verify(activityHandler, times(2)).getSupportedStorageStateClasses();

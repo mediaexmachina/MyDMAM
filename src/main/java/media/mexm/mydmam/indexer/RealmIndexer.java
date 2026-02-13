@@ -211,7 +211,9 @@ public class RealmIndexer {
 	}
 
 	private void toDocument(final Document document, final MediaAsset asset) {
-		document.add(new StringField(ASSET_MAGICMIME, asset.getMimeType(), NO));
+		Optional.ofNullable(asset.getMimeType())
+				.ifPresent(mimeType -> document.add(new StringField(ASSET_MAGICMIME, mimeType, NO)));
+
 		// TODO2 inject *all* db mtd to index
 	}
 
@@ -235,6 +237,14 @@ public class RealmIndexer {
 		toDocument(document, asset);
 
 		delayedSyncDocument.add(new UpdateDocument(document, new Term(FILE_HASH_PATH, file.getHashPath())));
+	}
+
+	public void resetAsset(final MediaAsset asset) {
+		final var file = asset.getFile();
+		if (file.getRealm().equals(realmName) == false) {
+			throw new IllegalArgumentException("Invalid realm (wants " + realmName + ") for " + file);
+		}
+		delayedSyncDocument.add(new UpdateDocument(toDocument(file), new Term(FILE_HASH_PATH, file.getHashPath())));
 	}
 
 	/**

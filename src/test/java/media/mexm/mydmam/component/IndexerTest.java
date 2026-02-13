@@ -123,7 +123,7 @@ class IndexerTest {
 
 	@Test
 	void testInit_nothing() throws IOException {
-		indexer.init();
+		indexer.init(mediaAssetService);
 		assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
 		verify(conf, times(1)).infra();
@@ -135,7 +135,7 @@ class IndexerTest {
 		when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
 		when(realmConf.workingDirectory()).thenReturn(null);
 
-		indexer.init();
+		indexer.init(mediaAssetService);
 		assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
 		verify(conf, times(1)).infra();
@@ -148,7 +148,7 @@ class IndexerTest {
 		when(conf.infra()).thenReturn(infra);
 		when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
 		when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
-		indexer.init();
+		indexer.init(mediaAssetService);
 		assertThat(indexer.getIndexerByRealm(realmName)).isNotEmpty();
 		assertThat(indexer.getIndexerByRealm(badRealmName)).isEmpty();
 
@@ -164,7 +164,7 @@ class IndexerTest {
 		when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
 		when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
 
-		indexer.init();
+		indexer.init(mediaAssetService);
 		indexer.destroy();
 		assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
@@ -234,7 +234,7 @@ class IndexerTest {
 			when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
 			when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
 
-			indexer.init();
+			indexer.init(mediaAssetService);
 			final var realmIndexer = indexer.getIndexerByRealm(realmName).get();
 			realmIndexer.updateIndexAfterScan(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
 			var searchResult = realmIndexer.openSearch("*", Optional.empty(), 10).foundedFiles();
