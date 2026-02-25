@@ -19,6 +19,7 @@ import { Injectable, inject } from '@angular/core';
 import { BackendAPIService } from './backend-api.service';
 import { LocalStorageService } from './local-storage.service';
 import { ResetActivitiesRequest } from '../dto/reset-activities-request.interface';
+import { AssetResponse } from '../dto/asset-response.interface';
 
 @Injectable({
     providedIn: 'root',
@@ -36,6 +37,29 @@ export class AssetService {
         const realm = this.localStorageService.getSelectedRealm();
         return this.backendAPIService.requestAsyncAPI<null>(
             "POST", `/asset/reset-activities/${realm}`, {}, request);
+    }
+
+    public getFileMetadataResponseValue(
+            assetResponse: AssetResponse,
+            classifier:string,
+            key:string,
+            defaultValue:string,
+            index:number = 0): string {
+
+        if (index in assetResponse.index == false) {
+            return defaultValue;
+        }
+        
+        return assetResponse.index[index]
+            .fileMetadatas
+            .filter(m => m.classifier === classifier)
+            .filter(m => m.key === key)
+            .map(m => m.value)
+            .at(0) || defaultValue;
+    }
+
+    public getFileMetadataMimeType(assetResponse: AssetResponse): string {
+        return this.getFileMetadataResponseValue(assetResponse, "file-format", "mime-type", "application/octet-stream");
     }
 
 }

@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import java.io.File;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -102,10 +103,11 @@ class MetadataExtractorHandlerTest {
 	}
 
 	@Test
-	void testCanHandleMimeType() {
-		when(asset.getMimeType()).thenReturn(mimeType, "other");
-
+	final void testCanHandleMimeType() {
+		when(asset.getMimeType()).thenReturn(Optional.ofNullable(mimeType));
 		assertThat(meh.canHandleMimeType(asset)).isTrue();
+
+		when(asset.getMimeType()).thenReturn(Optional.ofNullable("other"));
 		assertThat(meh.canHandleMimeType(asset)).isFalse();
 
 		verify(asset, times(2)).getMimeType();

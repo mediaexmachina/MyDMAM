@@ -38,7 +38,6 @@ public final class NamedIndexField {
 	public static final String FILE_HASH_PATH = new NamedIndexField(FILE, "hashPath").toString();
 	public static final String FILE_PARENT_PATH = new NamedIndexField(FILE, "parentPath").toString();
 	public static final String FILE_PARENT_HASH_PATH = new NamedIndexField(FILE, "parentHashPath").toString();
-	public static final String ASSET_MAGICMIME = new NamedIndexField(ASSET, "magicmime").toString();
 
 	private final Optional<NamedIndexField> oParent;
 	private final String name;

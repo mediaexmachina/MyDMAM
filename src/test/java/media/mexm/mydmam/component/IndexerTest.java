@@ -225,7 +225,8 @@ class IndexerTest {
 			when(file.length()).thenReturn(length);
 			when(file.exists()).thenReturn(exists);
 
-			when(mediaAsset.getMimeType()).thenReturn(mimeType);
+			when(mediaAsset.getTextContentByfileMetadata()).thenReturn(Map.of());
+			when(mediaAsset.getMetadatas()).thenReturn(Set.of());
 		}
 
 		@Test
@@ -269,7 +270,8 @@ class IndexerTest {
 			verify(fileDao, times(1)).getAllFromRealm(eq(realmName), any());
 			verify(file, atLeastOnce()).getPath();
 			verify(mediaAssetService, times(1)).getFromFileEntry(fileEntity, mediaAssetService);
-			verify(mediaAsset, atLeastOnce()).getMimeType();
+			verify(mediaAsset, atLeastOnce()).getTextContentByfileMetadata();
+			verify(mediaAsset, atLeastOnce()).getMetadatas();
 
 			clearInvocations(file);
 		}

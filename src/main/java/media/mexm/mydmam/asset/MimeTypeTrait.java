@@ -16,8 +16,21 @@
  */
 package media.mexm.mydmam.asset;
 
-@Deprecated
-public enum DatabaseUpdateDirection {
-	GET_FROM_DB,
-	PUSH_TO_DB;
+import java.util.Optional;
+
+import media.mexm.mydmam.activity.ActivityHandler;
+
+public interface MimeTypeTrait extends CreateFileMetadataEntryTrait, AccessFileMetadataEntryTrait {
+
+	String MTD_FILE_FORMAT_CLASSIFIER = "file-format";
+	String MTD_MIME_TYPE_KEY = "mime-type";
+
+	default Optional<String> getMimeType() {
+		return getMetadataValue(MTD_FILE_FORMAT_CLASSIFIER, MTD_MIME_TYPE_KEY);
+	}
+
+	default void setMimeType(final ActivityHandler hander, final String mimeType) {
+		createFileMetadataEntry(hander, MTD_FILE_FORMAT_CLASSIFIER, 0, MTD_MIME_TYPE_KEY, mimeType);
+	}
+
 }

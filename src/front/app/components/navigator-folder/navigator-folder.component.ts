@@ -26,7 +26,6 @@ import { SpanFileSizeComponent } from "../toolkit/span-file-size.component";
 import { SortOrder } from '../../dto/sort-order.enum';
 import { NavigatorColumnSortComponent } from "./navigator-column-sort.component";
 import { AssetService } from '../../services/asset.service';
-import { FileMetadatasReponse } from '../../dto/file-metadatas-reponse.interface';
 
 @Component({
   selector: 'app-navigator-folder',
@@ -261,7 +260,7 @@ export class NavigatorFolderComponent {
     getFileType(hashPath:string):string {
         const metadatas = this.dirListResponse()?.metadatas || {};
         if (hashPath in metadatas) {
-            return metadatas[hashPath].summary.mimeType;
+            return this.assetService.getFileMetadataMimeType(metadatas[hashPath]);
         }
         return "File";
     }

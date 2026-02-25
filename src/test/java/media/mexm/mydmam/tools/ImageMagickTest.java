@@ -22,7 +22,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static org.apache.commons.io.FileUtils.forceDelete;
-import static org.apache.commons.io.FileUtils.getTempDirectory;
+import static org.apache.commons.io.FileUtils.forceMkdir;
 import static org.apache.commons.io.FileUtils.getTempDirectoryPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,6 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,6 +59,10 @@ import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 @ExtendWith(MockToolsExtendsJunit.class)
 class ImageMagickTest {
 
+	private static final File MAGICK_TEMP_DIR = new File(getTempDirectoryPath(), "mydmam-test-magick-temp");
+	static ScheduledExecutorService maxExecTimeScheduler;
+	static ExecutableFinder executableFinder;
+
 	@Mock
 	MyDMAMConfigurationProperties configuration;
 	@Mock
@@ -70,23 +75,27 @@ class ImageMagickTest {
 	@Mock
 	MagickConf magickConf;
 
-	ExecutableFinder executableFinder;
-	ScheduledExecutorService maxExecTimeScheduler;
 	ObjectMapper objectMapper;
 	File policyFile;
 	ImageMagick im;
 
-	@BeforeEach
-	void init() throws IOException {
-		executableFinder = new ExecutableFinder();
+	@BeforeAll
+	static void initAll() throws IOException {
+		forceMkdir(MAGICK_TEMP_DIR);
 		maxExecTimeScheduler = newScheduledThreadPool(1);
+		executableFinder = new ExecutableFinder();
+	}
+
+	@BeforeEach
+	void init() {
 		objectMapper = new ObjectMapper();
+
 		im = new ImageMagick(executableFinder, maxExecTimeScheduler, configuration, xmlMapper, objectMapper);
 
 		when(configuration.magick()).thenReturn(magickConf);
 		when(magickConf.maxExecTime()).thenReturn(ofSeconds(10));
-		when(magickConf.tempDir()).thenReturn(getTempDirectoryPath());
-		when(magickConf.confDir()).thenReturn(getTempDirectoryPath());
+		when(magickConf.tempDir()).thenReturn(MAGICK_TEMP_DIR.getAbsolutePath());
+		when(magickConf.confDir()).thenReturn(MAGICK_TEMP_DIR.getAbsolutePath());
 		when(magickConf.maxThreadCount()).thenReturn(1);
 
 		when(xmlMapper.getXmlMapper()).thenReturn(xmlMapperInternal);
@@ -94,10 +103,7 @@ class ImageMagickTest {
 		when(xmlObjectWriter.withRootName("policymap")).thenReturn(xmlObjectWriter);
 		when(xmlObjectWriter.with(INDENT_OUTPUT)).thenReturn(xmlObjectWriter);
 
-		policyFile = new File(getTempDirectory(), "policy.xml");
-		if (policyFile.exists()) {
-			forceDelete(policyFile);
-		}
+		policyFile = new File(MAGICK_TEMP_DIR, "policy.xml");
 	}
 
 	@Test
@@ -177,7 +183,7 @@ class ImageMagickTest {
 						"\"version\":\"1.0\"",
 						whitePng.getName(),
 						"PNG",
-						"893a106828fbdb9521e1d868c985aab7ad2ae2f606edc55329265a5e7676006c");
+						"Portable Network Graphics");
 		forceDelete(saveJsonDest);
 	}
 

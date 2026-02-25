@@ -37,7 +37,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -130,9 +129,8 @@ public class FileEntity {
 	@OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
 	private final Set<PendingActivityEntity> pendingActivities = new HashSet<>();
 
-	@Setter
-	@OneToOne(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE, optional = true)
-	private AssetSummaryEntity assetSummary;
+	@OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
+	private final Set<FileMetadataEntity> fileMetadataEntites = new HashSet<>();
 
 	@OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
 	private final Set<AssetRenderedFileEntity> assetRenderedFiles = new HashSet<>();

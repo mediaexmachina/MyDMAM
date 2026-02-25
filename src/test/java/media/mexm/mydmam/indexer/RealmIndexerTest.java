@@ -43,6 +43,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -94,8 +95,6 @@ class RealmIndexerTest {
 	long length;
 	@Fake
 	boolean exists;
-	@Fake
-	String mimeType;
 
 	String fileName;
 	String path;
@@ -157,7 +156,6 @@ class RealmIndexerTest {
 		fileEntity = new FileEntity(realmName, storageName, file);
 		clearInvocations(file);
 		when(mediaAssetProvider.apply(fileEntity)).thenReturn(mediaAsset);
-		when(mediaAsset.getMimeType()).thenReturn(mimeType);
 	}
 
 	@AfterEach
@@ -526,6 +524,9 @@ class RealmIndexerTest {
 
 	@Test
 	void testReset() {
+		when(mediaAsset.getTextContentByfileMetadata()).thenReturn(Map.of());
+		when(mediaAsset.getMetadatas()).thenReturn(Set.of());
+
 		final var scanResult = new WatchedFiles(Set.of(makeFalseFile(), makeFalseFile()), Set.of(), Set.of(), 0);
 		ri.updateIndexAfterScan(scanResult, storageName);
 		assertThat(ri.openSearch("*", empty(), 10).foundedFiles()).size().isEqualTo(2);
@@ -548,7 +549,8 @@ class RealmIndexerTest {
 		assertThat(result0.explain()).isNull();
 
 		verify(mediaAssetProvider, times(1)).apply(fileEntity);
-		verify(mediaAsset, atLeastOnce()).getMimeType();
+		verify(mediaAsset, atLeastOnce()).getTextContentByfileMetadata();
+		verify(mediaAsset, atLeastOnce()).getMetadatas();
 	}
 
 	@Test
@@ -653,6 +655,8 @@ class RealmIndexerTest {
 	@Test
 	void testUpdateAsset() {
 		when(mediaAsset.getFile()).thenReturn(fileEntity);
+		when(mediaAsset.getTextContentByfileMetadata()).thenReturn(Map.of());
+		when(mediaAsset.getMetadatas()).thenReturn(Set.of());
 
 		ri.updateIndexAfterScan(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
 		ri.updateAsset(mediaAsset);
@@ -663,7 +667,8 @@ class RealmIndexerTest {
 				.isEqualTo(fileHashPath);
 
 		verify(mediaAsset, times(1)).getFile();
-		verify(mediaAsset, times(1)).getMimeType();
+		verify(mediaAsset, atLeastOnce()).getTextContentByfileMetadata();
+		verify(mediaAsset, atLeastOnce()).getMetadatas();
 		reset(file);
 	}
 

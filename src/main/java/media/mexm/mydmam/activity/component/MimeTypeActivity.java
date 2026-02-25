@@ -54,7 +54,7 @@ public class MimeTypeActivity implements ActivityHandler {
 		log.debug("Get mime type from {}", internalFile);
 		final var mimeType = mimeTypeDetector.getMimeType(internalFile);
 		log.debug("Founded mime type: {}", mimeType);
-		asset.setMimeType(mimeType);
+		asset.setMimeType(this, mimeType);
 
 		auditTrail.asyncPersistForRealm(
 				asset.getFile().getRealm(),

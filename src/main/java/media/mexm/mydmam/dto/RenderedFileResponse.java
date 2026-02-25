@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.dto;
 
-public record FileMetadatasRenderedReponse(String previewType,
-										   int index,
-										   String name) {
+public record RenderedFileResponse(String previewType,
+								   String name) {
 }

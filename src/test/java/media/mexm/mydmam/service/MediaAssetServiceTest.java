@@ -18,8 +18,6 @@ package media.mexm.mydmam.service;
 
 import static java.io.File.createTempFile;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static media.mexm.mydmam.asset.DatabaseUpdateDirection.GET_FROM_DB;
-import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.forceDelete;
@@ -29,7 +27,6 @@ import static org.apache.commons.io.FileUtils.write;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -68,13 +65,13 @@ import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
-import media.mexm.mydmam.entity.AssetSummaryEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.FileMetadataEntity;
 import media.mexm.mydmam.indexer.RealmIndexer;
 import media.mexm.mydmam.repository.AssetRenderedFileDao;
 import media.mexm.mydmam.repository.AssetRenderedFileRepository;
-import media.mexm.mydmam.repository.AssetSummaryDao;
-import media.mexm.mydmam.repository.AssetSummaryRepository;
+import media.mexm.mydmam.repository.FileMetadataDao;
+import media.mexm.mydmam.repository.FileMetadataRepository;
 import media.mexm.mydmam.repository.FileRepository;
 import net.datafaker.Faker;
 import tv.hd3g.commons.testtools.Fake;
@@ -89,11 +86,11 @@ class MediaAssetServiceTest {
 	@MockitoBean
 	FileRepository fileRepository;
 	@MockitoBean
-	AssetSummaryRepository assetSummaryRepository;
-	@MockitoBean
-	AssetSummaryDao assetSummaryDao;
-	@MockitoBean
 	AssetRenderedFileDao assetRenderedFileDao;
+	@MockitoBean
+	FileMetadataRepository fileMetadataRepository;
+	@MockitoBean
+	FileMetadataDao fileMetadataDao;
 	@MockitoBean
 	MyDMAMConfigurationProperties configuration;
 	@MockitoBean
@@ -123,9 +120,9 @@ class MediaAssetServiceTest {
 	@Mock
 	RealmConf realmConf;
 	@Mock
-	AssetSummaryEntity assetSummaryEntity;
-	@Mock
 	AssetRenderedFileEntity assetRenderedFileEntity;
+	@Mock
+	FileMetadataEntity fileMetadataEntity;
 
 	@Autowired
 	MediaAssetService mas;
@@ -134,10 +131,10 @@ class MediaAssetServiceTest {
 	void ends() {
 		verifyNoMoreInteractions(
 				fileRepository,
-				assetSummaryRepository,
-				assetSummaryDao,
 				assetRenderedFileDao,
 				assetRenderedFileRepository,
+				fileMetadataDao,
+				fileMetadataRepository,
 				indexer);
 	}
 
@@ -166,45 +163,6 @@ class MediaAssetServiceTest {
 	@Test
 	void testPurgeAssetArtefacts() {
 		assertDoesNotThrow(() -> mas.purgeAssetArtefacts(realmName, storageName, fileAttributesReference));
-	}
-
-	@Test
-	void testUpdateMimeType_push() {
-		when(asset.getFile()).thenReturn(file);
-		when(asset.getMimeType()).thenReturn(mimeType);
-
-		assertEquals(mimeType, mas.updateMimeType(asset, PUSH_TO_DB));
-
-		verify(assetSummaryDao, times(1)).updateMimeType(file, mimeType);
-		verify(asset, atLeastOnce()).getFile();
-		verify(asset, atLeastOnce()).getMimeType();
-	}
-
-	@Test
-	void testUpdateMimeType_get() {
-		when(asset.getFile()).thenReturn(file);
-		when(assetSummaryDao.getForFile(file)).thenReturn(true);
-		when(file.getAssetSummary()).thenReturn(assetSummaryEntity);
-		when(assetSummaryEntity.getMimeType()).thenReturn(mimeType);
-
-		assertEquals(mimeType, mas.updateMimeType(asset, GET_FROM_DB));
-
-		verify(asset, atLeastOnce()).getFile();
-		verify(assetSummaryDao, times(1)).getForFile(file);
-		verify(file, times(1)).getAssetSummary();
-		verify(assetSummaryEntity, times(1)).getMimeType();
-
-	}
-
-	@Test
-	void testUpdateMimeType_get_empty() {
-		when(asset.getFile()).thenReturn(file);
-		when(assetSummaryDao.getForFile(file)).thenReturn(false);
-
-		assertNull(mas.updateMimeType(asset, GET_FROM_DB));
-
-		verify(asset, atLeastOnce()).getFile();
-		verify(assetSummaryDao, times(1)).getForFile(file);
 	}
 
 	@Nested
@@ -277,13 +235,13 @@ class MediaAssetServiceTest {
 
 		@Test
 		void testEmpty() throws IOException {
-			final var result = mas.declareRenderedStaticFiles(asset, List.of());
+			final var result = mas.declareRenderedStaticFiles(file, List.of());
 			assertThat(result).isEmpty();
 		}
 
 		@Test
 		void testDeclare() throws IOException {
-			final var result = mas.declareRenderedStaticFiles(asset, declaredRenderedFiles);
+			final var result = mas.declareRenderedStaticFiles(file, declaredRenderedFiles);
 
 			assertThat(result).hasSize(1).containsEntry(assetRenderedFileEntity, expectedRenderedFile);
 
@@ -294,7 +252,6 @@ class MediaAssetServiceTest {
 			assertThat(expectedRenderedFile).exists().hasContent(renderedContent);
 			assertThat(workingFile).doesNotExist();
 
-			verify(asset, atLeastOnce()).getFile();
 			verify(file, atLeastOnce()).getRealm();
 			verify(file, atLeastOnce()).getId();
 			verify(configuration, atLeastOnce()).getRealmByName(realmName);
@@ -315,9 +272,8 @@ class MediaAssetServiceTest {
 			declaredRenderedFiles = List.of(declaredRenderedFile, declaredRenderedFile);
 
 			assertThrows(IOException.class,
-					() -> mas.declareRenderedStaticFiles(asset, declaredRenderedFiles));
+					() -> mas.declareRenderedStaticFiles(file, declaredRenderedFiles));
 
-			verify(asset, atLeastOnce()).getFile();
 			verify(file, atLeastOnce()).getRealm();
 			verify(configuration, atLeastOnce()).getRealmByName(realmName);
 			verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
@@ -329,13 +285,12 @@ class MediaAssetServiceTest {
 			when(declaredRenderedFile.name()).thenReturn("NOPE");
 
 			assertThrows(IllegalStateException.class,
-					() -> mas.declareRenderedStaticFiles(asset, declaredRenderedFiles));
+					() -> mas.declareRenderedStaticFiles(file, declaredRenderedFiles));
 
 			verify(assetRenderedFileRepository, times(1)).saveAllAndFlush(entitiesToSaveCaptor.capture());
 			entitiesToSaveCaptor.getValue().forEach(savedEntities::add);
 			assertThat(savedEntities).hasSize(1);
 
-			verify(asset, atLeastOnce()).getFile();
 			verify(file, atLeastOnce()).getRealm();
 			verify(file, atLeastOnce()).getId();
 			verify(configuration, atLeastOnce()).getRealmByName(realmName);
@@ -355,13 +310,12 @@ class MediaAssetServiceTest {
 			write(expectedRenderedFile, "NOPE", UTF_8, false);
 
 			assertThrows(IOException.class,
-					() -> mas.declareRenderedStaticFiles(asset, declaredRenderedFiles));
+					() -> mas.declareRenderedStaticFiles(file, declaredRenderedFiles));
 
 			verify(assetRenderedFileRepository, times(1)).saveAllAndFlush(entitiesToSaveCaptor.capture());
 			entitiesToSaveCaptor.getValue().forEach(savedEntities::add);
 			assertThat(savedEntities).hasSize(1);
 
-			verify(asset, atLeastOnce()).getFile();
 			verify(file, atLeastOnce()).getRealm();
 			verify(file, atLeastOnce()).getId();
 			verify(configuration, atLeastOnce()).getRealmByName(realmName);
@@ -386,6 +340,29 @@ class MediaAssetServiceTest {
 		assertThat(mas.getAllRenderedFiles(fileHashpath, realmName))
 				.containsOnly(assetRenderedFileEntity);
 		verify(assetRenderedFileRepository, times(1)).getAllRenderedFiles(fileHashpath, realmName);
+	}
+
+	@Test
+	void testDeclareFileMetadatas() throws IOException {
+		final var list = List.of(fileMetadataEntity);
+		when(fileMetadataDao.addUpdateEntries(file, list)).thenReturn(list);
+		final var result = mas.declareFileMetadatas(file, list);
+		assertThat(result).isEqualTo(list);
+		verify(fileMetadataDao, times(1)).addUpdateEntries(file, list);
+	}
+
+	@Test
+	void testGetAllMetadatas() {
+		final var set = Set.of(fileMetadataEntity);
+
+		when(asset.getFile()).thenReturn(file);
+		when(fileMetadataRepository.getByFile(file)).thenReturn(set);
+
+		final var result = mas.getAllMetadatas(asset);
+		assertThat(result).isEqualTo(set);
+
+		verify(asset, times(1)).getFile();
+		verify(fileMetadataRepository, times(1)).getByFile(file);
 	}
 
 	@Nested
@@ -483,10 +460,6 @@ class MediaAssetServiceTest {
 			when(indexer.getIndexerByRealm(realmName)).thenReturn(Optional.ofNullable(realmIndexer));
 		}
 
-		@AfterEach
-		void ends() {
-		}
-
 		@Test
 		void empty() {
 			final var result = mas.resetDetectedMetadatas(List.of(), injectedService);
@@ -502,7 +475,7 @@ class MediaAssetServiceTest {
 			verify(asset, atLeastOnce()).getFile();
 			verify(file, atLeastOnce()).getId();
 			verify(file, atLeastOnce()).getRealm();
-			verify(assetSummaryRepository, times(1)).deleteByFileId(fileIdsToReset);
+			verify(fileMetadataRepository, times(1)).deleteByFileId(fileIdsToReset);
 			verify(assetRenderedFileDao, times(1)).deleteRenderedFilesByFileId(fileIdsToReset);
 			verify(configuration, atLeastOnce()).getRealmByName(realmName);
 			verify(realmConf, atLeastOnce()).renderedMetadataDirectory();

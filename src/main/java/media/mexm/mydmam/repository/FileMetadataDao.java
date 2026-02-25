@@ -18,15 +18,15 @@ package media.mexm.mydmam.repository;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
-import media.mexm.mydmam.entity.AssetSummaryEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.FileMetadataEntity;
 
-public interface AssetSummaryDao {
+public interface FileMetadataDao {
 
-	boolean getForFile(FileEntity file);
+	Map<String, Set<FileMetadataEntity>> getFileMetadatasByFileIds(Collection<Integer> fileIds, String realm);
 
-	void updateMimeType(FileEntity file, String mimeType);
+	Collection<FileMetadataEntity> addUpdateEntries(FileEntity file, Collection<FileMetadataEntity> items);
 
-	Map<String, AssetSummaryEntity> getAssetSummariesByFileId(Collection<Integer> ids, String realm);
 }

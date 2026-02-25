@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 import static java.util.stream.Stream.concat;
 import static media.mexm.mydmam.App.CONTROLLER_BASE_MAPPING_API_PATH;
+import static media.mexm.mydmam.dto.AssetResponse.buildFromEntities;
 import static media.mexm.mydmam.dto.FileItemResponse.createFromEntity;
 import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
 import static media.mexm.mydmam.dto.StorageStateClass.OFFLINE;
@@ -57,17 +58,17 @@ import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
-import media.mexm.mydmam.dto.FileMetadatasReponse;
+import media.mexm.mydmam.dto.AssetResponse;
 import media.mexm.mydmam.dto.FileResponse;
 import media.mexm.mydmam.dto.RealmListResponse;
 import media.mexm.mydmam.dto.StorageListResponse;
 import media.mexm.mydmam.dto.StorageState;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
-import media.mexm.mydmam.entity.AssetSummaryEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.FileMetadataEntity;
 import media.mexm.mydmam.repository.AssetRenderedFileDao;
-import media.mexm.mydmam.repository.AssetSummaryDao;
 import media.mexm.mydmam.repository.FileDao;
+import media.mexm.mydmam.repository.FileMetadataDao;
 import media.mexm.mydmam.repository.FileRepository;
 import media.mexm.mydmam.repository.FileSort;
 import media.mexm.mydmam.tools.SortOrder;
@@ -86,9 +87,9 @@ public class FileSystemController {
 	@Autowired
 	FileDao fileDao;
 	@Autowired
-	AssetSummaryDao assetSummaryDao;
-	@Autowired
 	AssetRenderedFileDao assetRenderedFileDao;
+	@Autowired
+	FileMetadataDao fileMetadataDao;
 
 	@GetMapping("/list")
 	@Transactional
@@ -143,8 +144,9 @@ public class FileSystemController {
 															   defaultValue = "0") @Min(0) final Integer skip,
 												 @RequestParam(required = false,
 															   defaultValue = "0") @Min(0) final Integer limit,
-												 @RequestParam(required = false,
-															   defaultValue = "0") @Min(0) @Max(1) final Integer summaries,
+												 @RequestParam(name = "file-metadatas",
+															   required = false,
+															   defaultValue = "0") @Min(0) @Max(1) final Integer fileMetadatas,
 												 @RequestParam(required = false,
 															   defaultValue = "0") @Min(0) @Max(1) final Integer rendered,
 												 @RequestParam(required = false,
@@ -156,7 +158,7 @@ public class FileSystemController {
 												 @RequestParam(required = false,
 															   defaultValue = "none") final SortOrder sortBySize) {
 		return list(realm, storage, hashPath(realm, storage, "/"),
-				skip, limit, summaries, rendered, sortByName, sortByType, sortByDate, sortBySize);
+				skip, limit, fileMetadatas, rendered, sortByName, sortByType, sortByDate, sortBySize);
 	}
 
 	@GetMapping("/list/{realm}/{storage}/{hashPath}")
@@ -168,8 +170,9 @@ public class FileSystemController {
 														   defaultValue = "0") @Min(0) final Integer skip,
 											 @RequestParam(required = false,
 														   defaultValue = "0") @Min(0) final Integer limit,
-											 @RequestParam(required = false,
-														   defaultValue = "0") @Min(0) @Max(1) final Integer summaries,
+											 @RequestParam(name = "file-metadatas",
+														   required = false,
+														   defaultValue = "0") @Min(0) @Max(1) final Integer fileMetadatas,
 											 @RequestParam(required = false,
 														   defaultValue = "0") @Min(0) @Max(1) final Integer rendered,
 											 @RequestParam(required = false,
@@ -204,7 +207,7 @@ public class FileSystemController {
 		final var parentHashPath = hashPath(realm, storage, parentPath);
 
 		Set<Integer> allEntitiesIds = Set.of();
-		if (summaries == 1 || rendered == 1) {
+		if (fileMetadatas == 1 || rendered == 1) {
 			allEntitiesIds = concat(resultItemList.stream(), oFileParent.stream())
 					.filter(not(FileEntity::isDirectory))
 					.map(FileEntity::getId)
@@ -212,11 +215,11 @@ public class FileSystemController {
 					.collect(toUnmodifiableSet());
 		}
 
-		final Map<String, AssetSummaryEntity> allSummariesByHashpath;
-		if (summaries == 1) {
-			allSummariesByHashpath = assetSummaryDao.getAssetSummariesByFileId(allEntitiesIds, realm);
+		final Map<String, Set<FileMetadataEntity>> allFileMetadatasByHashpath;
+		if (fileMetadatas == 1) {
+			allFileMetadatasByHashpath = fileMetadataDao.getFileMetadatasByFileIds(allEntitiesIds, realm);
 		} else {
-			allSummariesByHashpath = Map.of();
+			allFileMetadatasByHashpath = Map.of();
 		}
 
 		final Map<String, Set<AssetRenderedFileEntity>> allRenderedByHashpath;
@@ -226,14 +229,14 @@ public class FileSystemController {
 			allRenderedByHashpath = Map.of();
 		}
 
-		final Map<String, FileMetadatasReponse> metadatas = concat(
-				allSummariesByHashpath.keySet().stream(),
+		final Map<String, AssetResponse> metadatas = concat(
+				allFileMetadatasByHashpath.keySet().stream(),
 				allRenderedByHashpath.keySet().stream())
 						.distinct()
 						.collect(toUnmodifiableMap(
 								identity(),
-								f -> new FileMetadatasReponse(
-										allSummariesByHashpath.get(f),
+								f -> buildFromEntities(
+										allFileMetadatasByHashpath.get(f),
 										allRenderedByHashpath.get(f))));
 
 		try {

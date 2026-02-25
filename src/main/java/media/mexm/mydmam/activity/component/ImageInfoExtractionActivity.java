@@ -16,6 +16,8 @@
  */
 package media.mexm.mydmam.activity.component;
 
+import static media.mexm.mydmam.asset.FileMetadataResolutionTrait.MTD_TECHNICAL_CLASSIFIER;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -119,24 +121,23 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
 
 		asset.declareRenderedStaticFile(workingFile, "identify.json", true, mimeTypeDetector, 0, PREVIEW_TYPE);
 
-		jsonNode.read("$.image.mimeType", String.class).ifPresent(asset::setMimeType);
+		jsonNode.read("$.image.mimeType", String.class)
+				.ifPresent(mimeType -> asset.setMimeType(this, mimeType));
 
-		final var width = jsonNode.read("$.image.geometry.width", Integer.class).map(String::valueOf).orElse("0");
-		final var height = jsonNode.read("$.image.geometry.height", Integer.class).map(String::valueOf).orElse("0");
+		final var width = jsonNode.read("$.image.geometry.width", Integer.class).orElse(0);
+		final var height = jsonNode.read("$.image.geometry.height", Integer.class).orElse(0);
 		final var colorspace = jsonNode.read("$.image.colorspace", String.class).orElse(null);
 		final var orientation = jsonNode.read("$.image.orientation", String.class).orElse(null);
 		final var type = jsonNode.read("$.image.type", String.class).map(String::toLowerCase).orElse(null);
 
 		final var entries = Map.of(
-				"width", width,
-				"height", height,
 				"colorspace", colorspace,
 				"orientation", orientation,
 				"type", type);
 
-		asset.createFileMetadataEntries(this, "technical", 0, entries);
-
-		log.debug("Found properties for {}: {}", asset, entries);
+		asset.setResolution(this, width, height);
+		asset.createFileMetadataEntry(this, MTD_TECHNICAL_CLASSIFIER, 0, entries);
+		log.debug("Found properties for {}: {}×{}; {}", asset, width, height, entries);
 
 		return new HandlingResult();
 	}

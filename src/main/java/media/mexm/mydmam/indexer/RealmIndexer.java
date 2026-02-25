@@ -23,7 +23,7 @@ import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 import static media.mexm.mydmam.App.REPLACE_NORMALIZED;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
-import static media.mexm.mydmam.indexer.NamedIndexField.ASSET_MAGICMIME;
+import static media.mexm.mydmam.indexer.NamedIndexField.ASSET;
 import static media.mexm.mydmam.indexer.NamedIndexField.DOCUMENT_TYPE;
 import static media.mexm.mydmam.indexer.NamedIndexField.DOCUMENT_TYPE_FILE;
 import static media.mexm.mydmam.indexer.NamedIndexField.FILE_BASE_NAME;
@@ -211,10 +211,26 @@ public class RealmIndexer {
 	}
 
 	private void toDocument(final Document document, final MediaAsset asset) {
-		Optional.ofNullable(asset.getMimeType())
-				.ifPresent(mimeType -> document.add(new StringField(ASSET_MAGICMIME, mimeType, NO)));
+		final var textContentByfileMetadata = asset.getTextContentByfileMetadata();
 
-		// TODO2 inject *all* db mtd to index
+		asset.getMetadatas()
+				.forEach(fileMetadata -> {
+					final var classifier = new NamedIndexField(ASSET, fileMetadata.getClassifier());
+					final var key = new NamedIndexField(classifier, fileMetadata.getKey());
+					final var layer = new NamedIndexField(key, String.valueOf(fileMetadata.getLayer()));
+
+					final String value;
+					if (textContentByfileMetadata.containsKey(fileMetadata)) {
+						value = textContentByfileMetadata.get(fileMetadata);
+					} else {
+						value = fileMetadata.getValue();
+					}
+
+					document.add(new StringField(ASSET.toString(), value, NO));
+					document.add(new StringField(classifier.toString(), value, NO));
+					document.add(new StringField(key.toString(), value, NO));
+					document.add(new StringField(layer.toString(), value, NO));
+				});
 	}
 
 	private Document toDocument(final FileEntity file) {

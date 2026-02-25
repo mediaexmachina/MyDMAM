@@ -31,5 +31,5 @@ public record FileResponse(String realm,
 						   int total,
 						   FileSort sort,
 						   List<FileItemResponse> list,
-						   Map<String, FileMetadatasReponse> metadatas) {
+						   Map<String, AssetResponse> metadatas) {
 }

@@ -19,6 +19,7 @@ package media.mexm.mydmam.activity.component;
 import static java.io.File.createTempFile;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.empty;
+import static media.mexm.mydmam.asset.FileMetadataResolutionTrait.MTD_TECHNICAL_CLASSIFIER;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.writeStringToFile;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -110,7 +111,7 @@ class ImageInfoExtractionActivityTest {
 		when(storedOn.isDAS()).thenReturn(false);
 		when(storedOn.haveWorkingDir()).thenReturn(false);
 		when(storedOn.haveRenderedDir()).thenReturn(false);
-		when(asset.getMimeType()).thenReturn("nope/nope");
+		when(asset.getMimeType()).thenReturn(Optional.ofNullable("nope/nope"));
 
 		assertFalse(iiea.canHandle(asset, eventType, storedOn));
 
@@ -126,7 +127,7 @@ class ImageInfoExtractionActivityTest {
 		when(storedOn.haveRenderedDir()).thenReturn(true);
 		assertFalse(iiea.canHandle(asset, eventType, storedOn));
 
-		when(asset.getMimeType()).thenReturn("image/jpeg");
+		when(asset.getMimeType()).thenReturn(Optional.ofNullable("image/jpeg"));
 		assertTrue(iiea.canHandle(asset, eventType, storedOn));
 
 		verify(imageMagick, atLeastOnce()).isEnabled();
@@ -155,9 +156,9 @@ class ImageInfoExtractionActivityTest {
 
 		@Fake
 		String imageMimeType;
-		@Fake
+		@Fake(min = 1, max = 100)
 		int width;
-		@Fake
+		@Fake(min = 1, max = 100)
 		int height;
 		@Fake
 		String colorspace;
@@ -226,14 +227,13 @@ class ImageInfoExtractionActivityTest {
 			verify(jsonNode, atLeastOnce()).read(anyString(), eq(String.class));
 			verify(jsonNode, atLeastOnce()).read(anyString(), eq(Integer.class));
 
-			verify(asset, times(1)).setMimeType(imageMimeType);
+			verify(asset, times(1)).setMimeType(iiea, imageMimeType);
 			verify(asset, times(1))
-					.createFileMetadataEntries(iiea, "technical", 0, Map.of(
-							"width", String.valueOf(width),
-							"height", String.valueOf(height),
+					.createFileMetadataEntry(iiea, MTD_TECHNICAL_CLASSIFIER, 0, Map.of(
 							"colorspace", colorspace,
 							"orientation", orientation,
 							"type", imageType.toLowerCase()));
+			verify(asset, times(1)).setResolution(iiea, width, height);
 		}
 
 		@Test

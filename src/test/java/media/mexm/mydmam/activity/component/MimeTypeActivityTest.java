@@ -104,7 +104,7 @@ class MimeTypeActivityTest {
 		verify(mimeTypeDetector, times(1)).getMimeType(internalFile);
 		verify(asset, times(1)).getLocalInternalFile(pathIndexingStorage);
 		verify(asset, times(1)).getFile();
-		verify(asset, times(1)).setMimeType(mimeType);
+		verify(asset, times(1)).setMimeType(mta, mimeType);
 		verify(asset, times(1)).getHashPath();
 		verify(fileEntity, times(1)).getRealm();
 		verify(auditTrail, times(1)).asyncPersistForRealm(

@@ -22,11 +22,11 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import media.mexm.mydmam.asset.DatabaseUpdateDirection;
 import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.FileMetadataEntity;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 public interface MediaAssetService {
@@ -40,12 +40,15 @@ public interface MediaAssetService {
 
 	void purgeAssetArtefacts(String realmName, String storageName, FileAttributesReference file);
 
-	String updateMimeType(MediaAsset asset, DatabaseUpdateDirection direction);
-
-	Map<AssetRenderedFileEntity, File> declareRenderedStaticFiles(MediaAsset asset,
+	Map<AssetRenderedFileEntity, File> declareRenderedStaticFiles(FileEntity fileEntity,
 																  Collection<DeclaredRenderedFile> declaredRenderedFiles) throws IOException;
 
+	Collection<FileMetadataEntity> declareFileMetadatas(FileEntity file,
+														Collection<FileMetadataEntity> fileMetadatas) throws IOException;
+
 	Set<AssetRenderedFileEntity> getAllRenderedFiles(String fileHashpath, String realm);
+
+	Set<FileMetadataEntity> getAllMetadatas(MediaAsset asset);
 
 	File getPhysicalRenderedFile(AssetRenderedFileEntity assetRenderedFileEntity, String realm);
 

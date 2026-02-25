@@ -73,18 +73,19 @@ import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.dto.FileItemResponse;
-import media.mexm.mydmam.dto.FileMetadatasRenderedReponse;
 import media.mexm.mydmam.dto.FileResponse;
+import media.mexm.mydmam.dto.KeyValueMetadataResponse;
 import media.mexm.mydmam.dto.RealmListResponse;
+import media.mexm.mydmam.dto.RenderedFileResponse;
 import media.mexm.mydmam.dto.StorageCategory;
 import media.mexm.mydmam.dto.StorageListResponse;
 import media.mexm.mydmam.dto.StorageState;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
-import media.mexm.mydmam.entity.AssetSummaryEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.FileMetadataEntity;
 import media.mexm.mydmam.repository.AssetRenderedFileDao;
-import media.mexm.mydmam.repository.AssetSummaryDao;
 import media.mexm.mydmam.repository.FileDao;
+import media.mexm.mydmam.repository.FileMetadataDao;
 import media.mexm.mydmam.repository.FileRepository;
 import media.mexm.mydmam.repository.FileSort;
 import tv.hd3g.commons.testtools.Fake;
@@ -118,9 +119,9 @@ class FileSystemControllerTest {
 	@MockitoBean
 	AuditTrail auditTrail;
 	@MockitoBean
-	AssetSummaryDao assetSummaryDao;
-	@MockitoBean
 	AssetRenderedFileDao assetRenderedFileDao;
+	@MockitoBean
+	FileMetadataDao fileMetadataDao;
 
 	@Mock
 	HttpServletRequest request;
@@ -130,8 +131,6 @@ class FileSystemControllerTest {
 	FileEntity fileChildren0;
 	@Mock
 	FileEntity fileChildren1;
-	@Mock
-	AssetSummaryEntity assetSummaryEntity;
 
 	@Fake
 	String realm;
@@ -157,8 +156,6 @@ class FileSystemControllerTest {
 	long length;
 	@Fake
 	String specifications;
-	@Fake
-	String mimeType;
 
 	HttpHeaders baseHeaders;
 	long modified;
@@ -212,12 +209,11 @@ class FileSystemControllerTest {
 	@AfterEach
 	void ends() {
 		verifyNoMoreInteractions(
-				conf,
 				fileRepository,
 				fileDao,
 				auditTrail,
-				assetSummaryDao,
-				assetRenderedFileDao);
+				assetRenderedFileDao,
+				fileMetadataDao);
 	}
 
 	@Test
@@ -434,12 +430,23 @@ class FileSystemControllerTest {
 
 		@Mock
 		AssetRenderedFileEntity assetRenderedFileEntity;
+		@Mock
+		FileMetadataEntity fileMetadataEntity;
+
 		@Fake
 		String previewType;
 		@Fake
-		int index;
-		@Fake
 		String name;
+
+		@Fake
+		String classifier;
+		@Fake
+		String key;
+		@Fake
+		String value;
+
+		@Fake
+		int indexLayer;
 
 		@BeforeEach
 		void init() {
@@ -515,21 +522,28 @@ class FileSystemControllerTest {
 			when(fileChildren0.getId()).thenReturn(0);
 			when(fileChildren1.getId()).thenReturn(1);
 
-			when(assetSummaryDao.getAssetSummariesByFileId(Set.of(0, 1), realm))
-					.thenReturn(Map.of(hashPath, assetSummaryEntity));
+			when(fileMetadataDao.getFileMetadatasByFileIds(Set.of(0, 1), realm))
+					.thenReturn(Map.of(hashPath, Set.of(fileMetadataEntity)));
 			when(assetRenderedFileDao.getRenderedFilesByFileId(Set.of(0, 1), realm))
 					.thenReturn(Map.of(hashPath, Set.of(assetRenderedFileEntity)));
-			when(assetSummaryEntity.getMimeType()).thenReturn(mimeType);
 
-			final var renderedReponse = new FileMetadatasRenderedReponse(previewType, index, name);
+			final var keyValueMetadataResponse = new KeyValueMetadataResponse(classifier, key, value);
+			when(fileMetadataEntity.toKeyValueMetadataResponse())
+					.thenReturn(keyValueMetadataResponse);
+			when(fileMetadataEntity.getLayer())
+					.thenReturn(indexLayer);
+
+			final var renderedReponse = new RenderedFileResponse(previewType, name);
 			when(assetRenderedFileEntity.toRenderedReponse())
 					.thenReturn(renderedReponse);
+			when(assetRenderedFileEntity.getIndexref())
+					.thenReturn(indexLayer);
 
 			final var content = mvc.perform(get(BASE_MAPPING + "/list/" + realm + "/" + storage + "/" + hashPath)
 					.headers(baseHeaders)
 					.queryParam("skip", String.valueOf(skip))
 					.queryParam("limit", String.valueOf(limit))
-					.queryParam("summaries", "1")
+					.queryParam("file-metadatas", "1")
 					.queryParam("rendered", "1"))
 					.andExpect(STATUS_OK)
 					.andExpect(CONTENT_TYPE)
@@ -550,15 +564,27 @@ class FileSystemControllerTest {
 			final var metadata = metadatas.get(hashPath);
 			assertNotNull(metadata);
 
-			final var rendered = metadata.rendered();
-			assertThat(rendered).hasSize(1).contains(renderedReponse);
+			assertThat(metadata.index())
+					.hasSize(1)
+					.containsKey(indexLayer);
+			final var assetResponse = metadata.index().get(indexLayer);
+
+			assertThat(assetResponse.fileMetadatas())
+					.hasSize(1)
+					.contains(keyValueMetadataResponse);
+			assertThat(assetResponse.rendered())
+					.hasSize(1)
+					.contains(renderedReponse);
+			assertThat(assetResponse.index()).isEqualTo(indexLayer);
 
 			verify(fileChildren0, times(1)).getId();
 			verify(fileChildren1, times(1)).getId();
-			verify(assetSummaryDao, times(1)).getAssetSummariesByFileId(Set.of(0, 1), realm);
+			verify(fileMetadataDao, times(1)).getFileMetadatasByFileIds(Set.of(0, 1), realm);
 			verify(assetRenderedFileDao, times(1)).getRenderedFilesByFileId(Set.of(0, 1), realm);
-			verify(assetSummaryEntity, times(1)).getMimeType();
+			verify(fileMetadataEntity, times(1)).getLayer();
+			verify(fileMetadataEntity, times(1)).toKeyValueMetadataResponse();
 			verify(assetRenderedFileEntity, times(1)).toRenderedReponse();
+			verify(assetRenderedFileEntity, times(1)).getIndexref();
 		}
 
 	}

@@ -43,15 +43,23 @@ CREATE TABLE `pending_activity` (
   CONSTRAINT pending_activity_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `asset_summary` (
+CREATE TABLE `file_metadata` (
   `id` int NOT NULL AUTO_INCREMENT,
   `create_date` datetime NOT NULL,
   `file_id` int NOT NULL,
-  `mime_type` varchar(128),
+  `origin` varchar(32) NOT NULL,
+  `classifier` varchar(32) NOT NULL,
+  `layer` int NOT NULL,
+  `key_name` varchar(128) NOT NULL,
+  `key_value` varchar(1024) NOT NULL,
+  `entry_crc` bigint NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `asset_summary_mime_type_idx` (`mime_type`),
-  KEY `asset_summary_file_id_idx` (`file_id`),
-  CONSTRAINT asset_summary_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE
+  KEY `file_metadata_origin_idx` (`origin`),
+  KEY `file_metadata_classifier_idx` (`classifier`),
+  KEY `file_metadata_key_name_idx` (`key_name`),
+  KEY `file_metadata_entry_crc_idx` (`entry_crc`),
+  KEY `file_metadata_file_id_idx` (`file_id`),
+  CONSTRAINT file_metadata_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `asset_renderedfile` (

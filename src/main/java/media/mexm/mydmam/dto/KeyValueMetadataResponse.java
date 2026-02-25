@@ -16,14 +16,7 @@
  */
 package media.mexm.mydmam.dto;
 
-import media.mexm.mydmam.entity.AssetSummaryEntity;
-
-@Deprecated
-public record FileMetadatasSummaryResponse(String mimeType) {
-
-	@Deprecated
-	public FileMetadatasSummaryResponse(final AssetSummaryEntity assetSummaryEntity) {
-		this(assetSummaryEntity.getMimeType());
-	}
-
+public record KeyValueMetadataResponse(String classifier,
+									   String key,
+									   String value) {
 }

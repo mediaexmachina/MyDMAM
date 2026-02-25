@@ -17,7 +17,6 @@
 package media.mexm.mydmam.asset;
 
 import java.io.File;
-import java.util.Optional;
 import java.util.Set;
 
 import media.mexm.mydmam.activity.ActivityHandler;
@@ -31,7 +30,7 @@ public interface MetadataExtractorHandler extends ActivityHandler {
 	Set<String> getManagedMimeTypes();
 
 	default boolean canHandleMimeType(final MediaAsset asset) {
-		return Optional.ofNullable(asset.getMimeType())
+		return asset.getMimeType()
 				.map(mimeType -> getManagedMimeTypes().contains(mimeType))
 				.orElse(false);
 	}

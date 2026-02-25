@@ -41,7 +41,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.ToString;
 import media.mexm.mydmam.asset.DeclaredRenderedFile;
-import media.mexm.mydmam.dto.FileMetadatasRenderedReponse;
+import media.mexm.mydmam.dto.RenderedFileResponse;
 
 @Entity
 @Table(name = AssetRenderedFileEntity.TABLE_NAME,
@@ -132,19 +132,23 @@ public class AssetRenderedFileEntity {
 
 	public String getRelativePath() {
 		final var hex = leftPad(toHexString(file.getId()).toUpperCase(), 8, "00000000");
-		final var baseName = encoded.equals(GZIP_ENCODED) ? name + ".gz" : name;
+		final var baseName = isGzipEncoded() ? name + ".gz" : name;
 
 		return "/" + hex.substring(0, 4)
 			   + "/" + hex.substring(4)
 			   + "/" + id + "." + indexref + "." + baseName;
 	}
 
-	public FileMetadatasRenderedReponse toRenderedReponse() {
-		return new FileMetadatasRenderedReponse(previewType, indexref, name);
+	public RenderedFileResponse toRenderedReponse() {
+		return new RenderedFileResponse(previewType, name);
 	}
 
 	public String getHexETag() {
 		return toHexString(etag);
+	}
+
+	public boolean isGzipEncoded() {
+		return GZIP_ENCODED.equals(encoded);
 	}
 
 }

@@ -16,21 +16,29 @@
  */
 package media.mexm.mydmam.asset;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toUnmodifiableMap;
-import static media.mexm.mydmam.asset.DatabaseUpdateDirection.GET_FROM_DB;
-import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
+import static org.apache.commons.io.FileUtils.readFileToString;
+import static org.apache.commons.io.IOUtils.readLines;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -40,28 +48,39 @@ import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.FileMetadataEntity;
 import media.mexm.mydmam.indexer.RealmIndexer;
 import media.mexm.mydmam.service.MediaAssetService;
 import tv.hd3g.transfertfiles.AbstractFileSystemURL;
 import tv.hd3g.transfertfiles.local.LocalFile;
 
 @Slf4j
-public class MediaAsset {
+public class MediaAsset implements
+						MimeTypeTrait,
+						CreateFileMetadataEntryTrait,
+						AccessFileMetadataEntryTrait,
+						FileMetadataResolutionTrait {
 
+	static final String MTD_KEY_FULL_INDEXED_TEXT = "full-indexed-text";
+	public static final String PREVIEW_TYPE_TEXT_CONTENT = "text-content";
 	@Getter
 	private final MediaAssetService service;
 	@Getter
 	private final FileEntity file;
-	private String mimeType;
 	private Map<AssetRenderedFileEntity, File> renderedFiles;
+	private Set<FileMetadataEntity> metadatas;
 
 	private final LinkedList<DeclaredRenderedFile> pendingDeclaredRenderedFiles;
+	private final LinkedList<FileMetadataEntity> pendingFileMetadatas;
+	private final HashMap<String, String> textContentByRenderedNameCache;
 
 	public MediaAsset(final MediaAssetService service,
 					  final FileEntity file) {
 		this.service = requireNonNull(service, "\"service\" can't to be null");
 		this.file = requireNonNull(file, "\"file\" can't to be null");
 		pendingDeclaredRenderedFiles = new LinkedList<>();
+		pendingFileMetadatas = new LinkedList<>();
+		textContentByRenderedNameCache = new HashMap<>();
 	}
 
 	public String getHashPath() {
@@ -70,22 +89,6 @@ public class MediaAsset {
 
 	public String getName() {
 		return FilenameUtils.getName(file.getPath());
-	}
-
-	public synchronized String getMimeType() {
-		if (mimeType == null) {
-			mimeType = service.updateMimeType(this, GET_FROM_DB);
-		}
-		return mimeType;
-	}
-
-	public synchronized void setMimeType(final String mimeType) {
-		requireNonNull(mimeType, "\"mimeType\" can't to be null");
-		if (mimeType.equals(this.mimeType)) {
-			return;
-		}
-		this.mimeType = mimeType;
-		service.updateMimeType(this, PUSH_TO_DB);
 	}
 
 	@Override
@@ -150,31 +153,116 @@ public class MediaAsset {
 		return unmodifiableMap(renderedFiles);
 	}
 
+	@Override
+	public synchronized Set<FileMetadataEntity> getMetadatas() {
+		if (metadatas == null) {
+			metadatas = new HashSet<>();
+			metadatas.addAll(service.getAllMetadatas(this));
+		}
+		return unmodifiableSet(metadatas);
+	}
+
+	@Override
+	public synchronized void createFileMetadataEntry(final String originHandler,
+													 final String classifier,
+													 final int layer,
+													 final String key,
+													 final String value) {
+		pendingFileMetadatas.add(new FileMetadataEntity(file, originHandler, classifier, layer, key, value));
+	}
+
+	public synchronized void addFullTextToIndex(final MetadataExtractorHandler mtdHander,
+												final String classifier,
+												final int layer,
+												final MimeTypeDetector mimeTypeDetector,
+												final Charset charsetName,
+												final File textToIndex) {
+		log.debug("Add full text from {} to {}:{}:{}, via", textToIndex, file, classifier, layer, mtdHander);
+
+		try {
+			final var content = readFileToString(textToIndex, charsetName);
+			final var staticName = mtdHander.getMetadataOriginName() + "-" + classifier + "-full-text";
+			final var renderedFile = new DeclaredRenderedFile(
+					textToIndex, staticName, true, mimeTypeDetector, layer, PREVIEW_TYPE_TEXT_CONTENT);
+
+			if (renderedFile.mimeType().equals("text/plain")) {
+				log.trace("Founded mimeType for {}: {}", textToIndex, renderedFile.mimeType());
+			} else {
+				log.warn("Founded mimeType for {}: {}, is not seen as text/plain. File will be moved on {}",
+						textToIndex, renderedFile.mimeType(), renderedFile.workingFile());
+			}
+
+			pendingDeclaredRenderedFiles.add(renderedFile);
+			createFileMetadataEntry(mtdHander, classifier, layer, MTD_KEY_FULL_INDEXED_TEXT, staticName);
+			textContentByRenderedNameCache.put(staticName, content);
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Can't access to " + textToIndex, e);
+		}
+	}
+
 	public synchronized void commit(final Optional<RealmIndexer> oIndexer) throws IOException {
-		if (pendingDeclaredRenderedFiles.isEmpty()) {
+		if (pendingDeclaredRenderedFiles.isEmpty()
+			&& pendingFileMetadatas.isEmpty()) {
 			return;
 		}
 
-		final var declaredFiles = service.declareRenderedStaticFiles(
-				this,
+		log.debug("Start to commit asset {}, pendingDeclaredRenderedFiles={}, pendingFileMetadatas={}",
+				file,
+				pendingDeclaredRenderedFiles.size(),
+				pendingFileMetadatas.size());
+
+		service.declareRenderedStaticFiles(
+				file,
 				pendingDeclaredRenderedFiles.stream().toList());
 		pendingDeclaredRenderedFiles.clear();
 
-		if (renderedFiles == null) {
-			renderedFiles = new HashMap<>(declaredFiles);
-		} else {
-			renderedFiles.putAll(declaredFiles);
-		}
+		service.declareFileMetadatas(
+				file,
+				pendingFileMetadatas.stream().toList());
+		pendingFileMetadatas.clear();
+
+		renderedFiles = null;
+		metadatas = null;
 
 		oIndexer.ifPresent(indexer -> indexer.updateAsset(this));
 	}
 
-	public synchronized void createFileMetadataEntries(final MetadataExtractorHandler originHandler,
-													   final String classifier,
-													   final int layer,
-													   final Map<String, String> entries) {
-		originHandler.getMetadataOriginName();
-		// TODO2 implement createFileMetadataEntries
+	public synchronized Map<FileMetadataEntity, String> getTextContentByfileMetadata() {
+		getRenderedFiles().keySet()
+				.stream()
+				.filter(f -> PREVIEW_TYPE_TEXT_CONTENT.equals(f.getPreviewType()))
+				.filter(f -> textContentByRenderedNameCache.containsKey(f.getName()) == false)
+				.toList()
+				.forEach(f -> {
+					final var physicalRenderedFile = service.getPhysicalRenderedFile(f, file.getRealm());
+					final var content = readTextFile(physicalRenderedFile, f.isGzipEncoded());
+					textContentByRenderedNameCache.put(f.getName(), content);
+				});
+
+		return getMetadatas().stream()
+				.filter(m -> MTD_KEY_FULL_INDEXED_TEXT.equals(m.getKey()))
+				.filter(m -> textContentByRenderedNameCache.containsKey(m.getValue()))
+				.collect(toUnmodifiableMap(
+						identity(),
+						m -> textContentByRenderedNameCache.get(m.getValue())));
+	}
+
+	static String readTextFile(final File file, final boolean unGzip) {
+		try {
+			if (unGzip) {
+				log.info("Start to read gzip text file \"{}\" to import text ({} bytes)", file, file.length());
+				try (final var fsi = new GZIPInputStream(new FileInputStream(file))) {
+					return readLines(fsi, UTF_8)
+							.stream()
+							.collect(joining(" "));
+				}
+			}
+
+			log.info("Start to read plain text file \"{}\" to import text ({} bytes)", file, file.length());
+			return readFileToString(file, UTF_8);
+		} catch (final IOException e) {
+			throw new UncheckedIOException("Can't read file " + file, e);
+		}
 	}
 
 	@Override

@@ -22,15 +22,23 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
-import media.mexm.mydmam.entity.AssetSummaryEntity;
+import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.FileMetadataEntity;
 
-public interface AssetSummaryRepository extends JpaRepository<AssetSummaryEntity, Long> {
+public interface FileMetadataRepository extends JpaRepository<FileMetadataEntity, Long> {
 
 	@Query("""
-			DELETE FROM AssetSummaryEntity as
-			WHERE as.file.id IN :fileIds
+			DELETE FROM FileMetadataEntity fm
+			WHERE fm.file.id IN :fileIds
 			""")
 	@Modifying
 	void deleteByFileId(Set<Integer> fileIds);
+
+	@Query("""
+			SELECT fm
+			FROM FileMetadataEntity fm
+			WHERE fm.file = :file
+			""")
+	Set<FileMetadataEntity> getByFile(FileEntity file);
 
 }

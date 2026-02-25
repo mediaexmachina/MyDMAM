@@ -16,12 +16,16 @@
  */
 package media.mexm.mydmam.asset;
 
-import static media.mexm.mydmam.asset.DatabaseUpdateDirection.GET_FROM_DB;
-import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.joining;
+import static media.mexm.mydmam.asset.MediaAsset.MTD_KEY_FULL_INDEXED_TEXT;
+import static media.mexm.mydmam.asset.MediaAsset.PREVIEW_TYPE_TEXT_CONTENT;
+import static media.mexm.mydmam.asset.MediaAsset.readTextFile;
+import static org.apache.commons.io.FileUtils.deleteQuietly;
+import static org.apache.commons.io.FileUtils.write;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -32,23 +36,30 @@ import static org.mockito.internal.verification.VerificationModeFactory.atLeastO
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.zip.GZIPOutputStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.dto.KeyValueMetadataResponse;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.FileMetadataEntity;
 import media.mexm.mydmam.indexer.RealmIndexer;
 import media.mexm.mydmam.service.MediaAssetService;
 import net.datafaker.Faker;
@@ -74,6 +85,13 @@ class MediaAssetTest {
 	MimeTypeDetector mimeTypeDetector;
 	@Mock
 	RealmIndexer realmIndexer;
+	@Mock
+	FileMetadataEntity fileMetadataEntity;
+	@Mock
+	MetadataExtractorHandler mtdHander;
+
+	@Captor
+	ArgumentCaptor<Collection<FileMetadataEntity>> fileMetadataEntitiesCaptor;
 
 	@Fake
 	String realmName;
@@ -87,14 +105,24 @@ class MediaAssetTest {
 	String fileExt;
 	@Fake
 	String hashPath;
-	@Fake
-	String mimeType;
+
 	@Fake
 	String name;
 	@Fake
 	int index;
 	@Fake
 	String previewType;
+
+	@Fake
+	String originHandler;
+	@Fake
+	String classifier;
+	@Fake
+	int layer;
+	@Fake
+	String key;
+	@Fake
+	String value;
 
 	File workingFile;
 	String path;
@@ -114,10 +142,12 @@ class MediaAssetTest {
 
 		when(service.getAllRenderedFiles(hashPath, realmName))
 				.thenReturn(Set.of(assetRenderedFileEntity));
-		when(service.declareRenderedStaticFiles(eq(ma), any()))
+		when(service.declareRenderedStaticFiles(eq(file), any()))
 				.thenReturn(Map.of(assetRenderedFileEntity, renderedFile));
 		when(service.getPhysicalRenderedFile(assetRenderedFileEntity, realmName))
 				.thenReturn(renderedFile);
+		when(service.getAllMetadatas(ma))
+				.thenReturn(Set.of(fileMetadataEntity));
 
 		workingFile = new File(".");
 	}
@@ -140,26 +170,6 @@ class MediaAssetTest {
 		verify(file, atLeastOnce()).getRealm();
 		verify(file, atLeastOnce()).getStorage();
 		verify(file, atLeastOnce()).getPath();
-	}
-
-	@Test
-	void testGetMimeType() {
-		when(service.updateMimeType(ma, GET_FROM_DB)).thenReturn(mimeType);
-		assertEquals(mimeType, ma.getMimeType());
-		verify(service, times(1)).updateMimeType(ma, GET_FROM_DB);
-		assertEquals(mimeType, ma.getMimeType());
-	}
-
-	@Test
-	void testSetMimeType() {
-		assertThrows(NullPointerException.class, () -> ma.setMimeType(null));
-		verifyNoInteractions(service);
-
-		ma.setMimeType(mimeType);
-		verify(service, times(1)).updateMimeType(ma, PUSH_TO_DB);
-
-		assertEquals(mimeType, ma.getMimeType());
-		ma.setMimeType(mimeType);
 	}
 
 	@Test
@@ -204,6 +214,40 @@ class MediaAssetTest {
 	}
 
 	@Test
+	void testGetRenderedFiles() {
+		when(service.getAllRenderedFiles(hashPath, realmName))
+				.thenReturn(Set.of(assetRenderedFileEntity));
+		when(service.getPhysicalRenderedFile(assetRenderedFileEntity, realmName))
+				.thenReturn(renderedFile);
+
+		assertThat(ma.getRenderedFiles())
+				.hasSize(1)
+				.containsEntry(assetRenderedFileEntity, renderedFile);
+		verify(service, times(1)).getAllRenderedFiles(hashPath, realmName);
+		verify(service, times(1)).getPhysicalRenderedFile(assetRenderedFileEntity, realmName);
+		verify(file, times(1)).getHashPath();
+		verify(file, times(1)).getRealm();
+
+		assertThat(ma.getRenderedFiles())
+				.hasSize(1)
+				.containsEntry(assetRenderedFileEntity, renderedFile);
+	}
+
+	@Test
+	void testGetMetadatas() {
+		assertThat(ma.getMetadatas()).containsExactly(fileMetadataEntity);
+		verify(service, times(1)).getAllMetadatas(ma);
+
+		assertThat(ma.getMetadatas()).containsExactly(fileMetadataEntity);
+	}
+
+	@Test
+	void testCreateFileMetadataEntry() {
+		ma.createFileMetadataEntry(originHandler, classifier, layer, key, value);
+		verifyNoInteractions(service);
+	}
+
+	@Test
 	void testCommit_empty() throws IOException {// NOSONAR S2699
 		ma.commit(Optional.ofNullable(realmIndexer));
 	}
@@ -211,17 +255,22 @@ class MediaAssetTest {
 	@Test
 	void testCommit() throws IOException {
 		ma.declareRenderedStaticFile(workingFile, name, false, mimeTypeDetector, index, previewType);
-		ma.commit(Optional.ofNullable(realmIndexer));
+		ma.createFileMetadataEntry(originHandler, classifier, layer, key, value);
 
-		assertThat(ma.getRenderedFiles())
-				.hasSize(1)
-				.containsEntry(assetRenderedFileEntity, renderedFile);
+		ma.commit(Optional.ofNullable(realmIndexer));
 
 		verify(realmIndexer, times(1)).updateAsset(ma);
 
 		declaredRenderedFile = new DeclaredRenderedFile(
 				workingFile, name, false, mimeTypeDetector, index, previewType);
-		verify(service, times(1)).declareRenderedStaticFiles(ma, List.of(declaredRenderedFile));
+		verify(service, times(1)).declareRenderedStaticFiles(file, List.of(declaredRenderedFile));
+		verify(service, times(1)).declareFileMetadatas(eq(file), fileMetadataEntitiesCaptor.capture());
+		assertThat(fileMetadataEntitiesCaptor.getValue())
+				.hasSize(1)
+				.map(FileMetadataEntity::toKeyValueMetadataResponse)
+				.first()
+				.isEqualTo(new KeyValueMetadataResponse(classifier, key, value));
+
 		verify(mimeTypeDetector, atLeastOnce()).getMimeType(workingFile);
 	}
 
@@ -255,6 +304,109 @@ class MediaAssetTest {
 		verify(file, atLeastOnce()).getId();
 		verify(fileCompared, atLeastOnce()).getId();
 		verifyNoMoreInteractions(serviceCompared, fileCompared);
+	}
+
+	@Test
+	void testAddFullTextToIndex() throws IOException {
+		final var textToIndex = File.createTempFile("mydmam-test-" + getClass().getName(), ".txt");
+		write(textToIndex, Faker.instance().lorem().paragraphs(5).stream().collect(joining()), UTF_8);
+
+		when(mtdHander.getMetadataOriginName()).thenReturn(originHandler);
+		when(mimeTypeDetector.getMimeType(any(File.class))).thenReturn("text/plain");
+
+		ma.addFullTextToIndex(mtdHander, classifier, layer, mimeTypeDetector, UTF_8, textToIndex);
+
+		verify(mtdHander, atLeastOnce()).getMetadataOriginName();
+		verify(mimeTypeDetector, times(1)).getMimeType(textToIndex);
+		assertThat(textToIndex).doesNotExist();
+
+		verifyNoInteractions(service);
+
+		ma.commit(Optional.ofNullable(realmIndexer));
+
+		verify(realmIndexer, times(1)).updateAsset(ma);
+
+		name = originHandler + "-" + classifier + "-full-text";
+
+		write(textToIndex, Faker.instance().lorem().paragraphs(5).stream().collect(joining()), UTF_8);
+		declaredRenderedFile = new DeclaredRenderedFile(
+				textToIndex,
+				name,
+				true,
+				mimeTypeDetector,
+				layer,
+				PREVIEW_TYPE_TEXT_CONTENT);
+		verify(service, times(1)).declareRenderedStaticFiles(file, List.of(declaredRenderedFile));
+		verify(service, times(1)).declareFileMetadatas(eq(file), fileMetadataEntitiesCaptor.capture());
+		assertThat(fileMetadataEntitiesCaptor.getValue())
+				.hasSize(1)
+				.map(FileMetadataEntity::toKeyValueMetadataResponse)
+				.first()
+				.isEqualTo(new KeyValueMetadataResponse(
+						classifier,
+						MTD_KEY_FULL_INDEXED_TEXT,
+						name));
+
+		verify(mimeTypeDetector, times(2)).getMimeType(textToIndex);
+	}
+
+	@Test
+	void testGetTextContentByfileMetadata() throws IOException {
+		renderedFile = File.createTempFile("mydmam-test-" + getClass().getName(), ".txt");
+		final var fullText = Faker.instance().lorem().paragraphs(5).stream().collect(joining());
+		write(renderedFile, fullText, UTF_8);
+
+		when(service.getPhysicalRenderedFile(assetRenderedFileEntity, realmName)).thenReturn(renderedFile);
+		when(assetRenderedFileEntity.getPreviewType()).thenReturn(PREVIEW_TYPE_TEXT_CONTENT);
+		when(assetRenderedFileEntity.getName()).thenReturn(name);
+		when(assetRenderedFileEntity.isGzipEncoded()).thenReturn(false);
+		when(fileMetadataEntity.getValue()).thenReturn(name);
+		when(fileMetadataEntity.getKey()).thenReturn(MTD_KEY_FULL_INDEXED_TEXT);
+
+		assertThat(ma.getTextContentByfileMetadata())
+				.hasSize(1)
+				.containsEntry(fileMetadataEntity, fullText);
+
+		verify(service, times(1)).getAllRenderedFiles(hashPath, realmName);
+		verify(service, times(2)).getPhysicalRenderedFile(assetRenderedFileEntity, realmName);
+		verify(service, times(1)).getAllMetadatas(ma);
+
+		assertThat(ma.getTextContentByfileMetadata())
+				.hasSize(1)
+				.containsEntry(fileMetadataEntity, fullText);
+
+		verify(file, atLeastOnce()).getHashPath();
+		verify(file, atLeastOnce()).getRealm();
+		verify(assetRenderedFileEntity, atLeastOnce()).getPreviewType();
+		verify(assetRenderedFileEntity, atLeastOnce()).getName();
+		verify(assetRenderedFileEntity, atLeastOnce()).isGzipEncoded();
+		verify(fileMetadataEntity, atLeastOnce()).getValue();
+		verify(fileMetadataEntity, atLeastOnce()).getKey();
+
+		deleteQuietly(renderedFile);
+	}
+
+	@Test
+	void testReadTextFile_plain() throws IOException {
+		renderedFile = File.createTempFile("mydmam-test-" + getClass().getName(), ".txt");
+		final var fullText = Faker.instance().lorem().paragraphs(5).stream().collect(joining());
+		write(renderedFile, fullText, UTF_8);
+
+		assertThat(readTextFile(renderedFile, false)).isEqualTo(fullText);
+		deleteQuietly(renderedFile);
+	}
+
+	@Test
+	void testReadTextFile_gz() throws IOException {
+		renderedFile = File.createTempFile("mydmam-test-" + getClass().getName(), ".txt");
+		final var fullText = Faker.instance().lorem().paragraphs(5).stream().collect(joining());
+
+		try (final var fso = new GZIPOutputStream(new FileOutputStream(renderedFile))) {
+			fso.write(fullText.getBytes(UTF_8));
+		}
+
+		assertThat(readTextFile(renderedFile, true)).isEqualTo(fullText);
+		deleteQuietly(renderedFile);
 	}
 
 }

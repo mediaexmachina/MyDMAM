@@ -29,6 +29,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -52,7 +53,6 @@ import tv.hd3g.processlauncher.cmdline.Parameters;
 @Slf4j
 public class ImageMagick {
 
-	public static final String EXEC_NAME = "magick";
 	private static final String POLICY_RESOURCE = "resource";
 	private static final String POLICY_CODER = "coder";
 
@@ -62,6 +62,7 @@ public class ImageMagick {
 	private final XmlMapperWrapper xmlMapper;
 	private final ObjectMapper objectMapper;
 
+	private String execName;
 	private File magickConfigurationDir;
 	private ExecutionTimeLimiter executionTimeLimiter;
 
@@ -93,12 +94,20 @@ public class ImageMagick {
 		executionTimeLimiter = new ExecutionTimeLimiter(
 				magickMaxExecTimeSeconds + 1, SECONDS, maxExecTimeScheduler);
 
-		final File execFile;
+		execName = "magick";
+		File execFile;
 		try {
-			execFile = executableFinder.get(EXEC_NAME);
+			log.debug("Try to found ImageMagick binary with {}", execName);
+			execFile = executableFinder.get(execName);
 		} catch (final FileNotFoundException e) {
-			log.warn("Can't found ImageMagick binary ({}), disable all operations with it", EXEC_NAME);
-			return;
+			try {
+				execName = "convert";
+				log.debug("Fail. Now, try to found ImageMagick binary with {}", execName);
+				execFile = executableFinder.get(execName);
+			} catch (final FileNotFoundException e2) {
+				log.warn("Can't found ImageMagick binary (magick / convert), disable all operations with it");
+				return;
+			}
 		}
 
 		final var tempDir = prepareTempDir(magickConf);
@@ -107,7 +116,7 @@ public class ImageMagick {
 		try {
 			magickVersion = getVersion();
 			final var majorVersion = Integer.valueOf(magickVersion.split("\\.")[0]);
-			if (majorVersion != 7) {
+			if (majorVersion < 6 || majorVersion > 7) {
 				log.warn("Use ImageMagick version {} (probably unsupported) from {}", magickVersion, execFile);
 			} else {
 				log.info("Use ImageMagick version {} from {}", magickVersion, execFile);
@@ -197,6 +206,13 @@ public class ImageMagick {
 		processlauncherBuilder.setEnvironmentVarIfNotFound(
 				"MAGICK_CONFIGURE_PATH", magickConfigurationDir.getPath());
 		processlauncherBuilder.start().checkExecution();
+
+		if (log.isDebugEnabled()) {
+			final var env = new HashMap<String, String>();
+			processlauncherBuilder.forEachEnvironmentVar(env::put);
+			log.debug("RunMagick: {} ; [{}] env: {}", commandLine, workingDir, env);
+		}
+
 		return capText;
 	}
 
@@ -204,7 +220,7 @@ public class ImageMagick {
 	 * @return like "7.1.2-13"
 	 */
 	private String getVersion() throws IOException {
-		final var commandLine = new CommandLine(EXEC_NAME, "-version", executableFinder);
+		final var commandLine = new CommandLine(execName, "-version", executableFinder);
 		final var capText = runMagick(commandLine, new File(".").getAbsoluteFile());
 
 		final var versionLine = capText.getStdoutLines(false)
@@ -225,7 +241,7 @@ public class ImageMagick {
 
 	private void checkDisabled() throws IOException {
 		if (enabled == false) {
-			throw new IOException(EXEC_NAME + " is disabled");
+			throw new IOException("ImageMagick is disabled");
 		}
 	}
 
@@ -235,18 +251,23 @@ public class ImageMagick {
 
 		final var params = new Parameters();
 		params.addParameters(source.getName(), "json:-");
-		final var commandLine = new CommandLine(EXEC_NAME, params, executableFinder);
+		final var commandLine = new CommandLine(execName, params, executableFinder);
 		final var capText = runMagick(commandLine, source.getParentFile());
 
-		final var rawJson = capText.getStdout(false, "\n");
+		final var rawJson = capText.getStdout(false, "\n").trim();
+		if (rawJson.isEmpty()) {
+			throw new IOException(
+					"ImageMagick as returned an empty string from stdout, via " + commandLine.toString()
+								  + " ; from \"" + source.getParentFile() + "\"");
+		}
 
 		final var jsonRoot = objectMapper.readTree(rawJson);
 		if (jsonRoot.isArray() == false) {
-			throw new IOException("Invalid JSON (root is not an array): " + rawJson.replace("\n", " "));
+			throw new IOException("Invalid JSON (root is not an array): \"" + rawJson.replace("\n", " ") + "\"");
 		}
 		final var jsonItems = jsonRoot.valueStream().toList();
 		if (jsonItems.size() > 1) {
-			throw new IOException("Invalid JSON (to big root array): " + rawJson.replace("\n", " "));
+			throw new IOException("Invalid JSON (to big root array): \"" + rawJson.replace("\n", " ") + "\"");
 		}
 
 		final var selectedNode = jsonItems.get(0);

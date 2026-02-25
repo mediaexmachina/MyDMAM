@@ -26,7 +26,9 @@ import static org.apache.commons.io.FileUtils.write;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Offset.offset;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
@@ -137,7 +139,6 @@ class AssetRenderedFileEntityTest {
 		final var response = arf.toRenderedReponse();
 		assertNotNull(response);
 		assertEquals(previewType, response.previewType());
-		assertEquals(indexref, response.index());
 		assertEquals(name, response.name());
 	}
 
@@ -194,6 +195,15 @@ class AssetRenderedFileEntityTest {
 	@Test
 	void testGetEtag() {
 		assertEquals(etag, arf.getEtag());
+	}
+
+	@Test
+	void testIsGzipEncoded() {
+		assertFalse(arf.isGzipEncoded());
+
+		rendered = new DeclaredRenderedFile(workingFile, name, true, mimeType, indexref, previewType);
+		arf = new AssetRenderedFileEntity(file, rendered);
+		assertTrue(arf.isGzipEncoded());
 	}
 
 }

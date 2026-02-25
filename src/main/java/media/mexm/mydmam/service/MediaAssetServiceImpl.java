@@ -20,7 +20,6 @@ import static jakarta.transaction.Transactional.TxType.REQUIRES_NEW;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableSet;
-import static media.mexm.mydmam.asset.DatabaseUpdateDirection.PUSH_TO_DB;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static org.apache.commons.io.FileUtils.moveFile;
 
@@ -40,17 +39,17 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.asset.DatabaseUpdateDirection;
 import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.FileMetadataEntity;
 import media.mexm.mydmam.repository.AssetRenderedFileDao;
 import media.mexm.mydmam.repository.AssetRenderedFileRepository;
-import media.mexm.mydmam.repository.AssetSummaryDao;
-import media.mexm.mydmam.repository.AssetSummaryRepository;
+import media.mexm.mydmam.repository.FileMetadataDao;
+import media.mexm.mydmam.repository.FileMetadataRepository;
 import media.mexm.mydmam.repository.FileRepository;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
@@ -63,13 +62,13 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 	@Autowired
 	FileRepository fileRepository;
 	@Autowired
-	AssetSummaryRepository assetSummaryRepository;
-	@Autowired
-	AssetSummaryDao assetSummaryDao;
-	@Autowired
 	AssetRenderedFileDao assetRenderedFileDao;
 	@Autowired
 	AssetRenderedFileRepository assetRenderedFileRepository;
+	@Autowired
+	FileMetadataRepository fileMetadataRepository;
+	@Autowired
+	FileMetadataDao fileMetadataDao;
 	@Autowired
 	Indexer indexer;
 
@@ -98,31 +97,13 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 	}
 
 	@Override
-	@Transactional
-	@Deprecated
-	public String updateMimeType(final MediaAsset asset, final DatabaseUpdateDirection direction) {
-		final var file = asset.getFile();
-
-		if (direction == PUSH_TO_DB) {
-			final var mimeType = asset.getMimeType();
-			assetSummaryDao.updateMimeType(file, mimeType);
-			return mimeType;
-		} else if (assetSummaryDao.getForFile(file)) {
-			return file.getAssetSummary().getMimeType();
-		} else {
-			return null;
-		}
-	}
-
-	@Override
 	@Transactional(REQUIRES_NEW)
-	public Map<AssetRenderedFileEntity, File> declareRenderedStaticFiles(final MediaAsset asset,
+	public Map<AssetRenderedFileEntity, File> declareRenderedStaticFiles(final FileEntity fileEntity,
 																		 final Collection<DeclaredRenderedFile> declaredRenderedFiles) throws IOException {
 		if (declaredRenderedFiles.isEmpty()) {
 			return Map.of();
 		}
 
-		final var fileEntity = asset.getFile();
 		final var renderedMetadataDirectory = Objects.requireNonNull(configuration.getRealmByName(fileEntity.getRealm())
 				.get()
 				.renderedMetadataDirectory());
@@ -183,6 +164,17 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 	}
 
 	@Override
+	public Collection<FileMetadataEntity> declareFileMetadatas(final FileEntity file,
+															   final Collection<FileMetadataEntity> fileMetadatas) throws IOException {
+		return fileMetadataDao.addUpdateEntries(file, fileMetadatas);
+	}
+
+	@Override
+	public Set<FileMetadataEntity> getAllMetadatas(final MediaAsset asset) {
+		return fileMetadataRepository.getByFile(asset.getFile());
+	}
+
+	@Override
 	public File getPhysicalRenderedFile(final AssetRenderedFileEntity assetRenderedFileEntity,
 										final String realm) {
 		final var renderedMetadataDirectory = Objects.requireNonNull(configuration.getRealmByName(realm)
@@ -221,7 +213,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 				.distinct()
 				.collect(toUnmodifiableSet());
 
-		assetSummaryRepository.deleteByFileId(fileIdsToReset);
+		fileMetadataRepository.deleteByFileId(fileIdsToReset);
 		final var relativePathsByRealmToDelete = assetRenderedFileDao.deleteRenderedFilesByFileId(fileIdsToReset);
 
 		final var deleteFilesList = relativePathsByRealmToDelete.entrySet().stream()

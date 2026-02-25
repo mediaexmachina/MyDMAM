@@ -24,6 +24,8 @@ jobs:
         java-version: 25
         distribution: 'temurin'
         cache: 'maven'
+    - name: Install ImageMagick
+      run: sudo apt install -y imagemagick
     - name: Cache SonarQube packages
       uses: actions/cache@v4
       with:
