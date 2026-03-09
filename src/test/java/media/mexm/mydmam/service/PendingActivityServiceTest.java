@@ -22,6 +22,7 @@ import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
@@ -177,6 +178,8 @@ class PendingActivityServiceTest {
 		when(fileEntity.getHashPath()).thenReturn(hashPathItem);
 
 		when(storage.getStorageStateClass()).thenReturn(ONLINE);
+
+		when(pendingActivityDao.havePendingActivities(any())).thenReturn(false);
 	}
 
 	@AfterEach
@@ -383,9 +386,29 @@ class PendingActivityServiceTest {
 		verify(activityHandler, times(1)).getSupportedStorageStateClasses();
 		verify(pendingActivityDao, times(2)).declateActivities(anyList(), eq(hostName), eq(pid));
 		verify(pendingActivityDao, times(1)).haveDeclaredActivity(fileEntity, activityHandler);
+		verify(pendingActivityDao, times(2)).havePendingActivities(fileEntity);
 		verify(realm, atLeastOnce()).spoolProcessAsset();
 		verify(storage, atLeastOnce()).getStorageStateClass();
 		verify(storage, atLeastOnce()).getCategory();
+	}
+
+	@Test
+	void testContinueAssetActivity_stillHavePendingActivities() {
+		when(pendingActivityDao.havePendingActivities(any())).thenReturn(true);
+
+		pendingActivityJob = new PendingActivityJob(
+				configuredEnv,
+				asset,
+				activityHandler,
+				eventType,
+				new HashSet<>(Set.of(previousHandlersNames)),
+				previousHandlersNames,
+				pendingActivityDao, pas, oIndexer);
+
+		pas.continueAssetActivity(pendingActivityJob);
+
+		verify(asset, atLeastOnce()).getFile();
+		verify(pendingActivityDao, times(1)).havePendingActivities(fileEntity);
 	}
 
 	@Test
@@ -452,6 +475,7 @@ class PendingActivityServiceTest {
 			verify(pendingActivityDao, times(1))
 					.haveDeclaredActivity(fileEntity, activityHandler);
 			verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
+			verify(pendingActivityDao, times(1)).havePendingActivities(fileEntity);
 			verify(entity, atLeastOnce()).getEventType();
 			verify(internalObjectMapper, times(1)).writeValueAsString(Set.of(handlerName));
 			verify(realm, atLeastOnce()).spoolProcessAsset();

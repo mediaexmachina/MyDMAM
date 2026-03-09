@@ -211,8 +211,14 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
 	@Override
 	public void continueAssetActivity(final PendingActivityJob pendingActivityJob) {
-		final var previousHandlers = pendingActivityJob.previousHandlers();
 		final var asset = pendingActivityJob.asset();
+		final var file = asset.getFile();
+		if (pendingActivityDao.havePendingActivities(file)) {
+			log.trace("Don't search to run anothers activities for file {}, some are still pending for it.", file);
+			return;
+		}
+
+		final var previousHandlers = pendingActivityJob.previousHandlers();
 		final var eventType = pendingActivityJob.eventType();
 		final var confEnv = pendingActivityJob.configuredEnv();
 

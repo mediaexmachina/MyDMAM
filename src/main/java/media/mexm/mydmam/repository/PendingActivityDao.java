@@ -34,6 +34,8 @@ public interface PendingActivityDao {
 
 	boolean haveDeclaredActivity(FileEntity file, ActivityHandler activityHandler);
 
+	boolean havePendingActivities(FileEntity file);
+
 	Map<FileEntity, Set<PendingActivityEntity>> getFilesAndPendingActivityByFileId(Collection<Integer> ids);
 
 	List<Integer> getFilesAndWithResetPendingActivities(Set<String> realms,

@@ -111,6 +111,18 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
 		return haveActivities > 0;
 	}
 
+	@Transactional(REQUIRES_NEW)
+	public boolean havePendingActivities(final FileEntity file) {
+		final var haveActivities = entityManager.createQuery("""
+				SELECT COUNT(pa) FROM PendingActivityEntity pa
+				WHERE pa.file.id = :file_id
+				""", Long.class)
+				.setParameter("file_id", file.getId())
+				.getSingleResult()
+				.intValue();
+		return haveActivities > 0;
+	}
+
 	@Override
 	@Transactional
 	public Map<FileEntity, Set<PendingActivityEntity>> getFilesAndPendingActivityByFileId(final Collection<Integer> ids) {
