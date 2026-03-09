@@ -29,7 +29,6 @@ import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.HandlingResult;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.asset.MetadataExtractorHandler;
-import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.tools.ImageMagick;
@@ -40,8 +39,6 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
 
 	private static final String PREVIEW_TYPE = "image-format";
 
-	@Autowired
-	AuditTrail auditTrail;
 	@Autowired
 	ImageMagick imageMagick;
 	@Autowired
@@ -93,11 +90,15 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
 	}
 
 	@Override
+	public boolean isEnabled() {
+		return imageMagick.isEnabled();
+	}
+
+	@Override
 	public boolean canHandle(final MediaAsset asset,
 							 final ActivityEventType eventType,
 							 final RealmStorageConfiguredEnv storedOn) {
-		return imageMagick.isEnabled()
-			   && storedOn.isDAS()
+		return storedOn.isDAS()
 			   && storedOn.haveWorkingDir()
 			   && storedOn.haveRenderedDir()
 			   && canHandleMimeType(asset);

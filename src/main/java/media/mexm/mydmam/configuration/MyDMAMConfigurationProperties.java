@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static java.lang.Boolean.FALSE;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toUnmodifiableSet;
@@ -35,6 +36,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
+import media.mexm.mydmam.tools.AllowBlockLists;
 
 @ConfigurationProperties(prefix = "mydmam")
 @Validated
@@ -47,7 +49,8 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
 											@DefaultValue("100") @Min(1) int dirListMaxSize,
 											@DefaultValue("100") @Min(1) int searchResultMaxSize,
 											@DefaultValue("24h") Duration pendingActivityMaxAgeGraceRestart,
-											@DefaultValue @Valid @NotNull MagickConf magick) {
+											@DefaultValue @Valid @NotNull MagickConf magick,
+											AllowBlockLists activityHandlers) {
 
 	public MyDMAMConfigurationProperties {
 		if (instancename == null || instancename.isEmpty()) {
@@ -93,6 +96,25 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
 				.orElseThrow(() -> new IllegalArgumentException(
 						"Can't found storageName" + storageName + " for realm " + realmName));
 		return new RealmStorageConfiguredEnv(realmName, storageName, realm, storage);
+	}
+
+	public boolean isActivatedActivityHandler(final String realmName, final String handlerName) {
+		requireNonNull(realmName);
+		requireNonNull(handlerName);
+
+		final var globalActivated = Optional.ofNullable(activityHandlers)
+				.map(f -> f.pass(handlerName));
+
+		if (globalActivated.isPresent()
+			&& FALSE.equals(globalActivated.get())) {
+			return false;
+		}
+
+		return getRealmByName(realmName)
+				.map(RealmConf::activityHandlers)
+				.flatMap(Optional::ofNullable)
+				.map(f -> f.pass(handlerName))
+				.orElse(true);
 	}
 
 }

@@ -19,8 +19,10 @@ package media.mexm.mydmam.configuration;
 import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,8 +35,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 
+import media.mexm.mydmam.tools.AllowBlockLists;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
@@ -49,6 +54,10 @@ class MyDMAMConfigurationPropertiesTest {
 	PathIndexingStorage storage;
 	@Mock
 	MagickConf magick;
+	@Mock
+	AllowBlockLists activityHandlers;
+	@Mock
+	AllowBlockLists realmActivityHandlers;
 
 	@Fake
 	String realmName;
@@ -91,7 +100,8 @@ class MyDMAMConfigurationPropertiesTest {
 				dirListMaxSize,
 				searchResultMaxSize,
 				pendingActivityMaxAgeGraceRestart,
-				magick);
+				magick,
+				activityHandlers);
 	}
 
 	@Test
@@ -106,7 +116,8 @@ class MyDMAMConfigurationPropertiesTest {
 				dirListMaxSize,
 				searchResultMaxSize,
 				pendingActivityMaxAgeGraceRestart,
-				magick);
+				magick,
+				activityHandlers);
 		assertThat(c.instancename()).isNotEmpty();
 	}
 
@@ -123,7 +134,8 @@ class MyDMAMConfigurationPropertiesTest {
 				dirListMaxSize,
 				searchResultMaxSize,
 				pendingActivityMaxAgeGraceRestart,
-				magick));
+				magick,
+				activityHandlers));
 
 		pendingActivityMaxAgeGraceRestart = Duration.ZERO;
 		assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
@@ -136,7 +148,8 @@ class MyDMAMConfigurationPropertiesTest {
 				dirListMaxSize,
 				searchResultMaxSize,
 				pendingActivityMaxAgeGraceRestart,
-				magick));
+				magick,
+				activityHandlers));
 	}
 
 	@Test
@@ -184,6 +197,82 @@ class MyDMAMConfigurationPropertiesTest {
 
 		verify(pathindexing, atLeastOnce()).realms();
 		verify(realm, atLeastOnce()).getStorageByName(storageName);
+	}
+
+	@Fake
+	String handlerName;
+
+	@Test
+	void testIsActivatedActivityHandler_global() {
+		when(activityHandlers.pass(handlerName)).thenReturn(false);
+		assertFalse(c.isActivatedActivityHandler(realmName, handlerName));
+		verify(activityHandlers, times(1)).pass(handlerName);
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void testIsActivatedActivityHandler_realm(final boolean pass) {
+		when(activityHandlers.pass(handlerName)).thenReturn(true);
+		when(realm.activityHandlers()).thenReturn(realmActivityHandlers);
+		when(realmActivityHandlers.pass(handlerName)).thenReturn(pass);
+		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+
+		assertEquals(pass, c.isActivatedActivityHandler(realmName, handlerName));
+
+		verify(activityHandlers, times(1)).pass(handlerName);
+		verify(realm, atLeastOnce()).activityHandlers();
+		verify(realmActivityHandlers, times(1)).pass(handlerName);
+		verify(pathindexing, times(1)).realms();
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void testIsActivatedActivityHandler_noGlobal(final boolean pass) {
+		c = new MyDMAMConfigurationProperties(
+				pathindexing,
+				instancename,
+				auditTrailSpoolName,
+				asyncAPISpoolName,
+				explainSearchResults,
+				resetBatchSizeIndexer,
+				dirListMaxSize,
+				searchResultMaxSize,
+				pendingActivityMaxAgeGraceRestart,
+				magick,
+				null);
+
+		when(realm.activityHandlers()).thenReturn(realmActivityHandlers);
+		when(realmActivityHandlers.pass(handlerName)).thenReturn(pass);
+		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+
+		assertEquals(pass, c.isActivatedActivityHandler(realmName, handlerName));
+
+		verify(realm, atLeastOnce()).activityHandlers();
+		verify(realmActivityHandlers, times(1)).pass(handlerName);
+		verify(pathindexing, times(1)).realms();
+	}
+
+	@Test
+	void testIsActivatedActivityHandler_nothingSet() {
+		c = new MyDMAMConfigurationProperties(
+				pathindexing,
+				instancename,
+				auditTrailSpoolName,
+				asyncAPISpoolName,
+				explainSearchResults,
+				resetBatchSizeIndexer,
+				dirListMaxSize,
+				searchResultMaxSize,
+				pendingActivityMaxAgeGraceRestart,
+				magick,
+				null);
+
+		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+
+		assertTrue(c.isActivatedActivityHandler(realmName, handlerName));
+
+		verify(realm, atLeastOnce()).activityHandlers();
+		verify(pathindexing, times(1)).realms();
 	}
 
 }

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -150,6 +151,7 @@ class PendingActivityServiceTest {
 
 		oIndexer = Optional.ofNullable(realmIndexer);
 
+		when(activityHandler.isEnabled()).thenReturn(true);
 		when(activityHandler.getHandlerName()).thenReturn(handlerName);
 		when(activityHandler.getSupportedStorageStateClasses()).thenReturn(Set.of());
 		when(activityHandler.canHandle(asset, eventType, configuredEnv)).thenReturn(true);
@@ -158,6 +160,8 @@ class PendingActivityServiceTest {
 		when(configuration.getRealmNames()).thenReturn(Set.of(realmName));
 		when(configuration.getRealmByName(realmName)).thenReturn(Optional.ofNullable(realm));
 		when(configuration.getRealmAndStorage(realmName, storageName)).thenReturn(configuredEnv);
+		when(configuration.isActivatedActivityHandler(eq(realmName), anyString())).thenReturn(true);
+
 		when(indexer.getIndexerByRealm(realmName)).thenReturn(oIndexer);
 
 		when(realm.spoolProcessAsset()).thenReturn("spool");
@@ -216,12 +220,18 @@ class PendingActivityServiceTest {
 			when(asset.getFile()).thenReturn(subFileEntry);
 		}
 
+		@AfterEach
+		void ends() {
+			verify(activityHandler, atLeastOnce()).isEnabled();
+		}
+
 		@Test
 		void testEmpty() {
 			final Set<String> emptySet = Set.of();
 			assertThrows(IllegalArgumentException.class,
 					() -> pas.startsActivities(realmName, emptySet, recursive, eventType));
 			verify(activityHandler, times(3)).getSupportedStorageStateClasses();
+			verify(activityHandler, atLeastOnce()).getHandlerName();
 		}
 
 		@Test
@@ -255,6 +265,7 @@ class PendingActivityServiceTest {
 			verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
 			verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
 			verify(activityHandler, times(1)).canHandle(asset, eventType, configuredEnv);
+			verify(activityHandler, atLeastOnce()).getHandlerName();
 			verify(mediaAssetService, times(1)).getFromFileEntry(subFileEntry, mediaAssetService);
 			verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(asset), mediaAssetService);
 			verify(aboutInstance, atLeastOnce()).getInstanceName();
@@ -264,6 +275,7 @@ class PendingActivityServiceTest {
 			verify(subFileEntry, atLeastOnce()).isDirectory();
 			verify(storage, atLeastOnce()).getStorageStateClass();
 			verify(storage, atLeastOnce()).getCategory();
+			verify(configuration, atLeastOnce()).isActivatedActivityHandler(realmName, handlerName);
 		}
 
 		@Test
@@ -281,6 +293,7 @@ class PendingActivityServiceTest {
 					.resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
 			verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
 			verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
+			verify(activityHandler, atLeastOnce()).getHandlerName();
 			verify(activityHandler, times(1)).canHandle(asset, eventType, configuredEnv);
 			verify(mediaAssetService, times(1)).getFromFileEntry(subFileEntry, mediaAssetService);
 			verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(asset), mediaAssetService);
@@ -291,6 +304,7 @@ class PendingActivityServiceTest {
 			verify(subFileEntry, atLeastOnce()).isDirectory();
 			verify(storage, atLeastOnce()).getStorageStateClass();
 			verify(storage, atLeastOnce()).getCategory();
+			verify(configuration, atLeastOnce()).isActivatedActivityHandler(realmName, handlerName);
 		}
 
 		@Test
@@ -306,6 +320,7 @@ class PendingActivityServiceTest {
 					.resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
 			verify(subFileEntry, atLeastOnce()).isDirectory();
 			verify(activityHandler, times(3)).getSupportedStorageStateClasses();
+			verify(activityHandler, atLeastOnce()).getHandlerName();
 		}
 
 	}
@@ -337,6 +352,7 @@ class PendingActivityServiceTest {
 			verify(activityHandler, times(1)).canHandle(asset, eventType, configuredEnv);
 			verify(activityHandler, atLeastOnce()).getHandlerName();
 			verify(activityHandler, times(2)).getSupportedStorageStateClasses();
+			verify(activityHandler, atLeastOnce()).isEnabled();
 			verify(asset, atLeastOnce()).getName();
 			verify(asset, atLeastOnce()).getFile();
 			verify(fileEntity, atLeastOnce()).isDirectory();
@@ -347,6 +363,7 @@ class PendingActivityServiceTest {
 			verify(aboutInstance, atLeastOnce()).getPid();
 			verify(pendingActivityDao, times(2)).declateActivities(anyList(), eq(hostName), eq(pid));
 			verify(pendingActivityDao, times(1)).haveDeclaredActivity(fileEntity, activityHandler);
+			verify(pendingActivityDao, times(1)).havePendingActivities(fileEntity);
 			verify(configuration, times(1)).getRealmAndStorage(realmName, storageName);
 			verify(storage, atLeastOnce()).getStorageStateClass();
 			verify(storage, atLeastOnce()).getCategory();
@@ -378,6 +395,7 @@ class PendingActivityServiceTest {
 
 		verify(activityHandler, times(1)).canHandle(asset, eventType, configuredEnv);
 		verify(activityHandler, atLeastOnce()).getHandlerName();
+		verify(activityHandler, atLeastOnce()).isEnabled();
 		verify(asset, atLeastOnce()).getFile();
 		verify(asset, atLeastOnce()).getName();
 		verify(internalObjectMapper, times(1)).writeValueAsString(previousHandlers);
@@ -390,6 +408,8 @@ class PendingActivityServiceTest {
 		verify(realm, atLeastOnce()).spoolProcessAsset();
 		verify(storage, atLeastOnce()).getStorageStateClass();
 		verify(storage, atLeastOnce()).getCategory();
+		verify(fileEntity, atLeastOnce()).getRealm();
+		verify(configuration, atLeastOnce()).isActivatedActivityHandler(realmName, handlerName);
 	}
 
 	@Test
@@ -466,6 +486,7 @@ class PendingActivityServiceTest {
 			verify(activityHandler, atLeastOnce()).getHandlerName();
 			verify(fileEntity, atLeastOnce()).getRealm();
 			verify(fileEntity, atLeastOnce()).getStorage();
+			verify(configuration, atLeastOnce()).isActivatedActivityHandler(realmName, handlerName);
 		}
 
 		@Test
@@ -482,6 +503,7 @@ class PendingActivityServiceTest {
 			verify(asset, atLeastOnce()).getName();
 			verify(asset, atLeastOnce()).getFile();
 			verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
+			verify(activityHandler, atLeastOnce()).isEnabled();
 			verify(storage, atLeastOnce()).getStorageStateClass();
 			verify(storage, atLeastOnce()).getCategory();
 		}
@@ -491,6 +513,7 @@ class PendingActivityServiceTest {
 			when(entity.getHandlerName()).thenReturn(unknownHander);
 			pas.restartPendingActivities();
 			verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
+			verify(activityHandler, atLeastOnce()).isEnabled();
 		}
 
 	}

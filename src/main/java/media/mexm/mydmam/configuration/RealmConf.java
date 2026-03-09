@@ -40,6 +40,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.dto.StorageCategory;
 import media.mexm.mydmam.dto.StorageStateClass;
+import media.mexm.mydmam.tools.AllowBlockLists;
 import media.mexm.mydmam.tools.DelayedSyncConfiguration;
 
 @Validated
@@ -49,7 +50,8 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
 						@DefaultValue("processasset") @NotEmpty String spoolProcessAsset,
 						File workingDirectory,
 						File renderedMetadataDirectory,
-						DelayedSyncConfiguration delayedSync) {
+						DelayedSyncConfiguration delayedSync,
+						AllowBlockLists activityHandlers) {
 
 	public RealmConf {
 		storages = Optional.ofNullable(storages).orElse(Map.of());

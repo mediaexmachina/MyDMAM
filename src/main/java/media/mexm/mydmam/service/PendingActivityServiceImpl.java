@@ -71,7 +71,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 	@Autowired
 	JobKitEngine jobKitEngine;
 	@Autowired
-	List<ActivityHandler> activityHandlers;
+	List<ActivityHandler> allActivityHandlers;
 	@Autowired
 	MediaAssetService mediaAssetService;
 	@Autowired
@@ -93,6 +93,12 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 		return supported.contains(confEnv.storage().getStorageStateClass());
 	}
 
+	private Stream<ActivityHandler> getAvailableHandlers(final String realmName) {
+		return allActivityHandlers.stream()
+				.filter(ActivityHandler::isEnabled)
+				.filter(ah -> configuration.isActivatedActivityHandler(realmName, ah.getHandlerName()));
+	}
+
 	private void runAssetsActivities(final ActivityEventType eventType,
 									 final List<MediaAsset> sourceAssets) {
 
@@ -108,9 +114,10 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 		final var allActivitiesJobs = assets.stream()
 				.flatMap(asset -> {
 					final var file = asset.getFile();
-					final var confEnv = configuration.getRealmAndStorage(file.getRealm(), file.getStorage());
+					final var realmName = file.getRealm();
+					final var confEnv = configuration.getRealmAndStorage(realmName, file.getStorage());
 
-					final var selectedHandlers = activityHandlers.stream()
+					final var selectedHandlers = getAvailableHandlers(realmName)
 							.filter(activityHandler -> checkSupportedStorageStateClasses(activityHandler, confEnv))
 							.filter(activityHandler -> activityHandler.canHandle(asset, eventType, confEnv))
 							.toList();
@@ -121,7 +128,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
 					if (selectedHandlers.isEmpty()) {
 						log.trace("Nothing to run for: \"{}\", previousHandlers={}, activityHandlers count={}",
-								asset, previousHandlers, activityHandlers.size());
+								asset, previousHandlers, getAvailableHandlers(realmName).count());
 					}
 
 					return selectedHandlers.stream()
@@ -222,7 +229,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 		final var eventType = pendingActivityJob.eventType();
 		final var confEnv = pendingActivityJob.configuredEnv();
 
-		final var selectedHandlers = activityHandlers.stream()
+		final var selectedHandlers = getAvailableHandlers(file.getRealm())
 				.filter(handler -> previousHandlers.contains(handler.getHandlerName()) == false)
 				.filter(activityHandler -> checkSupportedStorageStateClasses(activityHandler, confEnv))
 				.filter(handler -> handler.canHandle(asset, eventType, confEnv))
@@ -296,7 +303,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
 					return pendings.stream()
 							.map(pending -> {
-								final var oActivityHander = activityHandlers.stream()
+								final var oActivityHander = getAvailableHandlers(confEnv.realmName())
 										.filter(ah -> ah.getHandlerName().equalsIgnoreCase(pending
 												.getHandlerName()))
 										.findFirst();

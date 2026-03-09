@@ -45,6 +45,7 @@ import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.service.PathIndexerService;
+import media.mexm.mydmam.tools.AllowBlockLists;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
@@ -69,6 +70,8 @@ class PathIndexerTest {
 	MyDMAMConfigurationProperties configuration;
 	@Mock
 	InfraConf infra;
+	@Mock
+	AllowBlockLists activityHandlers;
 
 	private FlatJobKitEngine jobKitEngine;
 	private PathIndexer pi;
@@ -96,7 +99,7 @@ class PathIndexerTest {
 					null, null, null, null, null, null, null, null, false, false,
 					Duration.ZERO, false, "pathindexing", false);
 			piRealm = new RealmConf(Map.of(new TechnicalName(storage), piStorage),
-					duration, spoolEvents, null, null, null);
+					duration, spoolEvents, null, null, null, activityHandlers);
 
 			when(configuration.infra()).thenReturn(infra);
 			when(infra.spoolEvents()).thenReturn(spoolEvents);

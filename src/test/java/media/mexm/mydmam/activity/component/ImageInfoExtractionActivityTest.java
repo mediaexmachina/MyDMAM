@@ -23,6 +23,7 @@ import static media.mexm.mydmam.asset.FileMetadataResolutionTrait.MTD_TECHNICAL_
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.writeStringToFile;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -31,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -46,6 +48,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,7 +58,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.asset.MediaAsset;
-import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
@@ -72,8 +75,6 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 class ImageInfoExtractionActivityTest {
 
 	@MockitoBean
-	AuditTrail auditTrail;
-	@MockitoBean
 	ImageMagick imageMagick;
 	@MockitoBean
 	MimeTypeDetector mimeTypeDetector;
@@ -87,6 +88,19 @@ class ImageInfoExtractionActivityTest {
 
 	@Autowired
 	ImageInfoExtractionActivity iiea;
+
+	@AfterEach
+	void ends() {
+		verifyNoMoreInteractions(imageMagick, mimeTypeDetector);
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void testIsEnabled(final boolean enabled) {
+		when(imageMagick.isEnabled()).thenReturn(enabled);
+		assertEquals(enabled, iiea.isEnabled());
+		verify(imageMagick, times(1)).isEnabled();
+	}
 
 	@Test
 	void testGetManagedMimeTypes() {
@@ -107,15 +121,11 @@ class ImageInfoExtractionActivityTest {
 
 	@Test
 	void testCanHandle() {
-		when(imageMagick.isEnabled()).thenReturn(false);
 		when(storedOn.isDAS()).thenReturn(false);
 		when(storedOn.haveWorkingDir()).thenReturn(false);
 		when(storedOn.haveRenderedDir()).thenReturn(false);
 		when(asset.getMimeType()).thenReturn(Optional.ofNullable("nope/nope"));
 
-		assertFalse(iiea.canHandle(asset, eventType, storedOn));
-
-		when(imageMagick.isEnabled()).thenReturn(true);
 		assertFalse(iiea.canHandle(asset, eventType, storedOn));
 
 		when(storedOn.isDAS()).thenReturn(true);
@@ -130,7 +140,6 @@ class ImageInfoExtractionActivityTest {
 		when(asset.getMimeType()).thenReturn(Optional.ofNullable("image/jpeg"));
 		assertTrue(iiea.canHandle(asset, eventType, storedOn));
 
-		verify(imageMagick, atLeastOnce()).isEnabled();
 		verify(storedOn, atLeastOnce()).isDAS();
 		verify(storedOn, atLeastOnce()).haveWorkingDir();
 		verify(storedOn, atLeastOnce()).haveRenderedDir();

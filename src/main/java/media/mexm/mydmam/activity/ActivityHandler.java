@@ -29,6 +29,10 @@ import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
  */
 public interface ActivityHandler {
 
+	default boolean isEnabled() {
+		return true;
+	}
+
 	default String getHandlerName() {
 		return getClass().getSimpleName();
 	}
