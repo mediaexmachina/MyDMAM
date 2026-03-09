@@ -20,6 +20,8 @@ import static jakarta.transaction.Transactional.TxType.REQUIRES_NEW;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableSet;
+import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE_METADATA_ENTRY;
+import static media.mexm.mydmam.audittrail.AuditTrailObjectType.RENDERED_FILE_ENTRY;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static org.apache.commons.io.FileUtils.moveFile;
 
@@ -41,6 +43,8 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
+import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
@@ -71,6 +75,8 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 	FileMetadataDao fileMetadataDao;
 	@Autowired
 	Indexer indexer;
+	@Autowired
+	AuditTrail auditTrail;
 
 	@Override
 	public MediaAsset getFromWatchfolder(final String realmName,
@@ -93,6 +99,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 									final FileAttributesReference file) {
 		/**
 		 * TO BE IMPLEMENTED
+		 * with auditTrail
 		 */
 	}
 
@@ -104,7 +111,8 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 			return Map.of();
 		}
 
-		final var renderedMetadataDirectory = Objects.requireNonNull(configuration.getRealmByName(fileEntity.getRealm())
+		final var realmName = fileEntity.getRealm();
+		final var renderedMetadataDirectory = Objects.requireNonNull(configuration.getRealmByName(realmName)
 				.get()
 				.renderedMetadataDirectory());
 
@@ -154,6 +162,17 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 			result.put(renderedFileEntity, renderedFile);
 		}
 
+		auditTrail.getAuditTrailByRealm(realmName)
+				.ifPresent(realmAuditTrail -> {
+					final var inserts = result.entrySet()
+							.stream()
+							.map(entity -> entity.getKey().getAuditTrailPayload(entity.getValue()))
+							.toList();
+
+					realmAuditTrail.asyncPersist("media-asset", "save-rendered-file",
+							new AuditTrailBatchInsertObject(RENDERED_FILE_ENTRY, fileEntity.getHashPath(), inserts));
+				});
+
 		return unmodifiableMap(result);
 	}
 
@@ -166,6 +185,14 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 	@Override
 	public Collection<FileMetadataEntity> declareFileMetadatas(final FileEntity file,
 															   final Collection<FileMetadataEntity> fileMetadatas) throws IOException {
+
+		auditTrail.getAuditTrailByRealm(file.getRealm())
+				.ifPresent(realmAuditTrail -> {
+					final var inserts = fileMetadatas.stream().map(FileMetadataEntity::getAuditTrailPayload).toList();
+					realmAuditTrail.asyncPersist("media-asset", "extracted-file-metadatas",
+							new AuditTrailBatchInsertObject(FILE_METADATA_ENTRY, file.getHashPath(), inserts));
+				});
+
 		return fileMetadataDao.addUpdateEntries(file, fileMetadatas);
 	}
 

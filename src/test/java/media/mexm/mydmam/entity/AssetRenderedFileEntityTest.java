@@ -206,4 +206,17 @@ class AssetRenderedFileEntityTest {
 		assertTrue(arf.isGzipEncoded());
 	}
 
+	@Test
+	void testGetAuditTrailPayload() {
+		final var payload = arf.getAuditTrailPayload(workingFile);
+		assertThat(payload)
+				.isNotNull()
+				.hasSize(8)
+				.containsEntry("indexref", indexref)
+				.containsEntry("length", length)
+				.containsEntry("mimeType", mimeType)
+				.containsEntry("name", name)
+				.containsEntry("previewType", previewType)
+				.containsKeys("file", "etag", "encoded");
+	}
 }

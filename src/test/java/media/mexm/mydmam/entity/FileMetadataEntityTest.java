@@ -95,4 +95,17 @@ class FileMetadataEntityTest {
 
 	}
 
+	@Test
+	void testGetAuditTrailPayload() {
+		final var payload = fm.getAuditTrailPayload();
+		assertThat(payload)
+				.isNotNull()
+				.hasSize(5)
+				.containsEntry("classifier", classifier)
+				.containsEntry("key", key)
+				.containsEntry("layer", layer)
+				.containsEntry("origin", origin)
+				.containsEntry("value", value);
+	}
+
 }

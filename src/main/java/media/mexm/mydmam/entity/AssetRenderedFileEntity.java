@@ -24,8 +24,11 @@ import static java.lang.Long.toHexString;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang3.StringUtils.leftPad;
 
+import java.io.File;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
+import java.util.Map;
 import java.util.zip.CRC32;
 
 import jakarta.persistence.Column;
@@ -149,6 +152,18 @@ public class AssetRenderedFileEntity {
 
 	public boolean isGzipEncoded() {
 		return GZIP_ENCODED.equals(encoded);
+	}
+
+	public Map<String, Serializable> getAuditTrailPayload(final File renderedFile) {
+		return Map.of(
+				"file", renderedFile.getAbsolutePath(),
+				"encoded", encoded,
+				"etag", getHexETag(),
+				"indexref", indexref,
+				"length", length,
+				"mimeType", mimeType,
+				"name", name,
+				"previewType", previewType);
 	}
 
 }

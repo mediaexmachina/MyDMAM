@@ -18,6 +18,8 @@ package media.mexm.mydmam.service;
 
 import static java.io.File.createTempFile;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE_METADATA_ENTRY;
+import static media.mexm.mydmam.audittrail.AuditTrailObjectType.RENDERED_FILE_ENTRY;
 import static media.mexm.mydmam.entity.FileEntity.hashPath;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.forceDelete;
@@ -38,6 +40,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +64,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.asset.DeclaredRenderedFile;
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
+import media.mexm.mydmam.audittrail.RealmAuditTrail;
+import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
@@ -97,6 +103,8 @@ class MediaAssetServiceTest {
 	AssetRenderedFileRepository assetRenderedFileRepository;
 	@MockitoBean
 	Indexer indexer;
+	@MockitoBean
+	AuditTrail auditTrail;
 
 	@Fake
 	String realmName;
@@ -123,9 +131,24 @@ class MediaAssetServiceTest {
 	AssetRenderedFileEntity assetRenderedFileEntity;
 	@Mock
 	FileMetadataEntity fileMetadataEntity;
+	@Mock
+	RealmAuditTrail realmAuditTrail;
+	@Mock
+	Map<String, Serializable> auditTrailPayload;
 
 	@Autowired
 	MediaAssetService mas;
+
+	@BeforeEach
+	void init() {
+		when(auditTrail.getAuditTrailByRealm(realmName))
+				.thenReturn(Optional.ofNullable(realmAuditTrail));
+		when(assetRenderedFileEntity.getAuditTrailPayload(any()))
+				.thenReturn(auditTrailPayload);
+		when(file.getHashPath()).thenReturn(fileHashpath);
+		when(fileMetadataEntity.getAuditTrailPayload())
+				.thenReturn(auditTrailPayload);
+	}
 
 	@AfterEach
 	void ends() {
@@ -135,7 +158,8 @@ class MediaAssetServiceTest {
 				assetRenderedFileRepository,
 				fileMetadataDao,
 				fileMetadataRepository,
-				indexer);
+				indexer,
+				auditTrail);
 	}
 
 	@Test
@@ -254,10 +278,12 @@ class MediaAssetServiceTest {
 
 			verify(file, atLeastOnce()).getRealm();
 			verify(file, atLeastOnce()).getId();
+			verify(file, atLeastOnce()).getHashPath();
 			verify(configuration, atLeastOnce()).getRealmByName(realmName);
 			verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
 			verify(assetRenderedFileEntity, atLeastOnce()).getName();
 			verify(assetRenderedFileEntity, atLeastOnce()).getRelativePath();
+			verify(assetRenderedFileEntity, times(1)).getAuditTrailPayload(expectedRenderedFile);
 			verify(assetRenderedFileRepository, times(1)).getRenderedForFileByEtags(eq(fileId), any());
 			verify(declaredRenderedFile, atLeastOnce()).name();
 			verify(declaredRenderedFile, atLeastOnce()).workingFile();
@@ -265,6 +291,14 @@ class MediaAssetServiceTest {
 			verify(declaredRenderedFile, atLeastOnce()).mimeType();
 			verify(declaredRenderedFile, atLeastOnce()).previewType();
 			verify(declaredRenderedFile, atLeastOnce()).toGzip();
+
+			verify(auditTrail, times(1)).getAuditTrailByRealm(realmName);
+			verify(realmAuditTrail, times(1))
+					.asyncPersist("media-asset", "save-rendered-file",
+							new AuditTrailBatchInsertObject(
+									RENDERED_FILE_ENTRY,
+									fileHashpath,
+									List.of(auditTrailPayload)));
 		}
 
 		@Test
@@ -345,10 +379,23 @@ class MediaAssetServiceTest {
 	@Test
 	void testDeclareFileMetadatas() throws IOException {
 		final var list = List.of(fileMetadataEntity);
+		when(file.getRealm()).thenReturn(realmName);
 		when(fileMetadataDao.addUpdateEntries(file, list)).thenReturn(list);
 		final var result = mas.declareFileMetadatas(file, list);
 		assertThat(result).isEqualTo(list);
 		verify(fileMetadataDao, times(1)).addUpdateEntries(file, list);
+
+		verify(file, atLeastOnce()).getRealm();
+		verify(file, atLeastOnce()).getHashPath();
+		verify(fileMetadataEntity, times(1)).getAuditTrailPayload();
+		verify(auditTrail, times(1)).getAuditTrailByRealm(realmName);
+		verify(realmAuditTrail, times(1))
+				.asyncPersist("media-asset", "extracted-file-metadatas",
+						new AuditTrailBatchInsertObject(
+								FILE_METADATA_ENTRY,
+								fileHashpath,
+								List.of(auditTrailPayload)));
+
 	}
 
 	@Test

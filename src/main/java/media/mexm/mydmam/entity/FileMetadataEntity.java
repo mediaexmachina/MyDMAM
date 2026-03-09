@@ -22,7 +22,9 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.Map;
 import java.util.zip.CRC32;
 
 import jakarta.persistence.Column;
@@ -123,6 +125,15 @@ public class FileMetadataEntity {
 
 	public KeyValueMetadataResponse toKeyValueMetadataResponse() {
 		return new KeyValueMetadataResponse(classifier, key, value);
+	}
+
+	public Map<String, Serializable> getAuditTrailPayload() {
+		return Map.of(
+				"classifier", classifier,
+				"key", key,
+				"layer", layer,
+				"origin", origin,
+				"value", value);
 	}
 
 }
