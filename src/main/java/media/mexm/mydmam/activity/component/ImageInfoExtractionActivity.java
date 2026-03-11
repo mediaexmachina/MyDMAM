@@ -26,7 +26,6 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
-import media.mexm.mydmam.activity.HandlingResult;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.asset.MetadataExtractorHandler;
 import media.mexm.mydmam.component.MimeTypeDetector;
@@ -105,9 +104,9 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
 	}
 
 	@Override
-	public HandlingResult handle(final MediaAsset asset,
-								 final ActivityEventType eventType,
-								 final RealmStorageConfiguredEnv storedOn) throws Exception {
+	public void handle(final MediaAsset asset,
+					   final ActivityEventType eventType,
+					   final RealmStorageConfiguredEnv storedOn) throws Exception {
 		final var assetFile = asset.getLocalInternalFile(storedOn.storage());
 		final var workingFile = makeWorkingFile("identify.json", asset, storedOn);
 
@@ -139,8 +138,6 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
 		asset.setResolution(this, width, height);
 		asset.createFileMetadataEntry(this, MTD_TECHNICAL_CLASSIFIER, 0, entries);
 		log.debug("Found properties for {}: {}×{}; {}", asset, width, height, entries);
-
-		return new HandlingResult();
 	}
 
 }

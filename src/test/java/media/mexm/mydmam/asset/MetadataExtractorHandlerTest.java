@@ -31,7 +31,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
 import media.mexm.mydmam.activity.ActivityEventType;
-import media.mexm.mydmam.activity.HandlingResult;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
@@ -56,9 +55,9 @@ class MetadataExtractorHandlerTest {
 		}
 
 		@Override
-		public HandlingResult handle(final MediaAsset asset,
-									 final ActivityEventType eventType,
-									 final RealmStorageConfiguredEnv storedOn) throws Exception {
+		public void handle(final MediaAsset asset,
+						   final ActivityEventType eventType,
+						   final RealmStorageConfiguredEnv storedOn) throws Exception {
 			throw new UnsupportedOperationException();
 		}
 

@@ -40,9 +40,9 @@ class ActivityHandlerTest {
 		}
 
 		@Override
-		public HandlingResult handle(final MediaAsset asset,
-									 final ActivityEventType eventType,
-									 final RealmStorageConfiguredEnv storedOn) throws Exception {
+		public void handle(final MediaAsset asset,
+						   final ActivityEventType eventType,
+						   final RealmStorageConfiguredEnv storedOn) throws Exception {
 			throw new UnsupportedOperationException();
 		}
 	}

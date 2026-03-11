@@ -25,7 +25,6 @@ import static org.apache.commons.io.FileUtils.writeStringToFile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -219,8 +218,7 @@ class ImageInfoExtractionActivityTest {
 
 		@Test
 		void testHandle() throws Exception {
-			final var handlingResult = iiea.handle(asset, eventType, storedOn);
-			assertNotNull(handlingResult);
+			iiea.handle(asset, eventType, storedOn);
 
 			verify(storedOn, atLeastOnce()).storage();
 			verify(storedOn, atLeastOnce()).realm();

@@ -63,8 +63,6 @@ class PendingActivityJobTest {
 	@Mock
 	PathIndexingStorage storage;
 	@Mock
-	HandlingResult handlingResult;
-	@Mock
 	FileEntity file;
 
 	@Fake
@@ -100,7 +98,6 @@ class PendingActivityJobTest {
 		when(asset.getHashPath()).thenReturn(assetHashPath);
 		when(asset.getFile()).thenReturn(file);
 		when(activityHandler.getHandlerName()).thenReturn(handlerName);
-		when(activityHandler.handle(asset, eventType, configuredEnv)).thenReturn(handlingResult);
 		when(pendingActivityDao.haveDeclaredActivity(file, activityHandler)).thenReturn(true);
 		when(asset.getName()).thenReturn(assetName);
 		when(realm.spoolProcessAsset()).thenReturn(spoolName);

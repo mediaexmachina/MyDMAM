@@ -46,8 +46,8 @@ public interface ActivityHandler {
 
 	boolean canHandle(MediaAsset asset, ActivityEventType eventType, RealmStorageConfiguredEnv storedOn);
 
-	HandlingResult handle(MediaAsset asset,
-						  ActivityEventType eventType,
-						  RealmStorageConfiguredEnv storedOn) throws Exception; // NOSONAR S112
+	void handle(MediaAsset asset,
+				ActivityEventType eventType,
+				RealmStorageConfiguredEnv storedOn) throws Exception; // NOSONAR S112
 
 }

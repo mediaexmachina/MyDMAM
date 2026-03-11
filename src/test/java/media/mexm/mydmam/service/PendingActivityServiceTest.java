@@ -53,7 +53,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
-import media.mexm.mydmam.activity.HandlingResult;
 import media.mexm.mydmam.activity.PendingActivityJob;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.component.AboutInstance;
@@ -155,7 +154,6 @@ class PendingActivityServiceTest {
 		when(activityHandler.getHandlerName()).thenReturn(handlerName);
 		when(activityHandler.getSupportedStorageStateClasses()).thenReturn(Set.of());
 		when(activityHandler.canHandle(asset, eventType, configuredEnv)).thenReturn(true);
-		when(activityHandler.handle(asset, eventType, configuredEnv)).thenReturn(new HandlingResult());
 
 		when(configuration.getRealmNames()).thenReturn(Set.of(realmName));
 		when(configuration.getRealmByName(realmName)).thenReturn(Optional.ofNullable(realm));

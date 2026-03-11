@@ -24,7 +24,6 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
-import media.mexm.mydmam.activity.HandlingResult;
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.MimeTypeDetector;
@@ -47,9 +46,9 @@ public class MimeTypeActivity implements ActivityHandler {
 	}
 
 	@Override
-	public HandlingResult handle(final MediaAsset asset,
-								 final ActivityEventType eventType,
-								 final RealmStorageConfiguredEnv storedOn) throws Exception {
+	public void handle(final MediaAsset asset,
+					   final ActivityEventType eventType,
+					   final RealmStorageConfiguredEnv storedOn) throws Exception {
 		final var internalFile = asset.getLocalInternalFile(storedOn.storage());
 		log.debug("Get mime type from {}", internalFile);
 		final var mimeType = mimeTypeDetector.getMimeType(internalFile);
@@ -63,8 +62,6 @@ public class MimeTypeActivity implements ActivityHandler {
 				FILE_MIME_TYPE,
 				asset.getHashPath(),
 				mimeType);
-
-		return new HandlingResult();
 	}
 
 }
