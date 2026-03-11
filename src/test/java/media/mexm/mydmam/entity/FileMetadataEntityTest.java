@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.zip.CRC32;
 
@@ -56,7 +55,7 @@ class FileMetadataEntityTest {
 	FileMetadataEntity fm;
 
 	@BeforeEach
-	void init() throws IOException {
+	void init() {
 		fm = new FileMetadataEntity(file, origin, classifier, layer, key, value);
 	}
 

@@ -45,13 +45,11 @@ public interface CreateFileMetadataEntryTrait {
 										 final int layer,
 										 final Map<String, String> entries) {
 		entries.entrySet()
-				.forEach(entry -> {
-					createFileMetadataEntry(originHandler,
-							classifier,
-							layer,
-							entry.getKey(),
-							entry.getValue());
-				});
+				.forEach(entry -> createFileMetadataEntry(originHandler,
+						classifier,
+						layer,
+						entry.getKey(),
+						entry.getValue()));
 	}
 
 	default void createFileMetadataEntry(final ActivityHandler hander,
@@ -59,13 +57,11 @@ public interface CreateFileMetadataEntryTrait {
 										 final int layer,
 										 final Map<String, String> entries) {
 		entries.entrySet()
-				.forEach(entry -> {
-					createFileMetadataEntry(hander,
-							classifier,
-							layer,
-							entry.getKey(),
-							entry.getValue());
-				});
+				.forEach(entry -> createFileMetadataEntry(hander,
+						classifier,
+						layer,
+						entry.getKey(),
+						entry.getValue()));
 	}
 
 }

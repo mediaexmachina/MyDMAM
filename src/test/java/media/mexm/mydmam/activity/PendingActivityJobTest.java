@@ -91,7 +91,7 @@ class PendingActivityJobTest {
 	Optional<RealmIndexer> oIndexer;
 
 	@BeforeEach
-	void init() throws Exception {
+	void init() {
 		oIndexer = Optional.ofNullable(realmIndexer);
 		configuredEnv = new RealmStorageConfiguredEnv(realmName, storageName, realm, storage);
 

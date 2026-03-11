@@ -45,6 +45,8 @@ import media.mexm.mydmam.entity.PendingActivityEntity;
 @Slf4j
 public class PendingActivityDaoImpl implements PendingActivityDao {
 
+	private static final String FILE_ID = "file_id";
+
 	@Autowired
 	@PersistenceContext
 	EntityManager entityManager;
@@ -82,7 +84,7 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
 				WHERE pa.file.id = :file_id
 				AND pa.handlerName = :handlerName
 				""", PendingActivityEntity.class)
-				.setParameter("file_id", file.getId())
+				.setParameter(FILE_ID, file.getId())
 				.setParameter("handlerName", activityHandler.getHandlerName())
 				.getResultList();
 
@@ -103,7 +105,7 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
 				WHERE pa.file.id = :file_id
 				AND pa.handlerName = :handlerName
 				""", Long.class)
-				.setParameter("file_id", file.getId())
+				.setParameter(FILE_ID, file.getId())
 				.setParameter("handlerName", activityHandler.getHandlerName())
 				.getSingleResult()
 				.intValue();
@@ -117,7 +119,7 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
 				SELECT COUNT(pa) FROM PendingActivityEntity pa
 				WHERE pa.file.id = :file_id
 				""", Long.class)
-				.setParameter("file_id", file.getId())
+				.setParameter(FILE_ID, file.getId())
 				.getSingleResult()
 				.intValue();
 		return haveActivities > 0;

@@ -145,7 +145,7 @@ class PendingActivityServiceTest {
 	ActivityHandler activityHandler;
 
 	@BeforeEach
-	void init() throws Exception {
+	void init() {
 		configuredEnv = new RealmStorageConfiguredEnv(realmName, storageName, realm, storage);
 
 		oIndexer = Optional.ofNullable(realmIndexer);
