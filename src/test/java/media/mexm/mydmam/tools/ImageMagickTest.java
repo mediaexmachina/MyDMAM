@@ -50,6 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
+import media.mexm.mydmam.ConditionalExternalExecTest;
 import media.mexm.mydmam.component.XmlMapperWrapper;
 import media.mexm.mydmam.configuration.MagickConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
@@ -152,6 +153,7 @@ class ImageMagickTest {
 	}
 
 	@Test
+	@ConditionalExternalExecTest
 	void testIsEnabled() {
 		assertFalse(im.isEnabled());
 		setup();
@@ -159,6 +161,7 @@ class ImageMagickTest {
 	}
 
 	@Test
+	@ConditionalExternalExecTest
 	void testExtractIdentifyJsonFile() throws IOException {
 		/**
 		 * Generated with "magick -size 16x16 xc:white -strip white.png"
