@@ -26,7 +26,7 @@ export class BackendAPIService {
 
     private readonly httpClient = inject(HttpClient);
     private readonly API_BASE_PATH = "/api/v1";
-    private readonly BASE_URL = `${window.location.protocol}//${window.location.host}${this.API_BASE_PATH}`;
+    public readonly BASE_URL = `${window.location.protocol}//${window.location.host}${this.API_BASE_PATH}`;
     private readonly TIMEOUT = 1000;
 
     private onRequestError(httpError: HttpErrorResponse) {

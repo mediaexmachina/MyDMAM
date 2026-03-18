@@ -29,22 +29,31 @@ import { KeyValueMetadataResponse } from '../../dto/key-value-metadata-response.
 })
 export class NavigatorItemComponent {
 
+    readonly downloadOnlyRenderedPreviewType = new Set([
+        "image-format"
+    ]);
+
     readonly assetService = inject(AssetService);
     readonly Object = Object;
     readonly Math = Math;
 
     readonly fileResponse = input.required<FileResponse>();
-    readonly itemMedatadas = computed(() => {
+
+    readonly fileHashPath = computed(() => {
         const fileResponse = this.fileResponse();
         if (fileResponse.currentItem == null) {
-            return null;
+            return "";
         }
-        const hashPath = fileResponse.currentItem.hashPath;
-        if (hashPath in fileResponse.metadatas == false) {
-            return null;
-        }
+        return fileResponse.currentItem.hashPath;
+    });
 
-        return fileResponse.metadatas[hashPath];
+    readonly itemMedatadas = computed(() => {
+        const fileResponse = this.fileResponse();
+        const fileHashPath = this.fileHashPath();
+        if (fileHashPath in fileResponse.metadatas == false) {
+            return null;
+        }
+        return fileResponse.metadatas[fileHashPath];
     });
 
     readonly defaultIndexMetadatas = computed(() => {
@@ -53,6 +62,14 @@ export class NavigatorItemComponent {
             return null;
         }
         return itemMedatadas.index[0];
+    });
+
+    readonly renderedDownloadList = computed(() => {
+        const defaultIndexMetadata = this.defaultIndexMetadatas();
+        if (defaultIndexMetadata == null || defaultIndexMetadata.rendered.length == 0) {
+            return [];
+        }
+        return defaultIndexMetadata.rendered.filter(r => this.downloadOnlyRenderedPreviewType.has(r.previewType));
     });
 
     getClassifiers(assetResponseIndex: AssetResponseIndex): Array<string> {

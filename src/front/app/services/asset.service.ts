@@ -62,4 +62,15 @@ export class AssetService {
         return this.getFileMetadataResponseValue(assetResponse, "file-format", "mime-type", "application/octet-stream");
     }
 
+    private makeAssetRenderedFileURL(hashPath: string, name: string, index: number): string {
+        const BASE_URL = this.backendAPIService.BASE_URL
+        const realm = this.localStorageService.getSelectedRealm();
+        return `${BASE_URL}/content/rendered/${realm}/${hashPath}/${name}?index=${index}`;
+    }
+
+    public makeAssetRenderedFileDownloadURL(hashPath: string, name: string, index: 0): string {
+        const startURL = this.makeAssetRenderedFileURL(hashPath, name, index);
+        return `${startURL}&download=1`;
+    }
+    
 }

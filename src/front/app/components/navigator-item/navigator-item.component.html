@@ -18,20 +18,35 @@
 @if (medatadas != null) {
     @let currentDefaultIndexMetadata = defaultIndexMetadatas();
     @if (currentDefaultIndexMetadata != null) {
-        <p>Properties extracted from file:</p>
-        <ul>
-            @for (classifier of getClassifiers(currentDefaultIndexMetadata); track classifier) {
-                @let keyValues = getKeyValueByClassifierName(classifier, currentDefaultIndexMetadata);
-                <li>{{ classifier | firstUpperCase }} ({{ keyValues.length }})</li>
-                <ul>
-                    @for (kv of keyValues; track kv.key) {
-                        <li>
-                            {{ kv.key | firstUpperCase }} => {{ kv.value }}
-                        </li>
-                    }
-                </ul>
-            }
-        </ul>
-    }
+        @let classifiers = getClassifiers(currentDefaultIndexMetadata);
+        @if (classifiers.length > 0) {
+            <p>Properties extracted from file:</p>
+            <ul>
+                @for (classifier of classifiers; track classifier) {
+                    @let keyValues = getKeyValueByClassifierName(classifier, currentDefaultIndexMetadata);
+                    <li>{{ classifier | firstUpperCase }} ({{ keyValues.length }})</li>
+                    <ul>
+                        @for (kv of keyValues; track kv.key) {
+                            <li>
+                                {{ kv.key | firstUpperCase }} => {{ kv.value }}
+                            </li>
+                        }
+                    </ul>
+                }
+            </ul>
+        }
 
+        @let currentrenderedDownloadList = renderedDownloadList();
+        @if (currentrenderedDownloadList.length > 0) {
+            <p>Download artifacts extracted from file:</p>
+            <ul>
+                @for (rendered of currentrenderedDownloadList; track rendered.name) {
+                    <li>
+                        @let url = assetService.makeAssetRenderedFileDownloadURL(this.fileHashPath(), rendered.name, 0);
+                        {{ rendered.previewType | firstUpperCase }}: <a [href]="url">{{ rendered.name }}</a>
+                    </li>
+                }
+            </ul>
+        }
+    }
 }
