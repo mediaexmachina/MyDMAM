@@ -1,0 +1,37 @@
+<!--
+    This file is part of MyDMAM.
+    
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+    
+    Copyright (C) Media ex Machina 2026
+    
+-->
+@let medatadas = itemMedatadas();
+@if (medatadas != null) {
+    @let currentDefaultIndexMetadata = defaultIndexMetadatas();
+    @if (currentDefaultIndexMetadata != null) {
+        <p>Properties extracted from file:</p>
+        <ul>
+            @for (classifier of getClassifiers(currentDefaultIndexMetadata); track classifier) {
+                @let keyValues = getKeyValueByClassifierName(classifier, currentDefaultIndexMetadata);
+                <li>{{ classifier | firstUpperCase }} ({{ keyValues.length }})</li>
+                <ul>
+                    @for (kv of keyValues; track kv.key) {
+                        <li>
+                            {{ kv.key | firstUpperCase }} => {{ kv.value }}
+                        </li>
+                    }
+                </ul>
+            }
+        </ul>
+    }
+
+}

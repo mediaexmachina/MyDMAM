@@ -26,10 +26,11 @@ import { SpanFileSizeComponent } from "../toolkit/span-file-size.component";
 import { SortOrder } from '../../dto/sort-order.enum';
 import { NavigatorColumnSortComponent } from "./navigator-column-sort.component";
 import { AssetService } from '../../services/asset.service';
+import { NavigatorItemComponent } from "../navigator-item/navigator-item.component";
 
 @Component({
   selector: 'app-navigator-folder',
-  imports: [RouterLink, SpanDateTimeComponent, SpanFileSizeComponent, NavigatorColumnSortComponent],
+  imports: [RouterLink, SpanDateTimeComponent, SpanFileSizeComponent, NavigatorColumnSortComponent, NavigatorItemComponent],
   templateUrl: './navigator-folder.component.html',
   styleUrl: './navigator-folder.component.css'
 })
