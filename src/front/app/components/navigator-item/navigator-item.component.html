@@ -36,11 +36,42 @@
             </ul>
         }
 
-        @let currentrenderedDownloadList = renderedDownloadList();
-        @if (currentrenderedDownloadList.length > 0) {
+        @let currentRenderedDisplayList = renderedDisplayList();
+        @if (currentRenderedDisplayList.length > 0) {
+            <div>
+                <p>Display raw artifacts extracted from file:</p>
+                @let selected = renderedDisplaySelected();
+
+                <ul>
+                    @for (rendered of currentRenderedDisplayList; track rendered.name) {
+                        <li>
+                            @if (selected == rendered) {
+                                {{ rendered.previewType | firstUpperCase }}: {{ rendered.name }}
+                            } @else {
+                                <button (click)="onClickSelectRenderedDisplay($event, rendered)">
+                                    Display {{ rendered.previewType | firstUpperCase }}: {{ rendered.name }}
+                                </button>
+                            }
+                        </li>
+                    }
+                </ul>
+                @if (selected != null) {
+                    <div class="selected-rendered-display">
+                        @let url = assetService.makeAssetRenderedFileDownloadURL(this.fileHashPath(), selected.name, 0);
+                        <h4>{{ selected.name }} <a [href]="url" class="small">Download</a></h4>
+                        <div class="remarks">{{ getMessageFromRenderedSelected() }}</div>
+                        <pre [innerHtml]="getJsonContentFromRenderedSelected()" class="json-container"></pre>
+                        <a [href]="url" class="small">Download {{ selected.name }}</a>                             
+                    </div>
+                }
+            </div>
+        }
+
+        @let currentRenderedDownloadList = renderedDownloadList();
+        @if (currentRenderedDownloadList.length > 0) {
             <p>Download artifacts extracted from file:</p>
             <ul>
-                @for (rendered of currentrenderedDownloadList; track rendered.name) {
+                @for (rendered of currentRenderedDownloadList; track rendered.name) {
                     <li>
                         @let url = assetService.makeAssetRenderedFileDownloadURL(this.fileHashPath(), rendered.name, 0);
                         {{ rendered.previewType | firstUpperCase }}: <a [href]="url">{{ rendered.name }}</a>
@@ -48,5 +79,6 @@
                 }
             </ul>
         }
+        
     }
 }

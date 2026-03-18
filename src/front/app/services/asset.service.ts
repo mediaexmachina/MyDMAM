@@ -14,7 +14,7 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-import { Injectable, inject } from '@angular/core';
+import { Injectable, Signal, inject, signal } from '@angular/core';
 
 import { BackendAPIService } from './backend-api.service';
 import { LocalStorageService } from './local-storage.service';
@@ -62,15 +62,20 @@ export class AssetService {
         return this.getFileMetadataResponseValue(assetResponse, "file-format", "mime-type", "application/octet-stream");
     }
 
-    private makeAssetRenderedFileURL(hashPath: string, name: string, index: number): string {
-        const BASE_URL = this.backendAPIService.BASE_URL
+    public makeAssetRenderedFileURL(hashPath: string, name: string, index: number): string {
         const realm = this.localStorageService.getSelectedRealm();
-        return `${BASE_URL}/content/rendered/${realm}/${hashPath}/${name}?index=${index}`;
+        return `/content/rendered/${realm}/${hashPath}/${name}?index=${index}`;
     }
 
     public makeAssetRenderedFileDownloadURL(hashPath: string, name: string, index: 0): string {
+        const BASE_URL = this.backendAPIService.BASE_URL;
         const startURL = this.makeAssetRenderedFileURL(hashPath, name, index);
-        return `${startURL}&download=1`;
+        return `${BASE_URL}${startURL}&download=1`;
     }
-    
+
+    public async getAssetRenderedFileString(hashPath: string, name: string, index: 0): Promise<string|null> {
+        const url = this.makeAssetRenderedFileURL(hashPath, name, index);
+        return this.backendAPIService.requestAsyncAPI<string>("GET", url);
+    }
+
 }

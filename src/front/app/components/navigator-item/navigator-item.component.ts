@@ -14,12 +14,14 @@
  * Copyright (C) Media ex Machina 2026
  * 
  */
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, Signal, signal } from '@angular/core';
 import { FileResponse } from '../../dto/file-response.interface';
 import { AssetService } from '../../services/asset.service';
 import { AssetResponseIndex } from '../../dto/asset-response-index.interface';
 import { FirstUpperCasePipe } from '../../pipes/first-upper-case-pipe';
 import { KeyValueMetadataResponse } from '../../dto/key-value-metadata-response.interface';
+import { prettyPrintJson, FormatOptions } from 'pretty-print-json';
+import { RenderedFileResponse } from '../../dto/rendered-file-response.interface';
 
 @Component({
     selector: 'app-navigator-item',
@@ -33,10 +35,11 @@ export class NavigatorItemComponent {
         "image-format"
     ]);
 
-    readonly assetService = inject(AssetService);
-    readonly Object = Object;
-    readonly Math = Math;
+    readonly displayOnlyRenderedPreviewType = new Set([
+        "image-format"
+    ]);
 
+    readonly assetService = inject(AssetService);
     readonly fileResponse = input.required<FileResponse>();
 
     readonly fileHashPath = computed(() => {
@@ -65,12 +68,18 @@ export class NavigatorItemComponent {
     });
 
     readonly renderedDownloadList = computed(() => {
-        const defaultIndexMetadata = this.defaultIndexMetadatas();
-        if (defaultIndexMetadata == null || defaultIndexMetadata.rendered.length == 0) {
-            return [];
-        }
-        return defaultIndexMetadata.rendered.filter(r => this.downloadOnlyRenderedPreviewType.has(r.previewType));
+        const renderedList = this.defaultIndexMetadatas()?.rendered || [];
+        return renderedList.filter(r => this.downloadOnlyRenderedPreviewType.has(r.previewType));
     });
+
+    readonly renderedDisplayList = computed(() => {
+        const renderedList = this.defaultIndexMetadatas()?.rendered || [];
+        return renderedList.filter(r => this.displayOnlyRenderedPreviewType.has(r.previewType));
+    });
+
+    readonly getJsonContentFromRenderedSelected = signal("");
+    readonly getMessageFromRenderedSelected = signal("");
+    readonly renderedDisplaySelected = signal<RenderedFileResponse|null>(null);
 
     getClassifiers(assetResponseIndex: AssetResponseIndex): Array<string> {
         const allClassifiers = assetResponseIndex.fileMetadatas.map(f => f.classifier);
@@ -82,5 +91,29 @@ export class NavigatorItemComponent {
     getKeyValueByClassifierName(classifierName:string, assetResponseIndex: AssetResponseIndex): Array<KeyValueMetadataResponse> {
         return assetResponseIndex.fileMetadatas.filter(f => f.classifier == classifierName);
     }
-    
+
+    onClickSelectRenderedDisplay(e: Event, rendered: RenderedFileResponse) {
+        e.preventDefault();
+        this.renderedDisplaySelected.set(rendered);
+        const content = this.getJsonContentFromRenderedSelected;
+        const message = this.getMessageFromRenderedSelected;
+        message.set("Loading...");
+        content.set("");
+
+        this.assetService.getAssetRenderedFileString(this.fileHashPath(), rendered.name, 0)
+            .then(text => {
+                if (text == null) {
+                    message.set(`No data from ${rendered.name}`);
+                } else {
+                    const options: FormatOptions = {
+                        indent: 2,
+                        linkUrls: false,
+                        trailingCommas: false
+                    };
+                    message.set("");
+                    content.set(prettyPrintJson.toHtml(text, options));
+                }
+            });
+    }
+
 }

@@ -14,6 +14,7 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
+@import '../../node_modules/pretty-print-json/dist/css/pretty-print-json.prefers.min.css';
 
 body {
     font-family: "Red Hat Text";
@@ -59,4 +60,11 @@ ul li:hover {
 
 ul li:hover:nth-child(odd) {
     background-color: rgba(0, 0, 0, 0.045);
+}
+
+/**
+ * pretty-print-json
+ */
+.json-container {
+    background-color: #00000000 !important;
 }

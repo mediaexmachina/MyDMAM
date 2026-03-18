@@ -14,10 +14,11 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-import { Injectable, inject } from '@angular/core';
-import { Observable, Subject, firstValueFrom } from 'rxjs';
+import { Injectable, Signal, computed, inject } from '@angular/core';
+import { Observable, Subject, catchError, firstValueFrom, retry } from 'rxjs';
 import { HttpClient, HttpErrorResponse, HttpResponse, HttpParams } from '@angular/common/http';
 import { APIResponse } from '../interfaces/api-response.interface';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Injectable({
     providedIn: 'root'
@@ -73,6 +74,7 @@ export class BackendAPIService {
                     data: <T>response.body
                 });
                 result$.complete();
+                result$.unsubscribe();
             },
             error: (httpError: HttpErrorResponse) => {
                 result$.next({
@@ -83,6 +85,7 @@ export class BackendAPIService {
                     data: null
                 });
                 result$.complete();
+                result$.unsubscribe();
                 this.onRequestError(httpError);
             }
         }
@@ -98,7 +101,7 @@ export class BackendAPIService {
                     cache: 'force-cache',
                     credentials: 'same-origin',
                     redirect: 'follow'
-                }).subscribe(subscribed);
+                }).pipe(retry(0)).subscribe(subscribed);
                 break;
             }
             case "HEAD": {
@@ -111,7 +114,7 @@ export class BackendAPIService {
                     cache: 'force-cache',
                     credentials: 'same-origin',
                     redirect: 'follow'
-                }).subscribe(subscribed);
+                }).pipe(retry(0)).subscribe(subscribed);
                 break;
             }
             case "POST": {
@@ -124,7 +127,7 @@ export class BackendAPIService {
                     cache: 'no-cache',
                     credentials: 'same-origin',
                     redirect: 'follow'
-                }).subscribe(subscribed);
+                }).pipe(retry(0)).subscribe(subscribed);
                 break;
             }
             case "PUT": {
@@ -137,7 +140,7 @@ export class BackendAPIService {
                     cache: 'no-cache',
                     credentials: 'same-origin',
                     redirect: 'follow'
-                }).subscribe(subscribed);
+                }).pipe(retry(0)).subscribe(subscribed);
                 break;
             }
             case "DELETE": {
@@ -150,7 +153,7 @@ export class BackendAPIService {
                     cache: 'no-cache',
                     credentials: 'same-origin',
                     redirect: 'follow'
-                }).subscribe(subscribed);
+                }).pipe(retry(0)).subscribe(subscribed);
                 break;
             }
         }

@@ -14,3 +14,26 @@
  * Copyright (C) Media ex Machina 2026
  * 
  */
+
+div.selected-rendered-display {
+    margin: 1em;
+    padding: 0.5em 0em 0.3em 1em;
+    border: 0.3em solid rgba(0, 0, 0, 0.015);
+}
+
+h4 {
+    margin-top: 0em;
+    margin-bottom: 0em;
+}
+
+.small {
+    font-weight: normal;
+    font-size: 90%;
+}
+
+div.remarks {
+    margin-top: 1em;
+    color: red;
+    font-style: italic;
+    font-weight: bold;
+}
