@@ -46,97 +46,97 @@ import media.mexm.mydmam.tools.DelayedSyncConfiguration;
 @Validated
 @Slf4j
 public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
-						Duration timeBetweenScans,
-						@DefaultValue("processasset") @NotEmpty String spoolProcessAsset,
-						File workingDirectory,
-						File renderedMetadataDirectory,
-						DelayedSyncConfiguration delayedSync,
-						AllowBlockLists activityHandlers) {
+                        Duration timeBetweenScans,
+                        @DefaultValue("processasset") @NotEmpty String spoolProcessAsset,
+                        File workingDirectory,
+                        File renderedMetadataDirectory,
+                        DelayedSyncConfiguration delayedSync,
+                        AllowBlockLists activityHandlers) {
 
-	public RealmConf {
-		storages = Optional.ofNullable(storages).orElse(Map.of());
+    public RealmConf {
+        storages = Optional.ofNullable(storages).orElse(Map.of());
 
-		checkDirectory(workingDirectory, "workingDirectory");
-		checkDirectory(renderedMetadataDirectory, "renderedMetadataDirectory");
+        checkDirectory(workingDirectory, "workingDirectory");
+        checkDirectory(renderedMetadataDirectory, "renderedMetadataDirectory");
 
-		if (timeBetweenScans != null && (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative())) {
-			throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
-		}
+        if (timeBetweenScans != null && (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative())) {
+            throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
+        }
 
-		if (delayedSync == null) {
-			delayedSync = new DelayedSyncConfiguration(1000, Duration.ofMinutes(1));
-		}
-	}
+        if (delayedSync == null) {
+            delayedSync = new DelayedSyncConfiguration(1000, Duration.ofMinutes(1));
+        }
+    }
 
-	static void checkDirectory(final File directory, final String name) {
-		if (directory == null) {
-			return;
-		}
-		try {
-			if (directory.exists() == false) {
-				log.info("Create {} \"{}\"", name, directory.getAbsolutePath());
-				forceMkdir(directory);
-			} else if (directory.isDirectory() == false
-					   || directory.canRead() == false
-					   || directory.canWrite() == false) {
-				throw new IOException("Can't read/write " + directory + " or it's not a directory, for " + name);
-			}
-		} catch (final IOException e) {
-			throw new UncheckedIOException("Invalid directory: " + directory + ", for " + name, e);
-		}
-	}
+    static void checkDirectory(final File directory, final String name) {
+        if (directory == null) {
+            return;
+        }
+        try {
+            if (directory.exists() == false) {
+                log.info("Create {} \"{}\"", name, directory.getAbsolutePath());
+                forceMkdir(directory);
+            } else if (directory.isDirectory() == false
+                       || directory.canRead() == false
+                       || directory.canWrite() == false) {
+                throw new IOException("Can't read/write " + directory + " or it's not a directory, for " + name);
+            }
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Invalid directory: " + directory + ", for " + name, e);
+        }
+    }
 
-	public Set<String> getOnlineDASStorageNames() {
-		return getStorageNames(Set.of(DAS), Set.of(ONLINE));
-	}
+    public Set<String> getOnlineDASStorageNames() {
+        return getStorageNames(Set.of(DAS), Set.of(ONLINE));
+    }
 
-	/**
-	 * @param limitCategory empty = all
-	 * @param limitStorageClasses empty = all
-	 */
-	public Set<String> getStorageNames(final Set<StorageCategory> limitCategory,
-									   final Set<StorageStateClass> limitStorageClasses) {
-		return storages()
-				.entrySet()
-				.stream()
-				.filter(entry -> {
-					if (limitCategory.isEmpty()) {
-						return true;
-					}
-					return limitCategory.contains(entry.getValue().getCategory());
-				})
-				.filter(entry -> {
-					if (limitStorageClasses.isEmpty()) {
-						return true;
-					}
-					return limitStorageClasses.contains(entry.getValue().getStorageStateClass());
-				})
-				.map(Entry::getKey)
-				.map(TechnicalName::name)
-				.collect(toUnmodifiableSet());
-	}
+    /**
+     * @param limitCategory empty = all
+     * @param limitStorageClasses empty = all
+     */
+    public Set<String> getStorageNames(final Set<StorageCategory> limitCategory,
+                                       final Set<StorageStateClass> limitStorageClasses) {
+        return storages()
+                .entrySet()
+                .stream()
+                .filter(entry -> {
+                    if (limitCategory.isEmpty()) {
+                        return true;
+                    }
+                    return limitCategory.contains(entry.getValue().getCategory());
+                })
+                .filter(entry -> {
+                    if (limitStorageClasses.isEmpty()) {
+                        return true;
+                    }
+                    return limitStorageClasses.contains(entry.getValue().getStorageStateClass());
+                })
+                .map(Entry::getKey)
+                .map(TechnicalName::name)
+                .collect(toUnmodifiableSet());
+    }
 
-	public Optional<PathIndexingStorage> getStorageByName(final String storage) {
-		return storages()
-				.entrySet()
-				.stream()
-				.filter(entry -> entry.getKey().toString().equals(storage))
-				.map(Entry::getValue)
-				.findFirst();
-	}
+    public Optional<PathIndexingStorage> getStorageByName(final String storage) {
+        return storages()
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().toString().equals(storage))
+                .map(Entry::getValue)
+                .findFirst();
+    }
 
-	public File makeWorkingFile(final String name, final Class<?> referer) {
-		try {
-			if (workingDirectory == null) {
-				throw new FileNotFoundException("No workingDirectory is set for realm");
-			}
-			final var result = File.createTempFile(referer.getSimpleName(), name, workingDirectory).getCanonicalFile();
-			log.debug("Create/prepare temp file for realm: {}", result);
-			forceDelete(result);
-			return result;
-		} catch (final IOException e) {
-			throw new UncheckedIOException("Can't prepare a temp file in " + workingDirectory, e);
-		}
-	}
+    public File makeWorkingFile(final String name) {
+        try {
+            if (workingDirectory == null) {
+                throw new FileNotFoundException("No workingDirectory is set for realm");
+            }
+            final var result = File.createTempFile("workingfile", name, workingDirectory).getCanonicalFile();
+            log.debug("Create/prepare temp file for realm: {}", result);
+            forceDelete(result);
+            return result;
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Can't prepare a temp file in " + workingDirectory, e);
+        }
+    }
 
 }

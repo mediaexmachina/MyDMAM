@@ -67,6 +67,15 @@ export class NavigatorItemComponent {
         return itemMedatadas.index[0];
     });
 
+    readonly renderedHeroImagePreview = computed(() => {
+        const renderedList = this.defaultIndexMetadatas()?.rendered || [];
+        const heroList = renderedList.filter(r => r.previewType == "hero-thumbnail");
+        if (heroList.length > 0) {
+            return this.assetService.makeAssetRenderedFileURL(this.fileHashPath(), heroList[0].name, 0);
+        }
+        return null;
+    });
+
     readonly renderedDownloadList = computed(() => {
         const renderedList = this.defaultIndexMetadatas()?.rendered || [];
         return renderedList.filter(r => this.downloadOnlyRenderedPreviewType.has(r.previewType));

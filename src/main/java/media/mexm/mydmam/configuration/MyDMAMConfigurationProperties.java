@@ -35,86 +35,88 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import media.mexm.mydmam.asset.RenderedFileSpecs;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.tools.AllowBlockLists;
 
 @ConfigurationProperties(prefix = "mydmam")
 @Validated
 public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
-											String instancename,
-											@DefaultValue("audittrail") @NotEmpty String auditTrailSpoolName,
-											@DefaultValue("async-api") @NotEmpty String asyncAPISpoolName,
-											@DefaultValue("false") boolean explainSearchResults,
-											@DefaultValue("10000") @Min(0) int resetBatchSizeIndexer,
-											@DefaultValue("100") @Min(1) int dirListMaxSize,
-											@DefaultValue("100") @Min(1) int searchResultMaxSize,
-											@DefaultValue("24h") Duration pendingActivityMaxAgeGraceRestart,
-											@DefaultValue @Valid @NotNull MagickConf magick,
-											AllowBlockLists activityHandlers) {
+                                            String instancename,
+                                            @DefaultValue("audittrail") @NotEmpty String auditTrailSpoolName,
+                                            @DefaultValue("async-api") @NotEmpty String asyncAPISpoolName,
+                                            @DefaultValue("false") boolean explainSearchResults,
+                                            @DefaultValue("10000") @Min(0) int resetBatchSizeIndexer,
+                                            @DefaultValue("100") @Min(1) int dirListMaxSize,
+                                            @DefaultValue("100") @Min(1) int searchResultMaxSize,
+                                            @DefaultValue("24h") Duration pendingActivityMaxAgeGraceRestart,
+                                            @DefaultValue @Valid @NotNull MagickConf magick,
+                                            AllowBlockLists activityHandlers,
+                                            @DefaultValue @Valid @NotNull RenderedFileSpecs renderedSpecs) {
 
-	public MyDMAMConfigurationProperties {
-		if (instancename == null || instancename.isEmpty()) {
-			try {
-				instancename = InetAddress.getLocalHost().getHostName();
-			} catch (final UnknownHostException e) {
-				throw new IllegalStateException("Can't get hostname", e);
-			}
-		}
-		if (pendingActivityMaxAgeGraceRestart.isPositive() == false) {
-			throw new IllegalStateException("Invalid pendingActivityMaxAgeGraceRestart: "
-											+ pendingActivityMaxAgeGraceRestart);
-		}
-	}
+    public MyDMAMConfigurationProperties {
+        if (instancename == null || instancename.isEmpty()) {
+            try {
+                instancename = InetAddress.getLocalHost().getHostName();
+            } catch (final UnknownHostException e) {
+                throw new IllegalStateException("Can't get hostname", e);
+            }
+        }
+        if (pendingActivityMaxAgeGraceRestart.isPositive() == false) {
+            throw new IllegalStateException("Invalid pendingActivityMaxAgeGraceRestart: "
+                                            + pendingActivityMaxAgeGraceRestart);
+        }
+    }
 
-	public Set<String> getRealmNames() {
-		try {
-			return infra().realms().keySet()
-					.stream()
-					.map(TechnicalName::name)
-					.collect(toUnmodifiableSet());
-		} catch (final NullPointerException e) {
-			return Set.of();
-		}
-	}
+    public Set<String> getRealmNames() {
+        try {
+            return infra().realms().keySet()
+                    .stream()
+                    .map(TechnicalName::name)
+                    .collect(toUnmodifiableSet());
+        } catch (final NullPointerException e) {
+            return Set.of();
+        }
+    }
 
-	public Optional<RealmConf> getRealmByName(final String realmName) {
-		requireNonNull(realmName);
-		try {
-			return Optional.ofNullable(infra().realms().get(new TechnicalName(realmName)));
-		} catch (final NullPointerException e) {
-			return empty();
-		}
-	}
+    public Optional<RealmConf> getRealmByName(final String realmName) {
+        requireNonNull(realmName);
+        try {
+            return Optional.ofNullable(infra().realms().get(new TechnicalName(realmName)));
+        } catch (final NullPointerException e) {
+            return empty();
+        }
+    }
 
-	/**
-	 * Must exists, else thrown an Exception
-	 */
-	public RealmStorageConfiguredEnv getRealmAndStorage(final String realmName, final String storageName) {
-		final var realm = getRealmByName(realmName)
-				.orElseThrow(() -> new IllegalArgumentException("Can't found realm" + realmName));
-		final var storage = realm.getStorageByName(storageName)
-				.orElseThrow(() -> new IllegalArgumentException(
-						"Can't found storageName" + storageName + " for realm " + realmName));
-		return new RealmStorageConfiguredEnv(realmName, storageName, realm, storage);
-	}
+    /**
+     * Must exists, else thrown an Exception
+     */
+    public RealmStorageConfiguredEnv getRealmAndStorage(final String realmName, final String storageName) {
+        final var realm = getRealmByName(realmName)
+                .orElseThrow(() -> new IllegalArgumentException("Can't found realm" + realmName));
+        final var storage = realm.getStorageByName(storageName)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Can't found storageName" + storageName + " for realm " + realmName));
+        return new RealmStorageConfiguredEnv(realmName, storageName, realm, storage);
+    }
 
-	public boolean isActivatedActivityHandler(final String realmName, final String handlerName) {
-		requireNonNull(realmName);
-		requireNonNull(handlerName);
+    public boolean isActivatedActivityHandler(final String realmName, final String handlerName) {
+        requireNonNull(realmName);
+        requireNonNull(handlerName);
 
-		final var globalActivated = Optional.ofNullable(activityHandlers)
-				.map(f -> f.pass(handlerName));
+        final var globalActivated = Optional.ofNullable(activityHandlers)
+                .map(f -> f.pass(handlerName));
 
-		if (globalActivated.isPresent()
-			&& FALSE.equals(globalActivated.get())) {
-			return false;
-		}
+        if (globalActivated.isPresent()
+            && FALSE.equals(globalActivated.get())) {
+            return false;
+        }
 
-		return getRealmByName(realmName)
-				.map(RealmConf::activityHandlers)
-				.flatMap(Optional::ofNullable)
-				.map(f -> f.pass(handlerName))
-				.orElse(true);
-	}
+        return getRealmByName(realmName)
+                .map(RealmConf::activityHandlers)
+                .flatMap(Optional::ofNullable)
+                .map(f -> f.pass(handlerName))
+                .orElse(true);
+    }
 
 }

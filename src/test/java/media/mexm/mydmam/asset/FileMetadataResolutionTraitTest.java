@@ -39,99 +39,108 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ExtendWith(MockToolsExtendsJunit.class)
 class FileMetadataResolutionTraitTest {
 
-	class Impl implements FileMetadataResolutionTrait {
+    class Impl implements FileMetadataResolutionTrait {
 
-		final FileMetadataResolutionTraitTest ref;
-		final Map<String, String> metadataEntries;
+        final FileMetadataResolutionTraitTest ref;
+        final Map<String, String> metadataEntries;
 
-		Impl(final FileMetadataResolutionTraitTest ref) {
-			this.ref = ref;
-			metadataEntries = new HashMap<>();
-		}
+        Impl(final FileMetadataResolutionTraitTest ref) {
+            this.ref = ref;
+            metadataEntries = new HashMap<>();
+        }
 
-		@Override
-		public void createFileMetadataEntry(final String originHandler,
-											final String classifier,
-											final int layer,
-											final String key,
-											final String value) {
-			throw new UnsupportedOperationException();
-		}
+        @Override
+        public void createFileMetadataEntry(final String originHandler,
+                                            final String classifier,
+                                            final int layer,
+                                            final String key,
+                                            final String value) {
+            throw new UnsupportedOperationException();
+        }
 
-		@Override
-		public Set<FileMetadataEntity> getMetadatas() {
-			throw new UnsupportedOperationException();
-		}
+        @Override
+        public Set<FileMetadataEntity> getMetadatas() {
+            throw new UnsupportedOperationException();
+        }
 
-		@Override
-		public Optional<String> getMetadataValue(final String classifier, final String key) {
-			assertEquals(MTD_TECHNICAL_CLASSIFIER, classifier);
+        @Override
+        public Optional<String> getMetadataValue(final String classifier, final String key) {
+            assertEquals(MTD_TECHNICAL_CLASSIFIER, classifier);
 
-			if (MTD_WIDTH_KEY.equals(key)) {
-				return Optional.ofNullable(String.valueOf(ref.width));
-			} else if (MTD_HEIGHT_KEY.equals(key)) {
-				return Optional.ofNullable(String.valueOf(ref.height));
-			}
+            if (MTD_WIDTH_KEY.equals(key)) {
+                return Optional.ofNullable(String.valueOf(ref.width));
+            } else if (MTD_HEIGHT_KEY.equals(key)) {
+                return Optional.ofNullable(String.valueOf(ref.height));
+            }
 
-			return Optional.empty();
-		}
+            return Optional.empty();
+        }
 
-		@Override
-		public void createFileMetadataEntry(final ActivityHandler hander,
-											final String classifier,
-											final int layer,
-											final String key,
-											final String value) {
-			assertEquals(ref.hander, hander);
-			assertEquals(MTD_TECHNICAL_CLASSIFIER, classifier);
-			assertEquals(0, layer);
-			metadataEntries.put(key, value);
-		}
+        @Override
+        public void createFileMetadataEntry(final ActivityHandler hander,
+                                            final String classifier,
+                                            final int layer,
+                                            final String key,
+                                            final String value) {
+            assertEquals(ref.hander, hander);
+            assertEquals(MTD_TECHNICAL_CLASSIFIER, classifier);
+            assertEquals(0, layer);
+            metadataEntries.put(key, value);
+        }
 
-	}
+    }
 
-	@Mock
-	ActivityHandler hander;
+    @Mock
+    ActivityHandler hander;
 
-	@Fake(min = 1, max = 1000)
-	int width;
-	@Fake(min = 1, max = 1000)
-	int height;
+    @Fake(min = 1, max = 1000)
+    int width;
+    @Fake(min = 1, max = 1000)
+    int height;
 
-	Impl impl;
+    Impl impl;
 
-	@BeforeEach
-	void init() {
-		impl = new Impl(this);
-	}
+    @BeforeEach
+    void init() {
+        impl = new Impl(this);
+    }
 
-	@Test
-	void testGetWidth() {
-		assertEquals(width, impl.getWidth());
-	}
+    @Test
+    void testGetWidth() {
+        assertEquals(width, impl.getWidth());
+    }
 
-	@Test
-	void testGetHeight() {
-		assertEquals(height, impl.getHeight());
-	}
+    @Test
+    void testGetHeight() {
+        assertEquals(height, impl.getHeight());
+    }
 
-	@Test
-	void testSetResolution() {
-		impl.setResolution(hander, width, height);
+    @Test
+    void testSetResolution() {
+        impl.setResolution(hander, width, height);
 
-		assertThat(impl.metadataEntries)
-				.hasSize(2)
-				.containsEntry(MTD_WIDTH_KEY, String.valueOf(width))
-				.containsEntry(MTD_HEIGHT_KEY, String.valueOf(height));
-	}
+        assertThat(impl.metadataEntries)
+                .hasSize(2)
+                .containsEntry(MTD_WIDTH_KEY, String.valueOf(width))
+                .containsEntry(MTD_HEIGHT_KEY, String.valueOf(height));
+    }
 
-	@Test
-	void testSetResolution_invalid() {
-		impl.setResolution(hander, -width, -height);
-		impl.setResolution(hander, width, -height);
-		impl.setResolution(hander, -width, height);
-		assertThat(impl.metadataEntries).isEmpty();
+    @Test
+    void testSetResolution_invalid() {
+        impl.setResolution(hander, -width, -height);
+        impl.setResolution(hander, width, -height);
+        impl.setResolution(hander, -width, height);
+        assertThat(impl.metadataEntries).isEmpty();
 
-	}
+    }
+
+    @Test
+    void testHasResolution() {
+        assertThat(impl.hasResolution()).isTrue();
+        width = 0;
+        assertThat(impl.hasResolution()).isFalse();
+        height = 0;
+        assertThat(impl.hasResolution()).isFalse();
+    }
 
 }

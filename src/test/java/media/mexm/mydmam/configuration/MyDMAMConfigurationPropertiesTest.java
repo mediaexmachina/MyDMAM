@@ -39,6 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 
+import media.mexm.mydmam.asset.RenderedFileSpecs;
 import media.mexm.mydmam.tools.AllowBlockLists;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -46,233 +47,241 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ExtendWith(MockToolsExtendsJunit.class)
 class MyDMAMConfigurationPropertiesTest {
 
-	@Mock
-	InfraConf pathindexing;
-	@Mock
-	RealmConf realm;
-	@Mock
-	PathIndexingStorage storage;
-	@Mock
-	MagickConf magick;
-	@Mock
-	AllowBlockLists activityHandlers;
-	@Mock
-	AllowBlockLists realmActivityHandlers;
+    @Mock
+    InfraConf pathindexing;
+    @Mock
+    RealmConf realm;
+    @Mock
+    PathIndexingStorage storage;
+    @Mock
+    MagickConf magick;
+    @Mock
+    AllowBlockLists activityHandlers;
+    @Mock
+    AllowBlockLists realmActivityHandlers;
+    @Mock
+    RenderedFileSpecs renderedFileSpecs;
 
-	@Fake
-	String realmName;
-	@Fake
-	String otherRealm;
-	@Fake
-	String instancename;
-	@Fake
-	String auditTrailSpoolName;
-	@Fake
-	String asyncAPISpoolName;
-	@Fake
-	boolean explainSearchResults;
-	@Fake
-	int resetBatchSizeIndexer;
-	@Fake
-	int dirListMaxSize;
-	@Fake
-	int searchResultMaxSize;
-	@Fake
-	long pendingActivityMaxAgeGraceRestartDuration;
-	@Fake
-	String storageName;
+    @Fake
+    String realmName;
+    @Fake
+    String otherRealm;
+    @Fake
+    String instancename;
+    @Fake
+    String auditTrailSpoolName;
+    @Fake
+    String asyncAPISpoolName;
+    @Fake
+    boolean explainSearchResults;
+    @Fake
+    int resetBatchSizeIndexer;
+    @Fake
+    int dirListMaxSize;
+    @Fake
+    int searchResultMaxSize;
+    @Fake
+    long pendingActivityMaxAgeGraceRestartDuration;
+    @Fake
+    String storageName;
 
-	Duration pendingActivityMaxAgeGraceRestart;
+    Duration pendingActivityMaxAgeGraceRestart;
 
-	MyDMAMConfigurationProperties c;
+    MyDMAMConfigurationProperties c;
 
-	@BeforeEach
-	void init() {
-		pendingActivityMaxAgeGraceRestart = Duration.ofMillis(abs(pendingActivityMaxAgeGraceRestartDuration));
+    @BeforeEach
+    void init() {
+        pendingActivityMaxAgeGraceRestart = Duration.ofMillis(abs(pendingActivityMaxAgeGraceRestartDuration));
 
-		c = new MyDMAMConfigurationProperties(
-				pathindexing,
-				instancename,
-				auditTrailSpoolName,
-				asyncAPISpoolName,
-				explainSearchResults,
-				resetBatchSizeIndexer,
-				dirListMaxSize,
-				searchResultMaxSize,
-				pendingActivityMaxAgeGraceRestart,
-				magick,
-				activityHandlers);
-	}
+        c = new MyDMAMConfigurationProperties(
+                pathindexing,
+                instancename,
+                auditTrailSpoolName,
+                asyncAPISpoolName,
+                explainSearchResults,
+                resetBatchSizeIndexer,
+                dirListMaxSize,
+                searchResultMaxSize,
+                pendingActivityMaxAgeGraceRestart,
+                magick,
+                activityHandlers,
+                renderedFileSpecs);
+    }
 
-	@Test
-	void testNoInstancename() {
-		c = new MyDMAMConfigurationProperties(
-				pathindexing,
-				null,
-				auditTrailSpoolName,
-				asyncAPISpoolName,
-				explainSearchResults,
-				resetBatchSizeIndexer,
-				dirListMaxSize,
-				searchResultMaxSize,
-				pendingActivityMaxAgeGraceRestart,
-				magick,
-				activityHandlers);
-		assertThat(c.instancename()).isNotEmpty();
-	}
+    @Test
+    void testNoInstancename() {
+        c = new MyDMAMConfigurationProperties(
+                pathindexing,
+                null,
+                auditTrailSpoolName,
+                asyncAPISpoolName,
+                explainSearchResults,
+                resetBatchSizeIndexer,
+                dirListMaxSize,
+                searchResultMaxSize,
+                pendingActivityMaxAgeGraceRestart,
+                magick,
+                activityHandlers,
+                renderedFileSpecs);
+        assertThat(c.instancename()).isNotEmpty();
+    }
 
-	@Test
-	void testBadPendingActivityMaxAgeGraceRestart() {
-		pendingActivityMaxAgeGraceRestart = Duration.ofMillis(-abs(pendingActivityMaxAgeGraceRestartDuration));
-		assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
-				pathindexing,
-				instancename,
-				auditTrailSpoolName,
-				asyncAPISpoolName,
-				explainSearchResults,
-				resetBatchSizeIndexer,
-				dirListMaxSize,
-				searchResultMaxSize,
-				pendingActivityMaxAgeGraceRestart,
-				magick,
-				activityHandlers));
+    @Test
+    void testBadPendingActivityMaxAgeGraceRestart() {
+        pendingActivityMaxAgeGraceRestart = Duration.ofMillis(-abs(pendingActivityMaxAgeGraceRestartDuration));
+        assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
+                pathindexing,
+                instancename,
+                auditTrailSpoolName,
+                asyncAPISpoolName,
+                explainSearchResults,
+                resetBatchSizeIndexer,
+                dirListMaxSize,
+                searchResultMaxSize,
+                pendingActivityMaxAgeGraceRestart,
+                magick,
+                activityHandlers,
+                renderedFileSpecs));
 
-		pendingActivityMaxAgeGraceRestart = Duration.ZERO;
-		assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
-				pathindexing,
-				instancename,
-				auditTrailSpoolName,
-				asyncAPISpoolName,
-				explainSearchResults,
-				resetBatchSizeIndexer,
-				dirListMaxSize,
-				searchResultMaxSize,
-				pendingActivityMaxAgeGraceRestart,
-				magick,
-				activityHandlers));
-	}
+        pendingActivityMaxAgeGraceRestart = Duration.ZERO;
+        assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
+                pathindexing,
+                instancename,
+                auditTrailSpoolName,
+                asyncAPISpoolName,
+                explainSearchResults,
+                resetBatchSizeIndexer,
+                dirListMaxSize,
+                searchResultMaxSize,
+                pendingActivityMaxAgeGraceRestart,
+                magick,
+                activityHandlers,
+                renderedFileSpecs));
+    }
 
-	@Test
-	void testGetRealmNames_empty() {
-		assertThat(c.getRealmNames()).isEmpty();
-		verify(pathindexing, times(1)).realms();
-	}
+    @Test
+    void testGetRealmNames_empty() {
+        assertThat(c.getRealmNames()).isEmpty();
+        verify(pathindexing, times(1)).realms();
+    }
 
-	@Test
-	void testGetRealmNames() {
-		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
-		assertThat(c.getRealmNames()).containsOnly(realmName);
-		verify(pathindexing, times(1)).realms();
-	}
+    @Test
+    void testGetRealmNames() {
+        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+        assertThat(c.getRealmNames()).containsOnly(realmName);
+        verify(pathindexing, times(1)).realms();
+    }
 
-	@Test
-	void testGetRealmByName_contains() {
-		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
-		assertThat(c.getRealmByName(realmName)).contains(realm);
-		verify(pathindexing, times(1)).realms();
-	}
+    @Test
+    void testGetRealmByName_contains() {
+        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+        assertThat(c.getRealmByName(realmName)).contains(realm);
+        verify(pathindexing, times(1)).realms();
+    }
 
-	@Test
-	void testGetRealmByName_notContains() {
-		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
-		assertThat(c.getRealmByName(otherRealm)).isEmpty();
-		verify(pathindexing, times(1)).realms();
-	}
+    @Test
+    void testGetRealmByName_notContains() {
+        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+        assertThat(c.getRealmByName(otherRealm)).isEmpty();
+        verify(pathindexing, times(1)).realms();
+    }
 
-	@Test
-	void testGetRealmAndStorage() {
-		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
-		assertThrows(IllegalArgumentException.class, () -> c.getRealmAndStorage(otherRealm, storageName));
+    @Test
+    void testGetRealmAndStorage() {
+        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+        assertThrows(IllegalArgumentException.class, () -> c.getRealmAndStorage(otherRealm, storageName));
 
-		when(realm.getStorageByName(storageName)).thenReturn(Optional.empty());
-		assertThrows(IllegalArgumentException.class, () -> c.getRealmAndStorage(realmName, storageName));
+        when(realm.getStorageByName(storageName)).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> c.getRealmAndStorage(realmName, storageName));
 
-		when(realm.getStorageByName(storageName)).thenReturn(Optional.ofNullable(storage));
-		final var confEnv = c.getRealmAndStorage(realmName, storageName);
-		assertNotNull(confEnv);
-		assertEquals(confEnv.realm(), realm);
-		assertEquals(confEnv.realmName(), realmName);
-		assertEquals(confEnv.storage(), storage);
-		assertEquals(confEnv.storageName(), storageName);
+        when(realm.getStorageByName(storageName)).thenReturn(Optional.ofNullable(storage));
+        final var confEnv = c.getRealmAndStorage(realmName, storageName);
+        assertNotNull(confEnv);
+        assertEquals(confEnv.realm(), realm);
+        assertEquals(confEnv.realmName(), realmName);
+        assertEquals(confEnv.storage(), storage);
+        assertEquals(confEnv.storageName(), storageName);
 
-		verify(pathindexing, atLeastOnce()).realms();
-		verify(realm, atLeastOnce()).getStorageByName(storageName);
-	}
+        verify(pathindexing, atLeastOnce()).realms();
+        verify(realm, atLeastOnce()).getStorageByName(storageName);
+    }
 
-	@Fake
-	String handlerName;
+    @Fake
+    String handlerName;
 
-	@Test
-	void testIsActivatedActivityHandler_global() {
-		when(activityHandlers.pass(handlerName)).thenReturn(false);
-		assertFalse(c.isActivatedActivityHandler(realmName, handlerName));
-		verify(activityHandlers, times(1)).pass(handlerName);
-	}
+    @Test
+    void testIsActivatedActivityHandler_global() {
+        when(activityHandlers.pass(handlerName)).thenReturn(false);
+        assertFalse(c.isActivatedActivityHandler(realmName, handlerName));
+        verify(activityHandlers, times(1)).pass(handlerName);
+    }
 
-	@ParameterizedTest
-	@ValueSource(booleans = { false, true })
-	void testIsActivatedActivityHandler_realm(final boolean pass) {
-		when(activityHandlers.pass(handlerName)).thenReturn(true);
-		when(realm.activityHandlers()).thenReturn(realmActivityHandlers);
-		when(realmActivityHandlers.pass(handlerName)).thenReturn(pass);
-		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void testIsActivatedActivityHandler_realm(final boolean pass) {
+        when(activityHandlers.pass(handlerName)).thenReturn(true);
+        when(realm.activityHandlers()).thenReturn(realmActivityHandlers);
+        when(realmActivityHandlers.pass(handlerName)).thenReturn(pass);
+        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
 
-		assertEquals(pass, c.isActivatedActivityHandler(realmName, handlerName));
+        assertEquals(pass, c.isActivatedActivityHandler(realmName, handlerName));
 
-		verify(activityHandlers, times(1)).pass(handlerName);
-		verify(realm, atLeastOnce()).activityHandlers();
-		verify(realmActivityHandlers, times(1)).pass(handlerName);
-		verify(pathindexing, times(1)).realms();
-	}
+        verify(activityHandlers, times(1)).pass(handlerName);
+        verify(realm, atLeastOnce()).activityHandlers();
+        verify(realmActivityHandlers, times(1)).pass(handlerName);
+        verify(pathindexing, times(1)).realms();
+    }
 
-	@ParameterizedTest
-	@ValueSource(booleans = { false, true })
-	void testIsActivatedActivityHandler_noGlobal(final boolean pass) {
-		c = new MyDMAMConfigurationProperties(
-				pathindexing,
-				instancename,
-				auditTrailSpoolName,
-				asyncAPISpoolName,
-				explainSearchResults,
-				resetBatchSizeIndexer,
-				dirListMaxSize,
-				searchResultMaxSize,
-				pendingActivityMaxAgeGraceRestart,
-				magick,
-				null);
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void testIsActivatedActivityHandler_noGlobal(final boolean pass) {
+        c = new MyDMAMConfigurationProperties(
+                pathindexing,
+                instancename,
+                auditTrailSpoolName,
+                asyncAPISpoolName,
+                explainSearchResults,
+                resetBatchSizeIndexer,
+                dirListMaxSize,
+                searchResultMaxSize,
+                pendingActivityMaxAgeGraceRestart,
+                magick,
+                null,
+                null);
 
-		when(realm.activityHandlers()).thenReturn(realmActivityHandlers);
-		when(realmActivityHandlers.pass(handlerName)).thenReturn(pass);
-		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+        when(realm.activityHandlers()).thenReturn(realmActivityHandlers);
+        when(realmActivityHandlers.pass(handlerName)).thenReturn(pass);
+        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
 
-		assertEquals(pass, c.isActivatedActivityHandler(realmName, handlerName));
+        assertEquals(pass, c.isActivatedActivityHandler(realmName, handlerName));
 
-		verify(realm, atLeastOnce()).activityHandlers();
-		verify(realmActivityHandlers, times(1)).pass(handlerName);
-		verify(pathindexing, times(1)).realms();
-	}
+        verify(realm, atLeastOnce()).activityHandlers();
+        verify(realmActivityHandlers, times(1)).pass(handlerName);
+        verify(pathindexing, times(1)).realms();
+    }
 
-	@Test
-	void testIsActivatedActivityHandler_nothingSet() {
-		c = new MyDMAMConfigurationProperties(
-				pathindexing,
-				instancename,
-				auditTrailSpoolName,
-				asyncAPISpoolName,
-				explainSearchResults,
-				resetBatchSizeIndexer,
-				dirListMaxSize,
-				searchResultMaxSize,
-				pendingActivityMaxAgeGraceRestart,
-				magick,
-				null);
+    @Test
+    void testIsActivatedActivityHandler_nothingSet() {
+        c = new MyDMAMConfigurationProperties(
+                pathindexing,
+                instancename,
+                auditTrailSpoolName,
+                asyncAPISpoolName,
+                explainSearchResults,
+                resetBatchSizeIndexer,
+                dirListMaxSize,
+                searchResultMaxSize,
+                pendingActivityMaxAgeGraceRestart,
+                magick,
+                null,
+                null);
 
-		when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
+        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
 
-		assertTrue(c.isActivatedActivityHandler(realmName, handlerName));
+        assertTrue(c.isActivatedActivityHandler(realmName, handlerName));
 
-		verify(realm, atLeastOnce()).activityHandlers();
-		verify(pathindexing, times(1)).realms();
-	}
+        verify(realm, atLeastOnce()).activityHandlers();
+        verify(pathindexing, times(1)).realms();
+    }
 
 }

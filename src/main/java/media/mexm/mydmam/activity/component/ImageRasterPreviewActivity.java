@@ -18,7 +18,6 @@ package media.mexm.mydmam.activity.component;
 
 import static media.mexm.mydmam.asset.FileMetadataResolutionTrait.MTD_TECHNICAL_CLASSIFIER;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,16 +25,16 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
+import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.asset.ManagedMimeTrait;
 import media.mexm.mydmam.asset.MediaAsset;
-import media.mexm.mydmam.asset.MetadataExtractorHandler;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.RenderedFilesProducerService;
 import media.mexm.mydmam.tools.ImageMagick;
 
 @Component
 @Slf4j
-public class ImageInfoExtractionActivity implements MetadataExtractorHandler, ManagedMimeTrait {
+public class ImageRasterPreviewActivity implements ActivityHandler, ManagedMimeTrait {
 
     @Autowired
     ImageMagick imageMagick;
@@ -45,11 +44,6 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler, Ma
     @Override
     public Set<String> getManagedMimeTypes() {
         return imageMagick.getManagedRasterMimeTypes();
-    }
-
-    @Override
-    public String getMetadataOriginName() {
-        return "imagemagick";
     }
 
     @Override
@@ -64,7 +58,8 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler, Ma
         return storedOn.isDAS()
                && storedOn.haveWorkingDir()
                && storedOn.haveRenderedDir()
-               && canHandleMimeType(asset);
+               && canHandleMimeType(asset)
+               && asset.hasResolution();
     }
 
     @Override
@@ -72,37 +67,12 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler, Ma
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) throws Exception {
         final var assetFile = asset.getLocalInternalFile(storedOn.storage());
-        final var workingFile = renderedFilesProducerService.makeWorkingFile("identify.json", asset, storedOn);
+        final var isImageTypeAlpha = asset.getMetadataValue(MTD_TECHNICAL_CLASSIFIER, "type")
+                .orElse("")
+                .toLowerCase()
+                .contains("alpha");
 
-        final var jsonNode = imageMagick.extractIdentifyJsonFile(
-                assetFile,
-                workingFile);
-
-        final var version = jsonNode.read("$.version", String.class).orElse("<unset>");
-        if (version.equals("1.0") == false) {
-            throw new IllegalArgumentException("Can't support JSON version " + version);
-        }
-
-        renderedFilesProducerService.assetDeclareRenderedStaticFile(
-                asset, workingFile, "identify.json", true, 0, "image-format");
-
-        jsonNode.read("$.image.mimeType", String.class)
-                .ifPresent(mimeType -> asset.setMimeType(this, mimeType));
-
-        final var width = jsonNode.read("$.image.geometry.width", Integer.class).orElse(0);
-        final var height = jsonNode.read("$.image.geometry.height", Integer.class).orElse(0);
-        final var colorspace = jsonNode.read("$.image.colorspace", String.class).orElse(null);
-        final var orientation = jsonNode.read("$.image.orientation", String.class).orElse(null);
-        final var type = jsonNode.read("$.image.type", String.class).map(String::toLowerCase).orElse(null);
-
-        final var entries = Map.of(
-                "colorspace", colorspace,
-                "orientation", orientation,
-                "type", type);
-
-        asset.setResolution(this, width, height);
-        asset.createFileMetadataEntry(this, MTD_TECHNICAL_CLASSIFIER, 0, entries);
-        log.debug("Found properties for {}: {}×{}; {}", asset, width, height, entries);
+        renderedFilesProducerService.makeImageThumbnails(asset, storedOn, assetFile, isImageTypeAlpha, 0);
     }
 
 }

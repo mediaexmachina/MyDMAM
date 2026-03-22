@@ -1,6 +1,6 @@
 application*.yml
 logback*.xml
-.config/ImageMagick/policy.xml
+.config
 
 # Windows / macOS
 desktop.ini

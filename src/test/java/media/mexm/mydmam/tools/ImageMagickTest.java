@@ -60,134 +60,167 @@ import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 @ExtendWith(MockToolsExtendsJunit.class)
 class ImageMagickTest {
 
-	private static final File MAGICK_TEMP_DIR = new File(getTempDirectoryPath(), "mydmam-test-magick-temp");
-	static ScheduledExecutorService maxExecTimeScheduler;
-	static ExecutableFinder executableFinder;
+    private static final File MAGICK_TEMP_DIR = new File(getTempDirectoryPath(), "mydmam-test-magick-temp");
+    static ScheduledExecutorService maxExecTimeScheduler;
+    static ExecutableFinder executableFinder;
 
-	@Mock
-	MyDMAMConfigurationProperties configuration;
-	@Mock
-	XmlMapperWrapper xmlMapper;
-	@Mock
-	XmlMapper xmlMapperInternal;
-	@Mock
-	ObjectWriter xmlObjectWriter;
+    @Mock
+    MyDMAMConfigurationProperties configuration;
+    @Mock
+    XmlMapperWrapper xmlMapper;
+    @Mock
+    XmlMapper xmlMapperInternal;
+    @Mock
+    ObjectWriter xmlObjectWriter;
 
-	@Mock
-	MagickConf magickConf;
+    @Mock
+    MagickConf magickConf;
 
-	ObjectMapper objectMapper;
-	File policyFile;
-	ImageMagick im;
+    ObjectMapper objectMapper;
+    File policyFile;
+    ImageMagick im;
 
-	@BeforeAll
-	static void initAll() throws IOException {
-		forceMkdir(MAGICK_TEMP_DIR);
-		maxExecTimeScheduler = newScheduledThreadPool(1);
-		executableFinder = new ExecutableFinder();
-	}
+    @BeforeAll
+    static void initAll() throws IOException {
+        forceMkdir(MAGICK_TEMP_DIR);
+        maxExecTimeScheduler = newScheduledThreadPool(1);
+        executableFinder = new ExecutableFinder();
+    }
 
-	@BeforeEach
-	void init() {
-		objectMapper = new ObjectMapper();
+    @BeforeEach
+    void init() {
+        objectMapper = new ObjectMapper();
 
-		im = new ImageMagick(executableFinder, maxExecTimeScheduler, configuration, xmlMapper, objectMapper);
+        im = new ImageMagick(executableFinder, maxExecTimeScheduler, configuration, xmlMapper, objectMapper);
 
-		when(configuration.magick()).thenReturn(magickConf);
-		when(magickConf.maxExecTime()).thenReturn(ofSeconds(10));
-		when(magickConf.tempDir()).thenReturn(MAGICK_TEMP_DIR.getAbsolutePath());
-		when(magickConf.confDir()).thenReturn(MAGICK_TEMP_DIR.getAbsolutePath());
-		when(magickConf.maxThreadCount()).thenReturn(1);
+        when(configuration.magick()).thenReturn(magickConf);
+        when(magickConf.maxExecTime()).thenReturn(ofSeconds(10));
+        when(magickConf.tempDir()).thenReturn(MAGICK_TEMP_DIR.getAbsolutePath());
+        when(magickConf.confDir()).thenReturn(MAGICK_TEMP_DIR.getAbsolutePath());
+        when(magickConf.maxThreadCount()).thenReturn(1);
 
-		when(xmlMapper.getXmlMapper()).thenReturn(xmlMapperInternal);
-		when(xmlMapperInternal.writer()).thenReturn(xmlObjectWriter);
-		when(xmlObjectWriter.withRootName("policymap")).thenReturn(xmlObjectWriter);
-		when(xmlObjectWriter.with(INDENT_OUTPUT)).thenReturn(xmlObjectWriter);
+        when(xmlMapper.getXmlMapper()).thenReturn(xmlMapperInternal);
+        when(xmlMapperInternal.writer()).thenReturn(xmlObjectWriter);
+        when(xmlObjectWriter.withRootName("policymap")).thenReturn(xmlObjectWriter);
+        when(xmlObjectWriter.with(INDENT_OUTPUT)).thenReturn(xmlObjectWriter);
 
-		policyFile = new File(MAGICK_TEMP_DIR, "policy.xml");
-	}
+        policyFile = new File(MAGICK_TEMP_DIR, "policy.xml");
+    }
 
-	@Test
-	void testInit_noConf() {
-		when(configuration.magick()).thenReturn(null);
-		im.init();
-		verify(configuration, times(1)).magick();
-		assertFalse(im.isEnabled());
-	}
+    @Test
+    void testInit_noConf() {
+        when(configuration.magick()).thenReturn(null);
+        im.init();
+        verify(configuration, times(1)).magick();
+        assertFalse(im.isEnabled());
+    }
 
-	@Test
-	void testInit() throws IOException {
-		im.init();
+    @Test
+    void testInit() throws IOException {
+        im.init();
 
-		verify(configuration, times(1)).magick();
-		verify(magickConf, atLeastOnce()).maxExecTime();
-		verify(magickConf, atLeastOnce()).tempDir();
-		verify(magickConf, atLeastOnce()).confDir();
-		verify(magickConf, atLeastOnce()).maxThreadCount();
-		verify(magickConf, atLeastOnce()).maxMap();
-		verify(magickConf, atLeastOnce()).maxMemory();
-		verify(magickConf, atLeastOnce()).maxMemoryRequest();
-		verify(magickConf, atLeastOnce()).maxDisk();
-		verify(magickConf, atLeastOnce()).maxWidth();
-		verify(magickConf, atLeastOnce()).maxHeight();
+        verify(configuration, times(1)).magick();
+        verify(magickConf, atLeastOnce()).maxExecTime();
+        verify(magickConf, atLeastOnce()).tempDir();
+        verify(magickConf, atLeastOnce()).confDir();
+        verify(magickConf, atLeastOnce()).maxThreadCount();
+        verify(magickConf, atLeastOnce()).maxMap();
+        verify(magickConf, atLeastOnce()).maxMemory();
+        verify(magickConf, atLeastOnce()).maxMemoryRequest();
+        verify(magickConf, atLeastOnce()).maxDisk();
+        verify(magickConf, atLeastOnce()).maxWidth();
+        verify(magickConf, atLeastOnce()).maxHeight();
 
-		verify(xmlMapper, atLeastOnce()).getXmlMapper();
-		verify(xmlMapperInternal, atLeastOnce()).writer();
-		verify(xmlObjectWriter, atLeastOnce()).withRootName("policymap");
-		verify(xmlObjectWriter, atLeastOnce()).with(INDENT_OUTPUT);
-		verify(xmlObjectWriter, times(1)).writeValue(eq(policyFile), any());
+        verify(xmlMapper, atLeastOnce()).getXmlMapper();
+        verify(xmlMapperInternal, atLeastOnce()).writer();
+        verify(xmlObjectWriter, atLeastOnce()).withRootName("policymap");
+        verify(xmlObjectWriter, atLeastOnce()).with(INDENT_OUTPUT);
+        verify(xmlObjectWriter, times(1)).writeValue(eq(policyFile), any());
 
-		assertTrue(im.isEnabled());
-	}
+        assertTrue(im.isEnabled());
+    }
 
-	private void setup() {
-		im.init();
-		reset(configuration, magickConf, xmlMapper, xmlMapperInternal, xmlObjectWriter);
-	}
+    private void setup() {
+        im.init();
+        reset(configuration, magickConf, xmlMapper, xmlMapperInternal, xmlObjectWriter);
+    }
 
-	@Test
-	void testGetMagickVersion() {
-		assertThat(im.getMagickVersion()).isNull();
-		setup();
-		assertThat(im.getMagickVersion()).isNotBlank();
-	}
+    @Test
+    void testGetMagickVersion() {
+        assertThat(im.getMagickVersion()).isNull();
+        setup();
+        assertThat(im.getMagickVersion()).isNotBlank();
+    }
 
-	@Test
-	@ConditionalExternalExecTest
-	void testIsEnabled() {
-		assertFalse(im.isEnabled());
-		setup();
-		assertTrue(im.isEnabled());
-	}
+    @Test
+    @ConditionalExternalExecTest
+    void testIsEnabled() {
+        assertFalse(im.isEnabled());
+        setup();
+        assertTrue(im.isEnabled());
+    }
 
-	@Test
-	@ConditionalExternalExecTest
-	void testExtractIdentifyJsonFile() throws IOException {
-		/**
-		 * Generated with "magick -size 16x16 xc:white -strip white.png"
-		 */
-		final var whitePng = new File("src/test/resources/white.png");
-		assertThat(whitePng).exists();
+    static File getWhitePng() {
+        final var whitePng = new File("src/test/resources/white.png");
+        assertThat(whitePng).exists();
+        return whitePng;
+    }
 
-		final var saveJsonDest = createTempFile("mydmam-" + getClass().getSimpleName(), "identify.json");
-		forceDelete(saveJsonDest);
+    @Test
+    @ConditionalExternalExecTest
+    void testExtractIdentifyJsonFile() throws IOException {
+        /**
+         * Generated with "magick -size 16x16 xc:white -strip white.png"
+         */
+        final var whitePng = getWhitePng();
 
-		assertThrows(IOException.class,
-				() -> im.extractIdentifyJsonFile(whitePng, saveJsonDest));
-		setup();
+        final var saveJsonDest = createTempFile("mydmam-" + getClass().getSimpleName(), "identify.json");
+        forceDelete(saveJsonDest);
 
-		im.extractIdentifyJsonFile(whitePng, saveJsonDest);
+        assertThrows(IOException.class,
+                () -> im.extractIdentifyJsonFile(whitePng, saveJsonDest));
+        setup();
 
-		assertThat(whitePng).exists();
-		assertThat(saveJsonDest)
-				.exists()
-				.content(UTF_8)
-				.contains(
-						"\"version\":\"1.0\"",
-						whitePng.getName(),
-						"PNG",
-						"Portable Network Graphics");
-		forceDelete(saveJsonDest);
-	}
+        im.extractIdentifyJsonFile(whitePng, saveJsonDest);
+
+        assertThat(whitePng).exists();
+        assertThat(saveJsonDest)
+                .exists()
+                .content(UTF_8)
+                .contains(
+                        "\"version\":\"1.0\"",
+                        whitePng.getName(),
+                        "PNG",
+                        "Portable Network Graphics");
+        forceDelete(saveJsonDest);
+    }
+
+    @Test
+    void testGetManagedRasterMimeTypes() {
+        assertThat(im.getManagedRasterMimeTypes())
+                .hasSizeGreaterThan(10)
+                .contains("image/jpeg", "image/png", "image/x-ms-bmp")
+                .doesNotContain("application/pdf");
+    }
+
+    @Test
+    @ConditionalExternalExecTest
+    void testConvertImage() throws IOException {
+        final var whitePng = getWhitePng();
+
+        final var createdImage = createTempFile("mydmam-" + getClass().getSimpleName(), "image.webp");
+        forceDelete(createdImage);
+
+        final var parameters = "<%INPUTFILE%>[0] -thumbnail 64x64 -profile <%ICCPROFILE%> <%OUTPUTFILE%>";
+
+        assertThrows(IOException.class,
+                () -> im.convertImage(parameters, whitePng, createdImage));
+        setup();
+        im.convertImage(parameters, whitePng, createdImage);
+
+        assertThat(whitePng).exists();
+        assertThat(createdImage).exists().size().isGreaterThan(100);
+        forceDelete(createdImage);
+    }
 
 }

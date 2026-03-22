@@ -48,6 +48,8 @@ export class NavigatorFolderComponent {
     readonly dirListResponse = signal<FileResponse|null>(null);
     readonly listResultCount:WritableSignal<number>;
     readonly breadcrumbSplitPath = computed(this.splitPath.bind(this));
+    readonly hasImagePreviewOnList = computed(this.getHasImagePreviewOnList.bind(this));
+
     readonly pageNavigate = computed(this.computePageNavigate.bind(this));
     readonly pageNavigatePreviousButton = computed(this.computePageNavigatePreviousButton.bind(this));
     readonly pageNavigateNextButton = computed(this.computePageNavigateNextButton.bind(this));
@@ -264,6 +266,38 @@ export class NavigatorFolderComponent {
             return this.assetService.getFileMetadataMimeType(metadatas[hashPath]);
         }
         return "File";
+    }
+
+    getImagePreviewURL(hashPath:string, previewType: string):string {
+        const renderedList = this.dirListResponse()?.metadatas[hashPath]?.index[0]?.rendered || [];
+        const previewTypeList = renderedList.filter(r => r.previewType == previewType);
+        if (previewTypeList.length > 0) {
+            return this.assetService.makeAssetRenderedFileURL(hashPath, previewTypeList[0].name, 0);
+        }
+        return "";
+    }
+
+    private getHasImagePreviewOnList(): boolean {
+        const dirListResponse = this.dirListResponse();
+        if (dirListResponse == null) {
+            return false;
+        }
+        const itemHashPaths = dirListResponse.list.map(f => f.hashPath);
+        const currentItemHashPath = dirListResponse.currentItem?.hashPath || "";
+        const parentHashPath = dirListResponse.parentHashPath || "";
+        const allHashPaths = [...itemHashPaths, currentItemHashPath, parentHashPath];
+
+        for (let index = 0; index < allHashPaths.length; index++) {
+            const hashPaths = allHashPaths[index];
+            const renderedList = dirListResponse.metadatas[hashPaths]?.index[0]?.rendered || [];
+            const renderedWithImgPreview = renderedList.filter(r => r.previewType == "icon-thumbnail"
+                                                                    || r.previewType == "cartridge-thumbnail");
+            if (renderedWithImgPreview.length > 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }

@@ -62,19 +62,22 @@ export class AssetService {
         return this.getFileMetadataResponseValue(assetResponse, "file-format", "mime-type", "application/octet-stream");
     }
 
-    public makeAssetRenderedFileURL(hashPath: string, name: string, index: number): string {
+    private makeAssetRenderedFileBaseURL(hashPath: string, name: string, index: number): string {
         const realm = this.localStorageService.getSelectedRealm();
         return `/content/rendered/${realm}/${hashPath}/${name}?index=${index}`;
     }
 
-    public makeAssetRenderedFileDownloadURL(hashPath: string, name: string, index: 0): string {
+    public makeAssetRenderedFileURL(hashPath: string, name: string, index: number): string {
         const BASE_URL = this.backendAPIService.BASE_URL;
-        const startURL = this.makeAssetRenderedFileURL(hashPath, name, index);
-        return `${BASE_URL}${startURL}&download=1`;
+        return `${BASE_URL}${this.makeAssetRenderedFileBaseURL(hashPath, name, index)}`;
+    }
+    
+    public makeAssetRenderedFileDownloadURL(hashPath: string, name: string, index: 0): string {
+        return `${this.makeAssetRenderedFileURL(hashPath, name, index)}&download=1`;
     }
 
     public async getAssetRenderedFileString(hashPath: string, name: string, index: 0): Promise<string|null> {
-        const url = this.makeAssetRenderedFileURL(hashPath, name, index);
+        const url = this.makeAssetRenderedFileBaseURL(hashPath, name, index);
         return this.backendAPIService.requestAsyncAPI<string>("GET", url);
     }
 

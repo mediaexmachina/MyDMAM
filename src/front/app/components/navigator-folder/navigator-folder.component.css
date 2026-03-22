@@ -80,7 +80,7 @@ ul.dirlist li .navigateto {
     width: 35%;
 }
 
-ul.dirlist li span {
+ul.dirlist li span.list-column {
     width: 15%;
 }
 
@@ -153,4 +153,19 @@ div.dropdrown-list-result-count select:hover {
 .just-detected {
     color: rgb(173, 113, 0);
     font-style: italic;
+}
+
+img.icon-thumbnail {
+    max-height: 1.15em;
+}
+
+span.img-thumbnail-spacer {
+    width: 2em;
+    display: inline-block;
+    text-align: center;
+    justify-content: center;
+}
+
+ul li:nth-child(even) img.icon-thumbnail {
+    border: 1px solid rgba(0, 0, 0, 0.04);
 }

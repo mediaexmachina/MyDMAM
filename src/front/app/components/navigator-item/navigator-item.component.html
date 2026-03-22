@@ -18,6 +18,12 @@
 @if (medatadas != null) {
     @let currentDefaultIndexMetadata = defaultIndexMetadatas();
     @if (currentDefaultIndexMetadata != null) {
+
+        @let currentRenderedHeroImagePreview = renderedHeroImagePreview();
+        @if (currentRenderedHeroImagePreview != null) {
+            <img [src]="currentRenderedHeroImagePreview" class="hero" />
+        }
+
         @let classifiers = getClassifiers(currentDefaultIndexMetadata);
         @if (classifiers.length > 0) {
             <p>Properties extracted from file:</p>

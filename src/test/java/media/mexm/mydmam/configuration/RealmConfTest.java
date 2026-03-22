@@ -61,278 +61,275 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ExtendWith(MockToolsExtendsJunit.class)
 class RealmConfTest {
 
-	@Mock
-	Duration mockTimeBetweenScans;
-	@Mock
-	PathIndexingStorage piStorage;
-	@Mock
-	DelayedSyncConfiguration delayedSyncConfiguration;
-	@Mock
-	AllowBlockLists activityHandlers;
+    @Mock
+    Duration mockTimeBetweenScans;
+    @Mock
+    PathIndexingStorage piStorage;
+    @Mock
+    DelayedSyncConfiguration delayedSyncConfiguration;
+    @Mock
+    AllowBlockLists activityHandlers;
 
-	@Fake
-	String spool;
-	@Fake
-	String storageName;
-	@Fake
-	String realmName;
-	@Fake(min = 1, max = 10000)
-	long duration;
-	@Fake
-	String workingFileName;
+    @Fake
+    String spool;
+    @Fake
+    String storageName;
+    @Fake
+    String realmName;
+    @Fake(min = 1, max = 10000)
+    long duration;
+    @Fake
+    String workingFileName;
 
-	Duration timeBetweenScans;
-	File workingDirectory;
-	File renderedMetadataDirectory;
-	RealmConf conf;
+    Duration timeBetweenScans;
+    File workingDirectory;
+    File renderedMetadataDirectory;
+    RealmConf conf;
 
-	@BeforeEach
-	void init() {
-		workingDirectory = new File(getTempDirectory(), "mydmam-" + getClass().getSimpleName());
-		conf = new RealmConf(
-				Map.of(new TechnicalName(storageName), piStorage),
-				mockTimeBetweenScans,
-				spool,
-				workingDirectory,
-				renderedMetadataDirectory,
-				delayedSyncConfiguration,
-				activityHandlers);
-	}
+    @BeforeEach
+    void init() {
+        workingDirectory = new File(getTempDirectory(), "mydmam-" + getClass().getSimpleName());
+        conf = new RealmConf(
+                Map.of(new TechnicalName(storageName), piStorage),
+                mockTimeBetweenScans,
+                spool,
+                workingDirectory,
+                renderedMetadataDirectory,
+                delayedSyncConfiguration,
+                activityHandlers);
+    }
 
-	@AfterEach
-	void ends() throws IOException {
-		Mockito.reset(mockTimeBetweenScans);
-		if (workingDirectory.exists()) {
-			forceDelete(workingDirectory);
-		}
-	}
+    @AfterEach
+    void ends() throws IOException {
+        Mockito.reset(mockTimeBetweenScans);
+        if (workingDirectory.exists()) {
+            forceDelete(workingDirectory);
+        }
+    }
 
-	@Test
-	void testStoragesStream() {
-		final var result = conf.storages().entrySet().stream().toList();
-		assertThat(result).size().isEqualTo(1);
-		final var entry = result.get(0);
+    @Test
+    void testStoragesStream() {
+        final var result = conf.storages().entrySet().stream().toList();
+        assertThat(result).size().isEqualTo(1);
+        final var entry = result.get(0);
 
-		assertEquals(new TechnicalName(storageName), entry.getKey());
-		assertEquals(piStorage, entry.getValue());
-	}
+        assertEquals(new TechnicalName(storageName), entry.getKey());
+        assertEquals(piStorage, entry.getValue());
+    }
 
-	@Test
-	void testStoragesStream_empty() {
-		conf = new RealmConf(
-				Map.of(),
-				mockTimeBetweenScans,
-				spool,
-				null,
-				null,
-				null,
-				null);
+    @Test
+    void testStoragesStream_empty() {
+        conf = new RealmConf(
+                Map.of(),
+                mockTimeBetweenScans,
+                spool,
+                null,
+                null,
+                null,
+                null);
 
-		final var result = conf.storages().entrySet().stream().toList();
-		assertThat(result).isEmpty();
-	}
+        final var result = conf.storages().entrySet().stream().toList();
+        assertThat(result).isEmpty();
+    }
 
-	@Test
-	void testStoragesStream_null() {
-		conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null, null, null);
+    @Test
+    void testStoragesStream_null() {
+        conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null, null, null);
 
-		final var result = conf.storages().entrySet().stream().toList();
-		assertThat(result).isEmpty();
-	}
+        final var result = conf.storages().entrySet().stream().toList();
+        assertThat(result).isEmpty();
+    }
 
-	@Test
-	void testGetValidWorkingDirectory_empty() {
-		conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null, null, null);
-		assertThat(conf.workingDirectory()).isNull();
-	}
+    @Test
+    void testGetValidWorkingDirectory_empty() {
+        conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null, null, null);
+        assertThat(conf.workingDirectory()).isNull();
+    }
 
-	@Test
-	void testGetValidWorkingDirectory_exists() {
-		assertThat(conf.workingDirectory()).isEqualTo(workingDirectory);
-	}
+    @Test
+    void testGetValidWorkingDirectory_exists() {
+        assertThat(conf.workingDirectory()).isEqualTo(workingDirectory);
+    }
 
-	@Test
-	void testGetValidWorkingDirectory_notExists() throws IOException {
-		if (workingDirectory.exists()) {
-			forceDelete(workingDirectory);
-		}
-		assertThat(conf.workingDirectory()).isEqualTo(workingDirectory);
-	}
+    @Test
+    void testGetValidWorkingDirectory_notExists() throws IOException {
+        if (workingDirectory.exists()) {
+            forceDelete(workingDirectory);
+        }
+        assertThat(conf.workingDirectory()).isEqualTo(workingDirectory);
+    }
 
-	@Test
-	void testGetValidWorkingDirectory_invalid() throws IOException {
-		if (workingDirectory.exists()) {
-			forceDelete(workingDirectory);
-		}
-		touch(workingDirectory);
-		final var map = Map.of(new TechnicalName(storageName), piStorage);
-		assertThrows(UncheckedIOException.class, () -> new RealmConf(
-				map,
-				mockTimeBetweenScans,
-				spool,
-				workingDirectory,
-				renderedMetadataDirectory,
-				delayedSyncConfiguration,
-				activityHandlers));
-	}
+    @Test
+    void testGetValidWorkingDirectory_invalid() throws IOException {
+        if (workingDirectory.exists()) {
+            forceDelete(workingDirectory);
+        }
+        touch(workingDirectory);
+        final var map = Map.of(new TechnicalName(storageName), piStorage);
+        assertThrows(UncheckedIOException.class, () -> new RealmConf(
+                map,
+                mockTimeBetweenScans,
+                spool,
+                workingDirectory,
+                renderedMetadataDirectory,
+                delayedSyncConfiguration,
+                activityHandlers));
+    }
 
-	@Test
-	void testTimeBetweenScans() {
-		final var map = Map.of(new TechnicalName(storageName), piStorage);
+    @Test
+    void testTimeBetweenScans() {
+        final var map = Map.of(new TechnicalName(storageName), piStorage);
 
-		conf = new RealmConf(map, null, spool, workingDirectory, renderedMetadataDirectory,
-				delayedSyncConfiguration, null);
-		assertThat(conf.timeBetweenScans()).isNull();
+        conf = new RealmConf(map, null, spool, workingDirectory, renderedMetadataDirectory,
+                delayedSyncConfiguration, null);
+        assertThat(conf.timeBetweenScans()).isNull();
 
-		timeBetweenScans = Duration.ofMillis(duration);
-		conf = new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
-				delayedSyncConfiguration, null);
-		assertThat(conf.timeBetweenScans()).isEqualTo(Duration.ofMillis(duration));
+        timeBetweenScans = Duration.ofMillis(duration);
+        conf = new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
+                delayedSyncConfiguration, null);
+        assertThat(conf.timeBetweenScans()).isEqualTo(Duration.ofMillis(duration));
 
-		timeBetweenScans = Duration.ZERO;
-		assertThrows(IllegalArgumentException.class,
-				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
-						delayedSyncConfiguration, null));
-		timeBetweenScans = Duration.ofMillis(-duration);
-		assertThrows(IllegalArgumentException.class,
-				() -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
-						delayedSyncConfiguration, null));
-	}
+        timeBetweenScans = Duration.ZERO;
+        assertThrows(IllegalArgumentException.class,
+                () -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
+                        delayedSyncConfiguration, null));
+        timeBetweenScans = Duration.ofMillis(-duration);
+        assertThrows(IllegalArgumentException.class,
+                () -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
+                        delayedSyncConfiguration, null));
+    }
 
-	@Test
-	void testGetOnlineDASStorageNames() {
-		when(piStorage.getCategory()).thenReturn(NAS);
-		when(piStorage.getStorageStateClass()).thenReturn(NEARLINE);
-		assertThat(conf.getOnlineDASStorageNames()).isEmpty();
+    @Test
+    void testGetOnlineDASStorageNames() {
+        when(piStorage.getCategory()).thenReturn(NAS);
+        when(piStorage.getStorageStateClass()).thenReturn(NEARLINE);
+        assertThat(conf.getOnlineDASStorageNames()).isEmpty();
 
-		when(piStorage.getCategory()).thenReturn(EXTERNAL);
-		assertThat(conf.getOnlineDASStorageNames()).isEmpty();
+        when(piStorage.getCategory()).thenReturn(EXTERNAL);
+        assertThat(conf.getOnlineDASStorageNames()).isEmpty();
 
-		when(piStorage.getCategory()).thenReturn(DAS);
-		assertThat(conf.getOnlineDASStorageNames()).isEmpty();
+        when(piStorage.getCategory()).thenReturn(DAS);
+        assertThat(conf.getOnlineDASStorageNames()).isEmpty();
 
-		when(piStorage.getStorageStateClass()).thenReturn(OFFLINE);
-		assertThat(conf.getOnlineDASStorageNames()).isEmpty();
+        when(piStorage.getStorageStateClass()).thenReturn(OFFLINE);
+        assertThat(conf.getOnlineDASStorageNames()).isEmpty();
 
-		when(piStorage.getStorageStateClass()).thenReturn(ONLINE);
-		assertThat(conf.getOnlineDASStorageNames()).containsExactly(storageName);
+        when(piStorage.getStorageStateClass()).thenReturn(ONLINE);
+        assertThat(conf.getOnlineDASStorageNames()).containsExactly(storageName);
 
-		verify(piStorage, atLeastOnce()).getCategory();
-		verify(piStorage, atLeastOnce()).getStorageStateClass();
-	}
+        verify(piStorage, atLeastOnce()).getCategory();
+        verify(piStorage, atLeastOnce()).getStorageStateClass();
+    }
 
-	@Nested
-	class StorageNames {
+    @Nested
+    class StorageNames {
 
-		@Fake
-		StorageCategory sCategory;
-		@Fake
-		StorageStateClass sClasses;
+        @Fake
+        StorageCategory sCategory;
+        @Fake
+        StorageStateClass sClasses;
 
-		StorageCategory notSCategory;
-		StorageStateClass notSClasses;
+        StorageCategory notSCategory;
+        StorageStateClass notSClasses;
 
-		@BeforeEach
-		void init() {
-			notSCategory = Stream.of(StorageCategory.values()).filter(not(f -> f.equals(sCategory))).findFirst().get();
-			notSClasses = Stream.of(StorageStateClass.values()).filter(not(f -> f.equals(sClasses))).findFirst().get();
+        @BeforeEach
+        void init() {
+            notSCategory = Stream.of(StorageCategory.values()).filter(not(f -> f.equals(sCategory))).findFirst().get();
+            notSClasses = Stream.of(StorageStateClass.values()).filter(not(f -> f.equals(sClasses))).findFirst().get();
 
-			when(piStorage.getCategory()).thenReturn(sCategory);
-			when(piStorage.getStorageStateClass()).thenReturn(sClasses);
-		}
+            when(piStorage.getCategory()).thenReturn(sCategory);
+            when(piStorage.getStorageStateClass()).thenReturn(sClasses);
+        }
 
-		@AfterEach
-		void ends() {
-			verify(piStorage, atLeast(0)).getCategory();
-			verify(piStorage, atLeast(0)).getStorageStateClass();
-		}
+        @AfterEach
+        void ends() {
+            verify(piStorage, atLeast(0)).getCategory();
+            verify(piStorage, atLeast(0)).getStorageStateClass();
+        }
 
-		@Test
-		void testAll_default() {
-			assertThat(conf.getStorageNames(Set.of(), Set.of())).containsExactly(storageName);
-		}
+        @Test
+        void testAll_default() {
+            assertThat(conf.getStorageNames(Set.of(), Set.of())).containsExactly(storageName);
+        }
 
-		@Test
-		void testAll_set() {
-			assertThat(conf.getStorageNames(
-					Set.of(DAS, NAS, EXTERNAL),
-					Set.of(ONLINE, NEARLINE, OFFLINE)))
-							.containsExactly(storageName);
-		}
+        @Test
+        void testAll_set() {
+            assertThat(conf.getStorageNames(
+                    Set.of(DAS, NAS, EXTERNAL),
+                    Set.of(ONLINE, NEARLINE, OFFLINE)))
+                            .containsExactly(storageName);
+        }
 
-		@Test
-		void testBad_all() {
-			assertThat(conf.getStorageNames(Set.of(notSCategory), Set.of(notSClasses))).isEmpty();
-		}
+        @Test
+        void testBad_all() {
+            assertThat(conf.getStorageNames(Set.of(notSCategory), Set.of(notSClasses))).isEmpty();
+        }
 
-		@Test
-		void testBad_category() {
-			assertThat(conf.getStorageNames(Set.of(notSCategory), Set.of())).isEmpty();
-		}
+        @Test
+        void testBad_category() {
+            assertThat(conf.getStorageNames(Set.of(notSCategory), Set.of())).isEmpty();
+        }
 
-		@Test
-		void testBad_classes() {
-			assertThat(conf.getStorageNames(Set.of(), Set.of(notSClasses))).isEmpty();
-		}
+        @Test
+        void testBad_classes() {
+            assertThat(conf.getStorageNames(Set.of(), Set.of(notSClasses))).isEmpty();
+        }
 
-	}
+    }
 
-	@Test
-	void testGetStorageByName() {
-		assertThat(conf.getStorageByName(storageName)).contains(piStorage);
-		assertThat(conf.getStorageByName("NOPE")).isEmpty();
-	}
+    @Test
+    void testGetStorageByName() {
+        assertThat(conf.getStorageByName(storageName)).contains(piStorage);
+        assertThat(conf.getStorageByName("NOPE")).isEmpty();
+    }
 
-	@Nested
-	class CheckDirectory {
+    @Nested
+    class CheckDirectory {
 
-		@Fake
-		String name;
+        @Fake
+        String name;
 
-		@Test
-		void testNull() {
-			checkDirectory(null, name);
-		}
+        @Test
+        void testNull() {
+            checkDirectory(null, name);
+        }
 
-		@Test
-		void testDirExists() {
-			checkDirectory(workingDirectory, name);
-			assertThat(workingDirectory).exists().isDirectory();
-		}
+        @Test
+        void testDirExists() {
+            checkDirectory(workingDirectory, name);
+            assertThat(workingDirectory).exists().isDirectory();
+        }
 
-		@Test
-		void testDirNotExists() throws IOException {
-			forceDelete(workingDirectory);
-			checkDirectory(workingDirectory, name);
-			assertThat(workingDirectory).exists().isDirectory();
-		}
+        @Test
+        void testDirNotExists() throws IOException {
+            forceDelete(workingDirectory);
+            checkDirectory(workingDirectory, name);
+            assertThat(workingDirectory).exists().isDirectory();
+        }
 
-		@Test
-		void testIsNotADir() throws IOException {
-			forceDelete(workingDirectory);
-			workingDirectory = File.createTempFile("mydmam", getClass().getSimpleName());
-			assertThrows(UncheckedIOException.class,
-					() -> checkDirectory(workingDirectory, name));
-		}
-	}
+        @Test
+        void testIsNotADir() throws IOException {
+            forceDelete(workingDirectory);
+            workingDirectory = File.createTempFile("mydmam", getClass().getSimpleName());
+            assertThrows(UncheckedIOException.class,
+                    () -> checkDirectory(workingDirectory, name));
+        }
+    }
 
-	@Test
-	void testMakeWorkingFile() {
-		final var wFile = conf.makeWorkingFile(workingFileName, getClass());
+    @Test
+    void testMakeWorkingFile() {
+        final var wFile = conf.makeWorkingFile(workingFileName);
 
-		assertThat(wFile)
-				.doesNotExist()
-				.hasParent(workingDirectory);
-		assertThat(wFile.getName()).contains(
-				getClass().getSimpleName(),
-				workingFileName);
-	}
+        assertThat(wFile)
+                .doesNotExist()
+                .hasParent(workingDirectory);
+        assertThat(wFile.getName()).contains(workingFileName);
+    }
 
-	@Test
-	void testMakeWorkingFile_noWorkingDirectory() throws IOException {
-		final var c = getClass();
-		forceDelete(conf.workingDirectory());
-		assertThrows(UncheckedIOException.class, () -> conf.makeWorkingFile(workingFileName, c));
-	}
+    @Test
+    void testMakeWorkingFile_noWorkingDirectory() throws IOException {
+        forceDelete(conf.workingDirectory());
+        assertThrows(UncheckedIOException.class, () -> conf.makeWorkingFile(workingFileName));
+    }
 
 }

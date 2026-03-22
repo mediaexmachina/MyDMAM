@@ -16,10 +16,19 @@
  */
 package media.mexm.mydmam.asset;
 
-import media.mexm.mydmam.activity.ActivityHandler;
+import java.util.Set;
 
-public interface MetadataExtractorHandler extends ActivityHandler {
+public interface ManagedMimeTrait {
 
-	String getMetadataOriginName();
+	/**
+	 * @return if empty list, manage nothing.
+	 */
+	Set<String> getManagedMimeTypes();
+
+	default boolean canHandleMimeType(final MediaAsset asset) {
+		return asset.getMimeType()
+				.map(mimeType -> getManagedMimeTypes().contains(mimeType))
+				.orElse(false);
+	}
 
 }
