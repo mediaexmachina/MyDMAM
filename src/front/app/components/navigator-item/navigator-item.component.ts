@@ -90,6 +90,12 @@ export class NavigatorItemComponent {
     readonly getMessageFromRenderedSelected = signal("");
     readonly renderedDisplaySelected = signal<RenderedFileResponse|null>(null);
 
+    ngOnChanges() {
+        this.getJsonContentFromRenderedSelected.set("");
+        this.getMessageFromRenderedSelected.set("");
+        this.renderedDisplaySelected.set(null);
+    }
+
     getClassifiers(assetResponseIndex: AssetResponseIndex): Array<string> {
         const allClassifiers = assetResponseIndex.fileMetadatas.map(f => f.classifier);
         const classifiersNames = new Set(allClassifiers);
