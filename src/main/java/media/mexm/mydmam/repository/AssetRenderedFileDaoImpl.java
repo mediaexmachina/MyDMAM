@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.repository;
 
+import static jakarta.transaction.Transactional.TxType.REQUIRES_NEW;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
@@ -38,57 +39,57 @@ import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 @Slf4j
 public class AssetRenderedFileDaoImpl implements AssetRenderedFileDao {
 
-	@Autowired
-	@PersistenceContext
-	EntityManager entityManager;
+    @Autowired
+    @PersistenceContext
+    EntityManager entityManager;
 
-	@Override
-	@Transactional
-	public Map<String, Set<AssetRenderedFileEntity>> getRenderedFilesByFileId(final Collection<Integer> ids,
-																			  final String realm) {
-		return entityManager.createQuery("""
-				SELECT new map(f.hashPath AS hashPath, arf AS assetRenderedFile)
-				FROM FileEntity f
-				LEFT JOIN AssetRenderedFileEntity arf ON arf.file = f
-				WHERE
-				    f.id IN :ids
-				    AND f.realm = :realm
-				    AND arf IS NOT NULL
-				""", Map.class)
-				.setParameter("ids", ids)
-				.setParameter("realm", realm)
-				.getResultStream()
-				.collect(groupingBy(
-						f -> (String) f.get("hashPath"),
-						HashMap::new,
-						mapping(f -> (AssetRenderedFileEntity) f.get("assetRenderedFile"), toSet())));
-	}
+    @Override
+    @Transactional
+    public Map<String, Set<AssetRenderedFileEntity>> getRenderedFilesByFileId(final Collection<Integer> ids,
+                                                                              final String realm) {
+        return entityManager.createQuery("""
+                SELECT new map(f.hashPath AS hashPath, arf AS assetRenderedFile)
+                FROM FileEntity f
+                LEFT JOIN AssetRenderedFileEntity arf ON arf.file = f
+                WHERE
+                    f.id IN :ids
+                    AND f.realm = :realm
+                    AND arf IS NOT NULL
+                """, Map.class)
+                .setParameter("ids", ids)
+                .setParameter("realm", realm)
+                .getResultStream()
+                .collect(groupingBy(
+                        f -> (String) f.get("hashPath"),
+                        HashMap::new,
+                        mapping(f -> (AssetRenderedFileEntity) f.get("assetRenderedFile"), toSet())));
+    }
 
-	@Override
-	@Transactional
-	public Map<String, Set<String>> deleteRenderedFilesByFileId(final Collection<Integer> ids) {
-		final var relativePathsByRealmToDelete = entityManager.createQuery("""
-				SELECT new map(f.realm AS realm, arf AS assetRenderedFile)
-				FROM FileEntity f
-				LEFT JOIN AssetRenderedFileEntity arf ON arf.file = f
-				WHERE arf.file.id IN :fileIds
-				""", Map.class)
-				.setParameter("fileIds", ids)
-				.getResultStream()
-				.collect(groupingBy(
-						f -> (String) f.get("realm"),
-						HashMap::new,
-						mapping(f -> ((AssetRenderedFileEntity) f.get("assetRenderedFile")).getRelativePath(),
-								toSet())));
+    @Override
+    @Transactional(REQUIRES_NEW)
+    public Map<String, Set<String>> deleteRenderedFilesByFileId(final Collection<Integer> ids) {
+        final var relativePathsByRealmToDelete = entityManager.createQuery("""
+                SELECT new map(f.realm AS realm, arf AS assetRenderedFile)
+                FROM FileEntity f
+                LEFT JOIN AssetRenderedFileEntity arf ON arf.file = f
+                WHERE arf.file.id IN :fileIds
+                """, Map.class)
+                .setParameter("fileIds", ids)
+                .getResultStream()
+                .collect(groupingBy(
+                        f -> (String) f.get("realm"),
+                        HashMap::new,
+                        mapping(f -> ((AssetRenderedFileEntity) f.get("assetRenderedFile")).getRelativePath(),
+                                toSet())));
 
-		entityManager.createQuery("""
-				DELETE FROM AssetRenderedFileEntity arf
-				WHERE arf.file.id IN :fileIds
-				""")
-				.setParameter("fileIds", ids)
-				.executeUpdate();
+        entityManager.createQuery("""
+                DELETE FROM AssetRenderedFileEntity arf
+                WHERE arf.file.id IN :fileIds
+                """)
+                .setParameter("fileIds", ids)
+                .executeUpdate();
 
-		return relativePathsByRealmToDelete;
-	}
+        return relativePathsByRealmToDelete;
+    }
 
 }
