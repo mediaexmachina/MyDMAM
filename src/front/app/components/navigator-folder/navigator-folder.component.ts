@@ -27,16 +27,28 @@ import { SortOrder } from '../../dto/sort-order.enum';
 import { NavigatorColumnSortComponent } from "./navigator-column-sort.component";
 import { AssetService } from '../../services/asset.service';
 import { NavigatorItemComponent } from "../navigator-item/navigator-item.component";
+import { DirListStyle } from '../../enums/dir-list-style.enum';
+import { RemoveFileNameExtensionPipe } from '../../pipes/remove-file-name-extension-pipe';
+import { GetFileNameExtensionPipe } from '../../pipes/get-file-name-extension-pipe';
 
 @Component({
   selector: 'app-navigator-folder',
-  imports: [RouterLink, SpanDateTimeComponent, SpanFileSizeComponent, NavigatorColumnSortComponent, NavigatorItemComponent],
+  imports: [
+    RouterLink,
+    SpanDateTimeComponent,
+    SpanFileSizeComponent,
+    NavigatorColumnSortComponent,
+    NavigatorItemComponent,
+    RemoveFileNameExtensionPipe, 
+    GetFileNameExtensionPipe
+    ],
   templateUrl: './navigator-folder.component.html',
   styleUrl: './navigator-folder.component.css'
 })
 export class NavigatorFolderComponent {
 
     readonly _SortOrder = SortOrder;
+    readonly _DirListStyle = DirListStyle;
     readonly route = inject(ActivatedRoute);
     readonly localStorageService = inject(LocalStorageService);
     readonly fileSystemService = inject(FileSystemService);
@@ -47,12 +59,7 @@ export class NavigatorFolderComponent {
     readonly storage = signal<string>("");
     readonly dirListResponse = signal<FileResponse|null>(null);
     readonly listResultCount:WritableSignal<number>;
-    readonly breadcrumbSplitPath = computed(this.splitPath.bind(this));
-    readonly hasImagePreviewOnList = computed(this.getHasImagePreviewOnList.bind(this));
-
-    readonly pageNavigate = computed(this.computePageNavigate.bind(this));
-    readonly pageNavigatePreviousButton = computed(this.computePageNavigatePreviousButton.bind(this));
-    readonly pageNavigateNextButton = computed(this.computePageNavigateNextButton.bind(this));
+    readonly dirListStyle = this.localStorageService.dirListStyle;
 
     private currentSortOrder = {
         name: SortOrder.none,
@@ -72,7 +79,7 @@ export class NavigatorFolderComponent {
             this.list(hashPath);
         });
     }
-
+    
     list(hashPath:string, skip: number = 0):void {
         if (hashPath == "") {
             this.fileSystemService.listRoot(
@@ -114,7 +121,44 @@ export class NavigatorFolderComponent {
         }
     }
 
-    private splitPath(): Array<Record<string, string>> {
+    onChangeDropdrownListResultCount(event: Event):void {
+        const value = parseInt((event.target as HTMLSelectElement).value);
+        this.listResultCount.set(value);
+        this.localStorageService.setNavigateListResultCount(value);
+        this.listRefresh();
+    }
+
+    changeSort(order:SortOrder, colName:"name"|"type"|"size"|"date"):void {
+        this.currentSortOrder[colName] = order;
+        this.listRefresh();
+    }
+
+    resetActivitiesOnClick(e: Event, recursive:boolean) {
+        e.preventDefault();
+        const currentItem = this.dirListResponse()?.currentItem;
+        const parentHashPath = this.dirListResponse()?.parentHashPath;
+        if (currentItem != null) {
+            this.assetService.resetActivities([currentItem.hashPath], recursive);
+        } else if (this.dirListResponse()?.path == "/" && parentHashPath != null) {
+            this.assetService.resetActivities([parentHashPath], recursive);
+        }
+    }
+
+    getFileType(hashPath:string):string {
+        const metadatas = this.dirListResponse()?.metadatas || {};
+        if (hashPath in metadatas) {
+            return this.assetService.getFileMetadataMimeType(metadatas[hashPath]);
+        }
+        return "File";
+    }
+
+    onChangeDropdrownDirlistModeSwitch(event: Event):void {
+        event.preventDefault();
+        const value = parseInt((event.target as HTMLSelectElement).value);
+        this.localStorageService.dirListStyle.set(value);
+    }
+
+    readonly breadcrumbSplitPath = computed(() => {
         const dirListResponse = this.dirListResponse();
         if (dirListResponse == null
             || dirListResponse.path == null
@@ -139,7 +183,62 @@ export class NavigatorFolderComponent {
             });
         }
         return result;
-    }
+    });
+
+    readonly hasImagePreviewOnList = computed(() => {
+        const dirListResponse = this.dirListResponse();
+        if (dirListResponse == null) {
+            return false;
+        }
+        const allHashPaths = this.allHashPaths();
+        for (let index = 0; index < allHashPaths.length; index++) {
+            const hashPaths = allHashPaths[index];
+            const renderedList = dirListResponse.metadatas[hashPaths]?.index[0]?.rendered || [];
+            const renderedWithImgPreview = renderedList.filter(r => r.previewType == "icon-thumbnail"
+                                                                    || r.previewType == "cartridge-thumbnail");
+            if (renderedWithImgPreview.length > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    });
+
+    readonly dirListStyleCSSClass = computed(() => {
+        return "dirlist-mode-" + DirListStyle[this.dirListStyle()].toLowerCase().replace("_", "-");
+    });
+
+    readonly onlyDirectoriesToDisplay = computed(() => {
+        const dirListResponse = this.dirListResponse();
+        if (dirListResponse == null) {
+            return false;
+        }
+        return dirListResponse.list.every(f => f.directory);
+    });
+
+    readonly iconThumbnailPreviewURLByHashPath = computed(() => {
+        const dirListStyle = this.dirListStyle(); 
+        const dirListResponse = this.dirListResponse();
+        const result:Record<string, string> = {};
+        if (dirListResponse == null) {
+            return result;
+        }
+
+        const previewType = dirListStyle > this._DirListStyle.SMALL_ICONS ? "cartridge-thumbnail" : "icon-thumbnail";
+        //const previewType = "cartridge-thumbnail";
+        const allHashPaths = this.allHashPaths();
+
+        for (let index = 0; index < allHashPaths.length; index++) {
+            const hashPath = allHashPaths[index];
+            const renderedList = dirListResponse.metadatas[hashPath]?.index[0]?.rendered || [];
+            const renderedWithImgPreview = renderedList.filter(r => r.previewType == previewType);
+            if (renderedWithImgPreview.length > 0) {
+                result[hashPath] = this.assetService.makeAssetRenderedFileURL(hashPath, renderedWithImgPreview[0].name, 0);
+            }
+        }
+
+        return result;
+    });
 
     private makePageNavigateButton(pageNum:number, limit:number, skip: number): Record<string, number> {
         return {
@@ -150,50 +249,7 @@ export class NavigatorFolderComponent {
         }
     }
 
-    private computePageNavigatePreviousButton(): Record<string, number> {
-        const dirListResponse = this.dirListResponse();
-        if (dirListResponse == null) {
-            return {"display": 0};
-        }
-
-        const skip = dirListResponse.skipCount;
-        const limit = Math.max(this.listResultCount(), dirListResponse.listSize);
-        const currentPage = Math.ceil(skip / limit);
-        const isFirstPage = currentPage == 0;
-
-        if (isFirstPage) {
-            return {"display": 0};
-        }
-
-        return {
-            "page": currentPage - 1,
-            "skip": (currentPage - 1) * limit
-        }
-    }
-
-    private computePageNavigateNextButton(): Record<string, number> {
-        const dirListResponse = this.dirListResponse();
-        if (dirListResponse == null) {
-            return {"display": 0};
-        }
-
-        const skip = dirListResponse.skipCount;
-        const limit = Math.max(this.listResultCount(), dirListResponse.listSize);
-        const total = dirListResponse.total;
-        const currentPage = Math.ceil(skip / limit);
-        const isLastPage = total - skip < limit;
-
-        if (isLastPage) {
-            return {"display": 0};
-        }
-
-        return {
-            "page": currentPage + 1,
-            "skip": (currentPage + 1) * limit
-        }
-    }
-
-    private computePageNavigate(): Array<Record<string, number>> {
+    readonly pageNavigate = computed(() => {
         const dirListResponse = this.dirListResponse();
         if (dirListResponse == null) {
             return [];
@@ -235,69 +291,60 @@ export class NavigatorFolderComponent {
         }
 
         return result;
-    }
+    });
 
-    onChangeDropdrownListResultCount(event: Event):void {
-        const value = parseInt((event.target as HTMLSelectElement).value);
-        this.listResultCount.set(value);
-        this.localStorageService.setNavigateListResultCount(value);
-        this.listRefresh();
-    }
-
-    changeSort(order:SortOrder, colName:"name"|"type"|"size"|"date"):void {
-        this.currentSortOrder[colName] = order;
-        this.listRefresh();
-    }
-
-    resetActivitiesOnClick(e: Event, recursive:boolean) {
-        e.preventDefault();
-        const currentItem = this.dirListResponse()?.currentItem;
-        const parentHashPath = this.dirListResponse()?.parentHashPath;
-        if (currentItem != null) {
-            this.assetService.resetActivities([currentItem.hashPath], recursive);
-        } else if (this.dirListResponse()?.path == "/" && parentHashPath != null) {
-            this.assetService.resetActivities([parentHashPath], recursive);
-        }
-    }
-
-    getFileType(hashPath:string):string {
-        const metadatas = this.dirListResponse()?.metadatas || {};
-        if (hashPath in metadatas) {
-            return this.assetService.getFileMetadataMimeType(metadatas[hashPath]);
-        }
-        return "File";
-    }
-
-    getImagePreviewURL(hashPath:string, previewType: string):string {
-        const renderedList = this.dirListResponse()?.metadatas[hashPath]?.index[0]?.rendered || [];
-        const previewTypeList = renderedList.filter(r => r.previewType == previewType);
-        if (previewTypeList.length > 0) {
-            return this.assetService.makeAssetRenderedFileURL(hashPath, previewTypeList[0].name, 0);
-        }
-        return "";
-    }
-
-    private getHasImagePreviewOnList(): boolean {
+    readonly pageNavigatePreviousButton = computed(() => {
         const dirListResponse = this.dirListResponse();
         if (dirListResponse == null) {
-            return false;
+            return {"display": 0};
+        }
+
+        const skip = dirListResponse.skipCount;
+        const limit = Math.max(this.listResultCount(), dirListResponse.listSize);
+        const currentPage = Math.ceil(skip / limit);
+        const isFirstPage = currentPage == 0;
+
+        if (isFirstPage) {
+            return {"display": 0};
+        }
+
+        return {
+            "page": currentPage - 1,
+            "skip": (currentPage - 1) * limit
+        }        
+    });
+
+    readonly pageNavigateNextButton = computed(() => {
+        const dirListResponse = this.dirListResponse();
+        if (dirListResponse == null) {
+            return {"display": 0};
+        }
+
+        const skip = dirListResponse.skipCount;
+        const limit = Math.max(this.listResultCount(), dirListResponse.listSize);
+        const total = dirListResponse.total;
+        const currentPage = Math.ceil(skip / limit);
+        const isLastPage = total - skip < limit;
+
+        if (isLastPage) {
+            return {"display": 0};
+        }
+
+        return {
+            "page": currentPage + 1,
+            "skip": (currentPage + 1) * limit
+        }        
+    });
+
+    readonly allHashPaths = computed(() => {
+        const dirListResponse = this.dirListResponse();
+        if (dirListResponse == null) {
+            return [];
         }
         const itemHashPaths = dirListResponse.list.map(f => f.hashPath);
         const currentItemHashPath = dirListResponse.currentItem?.hashPath || "";
         const parentHashPath = dirListResponse.parentHashPath || "";
-        const allHashPaths = [...itemHashPaths, currentItemHashPath, parentHashPath];
-
-        for (let index = 0; index < allHashPaths.length; index++) {
-            const hashPaths = allHashPaths[index];
-            const renderedList = dirListResponse.metadatas[hashPaths]?.index[0]?.rendered || [];
-            const renderedWithImgPreview = renderedList.filter(r => r.previewType == "icon-thumbnail"
-                                                                    || r.previewType == "cartridge-thumbnail");
-            if (renderedWithImgPreview.length > 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
+        return [...itemHashPaths, currentItemHashPath, parentHashPath];
+    });
 
 }

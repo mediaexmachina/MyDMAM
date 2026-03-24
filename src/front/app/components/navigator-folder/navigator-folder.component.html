@@ -14,8 +14,12 @@
     Copyright (C) Media ex Machina 2025
 
 -->
-@if (dirListResponse() != null) {
 @let dirList = dirListResponse();
+@if (dirList != null) {
+@let currentDirListStyleCSSClass = dirListStyleCSSClass();
+@let actualDirListStyle = dirListStyle();
+@let currentHasImagePreviewOnList = hasImagePreviewOnList();
+@let currentIconThumbnailPreviewURLByHashPath = iconThumbnailPreviewURLByHashPath();
 
 <article class="file-information">
     @if (dirList?.currentItem != null) {
@@ -88,81 +92,147 @@
         }
     </nav>
 
-    <nav class="actions">
-        @if (dirList?.currentItem?.directory) {
-            Metadata analysis and extraction reprocess on:
-            <button (click)="resetActivitiesOnClick($event, false)">
-                This directory content only
-            </button>
-            <button (click)="resetActivitiesOnClick($event, true)">
-                This directory and sub-directories content
-            </button>
-        } @else if (dirList?.path == "/") {
-            Metadata analysis and extraction reprocess on:
-            <button (click)="resetActivitiesOnClick($event, false)">
-                This storage root content only
-            </button>
-            <button (click)="resetActivitiesOnClick($event, true)">
-                The full storage
-            </button>
-        } @else {
-            <button (click)="resetActivitiesOnClick($event, false)">
-                Metadata analysis and extraction reprocess
-            </button>
-        }
-    </nav>
+    <div>
+        <nav class="dirlist-mode-switch">
+            <select name="dropdrown-dirlist-mode-switch" (change)="onChangeDropdrownDirlistModeSwitch($event)">
+                <option [value]="_DirListStyle.DETAIL"        [attr.selected]="actualDirListStyle == _DirListStyle.DETAIL ? 'true' : null">
+                    Detail view
+                </option>
+                <option [value]="_DirListStyle.SMALL_ICONS"   [attr.selected]="actualDirListStyle == _DirListStyle.SMALL_ICONS ? 'true' : null">
+                    Small icons view
+                </option>
+                <option [value]="_DirListStyle.MOSAIC_MEDIUM" [attr.selected]="actualDirListStyle == _DirListStyle.MOSAIC_MEDIUM ? 'true' : null">
+                    Mosaic view
+                </option>
+                <option [value]="_DirListStyle.MOSAIC_LARGE"  [attr.selected]="actualDirListStyle == _DirListStyle.MOSAIC_LARGE ? 'true' : null">
+                    Mosaic large view
+                </option>
+            </select>
+        </nav>
+
+        <nav class="actions">
+            @if (dirList?.currentItem?.directory) {
+                Metadata analysis and extraction reprocess on:
+                <button (click)="resetActivitiesOnClick($event, false)">
+                    This directory content only
+                </button>
+                <button (click)="resetActivitiesOnClick($event, true)">
+                    This directory and sub-directories content
+                </button>
+            } @else if (dirList?.path == "/") {
+                Metadata analysis and extraction reprocess on:
+                <button (click)="resetActivitiesOnClick($event, false)">
+                    This storage root content only
+                </button>
+                <button (click)="resetActivitiesOnClick($event, true)">
+                    The full storage
+                </button>
+            } @else {
+                <button (click)="resetActivitiesOnClick($event, false)">
+                    Metadata analysis and extraction reprocess
+                </button>
+            }
+        </nav>
+    </div>
 </section>
 
 @if (dirList != null) {
     <app-navigator-item [fileResponse]="dirList"></app-navigator-item>
+    
+    @if ((dirList.listSize || 0) > 0) {
 
-    @if (dirList.listSize || 0 > 0) {
-        <ul class="dirlist">
-            <li>
-                <span class="navigateto">
-                    <app-navigator-column-sort
-                        name="Name"
-                        [sortOrder]="dirList?.sort?.name || _SortOrder.none"
-                        (onChangeSort)="changeSort($event, 'name')">
-                    </app-navigator-column-sort>
-                </span>
-                <span class="list-column">
-                    <app-navigator-column-sort
-                        name="Type"
-                        [sortOrder]="dirList?.sort?.type || _SortOrder.none"
-                        (onChangeSort)="changeSort($event, 'type')">
-                    </app-navigator-column-sort></span>
-                <span class="list-column">
-                    <app-navigator-column-sort
-                        name="Size"
-                        [sortOrder]="dirList?.sort?.size || _SortOrder.none"
-                        (onChangeSort)="changeSort($event, 'size')">
-                    </app-navigator-column-sort></span>
-                <span class="list-column">
-                    <app-navigator-column-sort
-                        name="Date"
-                        [sortOrder]="dirList?.sort?.date || _SortOrder.none"
-                        (onChangeSort)="changeSort($event, 'date')">
-                    </app-navigator-column-sort>
-                </span>
-            </li>
+        @if ((dirList.listSize || 0) > 1) {
+            <ul [class]='["dirlist-sort-header", currentDirListStyleCSSClass]'>
+                <li>
+                    @if (actualDirListStyle > _DirListStyle.DETAIL) {
+                        <span class="list-column">
+                            Sort by:
+                        </span>
+                    }
+
+                    <span class="navigateto">
+                        <app-navigator-column-sort
+                            name="Name"
+                            [sortOrder]="dirList?.sort?.name || _SortOrder.none"
+                            (onChangeSort)="changeSort($event, 'name')">
+                        </app-navigator-column-sort>
+                    </span>
+                    <span class="list-column">
+                        <app-navigator-column-sort
+                            name="Type"
+                            [sortOrder]="dirList?.sort?.type || _SortOrder.none"
+                            (onChangeSort)="changeSort($event, 'type')">
+                        </app-navigator-column-sort></span>
+                    <span class="list-column">
+                        <app-navigator-column-sort
+                            name="Size"
+                            [sortOrder]="dirList?.sort?.size || _SortOrder.none"
+                            (onChangeSort)="changeSort($event, 'size')">
+                        </app-navigator-column-sort></span>
+                    <span class="list-column">
+                        <app-navigator-column-sort
+                            name="Date"
+                            [sortOrder]="dirList?.sort?.date || _SortOrder.none"
+                            (onChangeSort)="changeSort($event, 'date')">
+                        </app-navigator-column-sort>
+                    </span>
+                </li>
+            </ul>
+        }
+
+        <ul [class]='["dirlist", currentDirListStyleCSSClass]'>
 
             @for (fileItem of dirList.list; track fileItem.hashPath) {
-            <li>
+            <li [class]='{"only-directories-to-display": onlyDirectoriesToDisplay()}'>
                 <span class="navigateto">
                     <a [class]="{'directory': fileItem.directory}" [routerLink]="['/navigator', storage(), fileItem.hashPath]">
-                        @if (hasImagePreviewOnList()) {
+                        @if (currentHasImagePreviewOnList) {
                             <span class="img-thumbnail-spacer">
-                                <img [src]='getImagePreviewURL(fileItem.hashPath, "icon-thumbnail")' class="icon-thumbnail" />
+                                @let url = currentIconThumbnailPreviewURLByHashPath[fileItem.hashPath] || "";
+                                @if (url != "") {
+                                    <img [src]="url" class="icon-thumbnail" />
+                                } @else if (actualDirListStyle > _DirListStyle.DETAIL) {
+                                    @if (fileItem.directory) {
+                                        <img src="file-directory-svgrepo-com.svg" class="icon-thumbnail img-empty" />
+                                    } @else {
+                                        <img src="file-svgrepo-com.svg" class="icon-thumbnail img-empty" />
+                                    }
+                                }
+                            </span>
+                        } @else if (actualDirListStyle > _DirListStyle.DETAIL) {
+                            <span class="img-thumbnail-spacer">
+                                @if (fileItem.directory) {
+                                    <img src="file-directory-svgrepo-com.svg" class="icon-thumbnail img-empty" />
+                                } @else {
+                                    <img src="file-svgrepo-com.svg" class="icon-thumbnail img-empty" />
+                                }
                             </span>
                         }
 
-                        {{ fileItem.name }}
+                        @if (actualDirListStyle < _DirListStyle.MOSAIC_LARGE) {
+                            <span style="display: inline-block">
+                                {{ fileItem.name | removeFileNameExtension }}<span class="file-extention">{{ fileItem.name | getFileNameExtension: true }}</span>
+                            </span>        
+                        }
                     </a>
                 </span>
+                
+                @if (actualDirListStyle == _DirListStyle.MOSAIC_LARGE) {
+                    <span class="list-column file-name" style="display: inline-block;">
+                        <a [class]="{'directory': fileItem.directory}" [routerLink]="['/navigator', storage(), fileItem.hashPath]">
+                            {{ fileItem.name | removeFileNameExtension }}<span class="file-extention">{{ fileItem.name | getFileNameExtension: true }}</span>
+                        </a>
+                    </span>        
+                }
+
                 @if (fileItem.directory) {
-                    <span class="list-column">Directory</span>
-                    <span class="list-column"></span>
+                    @if (actualDirListStyle == _DirListStyle.MOSAIC_LARGE && onlyDirectoriesToDisplay()) {
+                        <span class="list-column"></span>
+                        <span class="list-column"></span>
+                    } @else {
+                        <span class="list-column">Directory</span>
+                        <span class="list-column"></span>
+                    }
                 } @else if (fileItem.justDetected) {
                     <span class="list-column just-detected">Just detected file</span>
                     <span class="list-column just-detected">At least <app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
@@ -170,6 +240,7 @@
                     <span class="list-column">{{ getFileType(fileItem.hashPath || "") }}</span>
                     <span class="list-column"><app-span-file-size [size]="fileItem.length || 0"></app-span-file-size></span>
                 }
+
                 <span class="list-column">
                     <app-span-date-time [date]="fileItem.modified"></app-span-date-time>
                 </span>

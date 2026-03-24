@@ -17,6 +17,7 @@
 
 import { Injectable, WritableSignal, effect, signal } from '@angular/core';
 import { DateTimeStyleToDisplay } from '../enums/date-time-style-to-display.enum';
+import { DirListStyle } from '../enums/dir-list-style.enum';
 
 @Injectable({
     providedIn: 'root'
@@ -24,11 +25,15 @@ import { DateTimeStyleToDisplay } from '../enums/date-time-style-to-display.enum
 export class LocalStorageService {
 
     readonly dateStyleToDisplay: WritableSignal<DateTimeStyleToDisplay>;
+    readonly dirListStyle: WritableSignal<DirListStyle>;
 
     constructor() {
         this.dateStyleToDisplay = signal(this.getByDefaultNumber("dateStyleToDisplay", DateTimeStyleToDisplay.SIMPLIFIED_VIEW));
+        this.dirListStyle = signal(this.getByDefaultNumber("dirListStyle", DirListStyle.DETAIL));
+
         effect(() => {
             this.setNumber("dateStyleToDisplay", this.dateStyleToDisplay());
+            this.setNumber("dirListStyle", this.dirListStyle());
         });
     }
 

@@ -11,7 +11,7 @@ import { TopBarComponent } from "./components/top-bar/top-bar.component";
     template: `
         <app-top-bar [title]="title()" [realm]="selectedRealm()"></app-top-bar>
 
-        <main style="margin: 1em">
+        <main>
             @if (selectedRealm() == "") {
             <app-realm-selector [(selectedRealm)]="selectedRealm"></app-realm-selector>
             }
@@ -19,7 +19,14 @@ import { TopBarComponent } from "./components/top-bar/top-bar.component";
             <router-outlet />
             }
         </main>`,
-    styles: ``
+    styles: `
+    main {
+        margin-top: 1em;
+        margin-bottom: 1em;
+        margin-left: 0.8vw;
+        margin-right: 0.8vw;
+    }
+    `
 })
 export class App {
     private readonly localStorageService = inject(LocalStorageService);
