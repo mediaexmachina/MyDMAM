@@ -325,6 +325,7 @@ public class ImageMagick {
                 "image/jpeg",
                 "image/png",
                 "image/bmp",
+                "image/x-ms-bmp",
                 "image/gif",
                 "image/vnd.adobe.photoshop",
                 "image/tiff",
