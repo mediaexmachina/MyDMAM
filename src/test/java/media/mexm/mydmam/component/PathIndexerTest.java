@@ -40,7 +40,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
 import media.mexm.mydmam.configuration.EnvConf;
-import media.mexm.mydmam.configuration.InfraConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
@@ -70,8 +69,6 @@ class PathIndexerTest {
     @Mock
     MyDMAMConfigurationProperties configuration;
     @Mock
-    InfraConf infra;
-    @Mock
     EnvConf env;
     @Mock
     AllowBlockLists activityHandlers;
@@ -84,6 +81,9 @@ class PathIndexerTest {
     void init() {
         jobKitEngine = new FlatJobKitEngine();
         duration = Duration.ofHours(1);
+
+        when(configuration.env()).thenReturn(env);
+        when(env.spoolEvents()).thenReturn(spoolEvents);
     }
 
     @Nested
@@ -104,21 +104,17 @@ class PathIndexerTest {
             piRealm = new RealmConf(Map.of(new TechnicalName(storage), piStorage),
                     duration, spoolEvents, null, null, null, activityHandlers);
 
-            when(configuration.infra()).thenReturn(infra);
-            when(configuration.env()).thenReturn(env);
-            when(env.spoolEvents()).thenReturn(spoolEvents);
-            when(infra.realms()).thenReturn(Map.of(new TechnicalName(realm), piRealm));
-
+            when(configuration.realms()).thenReturn(Map.of(new TechnicalName(realm), piRealm));
             pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
+            pi.init();
             pi.startScans();
         }
 
         @AfterEach
         void ends() {
-            verify(configuration, atLeastOnce()).infra();
+            verify(configuration, atLeastOnce()).realms();
             verify(configuration, atLeastOnce()).env();
             verify(env, atLeastOnce()).spoolEvents();
-            verify(infra, atLeastOnce()).realms();
             verify(env, atLeastOnce()).timeBetweenScans();
             assertFalse(jobKitEngine.isEmptyActiveServicesList());
 
@@ -142,7 +138,7 @@ class PathIndexerTest {
         void testScanNow() {
             pi.scanNow(realm, storage);
 
-            verify(configuration, atLeastOnce()).infra();
+            verify(configuration, atLeastOnce()).realms();
             verify(env, atLeastOnce()).spoolEvents();
             verify(pathIndexerService, times(1)).updateFoundedFiles(
                     any(), eq(realm), eq(storage), any(), any());
@@ -164,13 +160,17 @@ class PathIndexerTest {
         @BeforeEach
         void init() {
             pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
+            pi.init();
             pi.startScans();
         }
 
         @Test
         void testScanNow() {
             pi.scanNow(realm, storage);
-            verify(configuration, times(1)).infra();
+            verify(configuration, times(1)).realms();
+            verify(configuration, atLeastOnce()).env();
+            verify(env, times(1)).spoolEvents();
+            verify(env, times(1)).timeBetweenScans();
         }
 
         @AfterEach

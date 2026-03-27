@@ -27,26 +27,27 @@ import media.mexm.mydmam.tools.ImageMagick;
 @Component
 public class Startup implements InitializingBean {
 
-	@Autowired
-	PendingActivityService pendingActivityService;
-	@Autowired
-	PathIndexer pathIndexer;
-	@Autowired
-	AuditTrail auditTrail;
-	@Autowired
-	Indexer indexer;
-	@Autowired
-	ImageMagick imageMagick;
-	@Autowired
-	MediaAssetService mediaAssetService;
+    @Autowired
+    PendingActivityService pendingActivityService;
+    @Autowired
+    PathIndexer pathIndexer;
+    @Autowired
+    AuditTrail auditTrail;
+    @Autowired
+    Indexer indexer;
+    @Autowired
+    ImageMagick imageMagick;
+    @Autowired
+    MediaAssetService mediaAssetService;
 
-	@Override
-	public void afterPropertiesSet() throws Exception {
-		imageMagick.init();
-		auditTrail.init();
-		indexer.init(mediaAssetService);
-		pendingActivityService.restartPendingActivities();
-		pathIndexer.startScans();
-	}
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        imageMagick.init();
+        auditTrail.init();
+        indexer.init(mediaAssetService);
+        pendingActivityService.restartPendingActivities();
+        pathIndexer.init();
+        pathIndexer.startScans();
+    }
 
 }

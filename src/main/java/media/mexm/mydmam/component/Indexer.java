@@ -46,12 +46,11 @@ public class Indexer implements DisposableBean {
     JobKitEngine jobKit;
 
     public void init(final MediaAssetService mediaAssetService) throws IOException {
-        final var infra = conf.infra();
-        if (infra == null) {
+        if (conf.realms() == null) {
             return;
         }
 
-        for (final var entry : Optional.ofNullable(infra.realms())
+        for (final var entry : Optional.ofNullable(conf.realms())
                 .orElse(Map.of())
                 .entrySet()) {
             final var realmName = entry.getKey().name();

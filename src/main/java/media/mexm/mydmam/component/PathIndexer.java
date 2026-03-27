@@ -16,9 +16,11 @@
  */
 package media.mexm.mydmam.component;
 
+import static java.util.Collections.unmodifiableMap;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,7 +51,11 @@ public class PathIndexer {
         this.jobKitEngine = jobKitEngine;
         this.configuration = configuration;
         this.pathIndexerService = pathIndexerService;
-        watchfolders = makeWatchfolders();
+        watchfolders = new HashMap<>();
+    }
+
+    public void init() {
+        watchfolders.putAll(makeWatchfolders());
     }
 
     public void startScans() {
@@ -57,7 +63,7 @@ public class PathIndexer {
     }
 
     Map<RealmStorageFolderActivity, Watchfolders> getWatchfolders() {
-        return watchfolders;
+        return unmodifiableMap(watchfolders);
     }
 
     public void scanNow(final String realm, final String storage) {
@@ -96,16 +102,14 @@ public class PathIndexer {
         record KV(RealmStorageFolderActivity key, Watchfolders value) {
         }
 
-        final var infra = configuration.infra();
-        if (infra == null) {
+        final var realms = configuration.realms();
+        if (realms == null) {
             return Map.of();
         }
         final var spoolEvents = configuration.env().spoolEvents();
         final var defaultTimeBetweenScans = configuration.env().timeBetweenScans();
 
-        return Optional.ofNullable(infra.realms())
-                .orElse(Map.of())
-                .entrySet()
+        return realms.entrySet()
                 .stream()
                 .flatMap(entry -> {
                     final var realmName = entry.getKey().name();

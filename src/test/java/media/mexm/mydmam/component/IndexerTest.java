@@ -53,7 +53,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.configuration.EnvConf;
-import media.mexm.mydmam.configuration.InfraConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.TechnicalName;
@@ -89,8 +88,6 @@ class IndexerTest {
 
     @Mock
     EnvConf envConf;
-    @Mock
-    InfraConf infra;
     @Mock
     RealmConf realmConf;
     @Mock
@@ -130,54 +127,48 @@ class IndexerTest {
         indexer.init(mediaAssetService);
         assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
-        verify(conf, times(1)).infra();
+        verify(conf, atLeastOnce()).realms();
     }
 
     @Test
     void testInit_noWorkingDir() throws IOException {
-        when(conf.infra()).thenReturn(infra);
-        when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
+        when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
         when(realmConf.workingDirectory()).thenReturn(null);
 
         indexer.init(mediaAssetService);
         assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
-        verify(conf, times(1)).infra();
-        verify(infra, times(1)).realms();
+        verify(conf, atLeastOnce()).realms();
         verify(realmConf, times(1)).workingDirectory();
     }
 
     @Test
     void testInitGetIndexerByRealm() throws IOException {
-        when(conf.infra()).thenReturn(infra);
-        when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
+        when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
         when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
         indexer.init(mediaAssetService);
         assertThat(indexer.getIndexerByRealm(realmName)).isNotEmpty();
         assertThat(indexer.getIndexerByRealm(badRealmName)).isEmpty();
 
-        verify(conf, times(1)).infra();
+        verify(conf, atLeastOnce()).realms();
         verify(conf, times(1)).env();
         verify(envConf, times(1)).explainSearchResults();
-        verify(infra, times(1)).realms();
         verify(realmConf, times(1)).workingDirectory();
         verify(realmConf, times(1)).delayedSync();
     }
 
     @Test
     void testDestroy() throws IOException {
-        when(conf.infra()).thenReturn(infra);
-        when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
+        when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
         when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
 
         indexer.init(mediaAssetService);
         indexer.destroy();
         assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
-        verify(conf, times(1)).infra();
+        verify(conf, atLeastOnce()).realms();
         verify(conf, times(1)).env();
         verify(envConf, times(1)).explainSearchResults();
-        verify(infra, times(1)).realms();
         verify(realmConf, times(1)).workingDirectory();
         verify(realmConf, times(1)).delayedSync();
     }
@@ -239,8 +230,7 @@ class IndexerTest {
 
         @Test
         void testReset() throws IOException {
-            when(conf.infra()).thenReturn(infra);
-            when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
+            when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
             when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
 
             indexer.init(mediaAssetService);
@@ -271,11 +261,10 @@ class IndexerTest {
             assertThat(searchResult).size().isEqualTo(1);
             assertThat(searchResult.get(0).name()).isEqualTo(fileName);
 
-            verify(conf, times(1)).infra();
+            verify(conf, atLeastOnce()).realms();
             verify(conf, atLeastOnce()).env();
             verify(envConf, times(1)).explainSearchResults();
             verify(envConf, times(1)).resetBatchSizeIndexer();
-            verify(infra, times(1)).realms();
             verify(realmConf, times(1)).workingDirectory();
             verify(realmConf, times(1)).delayedSync();
             verify(fileDao, times(1)).getAllFromRealm(eq(realmName), any());
