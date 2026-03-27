@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -38,7 +39,7 @@ import media.mexm.mydmam.tools.AllowBlockLists;
 
 @ConfigurationProperties(prefix = "mydmam")
 @Validated
-public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
+public record MyDMAMConfigurationProperties(@Valid Map<TechnicalName, RealmConf> realms,
                                             @DefaultValue @Valid @NotNull EnvConf env,
                                             String instancename,
                                             @DefaultValue @Valid @NotNull MagickConf magick,
@@ -57,7 +58,7 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
 
     public Set<String> getRealmNames() {
         try {
-            return infra().realms().keySet()
+            return realms().keySet()
                     .stream()
                     .map(TechnicalName::name)
                     .collect(toUnmodifiableSet());
@@ -69,7 +70,7 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
     public Optional<RealmConf> getRealmByName(final String realmName) {
         requireNonNull(realmName);
         try {
-            return Optional.ofNullable(infra().realms().get(new TechnicalName(realmName)));
+            return Optional.ofNullable(realms().get(new TechnicalName(realmName)));
         } catch (final NullPointerException e) {
             return empty();
         }

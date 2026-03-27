@@ -367,7 +367,6 @@ class FileSystemControllerTest {
         verify(file, atLeastOnce()).getRealm();
         verify(file, atLeastOnce()).getPath();
         verify(conf, atLeastOnce()).instancename();
-        verify(conf, atLeastOnce()).infra();
         verify(conf, atLeastOnce()).env();
         verify(envConf, atLeastOnce()).dirListMaxSize();
         verify(fileRepository, times(1)).getByHashPath(hashPath.toLowerCase(), realm);

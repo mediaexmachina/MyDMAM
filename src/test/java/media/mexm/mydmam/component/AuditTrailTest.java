@@ -17,6 +17,7 @@
 package media.mexm.mydmam.component;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,7 +40,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import media.mexm.mydmam.audittrail.AuditTrailObjectType;
 import media.mexm.mydmam.configuration.EnvConf;
-import media.mexm.mydmam.configuration.InfraConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.TechnicalName;
@@ -84,26 +84,23 @@ class AuditTrailTest {
 
     @Autowired
     AuditTrail auditTrail;
-    InfraConf infra;
 
     @BeforeEach
     void init() {
-        infra = new InfraConf(Map.of(new TechnicalName(realmName), realmConf));
-
         when(realmConf.workingDirectory())
                 .thenReturn(workingDirectory);
-        when(conf.infra()).thenReturn(infra);
+        when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
         when(conf.env()).thenReturn(envConf);
         when(envConf.auditTrailSpoolName()).thenReturn(auditTrailSpoolName);
     }
 
     @Test
     void testGetAuditTrailByRealm_emptyConf() {
-        when(conf.infra()).thenReturn(null);
+        when(conf.realms()).thenReturn(null);
 
         auditTrail.init();
 
-        verify(conf, times(1)).infra();
+        verify(conf, atLeastOnce()).realms();
         assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
     }
 
@@ -113,7 +110,7 @@ class AuditTrailTest {
 
         auditTrail.init();
 
-        verify(conf, times(1)).infra();
+        verify(conf, atLeastOnce()).realms();
         verify(realmConf, times(1)).workingDirectory();
         assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
     }
@@ -122,7 +119,7 @@ class AuditTrailTest {
     void testGetAuditTrailByRealm() {
         auditTrail.init();
 
-        verify(conf, times(1)).infra();
+        verify(conf, atLeastOnce()).realms();
         verify(conf, times(1)).env();
         verify(envConf, times(1)).auditTrailSpoolName();
         verify(realmConf, times(1)).workingDirectory();
@@ -141,7 +138,7 @@ class AuditTrailTest {
 
         auditTrail.asyncPersistForRealm(realmName, issuer, event, objectType, objectReference, objectPayload);
 
-        verify(conf, times(1)).infra();
+        verify(conf, atLeastOnce()).realms();
         verify(conf, times(1)).env();
         verify(envConf, times(1)).auditTrailSpoolName();
         verify(realmConf, times(1)).workingDirectory();

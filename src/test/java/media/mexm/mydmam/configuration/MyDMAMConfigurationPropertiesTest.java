@@ -46,8 +46,6 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 class MyDMAMConfigurationPropertiesTest {
 
     @Mock
-    InfraConf pathindexing;
-    @Mock
     RealmConf realm;
     @Mock
     EnvConf envConf;
@@ -71,12 +69,14 @@ class MyDMAMConfigurationPropertiesTest {
     @Fake
     String storageName;
 
+    Map<TechnicalName, RealmConf> realms;
     MyDMAMConfigurationProperties c;
 
     @BeforeEach
     void init() {
+        realms = Map.of(new TechnicalName(realmName), realm);
         c = new MyDMAMConfigurationProperties(
-                pathindexing,
+                realms,
                 envConf,
                 instancename,
                 magick,
@@ -87,7 +87,7 @@ class MyDMAMConfigurationPropertiesTest {
     @Test
     void testNoInstancename() {
         c = new MyDMAMConfigurationProperties(
-                pathindexing,
+                realms,
                 envConf,
                 null,
                 magick,
@@ -98,34 +98,33 @@ class MyDMAMConfigurationPropertiesTest {
 
     @Test
     void testGetRealmNames_empty() {
+        c = new MyDMAMConfigurationProperties(
+                Map.of(),
+                envConf,
+                instancename,
+                magick,
+                activityHandlers,
+                renderedFileSpecs);
         assertThat(c.getRealmNames()).isEmpty();
-        verify(pathindexing, times(1)).realms();
     }
 
     @Test
     void testGetRealmNames() {
-        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
         assertThat(c.getRealmNames()).containsOnly(realmName);
-        verify(pathindexing, times(1)).realms();
     }
 
     @Test
     void testGetRealmByName_contains() {
-        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
         assertThat(c.getRealmByName(realmName)).contains(realm);
-        verify(pathindexing, times(1)).realms();
     }
 
     @Test
     void testGetRealmByName_notContains() {
-        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
         assertThat(c.getRealmByName(otherRealm)).isEmpty();
-        verify(pathindexing, times(1)).realms();
     }
 
     @Test
     void testGetRealmAndStorage() {
-        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
         assertThrows(IllegalArgumentException.class, () -> c.getRealmAndStorage(otherRealm, storageName));
 
         when(realm.getStorageByName(storageName)).thenReturn(Optional.empty());
@@ -139,7 +138,6 @@ class MyDMAMConfigurationPropertiesTest {
         assertEquals(confEnv.storage(), storage);
         assertEquals(confEnv.storageName(), storageName);
 
-        verify(pathindexing, atLeastOnce()).realms();
         verify(realm, atLeastOnce()).getStorageByName(storageName);
     }
 
@@ -159,21 +157,19 @@ class MyDMAMConfigurationPropertiesTest {
         when(activityHandlers.pass(handlerName)).thenReturn(true);
         when(realm.activityHandlers()).thenReturn(realmActivityHandlers);
         when(realmActivityHandlers.pass(handlerName)).thenReturn(pass);
-        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
 
         assertEquals(pass, c.isActivatedActivityHandler(realmName, handlerName));
 
         verify(activityHandlers, times(1)).pass(handlerName);
         verify(realm, atLeastOnce()).activityHandlers();
         verify(realmActivityHandlers, times(1)).pass(handlerName);
-        verify(pathindexing, times(1)).realms();
     }
 
     @ParameterizedTest
     @ValueSource(booleans = { false, true })
     void testIsActivatedActivityHandler_noGlobal(final boolean pass) {
         c = new MyDMAMConfigurationProperties(
-                pathindexing,
+                realms,
                 envConf,
                 instancename,
                 magick,
@@ -182,31 +178,26 @@ class MyDMAMConfigurationPropertiesTest {
 
         when(realm.activityHandlers()).thenReturn(realmActivityHandlers);
         when(realmActivityHandlers.pass(handlerName)).thenReturn(pass);
-        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
 
         assertEquals(pass, c.isActivatedActivityHandler(realmName, handlerName));
 
         verify(realm, atLeastOnce()).activityHandlers();
         verify(realmActivityHandlers, times(1)).pass(handlerName);
-        verify(pathindexing, times(1)).realms();
     }
 
     @Test
     void testIsActivatedActivityHandler_nothingSet() {
         c = new MyDMAMConfigurationProperties(
-                pathindexing,
+                realms,
                 envConf,
                 instancename,
                 magick,
                 null,
                 null);
 
-        when(pathindexing.realms()).thenReturn(Map.of(new TechnicalName(realmName), realm));
-
         assertTrue(c.isActivatedActivityHandler(realmName, handlerName));
 
         verify(realm, atLeastOnce()).activityHandlers();
-        verify(pathindexing, times(1)).realms();
     }
 
 }

@@ -50,12 +50,11 @@ public class AuditTrail {
     SQLiteConfig sqliteConfig;
 
     public void init() {
-        final var infra = conf.infra();
-        if (infra == null) {
+        if (conf.realms() == null) {
             return;
         }
 
-        for (final var entry : Optional.ofNullable(infra.realms())
+        for (final var entry : Optional.ofNullable(conf.realms())
                 .orElse(Map.of())
                 .entrySet()) {
             final var realmName = entry.getKey().name();
