@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.configuration;
 
-import static java.lang.Boolean.FALSE;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toUnmodifiableSet;
@@ -43,7 +42,7 @@ public record MyDMAMConfigurationProperties(@Valid Map<TechnicalName, RealmConf>
                                             @DefaultValue @Valid @NotNull EnvConf env,
                                             String instancename,
                                             @DefaultValue @Valid @NotNull MagickConf magick,
-                                            AllowBlockLists activityHandlers,
+                                            @DefaultValue @Valid @NotNull AllowBlockLists activityHandlers,
                                             @DefaultValue @Valid @NotNull RenderedFileSpecs renderedSpecs) {
 
     public MyDMAMConfigurationProperties {
@@ -92,17 +91,13 @@ public record MyDMAMConfigurationProperties(@Valid Map<TechnicalName, RealmConf>
         requireNonNull(realmName);
         requireNonNull(handlerName);
 
-        final var globalActivated = Optional.ofNullable(activityHandlers)
-                .map(f -> f.pass(handlerName));
-
-        if (globalActivated.isPresent()
-            && FALSE.equals(globalActivated.get())) {
+        final var globalActivated = activityHandlers.pass(handlerName);
+        if (globalActivated == false) {
             return false;
         }
 
         return getRealmByName(realmName)
                 .map(RealmConf::activityHandlers)
-                .flatMap(Optional::ofNullable)
                 .map(f -> f.pass(handlerName))
                 .orElse(true);
     }
