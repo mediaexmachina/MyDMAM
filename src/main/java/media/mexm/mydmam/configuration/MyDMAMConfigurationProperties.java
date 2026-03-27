@@ -40,6 +40,7 @@ import media.mexm.mydmam.tools.AllowBlockLists;
 @Validated
 public record MyDMAMConfigurationProperties(@Valid Map<TechnicalName, RealmConf> realms,
                                             @DefaultValue @Valid @NotNull EnvConf env,
+                                            @DefaultValue @Valid @NotNull SiteConf site,
                                             String instancename,
                                             @DefaultValue @Valid @NotNull MagickConf magick,
                                             @DefaultValue @Valid @NotNull AllowBlockLists activityHandlers,

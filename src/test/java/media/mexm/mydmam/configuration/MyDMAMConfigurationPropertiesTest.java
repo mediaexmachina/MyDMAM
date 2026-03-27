@@ -59,6 +59,8 @@ class MyDMAMConfigurationPropertiesTest {
     AllowBlockLists realmActivityHandlers;
     @Mock
     RenderedFileSpecs renderedFileSpecs;
+    @Mock
+    SiteConf site;
 
     @Fake
     String realmName;
@@ -78,6 +80,7 @@ class MyDMAMConfigurationPropertiesTest {
         c = new MyDMAMConfigurationProperties(
                 realms,
                 envConf,
+                site,
                 instancename,
                 magick,
                 activityHandlers,
@@ -89,6 +92,7 @@ class MyDMAMConfigurationPropertiesTest {
         c = new MyDMAMConfigurationProperties(
                 realms,
                 envConf,
+                site,
                 null,
                 magick,
                 activityHandlers,
@@ -101,6 +105,7 @@ class MyDMAMConfigurationPropertiesTest {
         c = new MyDMAMConfigurationProperties(
                 Map.of(),
                 envConf,
+                site,
                 instancename,
                 magick,
                 activityHandlers,
@@ -173,6 +178,7 @@ class MyDMAMConfigurationPropertiesTest {
         c = new MyDMAMConfigurationProperties(
                 realms,
                 envConf,
+                site,
                 instancename,
                 magick,
                 activityHandlers,
@@ -195,6 +201,7 @@ class MyDMAMConfigurationPropertiesTest {
         c = new MyDMAMConfigurationProperties(
                 realms,
                 envConf,
+                site,
                 instancename,
                 magick,
                 activityHandlers,

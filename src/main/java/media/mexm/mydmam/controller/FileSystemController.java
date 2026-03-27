@@ -95,7 +95,12 @@ public class FileSystemController {
     @Transactional
     public ResponseEntity<RealmListResponse> getRealms() {
         final var list = fileRepository.getAllRealms().stream().sorted().toList();
-        return new ResponseEntity<>(new RealmListResponse(list), OK);
+        final var allAbout = list.stream()
+                .filter(r -> conf.getRealmByName(r).isPresent())
+                .collect(toUnmodifiableMap(
+                        identity(),
+                        r -> conf.getRealmByName(r).get().about()));
+        return new ResponseEntity<>(new RealmListResponse(list, allAbout), OK);
     }
 
     @GetMapping("/list/{realm}")
