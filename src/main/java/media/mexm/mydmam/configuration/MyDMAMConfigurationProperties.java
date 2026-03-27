@@ -16,14 +16,13 @@
  */
 package media.mexm.mydmam.configuration;
 
-import static java.lang.Boolean.FALSE;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -32,8 +31,6 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import media.mexm.mydmam.asset.RenderedFileSpecs;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
@@ -41,17 +38,12 @@ import media.mexm.mydmam.tools.AllowBlockLists;
 
 @ConfigurationProperties(prefix = "mydmam")
 @Validated
-public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
+public record MyDMAMConfigurationProperties(@Valid Map<TechnicalName, RealmConf> realms,
+                                            @DefaultValue @Valid @NotNull EnvConf env,
+                                            @DefaultValue @Valid @NotNull SiteConf site,
                                             String instancename,
-                                            @DefaultValue("audittrail") @NotEmpty String auditTrailSpoolName,
-                                            @DefaultValue("async-api") @NotEmpty String asyncAPISpoolName,
-                                            @DefaultValue("false") boolean explainSearchResults,
-                                            @DefaultValue("10000") @Min(0) int resetBatchSizeIndexer,
-                                            @DefaultValue("100") @Min(1) int dirListMaxSize,
-                                            @DefaultValue("100") @Min(1) int searchResultMaxSize,
-                                            @DefaultValue("24h") Duration pendingActivityMaxAgeGraceRestart,
                                             @DefaultValue @Valid @NotNull MagickConf magick,
-                                            AllowBlockLists activityHandlers,
+                                            @DefaultValue @Valid @NotNull AllowBlockLists activityHandlers,
                                             @DefaultValue @Valid @NotNull RenderedFileSpecs renderedSpecs) {
 
     public MyDMAMConfigurationProperties {
@@ -62,15 +54,11 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
                 throw new IllegalStateException("Can't get hostname", e);
             }
         }
-        if (pendingActivityMaxAgeGraceRestart.isPositive() == false) {
-            throw new IllegalStateException("Invalid pendingActivityMaxAgeGraceRestart: "
-                                            + pendingActivityMaxAgeGraceRestart);
-        }
     }
 
     public Set<String> getRealmNames() {
         try {
-            return infra().realms().keySet()
+            return realms().keySet()
                     .stream()
                     .map(TechnicalName::name)
                     .collect(toUnmodifiableSet());
@@ -82,7 +70,7 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
     public Optional<RealmConf> getRealmByName(final String realmName) {
         requireNonNull(realmName);
         try {
-            return Optional.ofNullable(infra().realms().get(new TechnicalName(realmName)));
+            return Optional.ofNullable(realms().get(new TechnicalName(realmName)));
         } catch (final NullPointerException e) {
             return empty();
         }
@@ -104,17 +92,13 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
         requireNonNull(realmName);
         requireNonNull(handlerName);
 
-        final var globalActivated = Optional.ofNullable(activityHandlers)
-                .map(f -> f.pass(handlerName));
-
-        if (globalActivated.isPresent()
-            && FALSE.equals(globalActivated.get())) {
+        final var globalActivated = activityHandlers.pass(handlerName);
+        if (globalActivated == false) {
             return false;
         }
 
         return getRealmByName(realmName)
                 .map(RealmConf::activityHandlers)
-                .flatMap(Optional::ofNullable)
                 .map(f -> f.pass(handlerName))
                 .orElse(true);
     }

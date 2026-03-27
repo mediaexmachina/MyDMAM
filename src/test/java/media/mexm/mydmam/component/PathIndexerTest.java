@@ -39,9 +39,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
-import media.mexm.mydmam.configuration.InfraConf;
+import media.mexm.mydmam.configuration.EnvConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.configuration.RealmAboutConf;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.service.PathIndexerService;
@@ -53,126 +54,133 @@ import tv.hd3g.jobkit.engine.FlatJobKitEngine;
 @ExtendWith(MockToolsExtendsJunit.class)
 class PathIndexerTest {
 
-	@Fake
-	String realm;
-	@Fake
-	String storage;
-	@Fake
-	String spoolEvents;
-	@Fake
-	String description;
-	@Fake
-	String location;
+    @Fake
+    String realm;
+    @Fake
+    String storage;
+    @Fake
+    String spoolEvents;
+    @Fake
+    String description;
+    @Fake
+    String location;
 
-	@Mock
-	PathIndexerService pathIndexerService;
-	@Mock
-	MyDMAMConfigurationProperties configuration;
-	@Mock
-	InfraConf infra;
-	@Mock
-	AllowBlockLists activityHandlers;
+    @Mock
+    PathIndexerService pathIndexerService;
+    @Mock
+    MyDMAMConfigurationProperties configuration;
+    @Mock
+    EnvConf env;
+    @Mock
+    AllowBlockLists activityHandlers;
+    @Mock
+    RealmAboutConf realmAboutConf;
 
-	private FlatJobKitEngine jobKitEngine;
-	private PathIndexer pi;
-	private Duration duration;
+    private FlatJobKitEngine jobKitEngine;
+    private PathIndexer pi;
+    private Duration duration;
 
-	@BeforeEach
-	void init() {
-		jobKitEngine = new FlatJobKitEngine();
-		duration = Duration.ofHours(1);
-	}
+    @BeforeEach
+    void init() {
+        jobKitEngine = new FlatJobKitEngine();
+        duration = Duration.ofHours(1);
 
-	@Nested
-	class WithWatchfolder {
-		PathIndexingStorage piStorage;
-		RealmConf piRealm;
+        when(configuration.env()).thenReturn(env);
+        when(env.spoolEvents()).thenReturn(spoolEvents);
+    }
 
-		@BeforeEach
-		void init() {
-			piStorage = new PathIndexingStorage(
-					description, location,
-					new File(".").getAbsolutePath(),
-					10,
-					duration,
-					0,
-					null, null, null, null, null, null, null, null, false, false,
-					Duration.ZERO, false, "pathindexing", false);
-			piRealm = new RealmConf(Map.of(new TechnicalName(storage), piStorage),
-					duration, spoolEvents, null, null, null, activityHandlers);
+    @Nested
+    class WithWatchfolder {
+        PathIndexingStorage piStorage;
+        RealmConf piRealm;
 
-			when(configuration.infra()).thenReturn(infra);
-			when(infra.spoolEvents()).thenReturn(spoolEvents);
-			when(infra.realms()).thenReturn(Map.of(new TechnicalName(realm), piRealm));
+        @BeforeEach
+        void init() {
+            piStorage = new PathIndexingStorage(
+                    description, location,
+                    new File(".").getAbsolutePath(),
+                    10,
+                    duration,
+                    0,
+                    null, null, null, null, null, null, null, null, false, false,
+                    Duration.ZERO, false, "pathindexing", false);
+            piRealm = new RealmConf(Map.of(new TechnicalName(storage), piStorage),
+                    duration, spoolEvents, null, null, null, activityHandlers, realmAboutConf);
 
-			pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
-			pi.startScans();
-		}
+            when(configuration.realms()).thenReturn(Map.of(new TechnicalName(realm), piRealm));
+            pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
+            pi.init();
+            pi.startScans();
+        }
 
-		@AfterEach
-		void ends() {
-			verify(configuration, atLeastOnce()).infra();
-			verify(infra, atLeastOnce()).spoolEvents();
-			verify(infra, atLeastOnce()).realms();
-			verify(infra, atLeastOnce()).timeBetweenScans();
-			assertFalse(jobKitEngine.isEmptyActiveServicesList());
+        @AfterEach
+        void ends() {
+            verify(configuration, atLeastOnce()).realms();
+            verify(configuration, atLeastOnce()).env();
+            verify(env, atLeastOnce()).spoolEvents();
+            verify(env, atLeastOnce()).timeBetweenScans();
+            assertFalse(jobKitEngine.isEmptyActiveServicesList());
 
-			assertThat(jobKitEngine.getEndEventsList()).size().isGreaterThan(0);
-		}
+            assertThat(jobKitEngine.getEndEventsList()).size().isGreaterThan(0);
+        }
 
-		@Test
-		void testGetWatchfolders() {
-			final var result = pi.getWatchfolders();
-			assertThat(result).size().isEqualTo(1);
+        @Test
+        void testGetWatchfolders() {
+            final var result = pi.getWatchfolders();
+            assertThat(result).size().isEqualTo(1);
 
-			final var realmStorageFolderActivity = result.keySet().iterator().next();
-			assertNotNull(realmStorageFolderActivity.pathIndexerService());
-			assertEquals(realm, realmStorageFolderActivity.realmName());
-			assertEquals(piRealm, realmStorageFolderActivity.realm());
-			assertEquals(storage, realmStorageFolderActivity.storageName());
-			assertEquals(piStorage, realmStorageFolderActivity.storage());
-		}
+            final var realmStorageFolderActivity = result.keySet().iterator().next();
+            assertNotNull(realmStorageFolderActivity.pathIndexerService());
+            assertEquals(realm, realmStorageFolderActivity.realmName());
+            assertEquals(piRealm, realmStorageFolderActivity.realm());
+            assertEquals(storage, realmStorageFolderActivity.storageName());
+            assertEquals(piStorage, realmStorageFolderActivity.storage());
+        }
 
-		@Test
-		void testScanNow() {
-			pi.scanNow(realm, storage);
+        @Test
+        void testScanNow() {
+            pi.scanNow(realm, storage);
 
-			verify(configuration, atLeastOnce()).infra();
-			verify(infra, atLeastOnce()).spoolEvents();
-			verify(pathIndexerService, times(1)).updateFoundedFiles(
-					any(), eq(realm), eq(storage), any(), any());
-		}
+            verify(configuration, atLeastOnce()).realms();
+            verify(env, atLeastOnce()).spoolEvents();
+            verify(pathIndexerService, times(1)).updateFoundedFiles(
+                    any(), eq(realm), eq(storage), any(), any());
+        }
 
-		@Test
-		void testScanNow_badRealm_badStorage() {
-			pi.scanNow(realm, storage);
+        @Test
+        void testScanNow_badRealm_badStorage() {
+            pi.scanNow(realm, storage);
 
-			verify(pathIndexerService, times(1)).updateFoundedFiles(
-					any(), eq(realm), eq(storage), any(), any());
-		}
+            verify(pathIndexerService, times(1)).updateFoundedFiles(
+                    any(), eq(realm), eq(storage), any(), any());
+        }
 
-	}
+    }
 
-	@Nested
-	class WithoutWatchfolder {
+    @Nested
+    class WithoutWatchfolder {
 
-		@BeforeEach
-		void init() {
-			pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
-			pi.startScans();
-		}
+        @BeforeEach
+        void init() {
+            pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
+            pi.init();
+            pi.startScans();
+        }
 
-		@Test
-		void testScanNow() {
-			pi.scanNow(realm, storage);
-			verify(configuration, times(1)).infra();
-		}
+        @Test
+        void testScanNow() {
+            pi.scanNow(realm, storage);
+            verify(configuration, times(1)).realms();
+            verify(configuration, atLeastOnce()).env();
+            verify(env, times(1)).spoolEvents();
+            verify(env, times(1)).timeBetweenScans();
+        }
 
-		@AfterEach
-		void ends() {
-			assertTrue(jobKitEngine.isEmptyActiveServicesList());
-			assertThat(jobKitEngine.getEndEventsList()).isEmpty();
-		}
-	}
+        @AfterEach
+        void ends() {
+            assertTrue(jobKitEngine.isEmptyActiveServicesList());
+            assertThat(jobKitEngine.getEndEventsList()).isEmpty();
+        }
+    }
 
 }

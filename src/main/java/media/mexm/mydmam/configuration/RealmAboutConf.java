@@ -11,32 +11,17 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
- * Copyright (C) Media ex Machina 2025
+ * Copyright (C) Media ex Machina 2026
  *
  */
 package media.mexm.mydmam.configuration;
 
-import java.time.Duration;
-import java.util.Map;
-
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import lombok.extern.slf4j.Slf4j;
-
 @Validated
-@Slf4j
-public record InfraConf(@Valid Map<TechnicalName, RealmConf> realms,
-						@DefaultValue("1h") @NotNull Duration timeBetweenScans,
-						@DefaultValue("pathindexing") @NotEmpty String spoolEvents) {
-
-	public InfraConf {
-		if (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative()) {
-			throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
-		}
-	}
-
+public record RealmAboutConf(@DefaultValue("") String longName,
+                             @DefaultValue("") String contact,
+                             @DefaultValue("") String logo,
+                             @DefaultValue("FFFFFF") String color) {
 }

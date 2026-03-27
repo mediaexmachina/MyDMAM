@@ -17,7 +17,11 @@
 package media.mexm.mydmam.dto;
 
 import java.util.List;
+import java.util.Map;
 
-public record RealmListResponse(List<String> realms) {
+import media.mexm.mydmam.configuration.RealmAboutConf;
+
+public record RealmListResponse(List<String> realms,
+                                Map<String, RealmAboutConf> about) {
 
 }

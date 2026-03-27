@@ -16,9 +16,11 @@
  */
 package media.mexm.mydmam.component;
 
+import static java.util.Collections.unmodifiableMap;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,119 +40,122 @@ import tv.hd3g.jobkit.watchfolder.Watchfolders;
 @Component
 public class PathIndexer {
 
-	private final JobKitEngine jobKitEngine;
-	private final PathIndexerService pathIndexerService;
-	private final MyDMAMConfigurationProperties configuration;
-	private final Map<RealmStorageFolderActivity, Watchfolders> watchfolders;
+    private final JobKitEngine jobKitEngine;
+    private final PathIndexerService pathIndexerService;
+    private final MyDMAMConfigurationProperties configuration;
+    private final Map<RealmStorageFolderActivity, Watchfolders> watchfolders;
 
-	public PathIndexer(@Autowired final JobKitEngine jobKitEngine,
-					   @Autowired final PathIndexerService pathIndexerService,
-					   @Autowired final MyDMAMConfigurationProperties configuration) {
-		this.jobKitEngine = jobKitEngine;
-		this.configuration = configuration;
-		this.pathIndexerService = pathIndexerService;
-		watchfolders = makeWatchfolders();
-	}
+    public PathIndexer(@Autowired final JobKitEngine jobKitEngine,
+                       @Autowired final PathIndexerService pathIndexerService,
+                       @Autowired final MyDMAMConfigurationProperties configuration) {
+        this.jobKitEngine = jobKitEngine;
+        this.configuration = configuration;
+        this.pathIndexerService = pathIndexerService;
+        watchfolders = new HashMap<>();
+    }
 
-	public void startScans() {
-		watchfolders.values().forEach(Watchfolders::startScans);
-	}
+    public void init() {
+        watchfolders.putAll(makeWatchfolders());
+    }
 
-	Map<RealmStorageFolderActivity, Watchfolders> getWatchfolders() {
-		return watchfolders;
-	}
+    public void startScans() {
+        watchfolders.values().forEach(Watchfolders::startScans);
+    }
 
-	public void scanNow(final String realm, final String storage) {
-		watchfolders.entrySet()
-				.stream()
-				.filter(w -> {
-					final var folderActivity = w.getKey();
-					return folderActivity.realmName().equals(realm)
-						   && folderActivity.storageName().equals(storage);
-				})
-				.findFirst()
-				.ifPresent(entry -> {
-					final var spoolEvents = configuration.infra().spoolEvents();
+    Map<RealmStorageFolderActivity, Watchfolders> getWatchfolders() {
+        return unmodifiableMap(watchfolders);
+    }
 
-					jobKitEngine.runOneShot(
-							"Manual scan for " + realm + ":" + storage,
-							spoolEvents,
-							0,
-							() -> {
-								final var startTime = System.currentTimeMillis();
-								final var result = entry.getValue().manualScan();
-								final var duration = Duration.ofMillis(System.currentTimeMillis() - startTime);
-								if (result.isEmpty()) {
-									return;
-								}
-								final var resultEntry = result.entrySet().stream().findFirst().get();
-								entry.getKey().onAfterScan(resultEntry.getKey(), duration, resultEntry.getValue());
-							},
-							e -> Optional.ofNullable(e)
-									.ifPresent(ee -> log.error("Can't manually scan Watchfoler on {}:{}",
-											realm, storage, ee)));
-				});
-	}
+    public void scanNow(final String realm, final String storage) {
+        watchfolders.entrySet()
+                .stream()
+                .filter(w -> {
+                    final var folderActivity = w.getKey();
+                    return folderActivity.realmName().equals(realm)
+                           && folderActivity.storageName().equals(storage);
+                })
+                .findFirst()
+                .ifPresent(entry -> {
+                    final var spoolEvents = configuration.env().spoolEvents();
 
-	private Map<RealmStorageFolderActivity, Watchfolders> makeWatchfolders() {
-		record KV(RealmStorageFolderActivity key, Watchfolders value) {
-		}
+                    jobKitEngine.runOneShot(
+                            "Manual scan for " + realm + ":" + storage,
+                            spoolEvents,
+                            0,
+                            () -> {
+                                final var startTime = System.currentTimeMillis();
+                                final var result = entry.getValue().manualScan();
+                                final var duration = Duration.ofMillis(System.currentTimeMillis() - startTime);
+                                if (result.isEmpty()) {
+                                    return;
+                                }
+                                final var resultEntry = result.entrySet().stream().findFirst().get();
+                                entry.getKey().onAfterScan(resultEntry.getKey(), duration, resultEntry.getValue());
+                            },
+                            e -> Optional.ofNullable(e)
+                                    .ifPresent(ee -> log.error("Can't manually scan Watchfoler on {}:{}",
+                                            realm, storage, ee)));
+                });
+    }
 
-		final var infra = configuration.infra();
-		if (infra == null) {
-			return Map.of();
-		}
-		final var spoolEvents = infra.spoolEvents();
+    private Map<RealmStorageFolderActivity, Watchfolders> makeWatchfolders() {
+        record KV(RealmStorageFolderActivity key, Watchfolders value) {
+        }
 
-		return Optional.ofNullable(infra.realms())
-				.orElse(Map.of())
-				.entrySet()
-				.stream()
-				.flatMap(entry -> {
-					final var realmName = entry.getKey().name();
-					final var realmConf = entry.getValue();
+        final var realms = configuration.realms();
+        if (realms == null) {
+            return Map.of();
+        }
+        final var spoolEvents = configuration.env().spoolEvents();
+        final var defaultTimeBetweenScans = configuration.env().timeBetweenScans();
 
-					return realmConf.storages().entrySet().stream()
-							.filter(storageConf -> {
-								final var storage = storageConf.getValue();
-								return storage.noScans() == false;
-							})
-							.map(storageConf -> {
-								final var storageName = storageConf.getKey().name();
-								final var storage = storageConf.getValue();
+        return realms.entrySet()
+                .stream()
+                .flatMap(entry -> {
+                    final var realmName = entry.getKey().name();
+                    final var realmConf = entry.getValue();
 
-								final var spoolScans = storage.spoolScans();
+                    return realmConf.storages().entrySet().stream()
+                            .filter(storageConf -> {
+                                final var storage = storageConf.getValue();
+                                return storage.noScans() == false;
+                            })
+                            .map(storageConf -> {
+                                final var storageName = storageConf.getKey().name();
+                                final var storage = storageConf.getValue();
 
-								final var timeBetweenScans = Optional.ofNullable(storage.timeBetweenScans())
-										.or(() -> Optional.ofNullable(realmConf.timeBetweenScans()))
-										.orElse(infra.timeBetweenScans());
+                                final var spoolScans = storage.spoolScans();
 
-								log.debug(
-										"Prepare Watchfolder for {}:{} with timeBetweenScans={}, spoolScans={} spoolEvents={}",
-										realmName, storageName, timeBetweenScans, spoolScans, spoolEvents);
+                                final var timeBetweenScans = Optional.ofNullable(storage.timeBetweenScans())
+                                        .or(() -> Optional.ofNullable(realmConf.timeBetweenScans()))
+                                        .orElse(defaultTimeBetweenScans);
 
-								final var folderActivity = new RealmStorageFolderActivity(
-										pathIndexerService,
-										realmName,
-										realmConf,
-										storageName,
-										storage);
+                                log.debug(
+                                        "Prepare Watchfolder for {}:{} with timeBetweenScans={}, spoolScans={} spoolEvents={}",
+                                        realmName, storageName, timeBetweenScans, spoolScans, spoolEvents);
 
-								return new KV(folderActivity, new Watchfolders(
-										List.of(storage.makeObservedFolder(realmName, storageName)),
-										folderActivity,
-										timeBetweenScans,
-										jobKitEngine,
-										spoolScans,
-										spoolEvents,
-										() -> new RealmStorageWatchedFilesDb(
-												pathIndexerService,
-												realmName,
-												storageName,
-												storage)));
-							});
-				})
-				.collect(toUnmodifiableMap(KV::key, KV::value));
-	}
+                                final var folderActivity = new RealmStorageFolderActivity(
+                                        pathIndexerService,
+                                        realmName,
+                                        realmConf,
+                                        storageName,
+                                        storage);
+
+                                return new KV(folderActivity, new Watchfolders(
+                                        List.of(storage.makeObservedFolder(realmName, storageName)),
+                                        folderActivity,
+                                        timeBetweenScans,
+                                        jobKitEngine,
+                                        spoolScans,
+                                        spoolEvents,
+                                        () -> new RealmStorageWatchedFilesDb(
+                                                pathIndexerService,
+                                                realmName,
+                                                storageName,
+                                                storage)));
+                            });
+                })
+                .collect(toUnmodifiableMap(KV::key, KV::value));
+    }
 
 }

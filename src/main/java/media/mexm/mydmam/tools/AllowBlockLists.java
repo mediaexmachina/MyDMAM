@@ -22,41 +22,44 @@ import static org.apache.commons.io.IOCase.INSENSITIVE;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.validation.annotation.Validated;
+
+@Validated
 public record AllowBlockLists(
-							  /** Empty/null list allows all, except in block list. You can use "*" and "?" wildcards. */
-							  List<String> allows,
-							  /** Empty/null list blocks nothing, only in allow list. You can use "*" and "?" wildcards. */
-							  List<String> blocks,
-							  /** By default (false), allow checks before block checks */
-							  boolean blockBeforeAllow) {
+                              /** Empty/null list allows all, except in block list. You can use "*" and "?" wildcards. */
+                              List<String> allows,
+                              /** Empty/null list blocks nothing, only in allow list. You can use "*" and "?" wildcards. */
+                              List<String> blocks,
+                              /** By default (false), allow checks before block checks */
+                              boolean blockBeforeAllow) {
 
-	public boolean pass(final String candidate) {
-		final var allowsList = Optional.ofNullable(allows).orElse(List.of());
+    public boolean pass(final String candidate) {
+        final var allowsList = Optional.ofNullable(allows).orElse(List.of());
 
-		final boolean allow;
-		if (allowsList.isEmpty()) {
-			allow = true;
-		} else {
-			allow = allowsList.stream()
-					.anyMatch(entry -> wildcardMatch(candidate, entry, INSENSITIVE));
-		}
+        final boolean allow;
+        if (allowsList.isEmpty()) {
+            allow = true;
+        } else {
+            allow = allowsList.stream()
+                    .anyMatch(entry -> wildcardMatch(candidate, entry, INSENSITIVE));
+        }
 
-		final var block = Optional.ofNullable(blocks)
-				.orElse(List.of())
-				.stream()
-				.anyMatch(entry -> wildcardMatch(candidate, entry, INSENSITIVE));
+        final var block = Optional.ofNullable(blocks)
+                .orElse(List.of())
+                .stream()
+                .anyMatch(entry -> wildcardMatch(candidate, entry, INSENSITIVE));
 
-		if (blockBeforeAllow) {
-			if (block) {
-				return false;
-			}
-			return allow;
-		} else {
-			if (allowsList.isEmpty() == false) {
-				return allow;
-			}
-			return block == false;
-		}
-	}
+        if (blockBeforeAllow) {
+            if (block) {
+                return false;
+            }
+            return allow;
+        } else {
+            if (allowsList.isEmpty() == false) {
+                return allow;
+            }
+            return block == false;
+        }
+    }
 
 }

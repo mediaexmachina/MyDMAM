@@ -61,62 +61,64 @@ import media.mexm.mydmam.repository.FileRepository;
 @RestController
 @Validated
 @RequestMapping(value = CONTROLLER_BASE_MAPPING_API_PATH + "/search",
-				produces = APPLICATION_JSON_VALUE)
+                produces = APPLICATION_JSON_VALUE)
 @Slf4j
 public class SearchController {
 
-	@Autowired
-	Indexer indexer;
-	@Autowired
-	FileRepository fileRepository;
-	@Autowired
-	MyDMAMConfigurationProperties conf;
+    @Autowired
+    Indexer indexer;
+    @Autowired
+    FileRepository fileRepository;
+    @Autowired
+    MyDMAMConfigurationProperties conf;
 
-	@RequestMapping(value = "/{realm}", method = { GET, POST, PUT })
-	@Transactional
-	public ResponseEntity<OpenSearchResponse> openSearch(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
-														 @RequestParam(required = true) @NotBlank @Size(max = 256) final String q,
-														 @RequestParam(required = false,
-																	   defaultValue = "0") @Min(0) final Integer limit,
-														 @RequestParam(required = false,
-																	   defaultValue = "0") @Min(0) @Max(1) final Integer resolveHashPaths,
-														 @RequestBody(required = false) @Validated @Nullable final SearchConstraintsRequest constraints) {
+    @RequestMapping(value = "/{realm}", method = { GET, POST, PUT })
+    @Transactional
+    public ResponseEntity<OpenSearchResponse> openSearch(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
+                                                         @RequestParam(required = true) @NotBlank @Size(max = 256) final String q,
+                                                         @RequestParam(required = false,
+                                                                       defaultValue = "0") @Min(0) final Integer limit,
+                                                         @RequestParam(required = false,
+                                                                       defaultValue = "0") @Min(0) @Max(1) final Integer resolveHashPaths,
+                                                         @RequestBody(required = false) @Validated @Nullable final SearchConstraintsRequest constraints) {
 
-		final var oRealmIndexer = indexer.getIndexerByRealm(realm);
-		if (oRealmIndexer.isEmpty()) {
-			return new ResponseEntity<>(UNPROCESSABLE_ENTITY);
-		}
+        final var oRealmIndexer = indexer.getIndexerByRealm(realm);
+        if (oRealmIndexer.isEmpty()) {
+            return new ResponseEntity<>(UNPROCESSABLE_ENTITY);
+        }
 
-		final var maxAllowedEntries = min(conf.searchResultMaxSize(), limit == 0 ? conf.searchResultMaxSize() : limit);
-		final var oFileConstraints = Optional.ofNullable(constraints).map(SearchConstraintsRequest::fileConstraints);
+        final var maxAllowedEntries = min(
+                conf.env().searchResultMaxSize(),
+                limit == 0 ? conf.env().searchResultMaxSize() : limit);
+        final var oFileConstraints = Optional.ofNullable(constraints).map(SearchConstraintsRequest::fileConstraints);
 
-		final var searchResult = oRealmIndexer.get().openSearch(q.trim(), oFileConstraints, maxAllowedEntries);
+        final var searchResult = oRealmIndexer.get().openSearch(q.trim(), oFileConstraints, maxAllowedEntries);
 
-		Map<String, FileItemResponse> relatedFiles = Map.of();
-		if (resolveHashPaths == 1 && searchResult.foundedFiles().isEmpty() == false) {
-			final var hashPathsToResolve = searchResult.foundedFiles().stream()
-					.map(FileSearchResult::hashPath)
-					.distinct()
-					.collect(toUnmodifiableSet());
-			relatedFiles = fileRepository.getByHashPath(hashPathsToResolve, realm).stream()
-					.map(f -> createFromEntity(f, realm, f.getStorage()))
-					.collect(toUnmodifiableMap(FileItemResponse::hashPath, identity()));
-		}
+        Map<String, FileItemResponse> relatedFiles = Map.of();
+        if (resolveHashPaths == 1 && searchResult.foundedFiles().isEmpty() == false) {
+            final var hashPathsToResolve = searchResult.foundedFiles().stream()
+                    .map(FileSearchResult::hashPath)
+                    .distinct()
+                    .collect(toUnmodifiableSet());
+            relatedFiles = fileRepository.getByHashPath(hashPathsToResolve, realm).stream()
+                    .map(f -> createFromEntity(f, realm, f.getStorage()))
+                    .collect(toUnmodifiableMap(FileItemResponse::hashPath, identity()));
+        }
 
-		return new ResponseEntity<>(
-				new OpenSearchResponse(
-						searchResult,
-						q.trim(),
-						maxAllowedEntries,
-						relatedFiles,
-						constraints),
-				OK);
-	}
+        return new ResponseEntity<>(
+                new OpenSearchResponse(
+                        searchResult,
+                        q.trim(),
+                        maxAllowedEntries,
+                        relatedFiles,
+                        constraints),
+                OK);
+    }
 
-	@PostMapping("/reset-all-indexes")
-	public ResponseEntity<Void> reset() {
-		indexer.reset("admin-ops");
-		return new ResponseEntity<>(OK);
-	}
+    @PostMapping("/reset-all-indexes")
+    public ResponseEntity<Void> reset() {
+        indexer.reset("admin-ops");
+        return new ResponseEntity<>(OK);
+    }
 
 }

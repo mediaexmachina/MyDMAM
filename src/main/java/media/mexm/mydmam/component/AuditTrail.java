@@ -38,72 +38,71 @@ import tv.hd3g.jobkit.engine.JobKitEngine;
 @Slf4j
 public class AuditTrail {
 
-	private final Map<String, RealmAuditTrail> auditTrailByRealmName = new HashMap<>();
+    private final Map<String, RealmAuditTrail> auditTrailByRealmName = new HashMap<>();
 
-	@Autowired
-	JobKitEngine jobkitEngine;
-	@Autowired
-	MyDMAMConfigurationProperties conf;
-	@Autowired
-	ObjectMapper objectMapper;
-	@Autowired
-	SQLiteConfig sqliteConfig;
+    @Autowired
+    JobKitEngine jobkitEngine;
+    @Autowired
+    MyDMAMConfigurationProperties conf;
+    @Autowired
+    ObjectMapper objectMapper;
+    @Autowired
+    SQLiteConfig sqliteConfig;
 
-	public void init() {
-		final var infra = conf.infra();
-		if (infra == null) {
-			return;
-		}
+    public void init() {
+        if (conf.realms() == null) {
+            return;
+        }
 
-		for (final var entry : Optional.ofNullable(infra.realms())
-				.orElse(Map.of())
-				.entrySet()) {
-			final var realmName = entry.getKey().name();
+        for (final var entry : Optional.ofNullable(conf.realms())
+                .orElse(Map.of())
+                .entrySet()) {
+            final var realmName = entry.getKey().name();
 
-			final var workingDirectory = entry.getValue().workingDirectory();
-			if (workingDirectory == null) {
-				continue;
-			}
+            final var workingDirectory = entry.getValue().workingDirectory();
+            if (workingDirectory == null) {
+                continue;
+            }
 
-			log.info("Prepare audit trail for realm={}, on {}",
-					realmName, workingDirectory.getAbsolutePath());
+            log.info("Prepare audit trail for realm={}, on {}",
+                    realmName, workingDirectory.getAbsolutePath());
 
-			final var sqlite = new AuditTrailSQLite(realmName, workingDirectory, sqliteConfig);
-			final var realmAuditTrail = new RealmAuditTrail(
-					jobkitEngine,
-					objectMapper,
-					conf.auditTrailSpoolName(),
-					realmName,
-					sqlite);
+            final var sqlite = new AuditTrailSQLite(realmName, workingDirectory, sqliteConfig);
+            final var realmAuditTrail = new RealmAuditTrail(
+                    jobkitEngine,
+                    objectMapper,
+                    conf.env().auditTrailSpoolName(),
+                    realmName,
+                    sqlite);
 
-			auditTrailByRealmName.put(realmName, realmAuditTrail);
-		}
-	}
+            auditTrailByRealmName.put(realmName, realmAuditTrail);
+        }
+    }
 
-	public Optional<RealmAuditTrail> getAuditTrailByRealm(final String realm) {
-		if (auditTrailByRealmName.containsKey(realm) == false) {
-			return Optional.empty();
-		}
-		return Optional.ofNullable(auditTrailByRealmName.get(realm));
-	}
+    public Optional<RealmAuditTrail> getAuditTrailByRealm(final String realm) {
+        if (auditTrailByRealmName.containsKey(realm) == false) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(auditTrailByRealmName.get(realm));
+    }
 
-	/**
-	 * Do nothing if no AuditTrail for this realm
-	 */
-	public void asyncPersistForRealm(final String realm,
-									 final String issuer,
-									 final String event,
-									 final AuditTrailObjectType objectType,
-									 final String objectReference,
-									 final Object objectPayload) {
-		getAuditTrailByRealm(realm)
-				.ifPresent(rat -> rat.asyncPersist(
-						issuer,
-						event,
-						new AuditTrailBatchInsertObject(
-								objectType,
-								objectReference,
-								objectPayload)));
-	}
+    /**
+     * Do nothing if no AuditTrail for this realm
+     */
+    public void asyncPersistForRealm(final String realm,
+                                     final String issuer,
+                                     final String event,
+                                     final AuditTrailObjectType objectType,
+                                     final String objectReference,
+                                     final Object objectPayload) {
+        getAuditTrailByRealm(realm)
+                .ifPresent(rat -> rat.asyncPersist(
+                        issuer,
+                        event,
+                        new AuditTrailBatchInsertObject(
+                                objectType,
+                                objectReference,
+                                objectPayload)));
+    }
 
 }

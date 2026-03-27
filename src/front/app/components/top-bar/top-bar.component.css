@@ -55,6 +55,10 @@ ul.topmenu li {
     margin-right: 0.3em;
 }
 
+ul.topmenu li:last-child {
+    margin-right: 0em;
+}
+
 ul.topmenu a {
     padding-top: 0.4em;
     padding-bottom: 0.4em;
@@ -83,4 +87,13 @@ a:hover {
     color: rgb(2, 65, 211);
     text-decoration: none;
     border-bottom: none;
+}
+
+ul.topmenu a.realmSelector {
+    border-radius: 0.4em;
+    border: 3px solid rgba(0, 0, 0, 0);
+    padding-top: 0.2em;
+    padding-bottom: 0.2em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
 }
