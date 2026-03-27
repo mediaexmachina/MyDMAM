@@ -168,12 +168,14 @@ class MyDMAMConfigurationPropertiesTest {
     @ParameterizedTest
     @ValueSource(booleans = { false, true })
     void testIsActivatedActivityHandler_noGlobal(final boolean pass) {
+        when(activityHandlers.pass(handlerName)).thenReturn(true);
+
         c = new MyDMAMConfigurationProperties(
                 realms,
                 envConf,
                 instancename,
                 magick,
-                null,
+                activityHandlers,
                 null);
 
         when(realm.activityHandlers()).thenReturn(realmActivityHandlers);
@@ -183,21 +185,25 @@ class MyDMAMConfigurationPropertiesTest {
 
         verify(realm, atLeastOnce()).activityHandlers();
         verify(realmActivityHandlers, times(1)).pass(handlerName);
+        verify(activityHandlers, atLeastOnce()).pass(handlerName);
     }
 
     @Test
     void testIsActivatedActivityHandler_nothingSet() {
+        when(activityHandlers.pass(handlerName)).thenReturn(true);
+
         c = new MyDMAMConfigurationProperties(
                 realms,
                 envConf,
                 instancename,
                 magick,
-                null,
+                activityHandlers,
                 null);
 
         assertTrue(c.isActivatedActivityHandler(realmName, handlerName));
 
         verify(realm, atLeastOnce()).activityHandlers();
+        verify(activityHandlers, atLeastOnce()).pass(handlerName);
     }
 
 }

@@ -37,6 +37,7 @@ import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.dto.StorageCategory;
 import media.mexm.mydmam.dto.StorageStateClass;
@@ -51,7 +52,7 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
                         File workingDirectory,
                         File renderedMetadataDirectory,
                         DelayedSyncConfiguration delayedSync,
-                        AllowBlockLists activityHandlers) {
+                        @DefaultValue @Valid @NotNull AllowBlockLists activityHandlers) {
 
     public RealmConf {
         storages = Optional.ofNullable(storages).orElse(Map.of());
