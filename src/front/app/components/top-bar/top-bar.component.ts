@@ -15,9 +15,11 @@
  *
  */
 
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SearchBarComponent } from "../search-bar/search-bar.component";
+import { InstanceService } from '../../services/instance.service';
+import { RealmAboutConf } from '../../dto/realm-about-conf.interface';
 
 @Component({
   selector: 'app-top-bar',
@@ -27,8 +29,11 @@ import { SearchBarComponent } from "../search-bar/search-bar.component";
 })
 export class TopBarComponent {
 
-    title = input.required<String>();
+    private readonly instanceService = inject(InstanceService);
+    readonly siteConf = this.instanceService.siteConf;
+
     realm = input.required<String>();
+    aboutRealm = input.required<RealmAboutConf>();
 
     getTopMenuSelectedClassName(expected:string):string {
         return window.location.pathname.startsWith(expected) ? 'currentpage' : '';

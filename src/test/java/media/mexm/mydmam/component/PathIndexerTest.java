@@ -42,6 +42,7 @@ import org.mockito.Mock;
 import media.mexm.mydmam.configuration.EnvConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.configuration.RealmAboutConf;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.TechnicalName;
 import media.mexm.mydmam.service.PathIndexerService;
@@ -72,6 +73,8 @@ class PathIndexerTest {
     EnvConf env;
     @Mock
     AllowBlockLists activityHandlers;
+    @Mock
+    RealmAboutConf realmAboutConf;
 
     private FlatJobKitEngine jobKitEngine;
     private PathIndexer pi;
@@ -102,7 +105,7 @@ class PathIndexerTest {
                     null, null, null, null, null, null, null, null, false, false,
                     Duration.ZERO, false, "pathindexing", false);
             piRealm = new RealmConf(Map.of(new TechnicalName(storage), piStorage),
-                    duration, spoolEvents, null, null, null, activityHandlers);
+                    duration, spoolEvents, null, null, null, activityHandlers, realmAboutConf);
 
             when(configuration.realms()).thenReturn(Map.of(new TechnicalName(realm), piRealm));
             pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);

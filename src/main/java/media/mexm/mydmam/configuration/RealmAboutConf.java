@@ -11,17 +11,17 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
- * Copyright (C) Media ex Machina 2025
+ * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.dto;
+package media.mexm.mydmam.configuration;
 
-import java.util.List;
-import java.util.Map;
+import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.validation.annotation.Validated;
 
-import media.mexm.mydmam.configuration.RealmAboutConf;
-
-public record RealmListResponse(List<String> realms,
-                                Map<String, RealmAboutConf> about) {
-
+@Validated
+public record RealmAboutConf(@DefaultValue("") String longName,
+                             @DefaultValue("") String contact,
+                             @DefaultValue("") String logo,
+                             @DefaultValue("FFFFFF") String color) {
 }

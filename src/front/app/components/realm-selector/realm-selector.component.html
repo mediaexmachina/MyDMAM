@@ -17,12 +17,19 @@
 
 <h1>Realm selection</h1>
 
-@if (realmListResponse != null) {
+@let currentRealmListResponse = realmListResponse();
+@if (currentRealmListResponse != null) {
     <p>Select a Realm to works with:</p>
 
     <ul>
-        @for (realmItem of realmListResponse.realms; track realmItem) {
-            <li><button type="button" (click)="selectRealm(realmItem)">{{ realmItem }}</button></li>
+        @for (realmItem of currentRealmListResponse.realms; track realmItem) {
+            @let about = currentRealmListResponse.about[realmItem];
+            @let longName = about?.longName || realmItem;
+            @let color = "#" + about?.color || "#ABC";
+            <li>
+                <button type="button" (click)="selectRealm(realmItem, about)">{{ longName }}</button>
+                <span class="color-sample" [style.background-color]='color'></span>
+            </li>
         }
     </ul>
 }

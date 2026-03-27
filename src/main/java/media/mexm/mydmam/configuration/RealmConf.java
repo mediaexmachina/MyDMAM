@@ -52,7 +52,8 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
                         File workingDirectory,
                         File renderedMetadataDirectory,
                         DelayedSyncConfiguration delayedSync,
-                        @DefaultValue @Valid @NotNull AllowBlockLists activityHandlers) {
+                        @DefaultValue @Valid @NotNull AllowBlockLists activityHandlers,
+                        @DefaultValue @Valid @NotNull RealmAboutConf about) {
 
     public RealmConf {
         storages = Optional.ofNullable(storages).orElse(Map.of());

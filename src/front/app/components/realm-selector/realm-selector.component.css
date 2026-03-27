@@ -14,3 +14,13 @@
  * Copyright (C) Media ex Machina 2025
  * 
  */
+
+span.color-sample {
+    border: 1.5px solid rgba(0, 0, 0, 0.5);
+    margin-left: 0.5em;
+    margin-bottom: 0.2em;
+    vertical-align: middle;
+    display: inline-block;
+    width: 1.3em;
+    height: 1.2em;
+}
