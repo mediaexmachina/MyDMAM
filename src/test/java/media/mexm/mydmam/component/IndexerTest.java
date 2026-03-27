@@ -274,6 +274,7 @@ class IndexerTest {
             verify(conf, times(1)).infra();
             verify(conf, atLeastOnce()).env();
             verify(envConf, times(1)).explainSearchResults();
+            verify(envConf, times(1)).resetBatchSizeIndexer();
             verify(infra, times(1)).realms();
             verify(realmConf, times(1)).workingDirectory();
             verify(realmConf, times(1)).delayedSync();
