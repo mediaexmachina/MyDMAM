@@ -39,33 +39,34 @@ import tv.hd3g.jobkit.engine.FlatJobKitEngine;
 @ActiveProfiles({ "FlatJobKit" })
 class StartupTest {
 
-	@MockitoBean
-	PendingActivityService pendingActivityService;
-	@MockitoBean
-	PathIndexer pathIndexer;
-	@MockitoBean
-	AuditTrail auditTrail;
+    @MockitoBean
+    PendingActivityService pendingActivityService;
+    @MockitoBean
+    PathIndexer pathIndexer;
+    @MockitoBean
+    AuditTrail auditTrail;
 
-	@Autowired
-	Startup startup;
-	@Autowired
-	FlatJobKitEngine flatJobKitEngine;
+    @Autowired
+    Startup startup;
+    @Autowired
+    FlatJobKitEngine flatJobKitEngine;
 
-	@AfterEach
-	void ends() {
-		verifyNoMoreInteractions(
-				pendingActivityService,
-				pathIndexer,
-				auditTrail);
-		assertThat(flatJobKitEngine.getEndEventsList()).isEmpty();
-		assertThat(flatJobKitEngine.isEmptyActiveServicesList()).isTrue();
-	}
+    @AfterEach
+    void ends() {
+        verifyNoMoreInteractions(
+                pendingActivityService,
+                pathIndexer,
+                auditTrail);
+        assertThat(flatJobKitEngine.getEndEventsList()).isEmpty();
+        assertThat(flatJobKitEngine.isEmptyActiveServicesList()).isTrue();
+    }
 
-	@Test
-	void test() {
-		verify(auditTrail, times(1)).init();
-		verify(pendingActivityService, times(1)).restartPendingActivities();
-		verify(pathIndexer, times(1)).startScans();
-	}
+    @Test
+    void test() {
+        verify(auditTrail, times(1)).init();
+        verify(pendingActivityService, times(1)).restartPendingActivities();
+        verify(pathIndexer, times(1)).init();
+        verify(pathIndexer, times(1)).startScans();
+    }
 
 }
