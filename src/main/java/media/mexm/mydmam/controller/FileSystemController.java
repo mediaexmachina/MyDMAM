@@ -76,194 +76,196 @@ import media.mexm.mydmam.tools.SortOrder;
 @RestController
 @Validated
 @RequestMapping(value = CONTROLLER_BASE_MAPPING_API_PATH + "/filesystem",
-				produces = APPLICATION_JSON_VALUE)
+                produces = APPLICATION_JSON_VALUE)
 @Slf4j
 public class FileSystemController {
 
-	@Autowired
-	MyDMAMConfigurationProperties conf;
-	@Autowired
-	FileRepository fileRepository;
-	@Autowired
-	FileDao fileDao;
-	@Autowired
-	AssetRenderedFileDao assetRenderedFileDao;
-	@Autowired
-	FileMetadataDao fileMetadataDao;
+    @Autowired
+    MyDMAMConfigurationProperties conf;
+    @Autowired
+    FileRepository fileRepository;
+    @Autowired
+    FileDao fileDao;
+    @Autowired
+    AssetRenderedFileDao assetRenderedFileDao;
+    @Autowired
+    FileMetadataDao fileMetadataDao;
 
-	@GetMapping("/list")
-	@Transactional
-	public ResponseEntity<RealmListResponse> getRealms() {
-		final var list = fileRepository.getAllRealms().stream().sorted().toList();
-		return new ResponseEntity<>(new RealmListResponse(list), OK);
-	}
+    @GetMapping("/list")
+    @Transactional
+    public ResponseEntity<RealmListResponse> getRealms() {
+        final var list = fileRepository.getAllRealms().stream().sorted().toList();
+        return new ResponseEntity<>(new RealmListResponse(list), OK);
+    }
 
-	@GetMapping("/list/{realm}")
-	@Transactional
-	public ResponseEntity<StorageListResponse> getStorages(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm) {
-		final var storageDatabaseList = fileRepository.getAllStoragesByRealm(realm).stream().sorted().toList();
+    @GetMapping("/list/{realm}")
+    @Transactional
+    public ResponseEntity<StorageListResponse> getStorages(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm) {
+        final var storageDatabaseList = fileRepository.getAllStoragesByRealm(realm).stream().sorted().toList();
 
-		final var configuredStorageStates = conf.getRealmByName(realm)
-				.stream()
-				.map(RealmConf::storages)
-				.map(Map::entrySet)
-				.flatMap(Set::stream)
-				.collect(toUnmodifiableMap(
-						entry -> entry.getKey().name(),
-						entry -> {
-							final var pathIndexingStorage = entry.getValue();
-							final var description = pathIndexingStorage.description();
-							final var location = pathIndexingStorage.location();
-							final var category = pathIndexingStorage.getCategory();
-							final var stateClass = pathIndexingStorage.getStorageStateClass();
-							return new StorageState(description, location, category, stateClass);
-						}));
+        final var configuredStorageStates = conf.getRealmByName(realm)
+                .stream()
+                .map(RealmConf::storages)
+                .map(Map::entrySet)
+                .flatMap(Set::stream)
+                .collect(toUnmodifiableMap(
+                        entry -> entry.getKey().name(),
+                        entry -> {
+                            final var pathIndexingStorage = entry.getValue();
+                            final var description = pathIndexingStorage.description();
+                            final var location = pathIndexingStorage.location();
+                            final var category = pathIndexingStorage.getCategory();
+                            final var stateClass = pathIndexingStorage.getStorageStateClass();
+                            return new StorageState(description, location, category, stateClass);
+                        }));
 
-		final var notConfiguredStoragesNames = storageDatabaseList.stream()
-				.filter(name -> configuredStorageStates.containsKey(name) == false)
-				.collect(toUnmodifiableMap(
-						name -> name,
-						_ -> new StorageState("", "", EXTERNAL, OFFLINE)));
+        final var notConfiguredStoragesNames = storageDatabaseList.stream()
+                .filter(name -> configuredStorageStates.containsKey(name) == false)
+                .collect(toUnmodifiableMap(
+                        name -> name,
+                        _ -> new StorageState("", "", EXTERNAL, OFFLINE)));
 
-		final var allStorageStates = new HashMap<>(configuredStorageStates);
-		allStorageStates.putAll(notConfiguredStoragesNames);
+        final var allStorageStates = new HashMap<>(configuredStorageStates);
+        allStorageStates.putAll(notConfiguredStoragesNames);
 
-		return new ResponseEntity<>(
-				new StorageListResponse(
-						realm,
-						storageDatabaseList,
-						unmodifiableMap(allStorageStates)),
-				OK);
-	}
+        return new ResponseEntity<>(
+                new StorageListResponse(
+                        realm,
+                        storageDatabaseList,
+                        unmodifiableMap(allStorageStates)),
+                OK);
+    }
 
-	@GetMapping("/list/{realm}/{storage}")
-	@Transactional
-	public ResponseEntity<FileResponse> listRoot(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
-												 @PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String storage,
-												 @RequestParam(required = false,
-															   defaultValue = "0") @Min(0) final Integer skip,
-												 @RequestParam(required = false,
-															   defaultValue = "0") @Min(0) final Integer limit,
-												 @RequestParam(name = "file-metadatas",
-															   required = false,
-															   defaultValue = "0") @Min(0) @Max(1) final Integer fileMetadatas,
-												 @RequestParam(required = false,
-															   defaultValue = "0") @Min(0) @Max(1) final Integer rendered,
-												 @RequestParam(required = false,
-															   defaultValue = "none") final SortOrder sortByName,
-												 @RequestParam(required = false,
-															   defaultValue = "none") final SortOrder sortByType,
-												 @RequestParam(required = false,
-															   defaultValue = "none") final SortOrder sortByDate,
-												 @RequestParam(required = false,
-															   defaultValue = "none") final SortOrder sortBySize) {
-		return list(realm, storage, hashPath(realm, storage, "/"),
-				skip, limit, fileMetadatas, rendered, sortByName, sortByType, sortByDate, sortBySize);
-	}
+    @GetMapping("/list/{realm}/{storage}")
+    @Transactional
+    public ResponseEntity<FileResponse> listRoot(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
+                                                 @PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String storage,
+                                                 @RequestParam(required = false,
+                                                               defaultValue = "0") @Min(0) final Integer skip,
+                                                 @RequestParam(required = false,
+                                                               defaultValue = "0") @Min(0) final Integer limit,
+                                                 @RequestParam(name = "file-metadatas",
+                                                               required = false,
+                                                               defaultValue = "0") @Min(0) @Max(1) final Integer fileMetadatas,
+                                                 @RequestParam(required = false,
+                                                               defaultValue = "0") @Min(0) @Max(1) final Integer rendered,
+                                                 @RequestParam(required = false,
+                                                               defaultValue = "none") final SortOrder sortByName,
+                                                 @RequestParam(required = false,
+                                                               defaultValue = "none") final SortOrder sortByType,
+                                                 @RequestParam(required = false,
+                                                               defaultValue = "none") final SortOrder sortByDate,
+                                                 @RequestParam(required = false,
+                                                               defaultValue = "none") final SortOrder sortBySize) {
+        return list(realm, storage, hashPath(realm, storage, "/"),
+                skip, limit, fileMetadatas, rendered, sortByName, sortByType, sortByDate, sortBySize);
+    }
 
-	@GetMapping("/list/{realm}/{storage}/{hashPath}")
-	@Transactional
-	public ResponseEntity<FileResponse> list(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
-											 @PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String storage,
-											 @PathVariable @NotBlank @Size(max = HASH_STRING_LEN) final String hashPath,
-											 @RequestParam(required = false,
-														   defaultValue = "0") @Min(0) final Integer skip,
-											 @RequestParam(required = false,
-														   defaultValue = "0") @Min(0) final Integer limit,
-											 @RequestParam(name = "file-metadatas",
-														   required = false,
-														   defaultValue = "0") @Min(0) @Max(1) final Integer fileMetadatas,
-											 @RequestParam(required = false,
-														   defaultValue = "0") @Min(0) @Max(1) final Integer rendered,
-											 @RequestParam(required = false,
-														   defaultValue = "none") final SortOrder sortByName,
-											 @RequestParam(required = false,
-														   defaultValue = "none") final SortOrder sortByType,
-											 @RequestParam(required = false,
-														   defaultValue = "none") final SortOrder sortByDate,
-											 @RequestParam(required = false,
-														   defaultValue = "none") final SortOrder sortBySize) {
-		final var maxAllowedEntries = min(conf.dirListMaxSize(), limit == 0 ? conf.dirListMaxSize() : limit);
-		final var sort = new FileSort(sortByName, sortByType, sortByDate, sortBySize);
-		final var resultItemList = fileDao.getByParentHashPath(
-				hashPath.toLowerCase(),
-				skip,
-				maxAllowedEntries,
-				Optional.ofNullable(sort));
-		final var listSize = resultItemList.size();
-		final var totalSize = fileDao.countParentHashPathItems(realm, storage, hashPath.toLowerCase());
-		final var oFileParent = Optional.ofNullable(fileRepository.getByHashPath(hashPath.toLowerCase(), realm));
+    @GetMapping("/list/{realm}/{storage}/{hashPath}")
+    @Transactional
+    public ResponseEntity<FileResponse> list(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
+                                             @PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String storage,
+                                             @PathVariable @NotBlank @Size(max = HASH_STRING_LEN) final String hashPath,
+                                             @RequestParam(required = false,
+                                                           defaultValue = "0") @Min(0) final Integer skip,
+                                             @RequestParam(required = false,
+                                                           defaultValue = "0") @Min(0) final Integer limit,
+                                             @RequestParam(name = "file-metadatas",
+                                                           required = false,
+                                                           defaultValue = "0") @Min(0) @Max(1) final Integer fileMetadatas,
+                                             @RequestParam(required = false,
+                                                           defaultValue = "0") @Min(0) @Max(1) final Integer rendered,
+                                             @RequestParam(required = false,
+                                                           defaultValue = "none") final SortOrder sortByName,
+                                             @RequestParam(required = false,
+                                                           defaultValue = "none") final SortOrder sortByType,
+                                             @RequestParam(required = false,
+                                                           defaultValue = "none") final SortOrder sortByDate,
+                                             @RequestParam(required = false,
+                                                           defaultValue = "none") final SortOrder sortBySize) {
+        final var maxAllowedEntries = min(
+                conf.env().dirListMaxSize(),
+                limit == 0 ? conf.env().dirListMaxSize() : limit);
+        final var sort = new FileSort(sortByName, sortByType, sortByDate, sortBySize);
+        final var resultItemList = fileDao.getByParentHashPath(
+                hashPath.toLowerCase(),
+                skip,
+                maxAllowedEntries,
+                Optional.ofNullable(sort));
+        final var listSize = resultItemList.size();
+        final var totalSize = fileDao.countParentHashPathItems(realm, storage, hashPath.toLowerCase());
+        final var oFileParent = Optional.ofNullable(fileRepository.getByHashPath(hashPath.toLowerCase(), realm));
 
-		final var listParentPath = resultItemList.stream()
-				.map(FileEntity::getPath)
-				.map(FilenameUtils::getFullPathNoEndSeparator)
-				.findFirst()
-				.or(() -> oFileParent.map(FileEntity::getPath))
-				.orElse(null);
+        final var listParentPath = resultItemList.stream()
+                .map(FileEntity::getPath)
+                .map(FilenameUtils::getFullPathNoEndSeparator)
+                .findFirst()
+                .or(() -> oFileParent.map(FileEntity::getPath))
+                .orElse(null);
 
-		final var parentPath = Optional.ofNullable(listParentPath)
-				.map(FilenameUtils::getFullPathNoEndSeparator)
-				.orElse("/");
-		final var parentHashPath = hashPath(realm, storage, parentPath);
+        final var parentPath = Optional.ofNullable(listParentPath)
+                .map(FilenameUtils::getFullPathNoEndSeparator)
+                .orElse("/");
+        final var parentHashPath = hashPath(realm, storage, parentPath);
 
-		Set<Integer> allEntitiesIds = Set.of();
-		if (fileMetadatas == 1 || rendered == 1) {
-			allEntitiesIds = concat(resultItemList.stream(), oFileParent.stream())
-					.filter(not(FileEntity::isDirectory))
-					.map(FileEntity::getId)
-					.distinct()
-					.collect(toUnmodifiableSet());
-		}
+        Set<Integer> allEntitiesIds = Set.of();
+        if (fileMetadatas == 1 || rendered == 1) {
+            allEntitiesIds = concat(resultItemList.stream(), oFileParent.stream())
+                    .filter(not(FileEntity::isDirectory))
+                    .map(FileEntity::getId)
+                    .distinct()
+                    .collect(toUnmodifiableSet());
+        }
 
-		final Map<String, Set<FileMetadataEntity>> allFileMetadatasByHashpath;
-		if (fileMetadatas == 1) {
-			allFileMetadatasByHashpath = fileMetadataDao.getFileMetadatasByFileIds(allEntitiesIds, realm);
-		} else {
-			allFileMetadatasByHashpath = Map.of();
-		}
+        final Map<String, Set<FileMetadataEntity>> allFileMetadatasByHashpath;
+        if (fileMetadatas == 1) {
+            allFileMetadatasByHashpath = fileMetadataDao.getFileMetadatasByFileIds(allEntitiesIds, realm);
+        } else {
+            allFileMetadatasByHashpath = Map.of();
+        }
 
-		final Map<String, Set<AssetRenderedFileEntity>> allRenderedByHashpath;
-		if (rendered == 1) {
-			allRenderedByHashpath = assetRenderedFileDao.getRenderedFilesByFileId(allEntitiesIds, realm);
-		} else {
-			allRenderedByHashpath = Map.of();
-		}
+        final Map<String, Set<AssetRenderedFileEntity>> allRenderedByHashpath;
+        if (rendered == 1) {
+            allRenderedByHashpath = assetRenderedFileDao.getRenderedFilesByFileId(allEntitiesIds, realm);
+        } else {
+            allRenderedByHashpath = Map.of();
+        }
 
-		final Map<String, AssetResponse> metadatas = concat(
-				allFileMetadatasByHashpath.keySet().stream(),
-				allRenderedByHashpath.keySet().stream())
-						.distinct()
-						.collect(toUnmodifiableMap(
-								identity(),
-								f -> buildFromEntities(
-										allFileMetadatasByHashpath.get(f),
-										allRenderedByHashpath.get(f))));
+        final Map<String, AssetResponse> metadatas = concat(
+                allFileMetadatasByHashpath.keySet().stream(),
+                allRenderedByHashpath.keySet().stream())
+                        .distinct()
+                        .collect(toUnmodifiableMap(
+                                identity(),
+                                f -> buildFromEntities(
+                                        allFileMetadatasByHashpath.get(f),
+                                        allRenderedByHashpath.get(f))));
 
-		try {
-			final var currentItem = oFileParent
-					.map(entity -> createFromEntity(entity, realm, storage))
-					.orElse(null);
+        try {
+            final var currentItem = oFileParent
+                    .map(entity -> createFromEntity(entity, realm, storage))
+                    .orElse(null);
 
-			return new ResponseEntity<>(
-					new FileResponse(
-							realm,
-							storage,
-							currentItem,
-							listParentPath,
-							parentHashPath,
-							listSize,
-							skip,
-							totalSize,
-							sort,
-							resultItemList.stream()
-									.map(fileEntity -> createFromEntity(fileEntity, realm, storage))
-									.toList(),
-							metadatas),
-					OK);
-		} catch (final IllegalArgumentException e) {
-			log.debug("Invalid query for {}: {}", hashPath, e.getMessage());
-			return new ResponseEntity<>(BAD_REQUEST);
-		}
-	}
+            return new ResponseEntity<>(
+                    new FileResponse(
+                            realm,
+                            storage,
+                            currentItem,
+                            listParentPath,
+                            parentHashPath,
+                            listSize,
+                            skip,
+                            totalSize,
+                            sort,
+                            resultItemList.stream()
+                                    .map(fileEntity -> createFromEntity(fileEntity, realm, storage))
+                                    .toList(),
+                            metadatas),
+                    OK);
+        } catch (final IllegalArgumentException e) {
+            log.debug("Invalid query for {}: {}", hashPath, e.getMessage());
+            return new ResponseEntity<>(BAD_REQUEST);
+        }
+    }
 
 }

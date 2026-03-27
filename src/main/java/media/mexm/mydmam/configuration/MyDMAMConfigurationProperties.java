@@ -23,7 +23,6 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 
@@ -32,8 +31,6 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import media.mexm.mydmam.asset.RenderedFileSpecs;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
@@ -42,14 +39,8 @@ import media.mexm.mydmam.tools.AllowBlockLists;
 @ConfigurationProperties(prefix = "mydmam")
 @Validated
 public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
+                                            @DefaultValue @Valid @NotNull EnvConf env,
                                             String instancename,
-                                            @DefaultValue("audittrail") @NotEmpty String auditTrailSpoolName,
-                                            @DefaultValue("async-api") @NotEmpty String asyncAPISpoolName,
-                                            @DefaultValue("false") boolean explainSearchResults,
-                                            @DefaultValue("10000") @Min(0) int resetBatchSizeIndexer,
-                                            @DefaultValue("100") @Min(1) int dirListMaxSize,
-                                            @DefaultValue("100") @Min(1) int searchResultMaxSize,
-                                            @DefaultValue("24h") Duration pendingActivityMaxAgeGraceRestart,
                                             @DefaultValue @Valid @NotNull MagickConf magick,
                                             AllowBlockLists activityHandlers,
                                             @DefaultValue @Valid @NotNull RenderedFileSpecs renderedSpecs) {
@@ -61,10 +52,6 @@ public record MyDMAMConfigurationProperties(@Valid InfraConf infra,
             } catch (final UnknownHostException e) {
                 throw new IllegalStateException("Can't get hostname", e);
             }
-        }
-        if (pendingActivityMaxAgeGraceRestart.isPositive() == false) {
-            throw new IllegalStateException("Invalid pendingActivityMaxAgeGraceRestart: "
-                                            + pendingActivityMaxAgeGraceRestart);
         }
     }
 

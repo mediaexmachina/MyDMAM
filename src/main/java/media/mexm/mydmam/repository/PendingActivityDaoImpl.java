@@ -45,145 +45,146 @@ import media.mexm.mydmam.entity.PendingActivityEntity;
 @Slf4j
 public class PendingActivityDaoImpl implements PendingActivityDao {
 
-	private static final String FILE_ID = "file_id";
+    private static final String FILE_ID = "file_id";
 
-	@Autowired
-	@PersistenceContext
-	EntityManager entityManager;
+    @Autowired
+    @PersistenceContext
+    EntityManager entityManager;
 
-	@Autowired
-	FileRepository fileRepository;
-	@Autowired
-	PendingActivityRepository pendingActivityRepository;
-	@Autowired
-	MyDMAMConfigurationProperties conf;
+    @Autowired
+    FileRepository fileRepository;
+    @Autowired
+    PendingActivityRepository pendingActivityRepository;
+    @Autowired
+    MyDMAMConfigurationProperties conf;
 
-	@Override
-	@Transactional(REQUIRES_NEW)
-	public void declateActivities(final List<PendingActivityJob> allActivitiesJobs,
-								  final String hostName,
-								  final long pid) {
-		final var toAdd = allActivitiesJobs.stream()
-				.map(a -> new PendingActivityEntity(
-						a.activityHandler(),
-						a.eventType(),
-						a.previousHandlersJson(),
-						a.asset().getFile(),
-						hostName,
-						pid))
-				.toList();
+    @Override
+    @Transactional(REQUIRES_NEW)
+    public void declateActivities(final List<PendingActivityJob> allActivitiesJobs,
+                                  final String hostName,
+                                  final long pid) {
+        final var toAdd = allActivitiesJobs.stream()
+                .map(a -> new PendingActivityEntity(
+                        a.activityHandler(),
+                        a.eventType(),
+                        a.previousHandlersJson(),
+                        a.asset().getFile(),
+                        hostName,
+                        pid))
+                .toList();
 
-		pendingActivityRepository.saveAllAndFlush(toAdd);
-	}
+        pendingActivityRepository.saveAllAndFlush(toAdd);
+    }
 
-	@Override
-	@Transactional(REQUIRES_NEW)
-	public void endsActivity(final FileEntity file, final ActivityHandler activityHandler) {
-		final var doneActivities = entityManager.createQuery("""
-				SELECT pa FROM PendingActivityEntity pa
-				WHERE pa.file.id = :file_id
-				AND pa.handlerName = :handlerName
-				""", PendingActivityEntity.class)
-				.setParameter(FILE_ID, file.getId())
-				.setParameter("handlerName", activityHandler.getHandlerName())
-				.getResultList();
+    @Override
+    @Transactional(REQUIRES_NEW)
+    public void endsActivity(final FileEntity file, final ActivityHandler activityHandler) {
+        final var doneActivities = entityManager.createQuery("""
+                SELECT pa FROM PendingActivityEntity pa
+                WHERE pa.file.id = :file_id
+                AND pa.handlerName = :handlerName
+                """, PendingActivityEntity.class)
+                .setParameter(FILE_ID, file.getId())
+                .setParameter("handlerName", activityHandler.getHandlerName())
+                .getResultList();
 
-		if (doneActivities.isEmpty()) {
-			log.warn("Can't found activities \"{}\" for {}", activityHandler.getHandlerName(), file);
-		} else {
-			log.debug("Remove activities {}", doneActivities);
-			pendingActivityRepository.deleteAll(doneActivities);
-		}
+        if (doneActivities.isEmpty()) {
+            log.warn("Can't found activities \"{}\" for {}", activityHandler.getHandlerName(), file);
+        } else {
+            log.debug("Remove activities {}", doneActivities);
+            pendingActivityRepository.deleteAll(doneActivities);
+        }
 
-	}
+    }
 
-	@Override
-	@Transactional(REQUIRES_NEW)
-	public boolean haveDeclaredActivity(final FileEntity file, final ActivityHandler activityHandler) {
-		final var haveActivities = entityManager.createQuery("""
-				SELECT COUNT(pa) FROM PendingActivityEntity pa
-				WHERE pa.file.id = :file_id
-				AND pa.handlerName = :handlerName
-				""", Long.class)
-				.setParameter(FILE_ID, file.getId())
-				.setParameter("handlerName", activityHandler.getHandlerName())
-				.getSingleResult()
-				.intValue();
+    @Override
+    @Transactional(REQUIRES_NEW)
+    public boolean haveDeclaredActivity(final FileEntity file, final ActivityHandler activityHandler) {
+        final var haveActivities = entityManager.createQuery("""
+                SELECT COUNT(pa) FROM PendingActivityEntity pa
+                WHERE pa.file.id = :file_id
+                AND pa.handlerName = :handlerName
+                """, Long.class)
+                .setParameter(FILE_ID, file.getId())
+                .setParameter("handlerName", activityHandler.getHandlerName())
+                .getSingleResult()
+                .intValue();
 
-		return haveActivities > 0;
-	}
+        return haveActivities > 0;
+    }
 
-	@Transactional(REQUIRES_NEW)
-	public boolean havePendingActivities(final FileEntity file) {
-		final var haveActivities = entityManager.createQuery("""
-				SELECT COUNT(pa) FROM PendingActivityEntity pa
-				WHERE pa.file.id = :file_id
-				""", Long.class)
-				.setParameter(FILE_ID, file.getId())
-				.getSingleResult()
-				.intValue();
-		return haveActivities > 0;
-	}
+    @Override
+    @Transactional(REQUIRES_NEW)
+    public boolean havePendingActivities(final FileEntity file) {
+        final var haveActivities = entityManager.createQuery("""
+                SELECT COUNT(pa) FROM PendingActivityEntity pa
+                WHERE pa.file.id = :file_id
+                """, Long.class)
+                .setParameter(FILE_ID, file.getId())
+                .getSingleResult()
+                .intValue();
+        return haveActivities > 0;
+    }
 
-	@Override
-	@Transactional
-	public Map<FileEntity, Set<PendingActivityEntity>> getFilesAndPendingActivityByFileId(final Collection<Integer> ids) {
-		final var items = entityManager.createQuery("""
-				SELECT new map(f as kFileEntity, pa as kPendingActivityEntity)
-				FROM FileEntity f
-				LEFT JOIN PendingActivityEntity pa ON pa.file = f
-				WHERE f.id IN :ids
-				""", Map.class)
-				.setParameter("ids", ids)
-				.getResultList();
+    @Override
+    @Transactional
+    public Map<FileEntity, Set<PendingActivityEntity>> getFilesAndPendingActivityByFileId(final Collection<Integer> ids) {
+        final var items = entityManager.createQuery("""
+                SELECT new map(f as kFileEntity, pa as kPendingActivityEntity)
+                FROM FileEntity f
+                LEFT JOIN PendingActivityEntity pa ON pa.file = f
+                WHERE f.id IN :ids
+                """, Map.class)
+                .setParameter("ids", ids)
+                .getResultList();
 
-		if (items.size() != ids.size()) {
-			log.warn("Invalid items get: ids={}, but get only {}", ids.size(), items.size());
-		}
+        if (items.size() != ids.size()) {
+            log.warn("Invalid items get: ids={}, but get only {}", ids.size(), items.size());
+        }
 
-		return items.stream()
-				.collect(groupingBy(f -> (FileEntity) f.get("kFileEntity"),
-						HashMap::new,
-						mapping(f -> (PendingActivityEntity) f.get("kPendingActivityEntity"),
-								toSet())));
-	}
+        return items.stream()
+                .collect(groupingBy(f -> (FileEntity) f.get("kFileEntity"),
+                        HashMap::new,
+                        mapping(f -> (PendingActivityEntity) f.get("kPendingActivityEntity"),
+                                toSet())));
+    }
 
-	@Override
-	@Transactional(REQUIRES_NEW)
-	public List<Integer> getFilesAndWithResetPendingActivities(final Set<String> realms,
-															   final String hostName,
-															   final long pid) {
-		final var olderThan = new Timestamp(System.currentTimeMillis()
-											- conf.pendingActivityMaxAgeGraceRestart().toMillis());
+    @Override
+    @Transactional(REQUIRES_NEW)
+    public List<Integer> getFilesAndWithResetPendingActivities(final Set<String> realms,
+                                                               final String hostName,
+                                                               final long pid) {
+        final var olderThan = new Timestamp(System.currentTimeMillis()
+                                            - conf.env().pendingActivityMaxAgeGraceRestart().toMillis());
 
-		final var files = entityManager.createQuery("""
-				SELECT DISTINCT(f)
-				FROM FileEntity f
-				LEFT JOIN PendingActivityEntity pa ON pa.file = f
-				WHERE pa IS NOT NULL
-				AND (pa.workerHost = :workerHost OR pa.updated < :olderThan)
-				AND f.realm IN :realms
-				""", FileEntity.class)
-				.setParameter("workerHost", hostName)
-				.setParameter("olderThan", olderThan)
-				.setParameter("realms", realms)
-				.getResultList();
+        final var files = entityManager.createQuery("""
+                SELECT DISTINCT(f)
+                FROM FileEntity f
+                LEFT JOIN PendingActivityEntity pa ON pa.file = f
+                WHERE pa IS NOT NULL
+                AND (pa.workerHost = :workerHost OR pa.updated < :olderThan)
+                AND f.realm IN :realms
+                """, FileEntity.class)
+                .setParameter("workerHost", hostName)
+                .setParameter("olderThan", olderThan)
+                .setParameter("realms", realms)
+                .getResultList();
 
-		entityManager.createQuery("""
-				UPDATE PendingActivityEntity pa
-				SET pa.workerHost = :workerHost,
-				    pa.workerPid = :workerPid,
-				    pa.updated = CURRENT_TIMESTAMP()
-				WHERE pa.file IN :files
-				""")
-				.setParameter("workerHost", hostName)
-				.setParameter("workerPid", pid)
-				.setParameter("files", files)
-				.executeUpdate();
+        entityManager.createQuery("""
+                UPDATE PendingActivityEntity pa
+                SET pa.workerHost = :workerHost,
+                    pa.workerPid = :workerPid,
+                    pa.updated = CURRENT_TIMESTAMP()
+                WHERE pa.file IN :files
+                """)
+                .setParameter("workerHost", hostName)
+                .setParameter("workerPid", pid)
+                .setParameter("files", files)
+                .executeUpdate();
 
-		return files.stream()
-				.map(FileEntity::getId)
-				.toList();
-	}
+        return files.stream()
+                .map(FileEntity::getId)
+                .toList();
+    }
 
 }

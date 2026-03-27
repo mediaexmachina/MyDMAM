@@ -36,73 +36,73 @@ import tv.hd3g.jobkit.engine.JobKitEngine;
 @Slf4j
 public class Indexer implements DisposableBean {
 
-	private final Map<String, RealmIndexer> indexerByRealmName = new HashMap<>();
+    private final Map<String, RealmIndexer> indexerByRealmName = new HashMap<>();
 
-	@Autowired
-	MyDMAMConfigurationProperties conf;
-	@Autowired
-	FileDao fileDao;
-	@Autowired
-	JobKitEngine jobKit;
+    @Autowired
+    MyDMAMConfigurationProperties conf;
+    @Autowired
+    FileDao fileDao;
+    @Autowired
+    JobKitEngine jobKit;
 
-	public void init(final MediaAssetService mediaAssetService) throws IOException {
-		final var infra = conf.infra();
-		if (infra == null) {
-			return;
-		}
+    public void init(final MediaAssetService mediaAssetService) throws IOException {
+        final var infra = conf.infra();
+        if (infra == null) {
+            return;
+        }
 
-		for (final var entry : Optional.ofNullable(infra.realms())
-				.orElse(Map.of())
-				.entrySet()) {
-			final var realmName = entry.getKey().name();
+        for (final var entry : Optional.ofNullable(infra.realms())
+                .orElse(Map.of())
+                .entrySet()) {
+            final var realmName = entry.getKey().name();
 
-			final var workingDirectory = entry.getValue().workingDirectory();
-			if (workingDirectory == null) {
-				continue;
-			}
+            final var workingDirectory = entry.getValue().workingDirectory();
+            if (workingDirectory == null) {
+                continue;
+            }
 
-			log.info("Prepare indexer for realm={}, on {}",
-					realmName, workingDirectory.getAbsolutePath());
-			final var realmIndexer = new RealmIndexer(
-					realmName,
-					workingDirectory,
-					conf.explainSearchResults(),
-					fileEntity -> mediaAssetService.getFromFileEntry(fileEntity, mediaAssetService),
-					entry.getValue().delayedSync());
-			indexerByRealmName.put(realmName, realmIndexer);
-		}
-	}
+            log.info("Prepare indexer for realm={}, on {}",
+                    realmName, workingDirectory.getAbsolutePath());
+            final var realmIndexer = new RealmIndexer(
+                    realmName,
+                    workingDirectory,
+                    conf.env().explainSearchResults(),
+                    fileEntity -> mediaAssetService.getFromFileEntry(fileEntity, mediaAssetService),
+                    entry.getValue().delayedSync());
+            indexerByRealmName.put(realmName, realmIndexer);
+        }
+    }
 
-	public Optional<RealmIndexer> getIndexerByRealm(final String realm) {
-		if (indexerByRealmName.containsKey(realm) == false) {
-			return Optional.empty();
-		}
-		return Optional.ofNullable(indexerByRealmName.get(realm));
-	}
+    public Optional<RealmIndexer> getIndexerByRealm(final String realm) {
+        if (indexerByRealmName.containsKey(realm) == false) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(indexerByRealmName.get(realm));
+    }
 
-	@Override
-	public void destroy() {
-		indexerByRealmName.values().forEach(RealmIndexer::close);
-		indexerByRealmName.clear();
-	}
+    @Override
+    public void destroy() {
+        indexerByRealmName.values().forEach(RealmIndexer::close);
+        indexerByRealmName.clear();
+    }
 
-	public void reset(final String spoolName) {
-		jobKit.runOneShot("Reset all indexes", spoolName, 0, () -> {
-			indexerByRealmName.forEach((realm, indexer) -> {
-				log.info("Start to reset indexes on realm {}", realm);
+    public void reset(final String spoolName) {
+        jobKit.runOneShot("Reset all indexes", spoolName, 0, () -> {
+            indexerByRealmName.forEach((realm, indexer) -> {
+                log.info("Start to reset indexes on realm {}", realm);
 
-				try (var session = indexer.reset(conf.resetBatchSizeIndexer())) {
-					fileDao.getAllFromRealm(realm, session);
-				} catch (final Exception e) {
-					log.error("Can't run reset", e);
-				}
-			});
-			log.info("All indexes are now reseted");
-		}, e -> {
-			if (e != null) {
-				log.error("Can't reset indexes", e);
-			}
-		});
+                try (var session = indexer.reset(conf.env().resetBatchSizeIndexer())) {
+                    fileDao.getAllFromRealm(realm, session);
+                } catch (final Exception e) {
+                    log.error("Can't run reset", e);
+                }
+            });
+            log.info("All indexes are now reseted");
+        }, e -> {
+            if (e != null) {
+                log.error("Can't reset indexes", e);
+            }
+        });
 
-	}
+    }
 }

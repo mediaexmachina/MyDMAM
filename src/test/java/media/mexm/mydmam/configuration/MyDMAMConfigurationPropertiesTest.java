@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.configuration;
 
-import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -28,7 +27,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
@@ -52,6 +50,8 @@ class MyDMAMConfigurationPropertiesTest {
     @Mock
     RealmConf realm;
     @Mock
+    EnvConf envConf;
+    @Mock
     PathIndexingStorage storage;
     @Mock
     MagickConf magick;
@@ -69,40 +69,16 @@ class MyDMAMConfigurationPropertiesTest {
     @Fake
     String instancename;
     @Fake
-    String auditTrailSpoolName;
-    @Fake
-    String asyncAPISpoolName;
-    @Fake
-    boolean explainSearchResults;
-    @Fake
-    int resetBatchSizeIndexer;
-    @Fake
-    int dirListMaxSize;
-    @Fake
-    int searchResultMaxSize;
-    @Fake
-    long pendingActivityMaxAgeGraceRestartDuration;
-    @Fake
     String storageName;
-
-    Duration pendingActivityMaxAgeGraceRestart;
 
     MyDMAMConfigurationProperties c;
 
     @BeforeEach
     void init() {
-        pendingActivityMaxAgeGraceRestart = Duration.ofMillis(abs(pendingActivityMaxAgeGraceRestartDuration));
-
         c = new MyDMAMConfigurationProperties(
                 pathindexing,
+                envConf,
                 instancename,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
                 magick,
                 activityHandlers,
                 renderedFileSpecs);
@@ -112,51 +88,12 @@ class MyDMAMConfigurationPropertiesTest {
     void testNoInstancename() {
         c = new MyDMAMConfigurationProperties(
                 pathindexing,
+                envConf,
                 null,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
                 magick,
                 activityHandlers,
                 renderedFileSpecs);
         assertThat(c.instancename()).isNotEmpty();
-    }
-
-    @Test
-    void testBadPendingActivityMaxAgeGraceRestart() {
-        pendingActivityMaxAgeGraceRestart = Duration.ofMillis(-abs(pendingActivityMaxAgeGraceRestartDuration));
-        assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
-                pathindexing,
-                instancename,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
-                magick,
-                activityHandlers,
-                renderedFileSpecs));
-
-        pendingActivityMaxAgeGraceRestart = Duration.ZERO;
-        assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
-                pathindexing,
-                instancename,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
-                magick,
-                activityHandlers,
-                renderedFileSpecs));
     }
 
     @Test
@@ -237,14 +174,8 @@ class MyDMAMConfigurationPropertiesTest {
     void testIsActivatedActivityHandler_noGlobal(final boolean pass) {
         c = new MyDMAMConfigurationProperties(
                 pathindexing,
+                envConf,
                 instancename,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
                 magick,
                 null,
                 null);
@@ -264,14 +195,8 @@ class MyDMAMConfigurationPropertiesTest {
     void testIsActivatedActivityHandler_nothingSet() {
         c = new MyDMAMConfigurationProperties(
                 pathindexing,
+                envConf,
                 instancename,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
                 magick,
                 null,
                 null);

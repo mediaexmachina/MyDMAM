@@ -25,10 +25,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +52,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.configuration.EnvConf;
 import media.mexm.mydmam.configuration.InfraConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
@@ -72,208 +73,218 @@ import tv.hd3g.transfertfiles.CachedFileAttributes;
 @ActiveProfiles({ "Default" })
 @ExtendWith(MockToolsExtendsJunit.class)
 class IndexerTest {
-	static final Faker faker = net.datafaker.Faker.instance();
+    static final Faker faker = net.datafaker.Faker.instance();
 
-	@MockitoBean
-	MyDMAMConfigurationProperties conf;
-	@MockitoBean
-	FileDao fileDao;
-	@MockitoBean
-	PathIndexer pathIndexer;
-	@MockitoBean
-	MediaAssetService mediaAssetService;
+    @MockitoBean
+    MyDMAMConfigurationProperties conf;
+    @MockitoBean
+    FileDao fileDao;
+    @MockitoBean
+    PathIndexer pathIndexer;
+    @MockitoBean
+    MediaAssetService mediaAssetService;
 
-	@Autowired
-	FlatJobKitEngine flatJobKitEngine;
+    @Autowired
+    FlatJobKitEngine flatJobKitEngine;
 
-	@Mock
-	InfraConf infra;
-	@Mock
-	RealmConf realmConf;
-	@Mock
-	MediaAsset mediaAsset;
+    @Mock
+    EnvConf envConf;
+    @Mock
+    InfraConf infra;
+    @Mock
+    RealmConf realmConf;
+    @Mock
+    MediaAsset mediaAsset;
 
-	@Fake
-	String realmName;
-	@Fake
-	String badRealmName;
-	@Fake
-	String spoolName;
+    @Fake
+    String realmName;
+    @Fake
+    String badRealmName;
+    @Fake
+    String spoolName;
 
-	@Autowired
-	Indexer indexer;
-	File realmWorkingDirectory;
+    @Autowired
+    Indexer indexer;
+    File realmWorkingDirectory;
 
-	@BeforeEach
-	void init() throws IOException {
-		realmWorkingDirectory = new File(getTempDirectory(),
-				"mydmam-" + getClass().getSimpleName() + "-indexer");
-		if (realmWorkingDirectory.exists()) {
-			forceDelete(realmWorkingDirectory);
-		}
-		when(conf.resetBatchSizeIndexer()).thenReturn(10000);
-		when(realmConf.delayedSync()).thenReturn(new DelayedSyncConfiguration(2, Duration.ofSeconds(1)));
-	}
+    @BeforeEach
+    void init() throws IOException {
+        realmWorkingDirectory = new File(getTempDirectory(),
+                "mydmam-" + getClass().getSimpleName() + "-indexer");
+        if (realmWorkingDirectory.exists()) {
+            forceDelete(realmWorkingDirectory);
+        }
+        when(conf.env()).thenReturn(envConf);
+        when(envConf.resetBatchSizeIndexer()).thenReturn(10000);
+        when(realmConf.delayedSync()).thenReturn(new DelayedSyncConfiguration(2, Duration.ofSeconds(1)));
+    }
 
-	@AfterEach
-	void ends() {
-		assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
-		assertEquals(0, flatJobKitEngine.getEndEventsList().size());
-	}
+    @AfterEach
+    void ends() {
+        assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
+        assertEquals(0, flatJobKitEngine.getEndEventsList().size());
+    }
 
-	@Test
-	void testInit_nothing() throws IOException {
-		indexer.init(mediaAssetService);
-		assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
+    @Test
+    void testInit_nothing() throws IOException {
+        indexer.init(mediaAssetService);
+        assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
-		verify(conf, times(1)).infra();
-	}
+        verify(conf, times(1)).infra();
+    }
 
-	@Test
-	void testInit_noWorkingDir() throws IOException {
-		when(conf.infra()).thenReturn(infra);
-		when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
-		when(realmConf.workingDirectory()).thenReturn(null);
+    @Test
+    void testInit_noWorkingDir() throws IOException {
+        when(conf.infra()).thenReturn(infra);
+        when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
+        when(realmConf.workingDirectory()).thenReturn(null);
 
-		indexer.init(mediaAssetService);
-		assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
+        indexer.init(mediaAssetService);
+        assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
-		verify(conf, times(1)).infra();
-		verify(infra, times(1)).realms();
-		verify(realmConf, times(1)).workingDirectory();
-	}
+        verify(conf, times(1)).infra();
+        verify(infra, times(1)).realms();
+        verify(realmConf, times(1)).workingDirectory();
+    }
 
-	@Test
-	void testInitGetIndexerByRealm() throws IOException {
-		when(conf.infra()).thenReturn(infra);
-		when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
-		when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
-		indexer.init(mediaAssetService);
-		assertThat(indexer.getIndexerByRealm(realmName)).isNotEmpty();
-		assertThat(indexer.getIndexerByRealm(badRealmName)).isEmpty();
+    @Test
+    void testInitGetIndexerByRealm() throws IOException {
+        when(conf.infra()).thenReturn(infra);
+        when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
+        when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
+        indexer.init(mediaAssetService);
+        assertThat(indexer.getIndexerByRealm(realmName)).isNotEmpty();
+        assertThat(indexer.getIndexerByRealm(badRealmName)).isEmpty();
 
-		verify(conf, times(1)).infra();
-		verify(infra, times(1)).realms();
-		verify(realmConf, times(1)).workingDirectory();
-		verify(realmConf, times(1)).delayedSync();
-	}
+        verify(conf, times(1)).infra();
+        verify(conf, times(1)).env();
+        verify(envConf, times(1)).explainSearchResults();
+        verify(infra, times(1)).realms();
+        verify(realmConf, times(1)).workingDirectory();
+        verify(realmConf, times(1)).delayedSync();
+    }
 
-	@Test
-	void testDestroy() throws IOException {
-		when(conf.infra()).thenReturn(infra);
-		when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
-		when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
+    @Test
+    void testDestroy() throws IOException {
+        when(conf.infra()).thenReturn(infra);
+        when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
+        when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
 
-		indexer.init(mediaAssetService);
-		indexer.destroy();
-		assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
+        indexer.init(mediaAssetService);
+        indexer.destroy();
+        assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
-		verify(conf, times(1)).infra();
-		verify(infra, times(1)).realms();
-		verify(realmConf, times(1)).workingDirectory();
-		verify(realmConf, times(1)).delayedSync();
-	}
+        verify(conf, times(1)).infra();
+        verify(conf, times(1)).env();
+        verify(envConf, times(1)).explainSearchResults();
+        verify(infra, times(1)).realms();
+        verify(realmConf, times(1)).workingDirectory();
+        verify(realmConf, times(1)).delayedSync();
+    }
 
-	@Nested
-	class Reset {
+    @Nested
+    class Reset {
 
-		@Mock
-		CachedFileAttributes file;
-		@Captor
-		ArgumentCaptor<FileEntityConsumer> onFileCaptor;
+        @Mock
+        CachedFileAttributes file;
+        @Captor
+        ArgumentCaptor<FileEntityConsumer> onFileCaptor;
 
-		@Fake
-		String storageName;
-		@Fake
-		boolean computeExplainOnResults;
-		@Fake
-		boolean directory;
-		@Fake
-		boolean hidden;
-		@Fake
-		boolean link;
-		@Fake
-		boolean special;
-		@Fake
-		long length;
-		@Fake
-		boolean exists;
-		@Fake
-		String mimeType;
+        @Fake
+        String storageName;
+        @Fake
+        boolean computeExplainOnResults;
+        @Fake
+        boolean directory;
+        @Fake
+        boolean hidden;
+        @Fake
+        boolean link;
+        @Fake
+        boolean special;
+        @Fake
+        long length;
+        @Fake
+        boolean exists;
+        @Fake
+        String mimeType;
 
-		String fileName;
-		String path;
-		String parentPath;
-		long lastModified;
-		FileEntity fileEntity;
+        String fileName;
+        String path;
+        String parentPath;
+        long lastModified;
+        FileEntity fileEntity;
 
-		@BeforeEach
-		void init() {
-			fileName = faker.numerify("baseName#####") + "." + faker.numerify("extention#####");
-			parentPath = "/" + faker.numerify("root#####") + "/" + faker.numerify("parent#####");
-			path = parentPath + "/" + fileName;
-			lastModified = System.currentTimeMillis();
+        @BeforeEach
+        void init() {
+            fileName = faker.numerify("baseName#####") + "." + faker.numerify("extention#####");
+            parentPath = "/" + faker.numerify("root#####") + "/" + faker.numerify("parent#####");
+            path = parentPath + "/" + fileName;
+            lastModified = System.currentTimeMillis();
 
-			when(file.getName()).thenReturn(fileName);
-			when(file.getParentPath()).thenReturn(parentPath);
-			when(file.getPath()).thenReturn(path);
-			when(file.isDirectory()).thenReturn(directory);
-			when(file.isHidden()).thenReturn(hidden);
-			when(file.isLink()).thenReturn(link);
-			when(file.isSpecial()).thenReturn(special);
-			when(file.lastModified()).thenReturn(lastModified);
-			when(file.length()).thenReturn(length);
-			when(file.exists()).thenReturn(exists);
+            when(file.getName()).thenReturn(fileName);
+            when(file.getParentPath()).thenReturn(parentPath);
+            when(file.getPath()).thenReturn(path);
+            when(file.isDirectory()).thenReturn(directory);
+            when(file.isHidden()).thenReturn(hidden);
+            when(file.isLink()).thenReturn(link);
+            when(file.isSpecial()).thenReturn(special);
+            when(file.lastModified()).thenReturn(lastModified);
+            when(file.length()).thenReturn(length);
+            when(file.exists()).thenReturn(exists);
 
-			when(mediaAsset.getTextContentByfileMetadata()).thenReturn(Map.of());
-			when(mediaAsset.getMetadatas()).thenReturn(Set.of());
-		}
+            when(mediaAsset.getTextContentByfileMetadata()).thenReturn(Map.of());
+            when(mediaAsset.getMetadatas()).thenReturn(Set.of());
+        }
 
-		@Test
-		void testReset() throws IOException {
-			when(conf.infra()).thenReturn(infra);
-			when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
-			when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
+        @Test
+        void testReset() throws IOException {
+            when(conf.infra()).thenReturn(infra);
+            when(infra.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
+            when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
 
-			indexer.init(mediaAssetService);
-			final var realmIndexer = indexer.getIndexerByRealm(realmName).get();
-			realmIndexer.updateIndexAfterScan(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
-			var searchResult = realmIndexer.openSearch("*", Optional.empty(), 10).foundedFiles();
-			assertThat(searchResult).size().isEqualTo(1);
-			assertThat(searchResult.get(0).name()).isEqualTo(fileName);
+            indexer.init(mediaAssetService);
+            final var realmIndexer = indexer.getIndexerByRealm(realmName).get();
+            realmIndexer.updateIndexAfterScan(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
+            var searchResult = realmIndexer.openSearch("*", Optional.empty(), 10).foundedFiles();
+            assertThat(searchResult).size().isEqualTo(1);
+            assertThat(searchResult.get(0).name()).isEqualTo(fileName);
 
-			fileName = faker.numerify("baseName#####") + "." + faker.numerify("extention#####");
-			path = parentPath + "/" + fileName;
-			when(file.getName()).thenReturn(fileName);
-			when(file.getPath()).thenReturn(path);
+            fileName = faker.numerify("baseName#####") + "." + faker.numerify("extention#####");
+            path = parentPath + "/" + fileName;
+            when(file.getName()).thenReturn(fileName);
+            when(file.getPath()).thenReturn(path);
 
-			fileEntity = new FileEntity(realmName, storageName, file);
-			when(mediaAssetService.getFromFileEntry(fileEntity, mediaAssetService)).thenReturn(mediaAsset);
+            fileEntity = new FileEntity(realmName, storageName, file);
+            when(mediaAssetService.getFromFileEntry(fileEntity, mediaAssetService)).thenReturn(mediaAsset);
 
-			doAnswer(invocation -> {
-				final var args = invocation.getArguments();
-				final var onFile = (FileEntityConsumer) args[1];
-				onFile.accept(fileEntity);
-				return null;
-			}).when(fileDao).getAllFromRealm(eq(realmName), any());
+            doAnswer(invocation -> {
+                final var args = invocation.getArguments();
+                final var onFile = (FileEntityConsumer) args[1];
+                onFile.accept(fileEntity);
+                return null;
+            }).when(fileDao).getAllFromRealm(eq(realmName), any());
 
-			indexer.reset(spoolName);
+            indexer.reset(spoolName);
 
-			searchResult = realmIndexer.openSearch("*", Optional.empty(), 10).foundedFiles();
-			assertThat(searchResult).size().isEqualTo(1);
-			assertThat(searchResult.get(0).name()).isEqualTo(fileName);
+            searchResult = realmIndexer.openSearch("*", Optional.empty(), 10).foundedFiles();
+            assertThat(searchResult).size().isEqualTo(1);
+            assertThat(searchResult.get(0).name()).isEqualTo(fileName);
 
-			verify(conf, times(1)).infra();
-			verify(infra, times(1)).realms();
-			verify(realmConf, times(1)).workingDirectory();
-			verify(realmConf, times(1)).delayedSync();
-			verify(fileDao, times(1)).getAllFromRealm(eq(realmName), any());
-			verify(file, atLeastOnce()).getPath();
-			verify(mediaAssetService, times(1)).getFromFileEntry(fileEntity, mediaAssetService);
-			verify(mediaAsset, atLeastOnce()).getTextContentByfileMetadata();
-			verify(mediaAsset, atLeastOnce()).getMetadatas();
+            verify(conf, times(1)).infra();
+            verify(conf, atLeastOnce()).env();
+            verify(envConf, times(1)).explainSearchResults();
+            verify(envConf, times(1)).resetBatchSizeIndexer();
+            verify(infra, times(1)).realms();
+            verify(realmConf, times(1)).workingDirectory();
+            verify(realmConf, times(1)).delayedSync();
+            verify(fileDao, times(1)).getAllFromRealm(eq(realmName), any());
+            verify(file, atLeastOnce()).getPath();
+            verify(mediaAssetService, times(1)).getFromFileEntry(fileEntity, mediaAssetService);
+            verify(mediaAsset, atLeastOnce()).getTextContentByfileMetadata();
+            verify(mediaAsset, atLeastOnce()).getMetadatas();
 
-			clearInvocations(file);
-		}
-	}
+            clearInvocations(file);
+        }
+    }
 }
