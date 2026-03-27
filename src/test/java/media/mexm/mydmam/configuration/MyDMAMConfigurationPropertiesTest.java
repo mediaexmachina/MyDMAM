@@ -62,6 +62,9 @@ class MyDMAMConfigurationPropertiesTest {
     @Mock
     RenderedFileSpecs renderedFileSpecs;
 
+    @Mock
+    EnvConf envConf;
+
     @Fake
     String realmName;
     @Fake
@@ -95,14 +98,8 @@ class MyDMAMConfigurationPropertiesTest {
 
         c = new MyDMAMConfigurationProperties(
                 pathindexing,
+                envConf,
                 instancename,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
                 magick,
                 activityHandlers,
                 renderedFileSpecs);
@@ -112,51 +109,12 @@ class MyDMAMConfigurationPropertiesTest {
     void testNoInstancename() {
         c = new MyDMAMConfigurationProperties(
                 pathindexing,
+                envConf,
                 null,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
                 magick,
                 activityHandlers,
                 renderedFileSpecs);
         assertThat(c.instancename()).isNotEmpty();
-    }
-
-    @Test
-    void testBadPendingActivityMaxAgeGraceRestart() {
-        pendingActivityMaxAgeGraceRestart = Duration.ofMillis(-abs(pendingActivityMaxAgeGraceRestartDuration));
-        assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
-                pathindexing,
-                instancename,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
-                magick,
-                activityHandlers,
-                renderedFileSpecs));
-
-        pendingActivityMaxAgeGraceRestart = Duration.ZERO;
-        assertThrows(IllegalStateException.class, () -> new MyDMAMConfigurationProperties(
-                pathindexing,
-                instancename,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
-                magick,
-                activityHandlers,
-                renderedFileSpecs));
     }
 
     @Test
@@ -237,14 +195,8 @@ class MyDMAMConfigurationPropertiesTest {
     void testIsActivatedActivityHandler_noGlobal(final boolean pass) {
         c = new MyDMAMConfigurationProperties(
                 pathindexing,
+                envConf,
                 instancename,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
                 magick,
                 null,
                 null);
@@ -264,14 +216,8 @@ class MyDMAMConfigurationPropertiesTest {
     void testIsActivatedActivityHandler_nothingSet() {
         c = new MyDMAMConfigurationProperties(
                 pathindexing,
+                envConf,
                 instancename,
-                auditTrailSpoolName,
-                asyncAPISpoolName,
-                explainSearchResults,
-                resetBatchSizeIndexer,
-                dirListMaxSize,
-                searchResultMaxSize,
-                pendingActivityMaxAgeGraceRestart,
                 magick,
                 null,
                 null);

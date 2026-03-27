@@ -39,6 +39,7 @@ import org.sqlite.SQLiteConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import media.mexm.mydmam.audittrail.AuditTrailObjectType;
+import media.mexm.mydmam.configuration.EnvConf;
 import media.mexm.mydmam.configuration.InfraConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
@@ -51,96 +52,103 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ActiveProfiles({ "Default" })
 class AuditTrailTest {
 
-	@MockitoBean
-	MyDMAMConfigurationProperties conf;
-	@MockitoBean
-	SQLiteConfig sqliteConfig;
-	@MockitoBean
-	ObjectMapper objectMapper;
-	@MockitoBean
-	PathIndexer pathIndexer;
+    @MockitoBean
+    MyDMAMConfigurationProperties conf;
+    @MockitoBean
+    SQLiteConfig sqliteConfig;
+    @MockitoBean
+    ObjectMapper objectMapper;
+    @MockitoBean
+    PathIndexer pathIndexer;
 
-	@Mock
-	RealmConf realmConf;
+    @Mock
+    RealmConf realmConf;
+    @Mock
+    EnvConf envConf;
 
-	@Fake
-	String auditTrailSpoolName;
-	@Fake
-	String realmName;
-	@Fake
-	File workingDirectory;
-	@Fake
-	String issuer;
-	@Fake
-	String event;
-	@Fake
-	AuditTrailObjectType objectType;
-	@Fake
-	String objectReference;
-	@Fake
-	String objectPayload;
+    @Fake
+    String auditTrailSpoolName;
+    @Fake
+    String realmName;
+    @Fake
+    File workingDirectory;
+    @Fake
+    String issuer;
+    @Fake
+    String event;
+    @Fake
+    AuditTrailObjectType objectType;
+    @Fake
+    String objectReference;
+    @Fake
+    String objectPayload;
 
-	@Autowired
-	AuditTrail auditTrail;
-	InfraConf infra;
+    @Autowired
+    AuditTrail auditTrail;
+    InfraConf infra;
 
-	@BeforeEach
-	void init() {
-		infra = new InfraConf(
-				Map.of(new TechnicalName(realmName), realmConf),
-				Duration.ofHours(1),
-				null);
+    @BeforeEach
+    void init() {
+        infra = new InfraConf(
+                Map.of(new TechnicalName(realmName), realmConf),
+                Duration.ofHours(1),
+                null);
 
-		when(realmConf.workingDirectory())
-				.thenReturn(workingDirectory);
-		when(conf.infra()).thenReturn(infra);
-		when(conf.auditTrailSpoolName()).thenReturn(auditTrailSpoolName);
-	}
+        when(realmConf.workingDirectory())
+                .thenReturn(workingDirectory);
+        when(conf.infra()).thenReturn(infra);
+        when(conf.env()).thenReturn(envConf);
+        when(envConf.auditTrailSpoolName()).thenReturn(auditTrailSpoolName);
+    }
 
-	@Test
-	void testGetAuditTrailByRealm_emptyConf() {
-		when(conf.infra()).thenReturn(null);
+    @Test
+    void testGetAuditTrailByRealm_emptyConf() {
+        when(conf.infra()).thenReturn(null);
 
-		auditTrail.init();
+        auditTrail.init();
 
-		verify(conf, times(1)).infra();
-		assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
-	}
+        verify(conf, times(1)).infra();
+        assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
+    }
 
-	@Test
-	void testGetAuditTrailByRealm_noWorkingDir() {
-		when(realmConf.workingDirectory()).thenReturn(null);
+    @Test
+    void testGetAuditTrailByRealm_noWorkingDir() {
+        when(realmConf.workingDirectory()).thenReturn(null);
 
-		auditTrail.init();
+        auditTrail.init();
 
-		verify(conf, times(1)).infra();
-		verify(realmConf, times(1)).workingDirectory();
-		assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
-	}
+        verify(conf, times(1)).infra();
+        verify(realmConf, times(1)).workingDirectory();
+        assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
+    }
 
-	@Test
-	void testGetAuditTrailByRealm() {
-		auditTrail.init();
+    @Test
+    void testGetAuditTrailByRealm() {
+        auditTrail.init();
 
-		verify(conf, times(1)).infra();
-		verify(realmConf, times(1)).workingDirectory();
+        verify(conf, times(1)).infra();
+        verify(conf, times(1)).env();
+        verify(envConf, times(1)).auditTrailSpoolName();
+        verify(realmConf, times(1)).workingDirectory();
 
-		final var realmAuditTrail = auditTrail.getAuditTrailByRealm(realmName);
-		assertThat(realmAuditTrail).isNotEmpty();
+        final var realmAuditTrail = auditTrail.getAuditTrailByRealm(realmName);
+        assertThat(realmAuditTrail).isNotEmpty();
 
-	}
+    }
 
-	/**
-	 * Should write a better test...
-	 */
-	@Test
-	void testAsyncPersistForRealm() {
-		auditTrail.init();
+    /**
+     * Should write a better test...
+     */
+    @Test
+    void testAsyncPersistForRealm() {
+        auditTrail.init();
 
-		auditTrail.asyncPersistForRealm(realmName, issuer, event, objectType, objectReference, objectPayload);
+        auditTrail.asyncPersistForRealm(realmName, issuer, event, objectType, objectReference, objectPayload);
 
-		verify(conf, times(1)).infra();
-		verify(realmConf, times(1)).workingDirectory();
-	}
+        verify(conf, times(1)).infra();
+        verify(conf, times(1)).env();
+        verify(envConf, times(1)).auditTrailSpoolName();
+        verify(realmConf, times(1)).workingDirectory();
+    }
 
 }

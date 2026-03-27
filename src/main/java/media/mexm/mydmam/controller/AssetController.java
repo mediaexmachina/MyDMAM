@@ -46,30 +46,30 @@ import tv.hd3g.jobkit.engine.JobKitEngine;
 @RequestMapping(value = CONTROLLER_BASE_MAPPING_API_PATH + "/asset")
 public class AssetController {
 
-	@Autowired
-	MyDMAMConfigurationProperties conf;
-	@Autowired
-	PendingActivityService pendingActivityService;
-	@Autowired
-	JobKitEngine jobKitEngine;
+    @Autowired
+    MyDMAMConfigurationProperties conf;
+    @Autowired
+    PendingActivityService pendingActivityService;
+    @Autowired
+    JobKitEngine jobKitEngine;
 
-	@PostMapping(value = "/reset-activities/{realm}", produces = APPLICATION_JSON_VALUE)
-	@Transactional
-	public ResponseEntity<Void> resetActivities(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
-												@RequestBody @Validated final ResetActivitiesRequest request) {
-		jobKitEngine.runOneShot(
-				"Reset Asset Activities",
-				conf.asyncAPISpoolName(),
-				0,
-				() -> pendingActivityService.startsActivities(
-						realm, request.hashPaths(), request.recursive(), MANUAL_RESET),
-				e -> {
-					if (e != null) {
-						log.error("Can't run resetActivities", e);
-					}
-				});
+    @PostMapping(value = "/reset-activities/{realm}", produces = APPLICATION_JSON_VALUE)
+    @Transactional
+    public ResponseEntity<Void> resetActivities(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
+                                                @RequestBody @Validated final ResetActivitiesRequest request) {
+        jobKitEngine.runOneShot(
+                "Reset Asset Activities",
+                conf.env().asyncAPISpoolName(),
+                0,
+                () -> pendingActivityService.startsActivities(
+                        realm, request.hashPaths(), request.recursive(), MANUAL_RESET),
+                e -> {
+                    if (e != null) {
+                        log.error("Can't run resetActivities", e);
+                    }
+                });
 
-		return new ResponseEntity<>(ACCEPTED);
-	}
+        return new ResponseEntity<>(ACCEPTED);
+    }
 
 }

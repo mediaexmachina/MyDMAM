@@ -79,242 +79,243 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ExtendWith(MockToolsExtendsJunit.class)
 @ActiveProfiles({ "Default" })
 class SearchControllerTest {
-	static final Faker faker = net.datafaker.Faker.instance();
+    static final Faker faker = net.datafaker.Faker.instance();
 
-	private static final RequestMapping REQUEST_MAPPING = SearchController.class.getAnnotation(
-			RequestMapping.class);
-	private static final String BASE_MAPPING = REQUEST_MAPPING.value()[0];
-	private static final ResultMatcher CONTENT_TYPE = content().contentType(REQUEST_MAPPING.produces()[0]);
-	private static final ResultMatcher STATUS_OK = status().isOk();
-	private static final ResultMatcher STATUS_UNPROCESSABLE_ENTITY = status().isUnprocessableEntity();
+    private static final RequestMapping REQUEST_MAPPING = SearchController.class.getAnnotation(
+            RequestMapping.class);
+    private static final String BASE_MAPPING = REQUEST_MAPPING.value()[0];
+    private static final ResultMatcher CONTENT_TYPE = content().contentType(REQUEST_MAPPING.produces()[0]);
+    private static final ResultMatcher STATUS_OK = status().isOk();
+    private static final ResultMatcher STATUS_UNPROCESSABLE_ENTITY = status().isUnprocessableEntity();
 
-	@Autowired
-	MockMvc mvc;
-	@Autowired
-	ObjectMapper objectMapper;
-	@Autowired
-	MyDMAMConfigurationProperties conf;
+    @Autowired
+    MockMvc mvc;
+    @Autowired
+    ObjectMapper objectMapper;
+    @Autowired
+    MyDMAMConfigurationProperties conf;
 
-	@MockitoBean
-	Indexer indexer;
-	@MockitoBean
-	FileRepository fileRepository;
-	@Mock
-	RealmIndexer realmIndexer;
-	@Mock
-	FileEntity fileEntity;
+    @MockitoBean
+    Indexer indexer;
+    @MockitoBean
+    FileRepository fileRepository;
 
-	@Fake
-	String realm;
-	@Fake
-	String q;
-	@Fake
-	int totalFounded;
-	@Fake
-	String hashPath;
-	@Fake
-	String storage;
-	@Fake
-	String name;
-	@Fake
-	String parentPath;
-	@Fake
-	float score;
-	@Fake
-	String explain;
+    @Mock
+    RealmIndexer realmIndexer;
+    @Mock
+    FileEntity fileEntity;
 
-	HttpHeaders baseHeaders;
-	FileSearchResult foundedFile;
-	SearchResult searchResult;
-	int limit;
-	SearchConstraintsRequest constraintsRequest;
-	FileSearchConstraints fileConstraints;
+    @Fake
+    String realm;
+    @Fake
+    String q;
+    @Fake
+    int totalFounded;
+    @Fake
+    String hashPath;
+    @Fake
+    String storage;
+    @Fake
+    String name;
+    @Fake
+    String parentPath;
+    @Fake
+    float score;
+    @Fake
+    String explain;
 
-	@BeforeEach
-	void init() {
-		baseHeaders = new HttpHeaders();
-		baseHeaders.setContentType(APPLICATION_JSON);
-		foundedFile = new FileSearchResult(hashPath, storage, name, parentPath, score, explain);
-		searchResult = new SearchResult(List.of(foundedFile), totalFounded);
-		limit = conf.searchResultMaxSize() / 2;
-		q = rightPad(leftPad(q, faker.number().numberBetween(1, 10)), faker.number().numberBetween(1, 10));
+    HttpHeaders baseHeaders;
+    FileSearchResult foundedFile;
+    SearchResult searchResult;
+    int limit;
+    SearchConstraintsRequest constraintsRequest;
+    FileSearchConstraints fileConstraints;
 
-		fileConstraints = new FileSearchConstraints(
-				faker.options().option(SearchConstraintCondition.class),
-				faker.options().option(SearchConstraintCondition.class),
-				faker.options().option(SearchConstraintCondition.class),
-				faker.options().option(SearchConstraintCondition.class),
-				NO_RANGE,
-				NO_RANGE,
-				List.of(faker.numerify("storage###")),
-				parentPath,
-				faker.numerify("parentHashPath###"));
-		constraintsRequest = new SearchConstraintsRequest(fileConstraints);
+    @BeforeEach
+    void init() {
+        baseHeaders = new HttpHeaders();
+        baseHeaders.setContentType(APPLICATION_JSON);
+        foundedFile = new FileSearchResult(hashPath, storage, name, parentPath, score, explain);
+        searchResult = new SearchResult(List.of(foundedFile), totalFounded);
+        limit = conf.env().searchResultMaxSize() / 2;
+        q = rightPad(leftPad(q, faker.number().numberBetween(1, 10)), faker.number().numberBetween(1, 10));
 
-		when(indexer.getIndexerByRealm(realm)).thenReturn(Optional.ofNullable(realmIndexer));
-		when(realmIndexer.openSearch(any(), any(), anyInt())).thenReturn(searchResult);
-		when(fileRepository.getByHashPath(anySet(), anyString())).thenReturn(Set.of(fileEntity));
+        fileConstraints = new FileSearchConstraints(
+                faker.options().option(SearchConstraintCondition.class),
+                faker.options().option(SearchConstraintCondition.class),
+                faker.options().option(SearchConstraintCondition.class),
+                faker.options().option(SearchConstraintCondition.class),
+                NO_RANGE,
+                NO_RANGE,
+                List.of(faker.numerify("storage###")),
+                parentPath,
+                faker.numerify("parentHashPath###"));
+        constraintsRequest = new SearchConstraintsRequest(fileConstraints);
 
-		when(fileEntity.getRealm()).thenReturn(realm);
-		when(fileEntity.getStorage()).thenReturn(faker.numerify("storage###"));
-		when(fileEntity.isDirectory()).thenReturn(faker.bool().bool());
-		when(fileEntity.getHashPath()).thenReturn(hashPath);
-		when(fileEntity.getPath()).thenReturn(faker.numerify("path###"));
-		when(fileEntity.getModified()).thenReturn(new Timestamp(System.currentTimeMillis()));
-		when(fileEntity.isWatchMarkedAsDone()).thenReturn(true);
-		when(fileEntity.getLength()).thenReturn(faker.number().randomNumber());
-	}
+        when(indexer.getIndexerByRealm(realm)).thenReturn(Optional.ofNullable(realmIndexer));
+        when(realmIndexer.openSearch(any(), any(), anyInt())).thenReturn(searchResult);
+        when(fileRepository.getByHashPath(anySet(), anyString())).thenReturn(Set.of(fileEntity));
 
-	@AfterEach
-	void ends() {
-		reset(fileEntity);
-		verifyNoMoreInteractions(indexer, fileRepository);
-	}
+        when(fileEntity.getRealm()).thenReturn(realm);
+        when(fileEntity.getStorage()).thenReturn(faker.numerify("storage###"));
+        when(fileEntity.isDirectory()).thenReturn(faker.bool().bool());
+        when(fileEntity.getHashPath()).thenReturn(hashPath);
+        when(fileEntity.getPath()).thenReturn(faker.numerify("path###"));
+        when(fileEntity.getModified()).thenReturn(new Timestamp(System.currentTimeMillis()));
+        when(fileEntity.isWatchMarkedAsDone()).thenReturn(true);
+        when(fileEntity.getLength()).thenReturn(faker.number().randomNumber());
+    }
 
-	@Test
-	void testOpenSearch_badRealm() throws Exception {
-		when(indexer.getIndexerByRealm(realm)).thenReturn(Optional.empty());
+    @AfterEach
+    void ends() {
+        reset(fileEntity);
+        verifyNoMoreInteractions(indexer, fileRepository);
+    }
 
-		mvc.perform(get(BASE_MAPPING + "/" + realm)
-				.headers(baseHeaders)
-				.queryParam("q", q))
-				.andExpect(STATUS_UNPROCESSABLE_ENTITY);
+    @Test
+    void testOpenSearch_badRealm() throws Exception {
+        when(indexer.getIndexerByRealm(realm)).thenReturn(Optional.empty());
 
-		verify(indexer, times(1)).getIndexerByRealm(realm);
-	}
+        mvc.perform(get(BASE_MAPPING + "/" + realm)
+                .headers(baseHeaders)
+                .queryParam("q", q))
+                .andExpect(STATUS_UNPROCESSABLE_ENTITY);
 
-	@Test
-	void testOpenSearch_simple() throws Exception {
-		final var content = mvc.perform(get(BASE_MAPPING + "/" + realm)
-				.headers(baseHeaders)
-				.queryParam("q", q))
-				.andExpect(STATUS_OK)
-				.andExpect(CONTENT_TYPE)
-				.andExpect(jsonPath("$.q").exists())
-				.andReturn()
-				.getResponse()
-				.getContentAsString();
+        verify(indexer, times(1)).getIndexerByRealm(realm);
+    }
 
-		final var response = objectMapper.readValue(content, OpenSearchResponse.class);
-		assertThat(response.limit()).isEqualTo(conf.searchResultMaxSize());
-		assertThat(response.q()).isEqualTo(q.trim());
-		assertThat(response.relatedFiles()).isEmpty();
-		assertNull(response.constraints());
-		assertThat(response.result()).isEqualTo(searchResult);
+    @Test
+    void testOpenSearch_simple() throws Exception {
+        final var content = mvc.perform(get(BASE_MAPPING + "/" + realm)
+                .headers(baseHeaders)
+                .queryParam("q", q))
+                .andExpect(STATUS_OK)
+                .andExpect(CONTENT_TYPE)
+                .andExpect(jsonPath("$.q").exists())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-		verify(indexer, times(1)).getIndexerByRealm(realm);
-		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), conf.searchResultMaxSize());
-	}
+        final var response = objectMapper.readValue(content, OpenSearchResponse.class);
+        assertThat(response.limit()).isEqualTo(conf.env().searchResultMaxSize());
+        assertThat(response.q()).isEqualTo(q.trim());
+        assertThat(response.relatedFiles()).isEmpty();
+        assertNull(response.constraints());
+        assertThat(response.result()).isEqualTo(searchResult);
 
-	@Test
-	void testOpenSearch_limited() throws Exception {
-		final var content = mvc.perform(get(BASE_MAPPING + "/" + realm)
-				.headers(baseHeaders)
-				.queryParam("q", q)
-				.queryParam("limit", String.valueOf(limit)))
-				.andExpect(STATUS_OK)
-				.andExpect(CONTENT_TYPE)
-				.andExpect(jsonPath("$.q").exists())
-				.andReturn()
-				.getResponse()
-				.getContentAsString();
+        verify(indexer, times(1)).getIndexerByRealm(realm);
+        verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), conf.env().searchResultMaxSize());
+    }
 
-		final var response = objectMapper.readValue(content, OpenSearchResponse.class);
-		assertThat(response.limit()).isEqualTo(limit);
-		assertThat(response.q()).isEqualTo(q.trim());
-		assertThat(response.relatedFiles()).isEmpty();
-		assertNull(response.constraints());
-		assertThat(response.result()).isEqualTo(searchResult);
+    @Test
+    void testOpenSearch_limited() throws Exception {
+        final var content = mvc.perform(get(BASE_MAPPING + "/" + realm)
+                .headers(baseHeaders)
+                .queryParam("q", q)
+                .queryParam("limit", String.valueOf(limit)))
+                .andExpect(STATUS_OK)
+                .andExpect(CONTENT_TYPE)
+                .andExpect(jsonPath("$.q").exists())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-		verify(indexer, times(1)).getIndexerByRealm(realm);
-		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), limit);
-	}
+        final var response = objectMapper.readValue(content, OpenSearchResponse.class);
+        assertThat(response.limit()).isEqualTo(limit);
+        assertThat(response.q()).isEqualTo(q.trim());
+        assertThat(response.relatedFiles()).isEmpty();
+        assertNull(response.constraints());
+        assertThat(response.result()).isEqualTo(searchResult);
 
-	@Test
-	void testOpenSearch_resolveHashPaths() throws Exception {
-		final var content = mvc.perform(get(BASE_MAPPING + "/" + realm)
-				.headers(baseHeaders)
-				.queryParam("q", q)
-				.queryParam("resolveHashPaths", "1"))
-				.andExpect(STATUS_OK)
-				.andExpect(CONTENT_TYPE)
-				.andExpect(jsonPath("$.q").exists())
-				.andReturn()
-				.getResponse()
-				.getContentAsString();
+        verify(indexer, times(1)).getIndexerByRealm(realm);
+        verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), limit);
+    }
 
-		final var response = objectMapper.readValue(content, OpenSearchResponse.class);
-		assertThat(response.limit()).isEqualTo(conf.searchResultMaxSize());
-		assertThat(response.q()).isEqualTo(q.trim());
-		assertNull(response.constraints());
-		assertThat(response.result()).isEqualTo(searchResult);
-		assertThat(response.relatedFiles()).size().isEqualTo(1);
-		assertThat(response.relatedFiles()).containsKey(hashPath);
-		assertThat(response.relatedFiles().get(hashPath).hashPath()).isEqualTo(hashPath);
+    @Test
+    void testOpenSearch_resolveHashPaths() throws Exception {
+        final var content = mvc.perform(get(BASE_MAPPING + "/" + realm)
+                .headers(baseHeaders)
+                .queryParam("q", q)
+                .queryParam("resolveHashPaths", "1"))
+                .andExpect(STATUS_OK)
+                .andExpect(CONTENT_TYPE)
+                .andExpect(jsonPath("$.q").exists())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-		verify(indexer, times(1)).getIndexerByRealm(realm);
-		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), conf.searchResultMaxSize());
-		verify(fileRepository, times(1)).getByHashPath(Set.of(hashPath), realm);
-	}
+        final var response = objectMapper.readValue(content, OpenSearchResponse.class);
+        assertThat(response.limit()).isEqualTo(conf.env().searchResultMaxSize());
+        assertThat(response.q()).isEqualTo(q.trim());
+        assertNull(response.constraints());
+        assertThat(response.result()).isEqualTo(searchResult);
+        assertThat(response.relatedFiles()).size().isEqualTo(1);
+        assertThat(response.relatedFiles()).containsKey(hashPath);
+        assertThat(response.relatedFiles().get(hashPath).hashPath()).isEqualTo(hashPath);
 
-	@Test
-	void testOpenSearch_constraints() throws Exception {
-		final var content = mvc.perform(get(BASE_MAPPING + "/" + realm)
-				.headers(baseHeaders)
-				.queryParam("q", q)
-				.content(objectMapper.writeValueAsString(constraintsRequest)))
-				.andExpect(STATUS_OK)
-				.andExpect(CONTENT_TYPE)
-				.andExpect(jsonPath("$.q").exists())
-				.andReturn()
-				.getResponse()
-				.getContentAsString();
+        verify(indexer, times(1)).getIndexerByRealm(realm);
+        verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), conf.env().searchResultMaxSize());
+        verify(fileRepository, times(1)).getByHashPath(Set.of(hashPath), realm);
+    }
 
-		final var response = objectMapper.readValue(content, OpenSearchResponse.class);
-		assertThat(response.limit()).isEqualTo(conf.searchResultMaxSize());
-		assertThat(response.q()).isEqualTo(q.trim());
-		assertThat(response.relatedFiles()).isEmpty();
-		assertThat(response.constraints()).isEqualTo(constraintsRequest);
-		assertThat(response.result()).isEqualTo(searchResult);
+    @Test
+    void testOpenSearch_constraints() throws Exception {
+        final var content = mvc.perform(get(BASE_MAPPING + "/" + realm)
+                .headers(baseHeaders)
+                .queryParam("q", q)
+                .content(objectMapper.writeValueAsString(constraintsRequest)))
+                .andExpect(STATUS_OK)
+                .andExpect(CONTENT_TYPE)
+                .andExpect(jsonPath("$.q").exists())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-		verify(indexer, times(1)).getIndexerByRealm(realm);
-		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.ofNullable(fileConstraints), conf
-				.searchResultMaxSize());
-	}
+        final var response = objectMapper.readValue(content, OpenSearchResponse.class);
+        assertThat(response.limit()).isEqualTo(conf.env().searchResultMaxSize());
+        assertThat(response.q()).isEqualTo(q.trim());
+        assertThat(response.relatedFiles()).isEmpty();
+        assertThat(response.constraints()).isEqualTo(constraintsRequest);
+        assertThat(response.result()).isEqualTo(searchResult);
 
-	@Test
-	void testOpenSearch_empty() throws Exception {
-		searchResult = new SearchResult(List.of(), 0);
-		when(realmIndexer.openSearch(any(), any(), anyInt())).thenReturn(searchResult);
+        verify(indexer, times(1)).getIndexerByRealm(realm);
+        verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.ofNullable(fileConstraints),
+                conf.env().searchResultMaxSize());
+    }
 
-		final var content = mvc.perform(get(BASE_MAPPING + "/" + realm)
-				.headers(baseHeaders)
-				.queryParam("q", q))
-				.andExpect(STATUS_OK)
-				.andExpect(CONTENT_TYPE)
-				.andExpect(jsonPath("$.q").exists())
-				.andReturn()
-				.getResponse()
-				.getContentAsString();
+    @Test
+    void testOpenSearch_empty() throws Exception {
+        searchResult = new SearchResult(List.of(), 0);
+        when(realmIndexer.openSearch(any(), any(), anyInt())).thenReturn(searchResult);
 
-		final var response = objectMapper.readValue(content, OpenSearchResponse.class);
-		assertThat(response.limit()).isEqualTo(conf.searchResultMaxSize());
-		assertThat(response.q()).isEqualTo(q.trim());
-		assertThat(response.relatedFiles()).isEmpty();
-		assertNull(response.constraints());
-		assertThat(response.result()).isEqualTo(searchResult);
+        final var content = mvc.perform(get(BASE_MAPPING + "/" + realm)
+                .headers(baseHeaders)
+                .queryParam("q", q))
+                .andExpect(STATUS_OK)
+                .andExpect(CONTENT_TYPE)
+                .andExpect(jsonPath("$.q").exists())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-		verify(indexer, times(1)).getIndexerByRealm(realm);
-		verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), conf.searchResultMaxSize());
-	}
+        final var response = objectMapper.readValue(content, OpenSearchResponse.class);
+        assertThat(response.limit()).isEqualTo(conf.env().searchResultMaxSize());
+        assertThat(response.q()).isEqualTo(q.trim());
+        assertThat(response.relatedFiles()).isEmpty();
+        assertNull(response.constraints());
+        assertThat(response.result()).isEqualTo(searchResult);
 
-	@Test
-	void testReset() throws Exception {
-		mvc.perform(post(BASE_MAPPING + "/reset-all-indexes")
-				.headers(baseHeaders))
-				.andExpect(STATUS_OK);
+        verify(indexer, times(1)).getIndexerByRealm(realm);
+        verify(realmIndexer, times(1)).openSearch(q.trim(), Optional.empty(), conf.env().searchResultMaxSize());
+    }
 
-		verify(indexer, times(1)).reset("admin-ops");
-	}
+    @Test
+    void testReset() throws Exception {
+        mvc.perform(post(BASE_MAPPING + "/reset-all-indexes")
+                .headers(baseHeaders))
+                .andExpect(STATUS_OK);
+
+        verify(indexer, times(1)).reset("admin-ops");
+    }
 
 }
