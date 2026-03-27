@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.configuration;
 
-import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -28,7 +27,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
@@ -52,6 +50,8 @@ class MyDMAMConfigurationPropertiesTest {
     @Mock
     RealmConf realm;
     @Mock
+    EnvConf envConf;
+    @Mock
     PathIndexingStorage storage;
     @Mock
     MagickConf magick;
@@ -62,9 +62,6 @@ class MyDMAMConfigurationPropertiesTest {
     @Mock
     RenderedFileSpecs renderedFileSpecs;
 
-    @Mock
-    EnvConf envConf;
-
     @Fake
     String realmName;
     @Fake
@@ -72,30 +69,12 @@ class MyDMAMConfigurationPropertiesTest {
     @Fake
     String instancename;
     @Fake
-    String auditTrailSpoolName;
-    @Fake
-    String asyncAPISpoolName;
-    @Fake
-    boolean explainSearchResults;
-    @Fake
-    int resetBatchSizeIndexer;
-    @Fake
-    int dirListMaxSize;
-    @Fake
-    int searchResultMaxSize;
-    @Fake
-    long pendingActivityMaxAgeGraceRestartDuration;
-    @Fake
     String storageName;
-
-    Duration pendingActivityMaxAgeGraceRestart;
 
     MyDMAMConfigurationProperties c;
 
     @BeforeEach
     void init() {
-        pendingActivityMaxAgeGraceRestart = Duration.ofMillis(abs(pendingActivityMaxAgeGraceRestartDuration));
-
         c = new MyDMAMConfigurationProperties(
                 pathindexing,
                 envConf,

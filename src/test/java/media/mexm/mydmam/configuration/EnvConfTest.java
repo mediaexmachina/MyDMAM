@@ -33,26 +33,45 @@ class EnvConfTest {
 
     @Fake
     long pendingActivityMaxAgeGraceRestartDuration;
+    @Fake(min = 100, max = 1000)
+    long timeBetweenScansValue;
 
+    Duration timeBetweenScans;
     Duration pendingActivityMaxAgeGraceRestart;
     EnvConf ev;
 
     @BeforeEach
     void init() {
+        timeBetweenScans = Duration.ofMillis(timeBetweenScansValue);
         pendingActivityMaxAgeGraceRestart = Duration.ofMillis(abs(pendingActivityMaxAgeGraceRestartDuration));
-        ev = new EnvConf(null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart);
+        ev = new EnvConf(timeBetweenScans, null, null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart);
     }
 
     @Test
     void testBadPendingActivityMaxAgeGraceRestart() {
         pendingActivityMaxAgeGraceRestart = Duration.ofMillis(-abs(pendingActivityMaxAgeGraceRestartDuration));
 
-        assertThrows(IllegalStateException.class,
-                () -> new EnvConf(null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart));
+        assertThrows(IllegalArgumentException.class,
+                () -> new EnvConf(
+                        timeBetweenScans, null, null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart));
 
         pendingActivityMaxAgeGraceRestart = Duration.ZERO;
-        assertThrows(IllegalStateException.class,
-                () -> new EnvConf(null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart));
+        assertThrows(IllegalArgumentException.class,
+                () -> new EnvConf(
+                        timeBetweenScans, null, null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart));
+    }
+
+    @Test
+    void testBadTimeBetweenScans() {
+        timeBetweenScans = Duration.ofMillis(-timeBetweenScansValue);
+        assertThrows(IllegalArgumentException.class,
+                () -> new EnvConf(
+                        timeBetweenScans, null, null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart));
+
+        timeBetweenScans = Duration.ZERO;
+        assertThrows(IllegalArgumentException.class,
+                () -> new EnvConf(
+                        timeBetweenScans, null, null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart));
     }
 
 }

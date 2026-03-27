@@ -22,7 +22,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
-import java.time.Duration;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -89,10 +88,7 @@ class AuditTrailTest {
 
     @BeforeEach
     void init() {
-        infra = new InfraConf(
-                Map.of(new TechnicalName(realmName), realmConf),
-                Duration.ofHours(1),
-                null);
+        infra = new InfraConf(Map.of(new TechnicalName(realmName), realmConf));
 
         when(realmConf.workingDirectory())
                 .thenReturn(workingDirectory);

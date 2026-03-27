@@ -23,9 +23,12 @@ import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 @Validated
-public record EnvConf(@DefaultValue("audittrail") @NotEmpty String auditTrailSpoolName,
+public record EnvConf(@DefaultValue("1h") @NotNull Duration timeBetweenScans,
+                      @DefaultValue("pathindexing") @NotEmpty String spoolEvents,
+                      @DefaultValue("audittrail") @NotEmpty String auditTrailSpoolName,
                       @DefaultValue("async-api") @NotEmpty String asyncAPISpoolName,
                       @DefaultValue("false") boolean explainSearchResults,
                       @DefaultValue("10000") @Min(0) int resetBatchSizeIndexer,
@@ -35,8 +38,11 @@ public record EnvConf(@DefaultValue("audittrail") @NotEmpty String auditTrailSpo
 
     public EnvConf {
         if (pendingActivityMaxAgeGraceRestart.isPositive() == false) {
-            throw new IllegalStateException("Invalid pendingActivityMaxAgeGraceRestart: "
-                                            + pendingActivityMaxAgeGraceRestart);
+            throw new IllegalArgumentException("Invalid pendingActivityMaxAgeGraceRestart: "
+                                               + pendingActivityMaxAgeGraceRestart);
+        }
+        if (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative()) {
+            throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
         }
     }
 
