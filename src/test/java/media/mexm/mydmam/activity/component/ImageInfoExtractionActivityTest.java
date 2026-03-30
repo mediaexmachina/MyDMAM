@@ -19,7 +19,6 @@ package media.mexm.mydmam.activity.component;
 import static java.io.File.createTempFile;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.empty;
-import static media.mexm.mydmam.asset.FileMetadataResolutionTrait.MTD_TECHNICAL_CLASSIFIER;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.writeStringToFile;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,16 +29,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -56,13 +54,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import media.mexm.mydmam.FlatMetadataThesaurusService;
 import media.mexm.mydmam.activity.ActivityEventType;
-import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
-import media.mexm.mydmam.service.RenderedFilesProducerService;
+import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.tools.ImageMagick;
 import media.mexm.mydmam.tools.JsonPathHelper;
 import net.datafaker.Faker;
@@ -77,10 +77,9 @@ class ImageInfoExtractionActivityTest {
     @MockitoBean
     ImageMagick imageMagick;
     @MockitoBean
-    RenderedFilesProducerService renderedFilesProducerService;
-
+    MediaAssetService mediaAssetService;
     @Mock
-    MediaAsset asset;
+    FileEntity file;
     @Mock
     ActivityEventType eventType;
     @Mock
@@ -88,6 +87,8 @@ class ImageInfoExtractionActivityTest {
     @Fake
     String mimeType;
 
+    @Autowired
+    FlatMetadataThesaurusService metadataThesaurusService;
     @Autowired
     ImageInfoExtractionActivity iiea;
 
@@ -98,7 +99,7 @@ class ImageInfoExtractionActivityTest {
 
     @AfterEach
     void ends() {
-        verifyNoMoreInteractions(imageMagick, renderedFilesProducerService);
+        verifyNoMoreInteractions(imageMagick, mediaAssetService);
     }
 
     @ParameterizedTest
@@ -107,12 +108,6 @@ class ImageInfoExtractionActivityTest {
         when(imageMagick.isEnabled()).thenReturn(enabled);
         assertEquals(enabled, iiea.isEnabled());
         verify(imageMagick, times(1)).isEnabled();
-    }
-
-    @Test
-    void testGetManagedMimeTypes() {
-        assertThat(iiea.getManagedMimeTypes()).isEqualTo(Set.of(mimeType));
-        verify(imageMagick, times(1)).getManagedRasterMimeTypes();
     }
 
     @Test
@@ -125,26 +120,30 @@ class ImageInfoExtractionActivityTest {
         when(storedOn.isDAS()).thenReturn(false);
         when(storedOn.haveWorkingDir()).thenReturn(false);
         when(storedOn.haveRenderedDir()).thenReturn(false);
-        when(asset.getMimeType()).thenReturn(Optional.ofNullable("nope/nope"));
 
-        assertFalse(iiea.canHandle(asset, eventType, storedOn));
+        metadataThesaurusService.setMimeType("nope/nope");
+
+        assertFalse(iiea.canHandle(file, eventType, storedOn));
 
         when(storedOn.isDAS()).thenReturn(true);
-        assertFalse(iiea.canHandle(asset, eventType, storedOn));
+        assertFalse(iiea.canHandle(file, eventType, storedOn));
 
         when(storedOn.haveWorkingDir()).thenReturn(true);
-        assertFalse(iiea.canHandle(asset, eventType, storedOn));
+        assertFalse(iiea.canHandle(file, eventType, storedOn));
 
         when(storedOn.haveRenderedDir()).thenReturn(true);
-        assertFalse(iiea.canHandle(asset, eventType, storedOn));
+        assertFalse(iiea.canHandle(file, eventType, storedOn));
 
-        when(asset.getMimeType()).thenReturn(Optional.ofNullable(mimeType));
-        assertTrue(iiea.canHandle(asset, eventType, storedOn));
+        metadataThesaurusService.setMimeType(mimeType);
+
+        assertTrue(iiea.canHandle(file, eventType, storedOn));
 
         verify(storedOn, atLeastOnce()).isDAS();
         verify(storedOn, atLeastOnce()).haveWorkingDir();
         verify(storedOn, atLeastOnce()).haveRenderedDir();
-        verify(asset, atLeastOnce()).getMimeType();
+
+        metadataThesaurusService.endChecks(file);
+
         verify(imageMagick, atLeastOnce()).getManagedRasterMimeTypes();
     }
 
@@ -189,14 +188,13 @@ class ImageInfoExtractionActivityTest {
 
             when(storedOn.storage()).thenReturn(storage);
             when(storedOn.realm()).thenReturn(realm);
-            when(asset.getLocalInternalFile(storage)).thenReturn(assetFile);
+            when(storedOn.makeWorkingFile(any(), eq(file))).thenReturn(workingFile);
+
+            when(storedOn.getLocalInternalFile(file)).thenReturn(assetFile);
             when(realm.makeWorkingFile(any())).thenReturn(workingFile);
-            when(asset.getFile()).thenReturn(file);
             when(file.getId()).thenReturn(fileId);
             when(imageMagick.extractIdentifyJsonFile(assetFile, workingFile))
                     .thenReturn(jsonNode);
-            when(renderedFilesProducerService.makeWorkingFile(any(), eq(asset), eq(storedOn)))
-                    .thenReturn(workingFile);
 
             when(jsonNode.read("$.version", String.class))
                     .thenReturn(Optional.ofNullable("1.0"));
@@ -212,33 +210,38 @@ class ImageInfoExtractionActivityTest {
                     .thenReturn(Optional.ofNullable(orientation));
             when(jsonNode.read("$.image.type", String.class))
                     .thenReturn(Optional.ofNullable(imageType));
+
+            metadataThesaurusService.reset();
         }
 
         @AfterEach
         void ends() {
+            metadataThesaurusService.endChecks(file);
             deleteQuietly(assetFile);
             deleteQuietly(workingFile);
         }
 
         @Test
         void testHandle() throws Exception {
-            iiea.handle(asset, eventType, storedOn);
+            iiea.handle(file, eventType, storedOn);
 
-            verify(storedOn, atLeastOnce()).storage();
-            verify(asset, atLeastOnce()).getLocalInternalFile(storage);
+            verify(storedOn, times(1)).makeWorkingFile("identify.json", file);
+            verify(storedOn, atLeastOnce()).getLocalInternalFile(file);
             verify(imageMagick, times(1)).extractIdentifyJsonFile(assetFile, workingFile);
-            verify(renderedFilesProducerService, times(1)).makeWorkingFile("identify.json", asset, storedOn);
-            verify(renderedFilesProducerService, times(1))
-                    .assetDeclareRenderedStaticFile(asset, workingFile, "identify.json", true, 0, "image-format");
+            verify(mediaAssetService, times(1))
+                    .declareRenderedStaticFile(file, workingFile, "identify.json", true, 0, "image-format");
             verify(jsonNode, atLeastOnce()).read(anyString(), eq(String.class));
             verify(jsonNode, atLeastOnce()).read(anyString(), eq(Integer.class));
-            verify(asset, times(1)).setMimeType(iiea, imageMimeType);
-            verify(asset, times(1))
-                    .createFileMetadataEntry(iiea, MTD_TECHNICAL_CLASSIFIER, 0, Map.of(
-                            "colorspace", colorspace,
-                            "orientation", orientation,
-                            "type", imageType.toLowerCase()));
-            verify(asset, times(1)).setResolution(iiea, width, height);
+
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefFileFormat.class, imageMimeType).mimeType();
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, width).width();
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, height).height();
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, orientation).orientation();
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, colorspace).colorspace();
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, imageType.toLowerCase()).type();
+
+            verify(file, atLeastOnce()).getRealm();
+            verify(file, atLeastOnce()).getHashPath();
         }
 
         @Test
@@ -246,15 +249,15 @@ class ImageInfoExtractionActivityTest {
             when(jsonNode.read("$.version", String.class)).thenReturn(empty());
 
             assertThrows(IllegalArgumentException.class,
-                    () -> iiea.handle(asset, eventType, storedOn));
+                    () -> iiea.handle(file, eventType, storedOn));
 
-            verify(storedOn, atLeastOnce()).storage();
-            verify(asset, atLeastOnce()).getLocalInternalFile(storage);
-            verify(renderedFilesProducerService, times(1)).makeWorkingFile("identify.json", asset, storedOn);
+            verify(storedOn, times(1)).makeWorkingFile("identify.json", file);
+            verify(storedOn, atLeastOnce()).getLocalInternalFile(file);
             verify(imageMagick, times(1)).extractIdentifyJsonFile(assetFile, workingFile);
             assertThat(workingFile).exists();
             verify(jsonNode, atLeastOnce()).read(anyString(), eq(String.class));
         }
 
     }
+
 }

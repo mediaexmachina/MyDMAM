@@ -17,8 +17,6 @@
 package media.mexm.mydmam.activity.component;
 
 import static java.io.File.createTempFile;
-import static media.mexm.mydmam.asset.FileMetadataResolutionTrait.MTD_TECHNICAL_CLASSIFIER;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,7 +28,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE;
 
 import java.io.File;
-import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
@@ -45,11 +42,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import media.mexm.mydmam.FlatMetadataThesaurusService;
 import media.mexm.mydmam.activity.ActivityEventType;
-import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
+import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
-import media.mexm.mydmam.service.RenderedFilesProducerService;
+import media.mexm.mydmam.service.MediaAssetService;
+import media.mexm.mydmam.service.MediaRenderedFilesUtilsService;
 import media.mexm.mydmam.tools.ImageMagick;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -62,30 +62,41 @@ class ImageRasterPreviewActivityTest {
     @MockitoBean
     ImageMagick imageMagick;
     @MockitoBean
-    RenderedFilesProducerService renderedFilesProducerService;
+    MediaAssetService mediaAssetService;
+    @MockitoBean
+    MediaRenderedFilesUtilsService mediaRenderedFilesUtilsService;
 
     @Mock
-    MediaAsset asset;
+    FileEntity file;
     @Mock
     ActivityEventType eventType;
     @Mock
     RealmStorageConfiguredEnv storedOn;
-    @Fake
-    String mimeType;
     @Mock
     PathIndexingStorage storage;
 
+    @Fake
+    String mimeType;
+    @Fake
+    String typeClassifer;
+
+    File assetFile;
+
+    @Autowired
+    FlatMetadataThesaurusService metadataThesaurusService;
     @Autowired
     ImageRasterPreviewActivity irpa;
 
     @BeforeEach
     void init() {
         when(imageMagick.getManagedRasterMimeTypes()).thenReturn(Set.of(mimeType));
+        metadataThesaurusService.reset();
     }
 
     @AfterEach
     void ends() {
-        verifyNoMoreInteractions(imageMagick, renderedFilesProducerService);
+        metadataThesaurusService.endChecks(file);
+        verifyNoMoreInteractions(imageMagick, mediaAssetService, mediaRenderedFilesUtilsService);
     }
 
     @ParameterizedTest
@@ -97,47 +108,38 @@ class ImageRasterPreviewActivityTest {
     }
 
     @Test
-    void testGetManagedMimeTypes() {
-        assertThat(irpa.getManagedMimeTypes()).isEqualTo(Set.of(mimeType));
-        verify(imageMagick, times(1)).getManagedRasterMimeTypes();
-    }
-
-    @Test
     void testCanHandle() {
         when(storedOn.isDAS()).thenReturn(false);
         when(storedOn.haveWorkingDir()).thenReturn(false);
         when(storedOn.haveRenderedDir()).thenReturn(false);
-        when(asset.getMimeType()).thenReturn(Optional.ofNullable("nope/nope"));
-        when(asset.hasResolution()).thenReturn(false);
 
-        assertFalse(irpa.canHandle(asset, eventType, storedOn));
+        metadataThesaurusService.setMimeType("nope/nope");
+
+        assertFalse(irpa.canHandle(file, eventType, storedOn));
 
         when(storedOn.isDAS()).thenReturn(true);
-        assertFalse(irpa.canHandle(asset, eventType, storedOn));
+        assertFalse(irpa.canHandle(file, eventType, storedOn));
 
         when(storedOn.haveWorkingDir()).thenReturn(true);
-        assertFalse(irpa.canHandle(asset, eventType, storedOn));
+        assertFalse(irpa.canHandle(file, eventType, storedOn));
 
         when(storedOn.haveRenderedDir()).thenReturn(true);
-        assertFalse(irpa.canHandle(asset, eventType, storedOn));
+        assertFalse(irpa.canHandle(file, eventType, storedOn));
 
-        when(asset.hasResolution()).thenReturn(true);
-        assertFalse(irpa.canHandle(asset, eventType, storedOn));
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, 1).width();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, 1).height();
 
-        when(asset.getMimeType()).thenReturn(Optional.ofNullable(mimeType));
-        assertTrue(irpa.canHandle(asset, eventType, storedOn));
+        assertFalse(irpa.canHandle(file, eventType, storedOn));
+
+        metadataThesaurusService.setMimeType(mimeType);
+
+        assertTrue(irpa.canHandle(file, eventType, storedOn));
 
         verify(storedOn, atLeastOnce()).isDAS();
         verify(storedOn, atLeastOnce()).haveWorkingDir();
         verify(storedOn, atLeastOnce()).haveRenderedDir();
-        verify(asset, atLeastOnce()).getMimeType();
-        verify(asset, atLeastOnce()).hasResolution();
         verify(imageMagick, atLeastOnce()).getManagedRasterMimeTypes();
     }
-
-    File assetFile;
-    @Fake
-    String typeClassifer;
 
     @ParameterizedTest
     @ValueSource(booleans = { false, true })
@@ -147,18 +149,15 @@ class ImageRasterPreviewActivityTest {
             typeClassifer = typeClassifer + "Alpha";
         }
 
-        when(storedOn.storage()).thenReturn(storage);
-        when(asset.getLocalInternalFile(storage)).thenReturn(assetFile);
-        when(asset.getMetadataValue(MTD_TECHNICAL_CLASSIFIER, "type"))
-                .thenReturn(Optional.ofNullable(typeClassifer));
+        when(storedOn.getLocalInternalFile(file)).thenReturn(assetFile);
 
-        irpa.handle(asset, eventType, storedOn);
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, typeClassifer).type();
 
-        verify(renderedFilesProducerService, times(1))
-                .makeImageThumbnails(asset, storedOn, assetFile, isImageTypeAlpha, 0);
-        verify(storedOn, times(1)).storage();
-        verify(asset, times(1)).getLocalInternalFile(storage);
-        verify(asset, times(1)).getMetadataValue(MTD_TECHNICAL_CLASSIFIER, "type");
+        irpa.handle(file, eventType, storedOn);
+
+        verify(mediaRenderedFilesUtilsService, times(1))
+                .makeImageThumbnails(file, storedOn, assetFile, isImageTypeAlpha, 0);
+        verify(storedOn, atLeastOnce()).getLocalInternalFile(file);
     }
 
 }

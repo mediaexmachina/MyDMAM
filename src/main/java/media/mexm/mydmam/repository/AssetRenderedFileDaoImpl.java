@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.repository;
 
-import static jakarta.transaction.Transactional.TxType.REQUIRES_NEW;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
@@ -34,6 +33,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
+import media.mexm.mydmam.entity.RelativePathProvider;
 
 @Repository
 @Slf4j
@@ -66,8 +66,8 @@ public class AssetRenderedFileDaoImpl implements AssetRenderedFileDao {
     }
 
     @Override
-    @Transactional(REQUIRES_NEW)
-    public Map<String, Set<String>> deleteRenderedFilesByFileId(final Collection<Integer> ids) {
+    @Transactional
+    public Map<String, Set<RelativePathProvider>> deleteRenderedFilesByFileId(final Collection<Integer> ids) {
         final var relativePathsByRealmToDelete = entityManager.createQuery("""
                 SELECT new map(f.realm AS realm, arf AS assetRenderedFile)
                 FROM FileEntity f
@@ -79,7 +79,7 @@ public class AssetRenderedFileDaoImpl implements AssetRenderedFileDao {
                 .collect(groupingBy(
                         f -> (String) f.get("realm"),
                         HashMap::new,
-                        mapping(f -> ((AssetRenderedFileEntity) f.get("assetRenderedFile")).getRelativePath(),
+                        mapping(f -> ((RelativePathProvider) f.get("assetRenderedFile")),
                                 toSet())));
 
         entityManager.createQuery("""

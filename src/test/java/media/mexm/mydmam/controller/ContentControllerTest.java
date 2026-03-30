@@ -66,6 +66,7 @@ import media.mexm.mydmam.component.GetFileRequestComponent.GetFileRequest;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
+import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.repository.AssetRenderedFileRepository;
 import media.mexm.mydmam.service.MediaAssetService;
 import net.datafaker.Faker;
@@ -78,208 +79,212 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ActiveProfiles({ "Default" })
 class ContentControllerTest {
 
-	private static final RequestMapping REQUEST_MAPPING = ContentController.class.getAnnotation(
-			RequestMapping.class);
-	private static final String BASE_MAPPING = REQUEST_MAPPING.value()[0];
-	private static final ResultMatcher STATUS_BAD_REQUEST = status().isBadRequest();
-	private static final ResultMatcher STATUS_NOT_FOUND = status().isNotFound();
-	private static final ResultMatcher STATUS_TEAPOT = status().isIAmATeapot();
+    private static final RequestMapping REQUEST_MAPPING = ContentController.class.getAnnotation(
+            RequestMapping.class);
+    private static final String BASE_MAPPING = REQUEST_MAPPING.value()[0];
+    private static final ResultMatcher STATUS_BAD_REQUEST = status().isBadRequest();
+    private static final ResultMatcher STATUS_NOT_FOUND = status().isNotFound();
+    private static final ResultMatcher STATUS_TEAPOT = status().isIAmATeapot();
 
-	@Autowired
-	MockMvc mvc;
+    @Autowired
+    MockMvc mvc;
 
-	@MockitoBean
-	MyDMAMConfigurationProperties conf;
-	@MockitoBean
-	AssetRenderedFileRepository assetRenderedFileRepository;
-	@MockitoBean
-	GetFileRequestComponent getFileRequestComponent;
-	@MockitoBean
-	MediaAssetService mediaAssetService;
+    @MockitoBean
+    MyDMAMConfigurationProperties conf;
+    @MockitoBean
+    AssetRenderedFileRepository assetRenderedFileRepository;
+    @MockitoBean
+    GetFileRequestComponent getFileRequestComponent;
+    @MockitoBean
+    MediaAssetService mediaAssetService;
 
-	@Mock
-	HttpServletRequest request;
-	@Mock
-	RealmConf realmConf;
-	@Mock
-	AssetRenderedFileEntity renderedFileEntity;
+    @Mock
+    HttpServletRequest request;
+    @Mock
+    RealmConf realmConf;
+    @Mock
+    AssetRenderedFileEntity renderedFileEntity;
+    @Mock
+    FileEntity fileEntity;
 
-	@Captor
-	ArgumentCaptor<GetFileRequest> requestCaptor;
+    @Captor
+    ArgumentCaptor<GetFileRequest> requestCaptor;
 
-	@Fake
-	String realm;
-	@Fake
-	String hashPath;
-	@Fake
-	String name;
-	@Fake(min = 0, max = 1)
-	int index;
+    @Fake
+    String realm;
+    @Fake
+    String hashPath;
+    @Fake
+    String name;
+    @Fake(min = 0, max = 1)
+    int index;
 
-	@Fake
-	String renderedFileEntityName;
-	@Fake
-	String renderedFileEntityRelativePath;
-	@Fake
-	String renderedFileEntityHexETag;
-	@Fake
-	String renderedFileEntityMimeType;
-	@Fake
-	String renderedFileEntityEncoded;
+    @Fake
+    String renderedFileEntityName;
+    @Fake
+    String renderedFileEntityRelativePath;
+    @Fake
+    String renderedFileEntityHexETag;
+    @Fake
+    String renderedFileEntityMimeType;
+    @Fake
+    String renderedFileEntityEncoded;
 
-	@Fake(min = 10, max = 100)
-	long firstBytePos;
-	@Fake(min = 101, max = 1000)
-	long lastBytePos;
-	@Fake
-	String ifNoneMatch;
+    @Fake(min = 10, max = 100)
+    long firstBytePos;
+    @Fake(min = 101, max = 1000)
+    long lastBytePos;
+    @Fake
+    String ifNoneMatch;
 
-	File renderedMetadataDirectory;
-	HttpHeaders baseHeaders;
-	String rangeHeader;
-	HttpMethod method;
-	String getAssetRenderedFilesURL;
-	File returnFile;
+    File renderedMetadataDirectory;
+    HttpHeaders baseHeaders;
+    String rangeHeader;
+    HttpMethod method;
+    String getAssetRenderedFilesURL;
+    File returnFile;
 
-	@BeforeEach
-	void init() throws IOException {
-		renderedMetadataDirectory = getTempDirectory();
-		method = Faker.instance().random().nextBoolean() ? GET : HEAD;
-		baseHeaders = new HttpHeaders();
+    @BeforeEach
+    void init() throws IOException {
+        renderedMetadataDirectory = getTempDirectory();
+        method = Faker.instance().random().nextBoolean() ? GET : HEAD;
+        baseHeaders = new HttpHeaders();
 
-		final var ranges = List.of(createByteRange(firstBytePos, lastBytePos));
-		rangeHeader = HttpRange.toString(ranges);
-		baseHeaders.setRange(ranges);
-		baseHeaders.setIfNoneMatch(ifNoneMatch);
+        final var ranges = List.of(createByteRange(firstBytePos, lastBytePos));
+        rangeHeader = HttpRange.toString(ranges);
+        baseHeaders.setRange(ranges);
+        baseHeaders.setIfNoneMatch(ifNoneMatch);
 
-		returnFile = File.createTempFile("mydmam-" + getClass().getSimpleName(), "returnFile");
-		deleteQuietly(returnFile);
+        returnFile = File.createTempFile("mydmam-" + getClass().getSimpleName(), "returnFile");
+        deleteQuietly(returnFile);
 
-		when(getFileRequestComponent.makeResponseEntity(any()))
-				.thenReturn(new ResponseEntity<>(valueOf(418)));
-		when(conf.getRealmByName(realm)).thenReturn(Optional.ofNullable(realmConf));
-		when(realmConf.renderedMetadataDirectory()).thenReturn(renderedMetadataDirectory);
+        when(getFileRequestComponent.makeResponseEntity(any()))
+                .thenReturn(new ResponseEntity<>(valueOf(418)));
+        when(conf.getRealmByName(realm)).thenReturn(Optional.ofNullable(realmConf));
+        when(realmConf.renderedMetadataDirectory()).thenReturn(renderedMetadataDirectory);
 
-		when(renderedFileEntity.getName()).thenReturn(renderedFileEntityName);
-		when(renderedFileEntity.getRelativePath()).thenReturn(renderedFileEntityRelativePath);
-		when(renderedFileEntity.getLength()).thenReturn(0l);
-		when(renderedFileEntity.getHexETag()).thenReturn(renderedFileEntityHexETag);
-		when(renderedFileEntity.getMimeType()).thenReturn(renderedFileEntityMimeType);
-		when(renderedFileEntity.getEncoded()).thenReturn(renderedFileEntityEncoded);
-		when(mediaAssetService.getPhysicalRenderedFile(renderedFileEntity, realm))
-				.thenReturn(returnFile);
+        when(renderedFileEntity.getName()).thenReturn(renderedFileEntityName);
+        when(renderedFileEntity.getFile()).thenReturn(fileEntity);
+        when(renderedFileEntity.getLength()).thenReturn(0l);
+        when(renderedFileEntity.getHexETag()).thenReturn(renderedFileEntityHexETag);
+        when(renderedFileEntity.getMimeType()).thenReturn(renderedFileEntityMimeType);
+        when(renderedFileEntity.getEncoded()).thenReturn(renderedFileEntityEncoded);
+        when(mediaAssetService.getPhysicalRenderedFile(fileEntity, renderedFileEntity, realm))
+                .thenReturn(returnFile);
 
-		getAssetRenderedFilesURL = Stream.of(
-				BASE_MAPPING,
-				"rendered",
-				realm,
-				hashPath,
-				name)
-				.collect(joining("/"));
-	}
+        getAssetRenderedFilesURL = Stream.of(
+                BASE_MAPPING,
+                "rendered",
+                realm,
+                hashPath,
+                name)
+                .collect(joining("/"));
+    }
 
-	@AfterEach
-	void ends() {
-		verifyNoMoreInteractions(
-				request,
-				assetRenderedFileRepository,
-				getFileRequestComponent,
-				mediaAssetService);
-	}
+    @AfterEach
+    void ends() {
+        verifyNoMoreInteractions(
+                request,
+                assetRenderedFileRepository,
+                getFileRequestComponent,
+                mediaAssetService);
+    }
 
-	@Test
-	void testGetAssetRenderedFiles_badRealm() throws Exception {
-		when(conf.getRealmByName(realm)).thenReturn(empty());
+    @Test
+    void testGetAssetRenderedFiles_badRealm() throws Exception {
+        when(conf.getRealmByName(realm)).thenReturn(empty());
 
-		mvc.perform(request(method, getAssetRenderedFilesURL)
-				.headers(baseHeaders))
-				.andExpect(STATUS_BAD_REQUEST)
-				.andReturn()
-				.getResponse();
-	}
+        mvc.perform(request(method, getAssetRenderedFilesURL)
+                .headers(baseHeaders))
+                .andExpect(STATUS_BAD_REQUEST)
+                .andReturn()
+                .getResponse();
+    }
 
-	@Test
-	void testGetAssetRenderedFiles_notFound() throws Exception {
-		when(assetRenderedFileRepository.getRenderedFile(hashPath, realm, name, index))
-				.thenReturn(null);
+    @Test
+    void testGetAssetRenderedFiles_notFound() throws Exception {
+        when(assetRenderedFileRepository.getRenderedFile(hashPath, realm, name, index))
+                .thenReturn(null);
 
-		mvc.perform(request(method, getAssetRenderedFilesURL + "?index=" + index)
-				.headers(baseHeaders))
-				.andExpect(STATUS_NOT_FOUND)
-				.andReturn()
-				.getResponse();
+        mvc.perform(request(method, getAssetRenderedFilesURL + "?index=" + index)
+                .headers(baseHeaders))
+                .andExpect(STATUS_NOT_FOUND)
+                .andReturn()
+                .getResponse();
 
-		verify(assetRenderedFileRepository, times(1)).getRenderedFile(hashPath, realm, name, index);
-	}
+        verify(assetRenderedFileRepository, times(1)).getRenderedFile(hashPath, realm, name, index);
+    }
 
-	@Test
-	void testGetAssetRenderedFiles() throws Exception {
-		when(assetRenderedFileRepository.getRenderedFile(hashPath, realm, name, index))
-				.thenReturn(renderedFileEntity);
+    @Test
+    void testGetAssetRenderedFiles() throws Exception {
+        when(assetRenderedFileRepository.getRenderedFile(hashPath, realm, name, index))
+                .thenReturn(renderedFileEntity);
 
-		mvc.perform(request(method, getAssetRenderedFilesURL + "?index=" + index)
-				.headers(baseHeaders))
-				.andExpect(STATUS_TEAPOT)
-				.andReturn()
-				.getResponse();
+        mvc.perform(request(method, getAssetRenderedFilesURL + "?index=" + index)
+                .headers(baseHeaders))
+                .andExpect(STATUS_TEAPOT)
+                .andReturn()
+                .getResponse();
 
-		verify(assetRenderedFileRepository, times(1)).getRenderedFile(hashPath, realm, name, index);
+        verify(assetRenderedFileRepository, times(1)).getRenderedFile(hashPath, realm, name, index);
 
-		verify(renderedFileEntity, atLeastOnce()).getName();
-		verify(renderedFileEntity, atLeastOnce()).getHexETag();
-		verify(renderedFileEntity, atLeastOnce()).getMimeType();
-		verify(renderedFileEntity, atLeastOnce()).getEncoded();
-		verify(mediaAssetService, times(1)).getPhysicalRenderedFile(renderedFileEntity, realm);
+        verify(renderedFileEntity, atLeastOnce()).getName();
+        verify(renderedFileEntity, atLeastOnce()).getHexETag();
+        verify(renderedFileEntity, atLeastOnce()).getMimeType();
+        verify(renderedFileEntity, atLeastOnce()).getEncoded();
+        verify(renderedFileEntity, atLeastOnce()).getFile();
+        verify(mediaAssetService, times(1)).getPhysicalRenderedFile(fileEntity, renderedFileEntity, realm);
 
-		verify(getFileRequestComponent, times(1)).makeResponseEntity(requestCaptor.capture());
-		assertThat(requestCaptor.getValue())
-				.isEqualTo(new GetFileRequest(
-						returnFile,
-						method,
-						rangeHeader,
-						ifNoneMatch,
-						renderedFileEntityHexETag,
-						renderedFileEntityMimeType,
-						renderedFileEntityEncoded,
-						empty()));
-	}
+        verify(getFileRequestComponent, times(1)).makeResponseEntity(requestCaptor.capture());
+        assertThat(requestCaptor.getValue())
+                .isEqualTo(new GetFileRequest(
+                        returnFile,
+                        method,
+                        rangeHeader,
+                        ifNoneMatch,
+                        renderedFileEntityHexETag,
+                        renderedFileEntityMimeType,
+                        renderedFileEntityEncoded,
+                        empty()));
+    }
 
-	@Test
-	void testGetAssetRenderedFiles_download() throws Exception {
-		when(assetRenderedFileRepository.getRenderedFile(hashPath, realm, name, index))
-				.thenReturn(renderedFileEntity);
+    @Test
+    void testGetAssetRenderedFiles_download() throws Exception {
+        when(assetRenderedFileRepository.getRenderedFile(hashPath, realm, name, index))
+                .thenReturn(renderedFileEntity);
 
-		mvc.perform(request(method, getAssetRenderedFilesURL + "?index=" + index + "&download=1")
-				.headers(baseHeaders))
-				.andExpect(STATUS_TEAPOT)
-				.andReturn()
-				.getResponse();
+        mvc.perform(request(method, getAssetRenderedFilesURL + "?index=" + index + "&download=1")
+                .headers(baseHeaders))
+                .andExpect(STATUS_TEAPOT)
+                .andReturn()
+                .getResponse();
 
-		verify(assetRenderedFileRepository, times(1)).getRenderedFile(hashPath, realm, name, index);
+        verify(assetRenderedFileRepository, times(1)).getRenderedFile(hashPath, realm, name, index);
 
-		verify(renderedFileEntity, atLeastOnce()).getName();
-		verify(renderedFileEntity, atLeastOnce()).getHexETag();
-		verify(renderedFileEntity, atLeastOnce()).getMimeType();
-		verify(renderedFileEntity, atLeastOnce()).getEncoded();
-		verify(mediaAssetService, times(1)).getPhysicalRenderedFile(renderedFileEntity, realm);
+        verify(renderedFileEntity, atLeastOnce()).getName();
+        verify(renderedFileEntity, atLeastOnce()).getHexETag();
+        verify(renderedFileEntity, atLeastOnce()).getMimeType();
+        verify(renderedFileEntity, atLeastOnce()).getEncoded();
+        verify(renderedFileEntity, atLeastOnce()).getFile();
+        verify(mediaAssetService, times(1)).getPhysicalRenderedFile(fileEntity, renderedFileEntity, realm);
 
-		verify(getFileRequestComponent, times(1)).makeResponseEntity(requestCaptor.capture());
-		final var fRequest = requestCaptor.getValue();
-		assertThat(fRequest.contentEncoded()).isEqualTo(renderedFileEntityEncoded);
-		assertThat(fRequest.etag()).isEqualTo(renderedFileEntityHexETag);
-		assertThat(fRequest.contentType()).isEqualTo(renderedFileEntityMimeType);
-		assertThat(fRequest.method()).isEqualTo(method);
-		assertThat(fRequest.fileToSend())
-				.isEqualTo(returnFile);
-		assertThat(fRequest.rangeHeader()).isEqualTo(rangeHeader);
-		assertThat(fRequest.ifNoneMatch()).isEqualTo(ifNoneMatch);
+        verify(getFileRequestComponent, times(1)).makeResponseEntity(requestCaptor.capture());
+        final var fRequest = requestCaptor.getValue();
+        assertThat(fRequest.contentEncoded()).isEqualTo(renderedFileEntityEncoded);
+        assertThat(fRequest.etag()).isEqualTo(renderedFileEntityHexETag);
+        assertThat(fRequest.contentType()).isEqualTo(renderedFileEntityMimeType);
+        assertThat(fRequest.method()).isEqualTo(method);
+        assertThat(fRequest.fileToSend())
+                .isEqualTo(returnFile);
+        assertThat(fRequest.rangeHeader()).isEqualTo(rangeHeader);
+        assertThat(fRequest.ifNoneMatch()).isEqualTo(ifNoneMatch);
 
-		if (index > 0) {
-			assertThat(fRequest.oDownloadedFileName()).asString().contains("_" + index + ".");
-		} else {
-			assertThat(fRequest.oDownloadedFileName()).contains(renderedFileEntityName);
-		}
+        if (index > 0) {
+            assertThat(fRequest.oDownloadedFileName()).asString().contains("_" + index + ".");
+        } else {
+            assertThat(fRequest.oDownloadedFileName()).contains(renderedFileEntityName);
+        }
 
-	}
+    }
 
 }

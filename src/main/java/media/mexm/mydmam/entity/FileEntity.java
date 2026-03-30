@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -47,205 +48,212 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 
 @Entity
 @Table(name = FileEntity.TABLE_NAME,
-	   indexes = {
-				   @Index(columnList = "hash_path", name = FileEntity.TABLE_NAME + "_hash_path_idx"),
-				   @Index(columnList = "parent_hash_path", name = FileEntity.TABLE_NAME + "_parent_hash_path_idx"),
-				   @Index(columnList = "realm", name = FileEntity.TABLE_NAME + "_realm_idx"),
-				   @Index(columnList = "storage", name = FileEntity.TABLE_NAME + "_storage_idx")
-	   })
+       indexes = {
+                   @Index(columnList = "hash_path", name = FileEntity.TABLE_NAME + "_hash_path_idx"),
+                   @Index(columnList = "parent_hash_path", name = FileEntity.TABLE_NAME + "_parent_hash_path_idx"),
+                   @Index(columnList = "realm", name = FileEntity.TABLE_NAME + "_realm_idx"),
+                   @Index(columnList = "storage", name = FileEntity.TABLE_NAME + "_storage_idx")
+       })
 @Getter
 public class FileEntity {
 
-	public static final int MAX_NAME_SIZE = 64;
-	public static final int HASH_STRING_LEN = 64;
-	public static final String TABLE_NAME = "file";
+    public static final int MAX_NAME_SIZE = 64;
+    public static final int HASH_STRING_LEN = 64;
+    public static final String TABLE_NAME = "file";
 
-	@Id
-	@GeneratedValue(strategy = IDENTITY)
-	private Integer id;
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Integer id;
 
-	@NotNull
-	@Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
-	@Column(columnDefinition = "TINYINT", name = "directory")
-	private boolean directory;
+    @NotNull
+    @Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
+    @Column(columnDefinition = "TINYINT", name = "directory")
+    private boolean directory;
 
-	@NotBlank
-	@Column(length = MAX_NAME_SIZE, name = "realm", updatable = false)
-	private String realm;
+    @NotBlank
+    @Column(length = MAX_NAME_SIZE, name = "realm", updatable = false)
+    private String realm;
 
-	@NotBlank
-	@Column(length = MAX_NAME_SIZE, name = "storage", updatable = false)
-	private String storage;
+    @NotBlank
+    @Column(length = MAX_NAME_SIZE, name = "storage", updatable = false)
+    private String storage;
 
-	@NotBlank
-	@Column(length = 4096, name = "path", updatable = false)
-	private String path;
+    @NotBlank
+    @Column(length = 4096, name = "path", updatable = false)
+    private String path;
 
-	@NotBlank
-	@Column(length = HASH_STRING_LEN, name = "hash_path", updatable = false)
-	private String hashPath;
+    @NotBlank
+    @Column(length = HASH_STRING_LEN, name = "hash_path", updatable = false)
+    private String hashPath;
 
-	@NotBlank
-	@Column(length = HASH_STRING_LEN, name = "parent_hash_path", updatable = false)
-	private String parentHashPath;
+    @NotBlank
+    @Column(length = HASH_STRING_LEN, name = "parent_hash_path", updatable = false)
+    private String parentHashPath;
 
-	@Setter
-	@NotNull
-	@Column(name = "modified")
-	private Timestamp modified;
+    @Setter
+    @NotNull
+    @Column(name = "modified")
+    private Timestamp modified;
 
-	@Setter
-	@NotNull
-	@Column(name = "length")
-	private Long length;
+    @Setter
+    @NotNull
+    @Column(name = "length")
+    private Long length;
 
-	@NotNull
-	@Column(name = "watch_first", updatable = false)
-	private Date watchFirst;
+    @NotNull
+    @Column(name = "watch_first", updatable = false)
+    private Date watchFirst;
 
-	@Setter
-	@NotNull
-	@Column(name = "watch_last")
-	private Timestamp watchLast;
+    @Setter
+    @NotNull
+    @Column(name = "watch_last")
+    private Timestamp watchLast;
 
-	@Setter
-	@NotNull
-	@Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
-	@Column(name = "watch_marked_as_done", columnDefinition = "TINYINT")
-	private boolean watchMarkedAsDone;
+    @Setter
+    @NotNull
+    @Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
+    @Column(name = "watch_marked_as_done", columnDefinition = "TINYINT")
+    private boolean watchMarkedAsDone;
 
-	@Setter
-	@NotNull
-	@Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
-	@Column(name = "watch_last_is_same", columnDefinition = "TINYINT")
-	private boolean watchLastIsSame;
+    @Setter
+    @NotNull
+    @Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
+    @Column(name = "watch_last_is_same", columnDefinition = "TINYINT")
+    private boolean watchLastIsSame;
 
-	@Setter
-	@NotNull
-	@Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
-	@Column(name = "watch_done_but_changed", columnDefinition = "TINYINT")
-	private boolean watchDoneButChanged;
+    @Setter
+    @NotNull
+    @Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
+    @Column(name = "watch_done_but_changed", columnDefinition = "TINYINT")
+    private boolean watchDoneButChanged;
 
-	@OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
-	private final Set<PendingActivityEntity> pendingActivities = new HashSet<>();
+    @OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
+    private final Set<PendingActivityEntity> pendingActivities = new HashSet<>();
 
-	@OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
-	private final Set<FileMetadataEntity> fileMetadataEntites = new HashSet<>();
+    @OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
+    private final Set<FileMetadataEntity> fileMetadataEntites = new HashSet<>();
 
-	@OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
-	private final Set<AssetRenderedFileEntity> assetRenderedFiles = new HashSet<>();
+    @OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
+    private final Set<AssetRenderedFileEntity> assetRenderedFiles = new HashSet<>();
 
-	/**
-	 * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE
-	 */
-	public FileEntity() {
-		// ONLY SET FOR HIBERNATE
-	}
+    @OneToMany(mappedBy = "file", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
+    private final Set<AssetTextExtractedFileEntity> assetTextExtractedFile = new HashSet<>();
 
-	public FileEntity(final String realm,
-					  final String storage,
-					  final CachedFileAttributes firstDetectionFile) {
-		watchFirst = new Date();
-		this.realm = realm;
-		this.storage = storage;
-		path = firstDetectionFile.getPath();
-		hashPath = hashPath(firstDetectionFile.getPath());
-		parentHashPath = hashPath(firstDetectionFile.getParentPath());
-		refreshNewFile(firstDetectionFile);
-		directory = firstDetectionFile.isDirectory();
-		watchLast = new Timestamp(System.currentTimeMillis());
-		watchLastIsSame = false;
-		watchDoneButChanged = false;
-		watchMarkedAsDone = false;
-	}
+    /**
+     * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE
+     */
+    public FileEntity() {
+        // ONLY SET FOR HIBERNATE
+    }
 
-	private String hashPath(final String path) {
-		return hashPath(realm, storage, path);
-	}
+    public FileEntity(final String realm,
+                      final String storage,
+                      final CachedFileAttributes firstDetectionFile) {
+        watchFirst = new Date();
+        this.realm = realm;
+        this.storage = storage;
+        path = firstDetectionFile.getPath();
+        hashPath = hashPath(firstDetectionFile.getPath());
+        parentHashPath = hashPath(firstDetectionFile.getParentPath());
+        refreshNewFile(firstDetectionFile);
+        directory = firstDetectionFile.isDirectory();
+        watchLast = new Timestamp(System.currentTimeMillis());
+        watchLastIsSame = false;
+        watchDoneButChanged = false;
+        watchMarkedAsDone = false;
+    }
 
-	public static final String hashPath(final String realm, final String storage, final String path) {
-		if (realm.contains(":")) {
-			throw new IllegalArgumentException("Realm name can't contains \":\" \"" + realm + "\"");
-		}
-		if (storage.contains(":")) {
-			throw new IllegalArgumentException("Storage name can't contains \":\" \"" + storage + "\"");
-		}
-		if (path.contains(":")) {
-			throw new IllegalArgumentException("Full path can't contains \":\" \"" + path + "\"");
-		}
-		return DigestUtils.sha256Hex(realm + ":" + storage + ":" + path);// NOSONAR S4790
-	}
+    private String hashPath(final String path) {
+        return hashPath(realm, storage, path);
+    }
 
-	private void refreshNewFile(final CachedFileAttributes file) {
-		modified = new Timestamp(round(file.lastModified() / 1000d) * 1000);
-		length = file.length();
-	}
+    public static final String hashPath(final String realm, final String storage, final String path) {
+        if (realm.contains(":")) {
+            throw new IllegalArgumentException("Realm name can't contains \":\" \"" + realm + "\"");
+        }
+        if (storage.contains(":")) {
+            throw new IllegalArgumentException("Storage name can't contains \":\" \"" + storage + "\"");
+        }
+        if (path.contains(":")) {
+            throw new IllegalArgumentException("Full path can't contains \":\" \"" + path + "\"");
+        }
+        return DigestUtils.sha256Hex(realm + ":" + storage + ":" + path);// NOSONAR S4790
+    }
 
-	public FileEntity update(final CachedFileAttributes seeAgainFile) {
-		if (directory) {
-			if (watchMarkedAsDone == false) {
-				refreshNewFile(seeAgainFile);
-			}
-		} else {
-			watchLastIsSame = modified.getTime() == round(seeAgainFile.lastModified() / 1000d) * 1000
-							  && length == seeAgainFile.length();
-			if (watchLastIsSame == false) {
-				watchLast = new Timestamp(System.currentTimeMillis());
-				if (watchMarkedAsDone) {
-					watchDoneButChanged = true;
-				}
-			}
-			refreshNewFile(seeAgainFile);
-		}
-		return this;
-	}
+    private void refreshNewFile(final CachedFileAttributes file) {
+        modified = new Timestamp(round(file.lastModified() / 1000d) * 1000);
+        length = file.length();
+    }
 
-	public boolean isTimeQualified(final Duration minFixedStateTime) {
-		final var notTooRecent = watchLast.getTime() < System.currentTimeMillis() - minFixedStateTime.toMillis();
-		return directory
-			   || watchLastIsSame && notTooRecent;
-	}
+    public FileEntity update(final CachedFileAttributes seeAgainFile) {
+        if (directory) {
+            if (watchMarkedAsDone == false) {
+                refreshNewFile(seeAgainFile);
+            }
+        } else {
+            watchLastIsSame = modified.getTime() == round(seeAgainFile.lastModified() / 1000d) * 1000
+                              && length == seeAgainFile.length();
+            if (watchLastIsSame == false) {
+                watchLast = new Timestamp(System.currentTimeMillis());
+                if (watchMarkedAsDone) {
+                    watchDoneButChanged = true;
+                }
+            }
+            refreshNewFile(seeAgainFile);
+        }
+        return this;
+    }
 
-	public FileEntity resetDoneButChanged() {
-		watchDoneButChanged = false;
-		return this;
-	}
+    public boolean isTimeQualified(final Duration minFixedStateTime) {
+        final var notTooRecent = watchLast.getTime() < System.currentTimeMillis() - minFixedStateTime.toMillis();
+        return directory
+               || watchLastIsSame && notTooRecent;
+    }
 
-	public FileEntity setMarkedAsDone() {
-		watchMarkedAsDone = true;
-		return this;
-	}
+    public FileEntity resetDoneButChanged() {
+        watchDoneButChanged = false;
+        return this;
+    }
 
-	public FileAttributesReference toFileAttributesReference(final boolean exists) {
-		return new FileAttributesReference(path, length, modified.getTime(), exists, directory);
-	}
+    public FileEntity setMarkedAsDone() {
+        watchMarkedAsDone = true;
+        return this;
+    }
 
-	@Override
-	public String toString() {
-		final var builder = new StringBuilder();
-		builder.append("FileEntity [id=");
-		builder.append(id);
-		builder.append(", realm=");
-		builder.append(realm);
-		builder.append(", storage=");
-		builder.append(storage);
-		builder.append(", path=");
-		builder.append(path);
-		builder.append(", hashPath=");
-		builder.append(hashPath);
-		builder.append("]");
-		return builder.toString();
-	}
+    public FileAttributesReference toFileAttributesReference(final boolean exists) {
+        return new FileAttributesReference(path, length, modified.getTime(), exists, directory);
+    }
 
-	public static final Comparator<? super FileEntity> FILE_FULL_PATH_COMPARATOR = (l, r) -> {
-		var rCompare = l.getRealm().compareTo(r.getRealm());
-		if (rCompare != 0) {
-			return rCompare;
-		}
-		rCompare = l.getStorage().compareTo(r.getStorage());
-		if (rCompare != 0) {
-			return rCompare;
-		}
-		return l.getPath().compareTo(r.getPath());
-	};
+    public String getName() {
+        return FilenameUtils.getName(path);
+    }
+
+    @Override
+    public String toString() {
+        final var builder = new StringBuilder();
+        builder.append("FileEntity [id=");
+        builder.append(id);
+        builder.append(", realm=");
+        builder.append(realm);
+        builder.append(", storage=");
+        builder.append(storage);
+        builder.append(", path=");
+        builder.append(path);
+        builder.append(", hashPath=");
+        builder.append(hashPath);
+        builder.append("]");
+        return builder.toString();
+    }
+
+    public static final Comparator<? super FileEntity> FILE_FULL_PATH_COMPARATOR = (l, r) -> {
+        var rCompare = l.getRealm().compareTo(r.getRealm());
+        if (rCompare != 0) {
+            return rCompare;
+        }
+        rCompare = l.getStorage().compareTo(r.getStorage());
+        if (rCompare != 0) {
+            return rCompare;
+        }
+        return l.getPath().compareTo(r.getPath());
+    };
 }

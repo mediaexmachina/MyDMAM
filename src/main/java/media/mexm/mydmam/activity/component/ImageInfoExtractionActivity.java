@@ -16,36 +16,30 @@
  */
 package media.mexm.mydmam.activity.component;
 
-import static media.mexm.mydmam.asset.FileMetadataResolutionTrait.MTD_TECHNICAL_CLASSIFIER;
-
-import java.util.Map;
-import java.util.Set;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
-import media.mexm.mydmam.asset.ManagedMimeTrait;
-import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.asset.MetadataExtractorHandler;
+import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
-import media.mexm.mydmam.service.RenderedFilesProducerService;
+import media.mexm.mydmam.service.MediaAssetService;
+import media.mexm.mydmam.service.MetadataThesaurusService;
 import media.mexm.mydmam.tools.ImageMagick;
 
 @Component
 @Slf4j
-public class ImageInfoExtractionActivity implements MetadataExtractorHandler, ManagedMimeTrait {
+public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
 
     @Autowired
     ImageMagick imageMagick;
     @Autowired
-    RenderedFilesProducerService renderedFilesProducerService;
-
-    @Override
-    public Set<String> getManagedMimeTypes() {
-        return imageMagick.getManagedRasterMimeTypes();
-    }
+    MediaAssetService mediaAssetService;
+    @Autowired
+    MetadataThesaurusService metadataThesaurusService;
 
     @Override
     public String getMetadataOriginName() {
@@ -58,21 +52,23 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler, Ma
     }
 
     @Override
-    public boolean canHandle(final MediaAsset asset,
+    public boolean canHandle(final FileEntity file,
                              final ActivityEventType eventType,
                              final RealmStorageConfiguredEnv storedOn) {
         return storedOn.isDAS()
                && storedOn.haveWorkingDir()
                && storedOn.haveRenderedDir()
-               && canHandleMimeType(asset);
+               && metadataThesaurusService.getMimeType(file)
+                       .map(mimeType -> imageMagick.getManagedRasterMimeTypes().contains(mimeType))
+                       .orElse(false);
     }
 
     @Override
-    public void handle(final MediaAsset asset,
+    public void handle(final FileEntity file,
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) throws Exception {
-        final var assetFile = asset.getLocalInternalFile(storedOn.storage());
-        final var workingFile = renderedFilesProducerService.makeWorkingFile("identify.json", asset, storedOn);
+        final var assetFile = storedOn.getLocalInternalFile(file);
+        final var workingFile = storedOn.makeWorkingFile("identify.json", file);
 
         final var jsonNode = imageMagick.extractIdentifyJsonFile(
                 assetFile,
@@ -83,26 +79,19 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler, Ma
             throw new IllegalArgumentException("Can't support JSON version " + version);
         }
 
-        renderedFilesProducerService.assetDeclareRenderedStaticFile(
-                asset, workingFile, "identify.json", true, 0, "image-format");
+        mediaAssetService.declareRenderedStaticFile(
+                file, workingFile, "identify.json", true, 0, "image-format");
 
-        jsonNode.read("$.image.mimeType", String.class)
-                .ifPresent(mimeType -> asset.setMimeType(this, mimeType));
+        metadataThesaurusService.getWriter(this, file, MtdThesaurusDefFileFormat.class)
+                .set(jsonNode.read("$.image.mimeType", String.class))
+                .mimeType();
 
-        final var width = jsonNode.read("$.image.geometry.width", Integer.class).orElse(0);
-        final var height = jsonNode.read("$.image.geometry.height", Integer.class).orElse(0);
-        final var colorspace = jsonNode.read("$.image.colorspace", String.class).orElse(null);
-        final var orientation = jsonNode.read("$.image.orientation", String.class).orElse(null);
-        final var type = jsonNode.read("$.image.type", String.class).map(String::toLowerCase).orElse(null);
-
-        final var entries = Map.of(
-                "colorspace", colorspace,
-                "orientation", orientation,
-                "type", type);
-
-        asset.setResolution(this, width, height);
-        asset.createFileMetadataEntry(this, MTD_TECHNICAL_CLASSIFIER, 0, entries);
-        log.debug("Found properties for {}: {}×{}; {}", asset, width, height, entries);
+        final var techWriter = metadataThesaurusService.getWriter(this, file, MtdThesaurusDefTechnical.class);
+        techWriter.set(jsonNode.read("$.image.geometry.width", Integer.class)).width();
+        techWriter.set(jsonNode.read("$.image.geometry.height", Integer.class)).height();
+        techWriter.set(jsonNode.read("$.image.orientation", String.class)).orientation();
+        techWriter.set(jsonNode.read("$.image.colorspace", String.class)).colorspace();
+        techWriter.set(jsonNode.read("$.image.type", String.class).map(String::toLowerCase)).type();
     }
 
 }

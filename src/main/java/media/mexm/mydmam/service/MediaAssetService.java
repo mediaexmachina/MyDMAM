@@ -19,40 +19,51 @@ package media.mexm.mydmam.service;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.function.BiConsumer;
 
 import media.mexm.mydmam.asset.DeclaredRenderedFile;
-import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
+import media.mexm.mydmam.entity.AssetTextExtractedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.entity.FileMetadataEntity;
+import media.mexm.mydmam.entity.RelativePathProvider;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
 public interface MediaAssetService {
 
-	MediaAsset getFromWatchfolder(String realmName,
-								  String storageName,
-								  FileAttributesReference file,
-								  MediaAssetService injectedService);
+    String MEDIA_ASSET_AUDIT_ISSUER = "media-asset";
 
-	MediaAsset getFromFileEntry(FileEntity file, MediaAssetService injectedService);
+    FileEntity getFromWatchfolder(String realmName,
+                                  String storageName,
+                                  FileAttributesReference file);
 
-	void purgeAssetArtefacts(String realmName, String storageName, FileAttributesReference file);
+    void purgeAssetArtefacts(String realmName, String storageName, FileAttributesReference file);
 
-	Map<AssetRenderedFileEntity, File> declareRenderedStaticFiles(FileEntity fileEntity,
-																  Collection<DeclaredRenderedFile> declaredRenderedFiles) throws IOException;
+    String getRelativePath(FileEntity fileEntity, RelativePathProvider relativePathProvider);
 
-	Collection<FileMetadataEntity> declareFileMetadatas(FileEntity file,
-														Collection<FileMetadataEntity> fileMetadatas) throws IOException;
+    File getAbsolutePath(FileEntity fileEntity, RelativePathProvider relativePathProvider);
 
-	Set<AssetRenderedFileEntity> getAllRenderedFiles(String fileHashpath, String realm);
+    void declareRenderedStaticFile(FileEntity fileEntity,
+                                   DeclaredRenderedFile renderedFile) throws IOException;
 
-	Set<FileMetadataEntity> getAllMetadatas(MediaAsset asset);
+    void declareRenderedStaticFile(FileEntity fileEntity,
+                                   File workingFile,
+                                   String name,
+                                   boolean toGzip,
+                                   int index,
+                                   String previewType) throws IOException;
 
-	File getPhysicalRenderedFile(AssetRenderedFileEntity assetRenderedFileEntity, String realm);
+    void updateIndexer(FileEntity fileEntity);
 
-	Collection<MediaAsset> resetDetectedMetadatas(Collection<MediaAsset> assetsToReset,
-												  MediaAssetService injectedService);
+    void declareTextExtractedFile(FileEntity fileEntity,
+                                  File workingTextFile,
+                                  int index,
+                                  String name) throws IOException;
+
+    void forEachTextExtractedFile(FileEntity fileEntity,
+                                  BiConsumer<AssetTextExtractedFileEntity, String> onTextExtracted);
+
+    File getPhysicalRenderedFile(FileEntity fileEntity, AssetRenderedFileEntity assetRenderedFileEntity, String realm);
+
+    Collection<FileEntity> resetDetectedMetadatas(Collection<FileEntity> assetsToReset);
 
 }

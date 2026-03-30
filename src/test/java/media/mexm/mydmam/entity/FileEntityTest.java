@@ -42,80 +42,92 @@ import tv.hd3g.transfertfiles.CachedFileAttributes;
 @ExtendWith(MockToolsExtendsJunit.class)
 class FileEntityTest {
 
-	@Fake
-	String basePath;
-	@Fake
-	String baseName;
-	@Fake
-	String realm;
-	@Fake
-	String storage;
-	@Fake(min = 1, max = 100)
-	long length;
-	@Fake(min = 10000, max = 1000000)
-	long modified;
+    @Fake
+    String basePath;
+    @Fake
+    String baseName;
+    @Fake
+    String realm;
+    @Fake
+    String storage;
+    @Fake(min = 1, max = 100)
+    long length;
+    @Fake(min = 10000, max = 1000000)
+    long modified;
 
-	@Mock
-	CachedFileAttributes firstDetectionFile;
+    @Mock
+    CachedFileAttributes firstDetectionFile;
 
-	FileEntity file;
-	String parentPath;
-	String path;
+    FileEntity file;
+    String parentPath;
+    String path;
 
-	@BeforeEach
-	void init() {
-		path = "/" + basePath + "/" + baseName;
-		parentPath = "/" + basePath;
+    @BeforeEach
+    void init() {
+        path = "/" + basePath + "/" + baseName;
+        parentPath = "/" + basePath;
 
-		when(firstDetectionFile.getPath()).thenReturn(path);
-		when(firstDetectionFile.getParentPath()).thenReturn(parentPath);
-		when(firstDetectionFile.lastModified()).thenReturn(modified);
-		when(firstDetectionFile.length()).thenReturn(length);
-		when(firstDetectionFile.isDirectory()).thenReturn(false);
+        when(firstDetectionFile.getPath()).thenReturn(path);
+        when(firstDetectionFile.getParentPath()).thenReturn(parentPath);
+        when(firstDetectionFile.lastModified()).thenReturn(modified);
+        when(firstDetectionFile.length()).thenReturn(length);
+        when(firstDetectionFile.isDirectory()).thenReturn(false);
 
-		file = new FileEntity();
-		file = new FileEntity(realm, storage, firstDetectionFile);
-	}
+        file = new FileEntity();
+        file = new FileEntity(realm, storage, firstDetectionFile);
+    }
 
-	@AfterEach
-	void ends() {
-		reset(firstDetectionFile);
-	}
+    @AfterEach
+    void ends() {
+        reset(firstDetectionFile);
+    }
 
-	@Test
-	void testHashPath() {
-		assertEquals("0b9d90f1f0e4cb576cecc17e0c722939ed425f5ea792dc3404ef72c54ad2f9bc",
-				hashPath("realm", "storage", "basePath"));
-		assertThrows(IllegalArgumentException.class, () -> hashPath("re:alm", "storage", "basePath"));
-		assertThrows(IllegalArgumentException.class, () -> hashPath("realm", "sto:rage", "basePath"));
-		assertThrows(IllegalArgumentException.class, () -> hashPath("realm", "storage", "bas:ePath"));
-	}
+    @Test
+    void testHashPath() {
+        assertEquals("0b9d90f1f0e4cb576cecc17e0c722939ed425f5ea792dc3404ef72c54ad2f9bc",
+                hashPath("realm", "storage", "basePath"));
+        assertThrows(IllegalArgumentException.class, () -> hashPath("re:alm", "storage", "basePath"));
+        assertThrows(IllegalArgumentException.class, () -> hashPath("realm", "sto:rage", "basePath"));
+        assertThrows(IllegalArgumentException.class, () -> hashPath("realm", "storage", "bas:ePath"));
+    }
 
-	@Test
-	void testUpdate() {
-		assertEquals(file, file.update(firstDetectionFile));
-	}
+    @Test
+    void testUpdate() {
+        assertEquals(file, file.update(firstDetectionFile));
+    }
 
-	@Test
-	void testIsTimeQualified() {
-		when(firstDetectionFile.isDirectory()).thenReturn(true);
-		file = new FileEntity(realm, storage, firstDetectionFile);
-		assertTrue(file.isTimeQualified(Duration.ZERO));
-	}
+    @Test
+    void testIsTimeQualified() {
+        when(firstDetectionFile.isDirectory()).thenReturn(true);
+        file = new FileEntity(realm, storage, firstDetectionFile);
+        assertTrue(file.isTimeQualified(Duration.ZERO));
+    }
 
-	@Test
-	void testResetDoneButChanged() {
-		assertEquals(file, file.resetDoneButChanged());
-	}
+    @Test
+    void testResetDoneButChanged() {
+        assertEquals(file, file.resetDoneButChanged());
+    }
 
-	@Test
-	void testSetMarkedAsDone() {
-		assertEquals(file, file.setMarkedAsDone());
-	}
+    @Test
+    void testSetMarkedAsDone() {
+        assertEquals(file, file.setMarkedAsDone());
+    }
 
-	@Test
-	void testToFileAttributesReference() {
-		assertNotNull(file.toFileAttributesReference(true));
-	}
+    @Test
+    void testToFileAttributesReference() {
+        assertNotNull(file.toFileAttributesReference(true));
+    }
+
+    @Test
+    void testGetName() {
+        assertEquals(baseName, file.getName());
+    }
+
+    @Test
+    void testToString() {
+        final var hashPath = hashPath(realm, storage, path);
+        assertEquals("FileEntity [id=null, realm=" + realm + ", storage=" + storage + ", path=" + path + ", hashPath="
+                     + hashPath + "]", file.toString());
+    }
 
 }

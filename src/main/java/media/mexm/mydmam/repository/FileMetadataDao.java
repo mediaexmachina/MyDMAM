@@ -18,6 +18,7 @@ package media.mexm.mydmam.repository;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import media.mexm.mydmam.entity.FileEntity;
@@ -25,8 +26,9 @@ import media.mexm.mydmam.entity.FileMetadataEntity;
 
 public interface FileMetadataDao {
 
-	Map<String, Set<FileMetadataEntity>> getFileMetadatasByFileIds(Collection<Integer> fileIds, String realm);
+    Map<String, Set<FileMetadataEntity>> getFileMetadatasByFileIds(Collection<Integer> fileIds, String realm);
 
-	Collection<FileMetadataEntity> addUpdateEntries(FileEntity file, Collection<FileMetadataEntity> items);
+    void addUpdateEntry(FileEntity file, FileMetadataEntity item);
 
+    Optional<String> getMetadataValue(FileEntity fileEntity, int layer, String classifier, String key);
 }

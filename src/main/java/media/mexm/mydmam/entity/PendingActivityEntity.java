@@ -40,75 +40,75 @@ import media.mexm.mydmam.activity.ActivityHandler;
 
 @Entity
 @Table(name = PendingActivityEntity.TABLE_NAME,
-	   indexes = {
-				   @Index(columnList = "worker_host", name = PendingActivityEntity.TABLE_NAME + "_worker_host_idx"),
-				   @Index(columnList = "updated", name = PendingActivityEntity.TABLE_NAME + "_updated_idx"),
-				   @Index(columnList = "file_id", name = PendingActivityEntity.TABLE_NAME + "_file_id_idx")
-	   })
+       indexes = {
+                   @Index(columnList = "worker_host", name = PendingActivityEntity.TABLE_NAME + "_worker_host_idx"),
+                   @Index(columnList = "updated", name = PendingActivityEntity.TABLE_NAME + "_updated_idx"),
+                   @Index(columnList = "file_id", name = PendingActivityEntity.TABLE_NAME + "_file_id_idx")
+       })
 @Getter
 @ToString
 public class PendingActivityEntity {
 
-	public static final String TABLE_NAME = "pending_activity";
+    public static final String TABLE_NAME = "pending_activity";
 
-	@Id
-	@GeneratedValue(strategy = IDENTITY)
-	private Integer id;
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Integer id;
 
-	@NotNull
-	@Column(name = "create_date", updatable = false)
-	private Timestamp createDate;
+    @NotNull
+    @Column(name = "create_date", updatable = false)
+    private Timestamp createDate;
 
-	@NotNull
-	@JoinColumn(name = "file_id", updatable = false)
-	@ManyToOne(fetch = LAZY, cascade = DETACH, optional = false)
-	private FileEntity file;
+    @NotNull
+    @JoinColumn(name = "file_id", updatable = false)
+    @ManyToOne(fetch = LAZY, cascade = DETACH, optional = false)
+    private FileEntity file;
 
-	@NotBlank
-	@Column(length = 64, name = "handler_name", updatable = false)
-	private String handlerName;
+    @NotBlank
+    @Column(length = 64, name = "handler_name", updatable = false)
+    private String handlerName;
 
-	@NotBlank
-	@Column(length = 64, name = "event_type", updatable = false)
-	private String eventType;
+    @NotBlank
+    @Column(length = 64, name = "event_type", updatable = false)
+    private String eventType;
 
-	@NotBlank
-	@Column(length = 2048, name = "previous_handlers")
-	private String previousHandlers;
+    @NotBlank
+    @Column(length = 2048, name = "previous_handlers")
+    private String previousHandlers;
 
-	@NotNull
-	@Column(name = "updated")
-	private Timestamp updated;
+    @NotNull
+    @Column(name = "updated")
+    private Timestamp updated;
 
-	@NotBlank
-	@Column(length = 128, name = "worker_host")
-	private String workerHost;
+    @NotBlank
+    @Column(length = 128, name = "worker_host")
+    private String workerHost;
 
-	@NotNull
-	@Column(name = "worker_pid")
-	private Long workerPid;
+    @NotNull
+    @Column(name = "worker_pid")
+    private Long workerPid;
 
-	/**
-	 * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE
-	 */
-	public PendingActivityEntity() {
-		// ONLY SET FOR HIBERNATE
-	}
+    /**
+     * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE
+     */
+    public PendingActivityEntity() {
+        // ONLY SET FOR HIBERNATE
+    }
 
-	public PendingActivityEntity(final ActivityHandler activityHandler,
-								 final ActivityEventType eventType,
-								 final String previousHandlers,
-								 final FileEntity file,
-								 final String host,
-								 final long pid) {
-		handlerName = requireNonNull(activityHandler).getHandlerName();
-		this.eventType = requireNonNull(eventType).name();
-		this.previousHandlers = requireNonNull(previousHandlers);
-		createDate = new Timestamp(System.currentTimeMillis());
-		updated = createDate;
-		this.file = requireNonNull(file);
-		workerHost = requireNonNull(host);
-		workerPid = pid;
-	}
+    public PendingActivityEntity(final ActivityHandler activityHandler,
+                                 final ActivityEventType eventType,
+                                 final String previousHandlers,
+                                 final FileEntity file,
+                                 final String host,
+                                 final long pid) {
+        handlerName = requireNonNull(activityHandler).getHandlerName();
+        this.eventType = requireNonNull(eventType).name();
+        this.previousHandlers = requireNonNull(previousHandlers);
+        createDate = new Timestamp(System.currentTimeMillis());
+        updated = createDate;
+        this.file = requireNonNull(file);
+        workerHost = requireNonNull(host);
+        workerPid = pid;
+    }
 
 }

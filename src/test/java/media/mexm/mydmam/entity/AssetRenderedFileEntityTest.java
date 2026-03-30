@@ -52,171 +52,154 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ExtendWith(MockToolsExtendsJunit.class)
 class AssetRenderedFileEntityTest {
 
-	@Mock
-	FileEntity file;
+    @Mock
+    FileEntity file;
 
-	@Fake
-	String mimeType;
-	@Fake
-	String previewType;
-	@Fake(min = 1, max = 100)
-	int indexref;
-	@Fake
-	String name;
-	@Fake(min = 1, max = 10_000)
-	int id;
-	@Fake(min = 1, max = 10_000)
-	int fileId;
-	@Fake
-	String encoded;
+    @Fake
+    String mimeType;
+    @Fake
+    String previewType;
+    @Fake(min = 1, max = 100)
+    int indexref;
+    @Fake
+    String name;
+    @Fake(min = 1, max = 10_000)
+    int id;
+    @Fake(min = 1, max = 10_000)
+    int fileId;
+    @Fake
+    String encoded;
 
-	AssetRenderedFileEntity arf;
-	long etag;
-	DeclaredRenderedFile rendered;
-	File workingFile;
-	long length;
+    AssetRenderedFileEntity arf;
+    long etag;
+    DeclaredRenderedFile rendered;
+    File workingFile;
+    long length;
 
-	@BeforeEach
-	void init() throws IOException {
-		when(file.getId()).thenReturn(fileId);
+    @BeforeEach
+    void init() throws IOException {
+        when(file.getId()).thenReturn(fileId);
 
-		workingFile = File.createTempFile("mydmam-" + getClass().getSimpleName(), "workingFile");
-		write(workingFile, Faker.instance().lorem().paragraph(5), UTF_8);
-		length = workingFile.length();
+        workingFile = File.createTempFile("mydmam-" + getClass().getSimpleName(), "workingFile");
+        write(workingFile, Faker.instance().lorem().paragraph(5), UTF_8);
+        length = workingFile.length();
 
-		rendered = new DeclaredRenderedFile(workingFile, name, false, mimeType, indexref, previewType);
-		arf = new AssetRenderedFileEntity(file, rendered);
-		setId();
+        rendered = new DeclaredRenderedFile(workingFile, name, false, mimeType, indexref, previewType);
+        arf = new AssetRenderedFileEntity(file, rendered);
+        setId();
 
-		final var nameb = name.getBytes(UTF_8);
-		final var numbers = ByteBuffer.allocate((64 + 32 + 32 + 64) / 8 + nameb.length);
-		numbers.putLong(length);
-		numbers.putInt(indexref);
-		numbers.putInt(fileId);
-		numbers.putLong(arf.getCreateDate().getTime());
-		numbers.put(nameb);
+        final var nameb = name.getBytes(UTF_8);
+        final var numbers = ByteBuffer.allocate((64 + 32 + 32 + 64) / 8 + nameb.length);
+        numbers.putLong(length);
+        numbers.putInt(indexref);
+        numbers.putInt(fileId);
+        numbers.putLong(arf.getCreateDate().getTime());
+        numbers.put(nameb);
 
-		final var crc = new CRC32();
-		crc.update(numbers.flip());
-		etag = crc.getValue();
-	}
+        final var crc = new CRC32();
+        crc.update(numbers.flip());
+        etag = crc.getValue();
+    }
 
-	@AfterEach
-	void ends() {
-		verify(file, atLeastOnce()).getId();
-		deleteQuietly(workingFile);
-	}
+    @AfterEach
+    void ends() {
+        verify(file, atLeastOnce()).getId();
+        deleteQuietly(workingFile);
+    }
 
-	void setId() {
-		try {
-			final var f1 = AssetRenderedFileEntity.class.getDeclaredField("id");
-			f1.setAccessible(true);
-			f1.set(arf, id);
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException e) {
-			throw new IllegalCallerException(e);
-		}
-	}
+    void setId() {
+        try {
+            final var f1 = AssetRenderedFileEntity.class.getDeclaredField("id");
+            f1.setAccessible(true);
+            f1.set(arf, id);
+        } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException e) {
+            throw new IllegalCallerException(e);
+        }
+    }
 
-	@Test
-	void testGetRelativePath() {
-		when(file.getId()).thenReturn(0x1234ABCD);
+    @Test
+    void testToRenderedReponse() {
+        final var response = arf.toRenderedReponse();
+        assertNotNull(response);
+        assertEquals(previewType, response.previewType());
+        assertEquals(name, response.name());
+    }
 
-		rendered = new DeclaredRenderedFile(workingFile, name, true, mimeType, indexref, previewType);
-		arf = new AssetRenderedFileEntity(file, rendered);
-		setId();
-		assertEquals("/1234/ABCD/" + id + "." + indexref + "." + name + ".gz",
-				arf.getRelativePath());
+    @Test
+    void testGetHexETag() {
+        assertEquals(toHexString(etag), arf.getHexETag());
+    }
 
-		rendered = new DeclaredRenderedFile(workingFile, name, false, mimeType, indexref, previewType);
-		arf = new AssetRenderedFileEntity(file, rendered);
-		setId();
-		assertEquals("/1234/ABCD/" + id + "." + indexref + "." + name,
-				arf.getRelativePath());
-	}
+    @Test
+    void testGetCreateDate() {
+        assertThat(arf.getCreateDate().getTime())
+                .isCloseTo(currentTimeMillis(), offset(10_000l));
+    }
 
-	@Test
-	void testToRenderedReponse() {
-		final var response = arf.toRenderedReponse();
-		assertNotNull(response);
-		assertEquals(previewType, response.previewType());
-		assertEquals(name, response.name());
-	}
+    @Test
+    void testGetFile() {
+        assertEquals(file, arf.getFile());
+    }
 
-	@Test
-	void testGetHexETag() {
-		assertEquals(toHexString(etag), arf.getHexETag());
-	}
+    @Test
+    void testGetMimeType() {
+        assertEquals(mimeType, arf.getMimeType());
+    }
 
-	@Test
-	void testGetCreateDate() {
-		assertThat(arf.getCreateDate().getTime())
-				.isCloseTo(currentTimeMillis(), offset(10_000l));
-	}
+    @Test
+    void testGetPreviewType() {
+        assertEquals(previewType, arf.getPreviewType());
+    }
 
-	@Test
-	void testGetFile() {
-		assertEquals(file, arf.getFile());
-	}
+    @Test
+    void testGetEncoded() {
+        assertEquals(NOT_ENCODED, arf.getEncoded());
 
-	@Test
-	void testGetMimeType() {
-		assertEquals(mimeType, arf.getMimeType());
-	}
+        rendered = new DeclaredRenderedFile(workingFile, name, true, mimeType, indexref, previewType);
+        arf = new AssetRenderedFileEntity(file, rendered);
+        assertEquals(GZIP_ENCODED, arf.getEncoded());
+    }
 
-	@Test
-	void testGetPreviewType() {
-		assertEquals(previewType, arf.getPreviewType());
-	}
+    @Test
+    void testGetIndexref() {
+        assertEquals(indexref, arf.getIndexref());
+    }
 
-	@Test
-	void testGetEncoded() {
-		assertEquals(NOT_ENCODED, arf.getEncoded());
+    @Test
+    void testGetName() {
+        assertEquals(name, arf.getName());
+    }
 
-		rendered = new DeclaredRenderedFile(workingFile, name, true, mimeType, indexref, previewType);
-		arf = new AssetRenderedFileEntity(file, rendered);
-		assertEquals(GZIP_ENCODED, arf.getEncoded());
-	}
+    @Test
+    void testGetLength() {
+        assertEquals(length, arf.getLength());
+    }
 
-	@Test
-	void testGetIndexref() {
-		assertEquals(indexref, arf.getIndexref());
-	}
+    @Test
+    void testGetEtag() {
+        assertEquals(etag, arf.getEtag());
+    }
 
-	@Test
-	void testGetName() {
-		assertEquals(name, arf.getName());
-	}
+    @Test
+    void testIsGzipEncoded() {
+        assertFalse(arf.isGzipEncoded());
 
-	@Test
-	void testGetLength() {
-		assertEquals(length, arf.getLength());
-	}
+        rendered = new DeclaredRenderedFile(workingFile, name, true, mimeType, indexref, previewType);
+        arf = new AssetRenderedFileEntity(file, rendered);
+        assertTrue(arf.isGzipEncoded());
+    }
 
-	@Test
-	void testGetEtag() {
-		assertEquals(etag, arf.getEtag());
-	}
-
-	@Test
-	void testIsGzipEncoded() {
-		assertFalse(arf.isGzipEncoded());
-
-		rendered = new DeclaredRenderedFile(workingFile, name, true, mimeType, indexref, previewType);
-		arf = new AssetRenderedFileEntity(file, rendered);
-		assertTrue(arf.isGzipEncoded());
-	}
-
-	@Test
-	void testGetAuditTrailPayload() {
-		final var payload = arf.getAuditTrailPayload(workingFile);
-		assertThat(payload)
-				.isNotNull()
-				.hasSize(8)
-				.containsEntry("indexref", indexref)
-				.containsEntry("length", length)
-				.containsEntry("mimeType", mimeType)
-				.containsEntry("name", name)
-				.containsEntry("previewType", previewType)
-				.containsKeys("file", "etag", "encoded");
-	}
+    @Test
+    void testGetAuditTrailPayload() {
+        final var payload = arf.getAuditTrailPayload(workingFile);
+        assertThat(payload)
+                .isNotNull()
+                .hasSize(8)
+                .containsEntry("indexref", indexref)
+                .containsEntry("length", length)
+                .containsEntry("mimeType", mimeType)
+                .containsEntry("name", name)
+                .containsEntry("previewType", previewType)
+                .containsKeys("file", "etag", "encoded");
+    }
 }

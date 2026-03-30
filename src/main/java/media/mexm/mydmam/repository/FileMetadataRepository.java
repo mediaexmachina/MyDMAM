@@ -27,18 +27,18 @@ import media.mexm.mydmam.entity.FileMetadataEntity;
 
 public interface FileMetadataRepository extends JpaRepository<FileMetadataEntity, Long> {
 
-	@Query("""
-			DELETE FROM FileMetadataEntity fm
-			WHERE fm.file.id IN :fileIds
-			""")
-	@Modifying
-	void deleteByFileId(Set<Integer> fileIds);
+    @Query("""
+            DELETE FROM FileMetadataEntity fm
+            WHERE fm.file.id IN :fileIds
+            """)
+    @Modifying
+    void deleteByFileId(Set<Integer> fileIds);
 
-	@Query("""
-			SELECT fm
-			FROM FileMetadataEntity fm
-			WHERE fm.file = :file
-			""")
-	Set<FileMetadataEntity> getByFile(FileEntity file);
+    @Query("""
+            SELECT fm
+            FROM FileMetadataEntity fm
+            WHERE fm.file = :file
+            """)
+    Set<FileMetadataEntity> getByFile(FileEntity file);
 
 }

@@ -14,21 +14,16 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.asset;
+package media.mexm.mydmam.repository;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
-public interface ManagedMimeTrait {
+import media.mexm.mydmam.entity.RelativePathProvider;
 
-	/**
-	 * @return if empty list, manage nothing.
-	 */
-	Set<String> getManagedMimeTypes();
+public interface AssetTextExtractedFileDao {
 
-	default boolean canHandleMimeType(final MediaAsset asset) {
-		return asset.getMimeType()
-				.map(mimeType -> getManagedMimeTypes().contains(mimeType))
-				.orElse(false);
-	}
+    Map<String, Set<RelativePathProvider>> deleteTextExtractedFilesByFileId(Collection<Integer> ids);
 
 }

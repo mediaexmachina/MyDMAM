@@ -27,6 +27,7 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 
@@ -34,8 +35,6 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +50,6 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.configuration.EnvConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
@@ -65,7 +63,6 @@ import net.datafaker.Faker;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
-import tv.hd3g.jobkit.watchfolder.WatchedFiles;
 import tv.hd3g.transfertfiles.CachedFileAttributes;
 
 @SpringBootTest(webEnvironment = WebEnvironment.NONE)
@@ -90,8 +87,6 @@ class IndexerTest {
     EnvConf envConf;
     @Mock
     RealmConf realmConf;
-    @Mock
-    MediaAsset mediaAsset;
 
     @Fake
     String realmName;
@@ -112,7 +107,6 @@ class IndexerTest {
             forceDelete(realmWorkingDirectory);
         }
         when(conf.env()).thenReturn(envConf);
-        when(envConf.resetBatchSizeIndexer()).thenReturn(10000);
         when(realmConf.delayedSync()).thenReturn(new DelayedSyncConfiguration(2, Duration.ofSeconds(1)));
     }
 
@@ -120,11 +114,15 @@ class IndexerTest {
     void ends() {
         assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
         assertEquals(0, flatJobKitEngine.getEndEventsList().size());
+        verifyNoMoreInteractions(
+                fileDao,
+                pathIndexer,
+                mediaAssetService);
     }
 
     @Test
     void testInit_nothing() throws IOException {
-        indexer.init(mediaAssetService);
+        indexer.init();
         assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
         verify(conf, atLeastOnce()).realms();
@@ -135,7 +133,7 @@ class IndexerTest {
         when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
         when(realmConf.workingDirectory()).thenReturn(null);
 
-        indexer.init(mediaAssetService);
+        indexer.init();
         assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
         verify(conf, atLeastOnce()).realms();
@@ -146,7 +144,7 @@ class IndexerTest {
     void testInitGetIndexerByRealm() throws IOException {
         when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
         when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
-        indexer.init(mediaAssetService);
+        indexer.init();
         assertThat(indexer.getIndexerByRealm(realmName)).isNotEmpty();
         assertThat(indexer.getIndexerByRealm(badRealmName)).isEmpty();
 
@@ -162,7 +160,7 @@ class IndexerTest {
         when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
         when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
 
-        indexer.init(mediaAssetService);
+        indexer.init();
         indexer.destroy();
         assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
@@ -223,9 +221,6 @@ class IndexerTest {
             when(file.lastModified()).thenReturn(lastModified);
             when(file.length()).thenReturn(length);
             when(file.exists()).thenReturn(exists);
-
-            when(mediaAsset.getTextContentByfileMetadata()).thenReturn(Map.of());
-            when(mediaAsset.getMetadatas()).thenReturn(Set.of());
         }
 
         @Test
@@ -233,12 +228,7 @@ class IndexerTest {
             when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
             when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
 
-            indexer.init(mediaAssetService);
-            final var realmIndexer = indexer.getIndexerByRealm(realmName).get();
-            realmIndexer.updateIndexAfterScan(new WatchedFiles(Set.of(file), Set.of(), Set.of(), 0), storageName);
-            var searchResult = realmIndexer.openSearch("*", Optional.empty(), 10).foundedFiles();
-            assertThat(searchResult).size().isEqualTo(1);
-            assertThat(searchResult.get(0).name()).isEqualTo(fileName);
+            indexer.init();
 
             fileName = faker.numerify("baseName#####") + "." + faker.numerify("extention#####");
             path = parentPath + "/" + fileName;
@@ -246,7 +236,6 @@ class IndexerTest {
             when(file.getPath()).thenReturn(path);
 
             fileEntity = new FileEntity(realmName, storageName, file);
-            when(mediaAssetService.getFromFileEntry(fileEntity, mediaAssetService)).thenReturn(mediaAsset);
 
             doAnswer(invocation -> {
                 final var args = invocation.getArguments();
@@ -255,23 +244,16 @@ class IndexerTest {
                 return null;
             }).when(fileDao).getAllFromRealm(eq(realmName), any());
 
-            indexer.reset(spoolName);
-
-            searchResult = realmIndexer.openSearch("*", Optional.empty(), 10).foundedFiles();
-            assertThat(searchResult).size().isEqualTo(1);
-            assertThat(searchResult.get(0).name()).isEqualTo(fileName);
+            indexer.reset(spoolName, mediaAssetService);
 
             verify(conf, atLeastOnce()).realms();
             verify(conf, atLeastOnce()).env();
             verify(envConf, times(1)).explainSearchResults();
-            verify(envConf, times(1)).resetBatchSizeIndexer();
             verify(realmConf, times(1)).workingDirectory();
             verify(realmConf, times(1)).delayedSync();
             verify(fileDao, times(1)).getAllFromRealm(eq(realmName), any());
             verify(file, atLeastOnce()).getPath();
-            verify(mediaAssetService, times(1)).getFromFileEntry(fileEntity, mediaAssetService);
-            verify(mediaAsset, atLeastOnce()).getTextContentByfileMetadata();
-            verify(mediaAsset, atLeastOnce()).getMetadatas();
+            verify(mediaAssetService, times(1)).updateIndexer(fileEntity);
 
             clearInvocations(file);
         }

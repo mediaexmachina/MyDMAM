@@ -42,43 +42,43 @@ import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 @EnableConfigurationProperties(MyDMAMConfigurationProperties.class)
 public class MyDMAMSetup {
 
-	@Bean
-	SQLiteConfig getSqliteConfig() {
-		final var sqliteConfig = new SQLiteConfig();
-		sqliteConfig.enableFullSync(false);
-		sqliteConfig.enableLoadExtension(false);
-		sqliteConfig.setJournalMode(JournalMode.OFF);
-		sqliteConfig.setSynchronous(SynchronousMode.NORMAL);
-		sqliteConfig.setTempStore(TempStore.MEMORY);
-		return sqliteConfig;
-	}
+    @Bean
+    SQLiteConfig getSqliteConfig() {
+        final var sqliteConfig = new SQLiteConfig();
+        sqliteConfig.enableFullSync(false);
+        sqliteConfig.enableLoadExtension(false);
+        sqliteConfig.setJournalMode(JournalMode.OFF);
+        sqliteConfig.setSynchronous(SynchronousMode.NORMAL);
+        sqliteConfig.setTempStore(TempStore.MEMORY);
+        return sqliteConfig;
+    }
 
-	@Bean("magicMimeUtil")
-	MimeUtil2 getMagicMimeMimeDetector() {
-		final var muMagic = new MimeUtil2();
-		muMagic.registerMimeDetector("eu.medsea.mimeutil.detector.MagicMimeMimeDetector");
-		return muMagic;
-	}
+    @Bean("magicMimeUtil")
+    MimeUtil2 getMagicMimeMimeDetector() {
+        final var muMagic = new MimeUtil2();
+        muMagic.registerMimeDetector("eu.medsea.mimeutil.detector.MagicMimeMimeDetector");
+        return muMagic;
+    }
 
-	@Bean("extensionMimeUtil")
-	MimeUtil2 getExtensionMimeDetector() {
-		final var muMagic = new MimeUtil2();
-		muMagic.registerMimeDetector("eu.medsea.mimeutil.detector.ExtensionMimeDetector");
-		return muMagic;
-	}
+    @Bean("extensionMimeUtil")
+    MimeUtil2 getExtensionMimeDetector() {
+        final var muMagic = new MimeUtil2();
+        muMagic.registerMimeDetector("eu.medsea.mimeutil.detector.ExtensionMimeDetector");
+        return muMagic;
+    }
 
-	@Bean
-	ExecutableFinder getExecutableFinder() {
-		return new ExecutableFinder();
-	}
+    @Bean
+    ExecutableFinder getExecutableFinder() {
+        return new ExecutableFinder();
+    }
 
-	@Bean
-	ImageMagick getImageMagick(@Autowired final ExecutableFinder executableFinder,
-							   @Autowired final ScheduledExecutorService maxExecTimeScheduler,
-							   @Autowired final MyDMAMConfigurationProperties configuration,
-							   @Autowired final XmlMapperWrapper xmlMapper,
-							   @Autowired final ObjectMapper objectMapper) {
-		return new ImageMagick(executableFinder, maxExecTimeScheduler, configuration, xmlMapper, objectMapper);
-	}
+    @Bean
+    ImageMagick getImageMagick(@Autowired final ExecutableFinder executableFinder,
+                               @Autowired final ScheduledExecutorService maxExecTimeScheduler,
+                               @Autowired final MyDMAMConfigurationProperties configuration,
+                               @Autowired final XmlMapperWrapper xmlMapper,
+                               @Autowired final ObjectMapper objectMapper) {
+        return new ImageMagick(executableFinder, maxExecTimeScheduler, configuration, xmlMapper, objectMapper);
+    }
 
 }

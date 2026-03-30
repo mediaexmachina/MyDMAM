@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.toSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,54 +41,73 @@ import media.mexm.mydmam.entity.FileMetadataEntity;
 @Slf4j
 public class FileMetadataDaoImpl implements FileMetadataDao {
 
-	@Autowired
-	@PersistenceContext
-	EntityManager entityManager;
+    @Autowired
+    @PersistenceContext
+    EntityManager entityManager;
 
-	@Autowired
-	FileMetadataRepository fileMetadataRepository;
+    @Autowired
+    FileMetadataRepository fileMetadataRepository;
 
-	@Override
-	@Transactional
-	public Map<String, Set<FileMetadataEntity>> getFileMetadatasByFileIds(final Collection<Integer> fileIds,
-																			   final String realm) {
-		return entityManager.createQuery("""
-				SELECT new map(DISTINCT(f.hashPath) AS hashPath, fm AS fileMetadata)
-				FROM FileEntity f
-				LEFT JOIN FileMetadataEntity fm ON fm.file = f
-				WHERE
-				    f.id IN :ids
-				    AND f.realm = :realm
-				    AND fm IS NOT NULL
-				""", Map.class)
-				.setParameter("ids", fileIds)
-				.setParameter("realm", realm)
-				.getResultStream()
-				.collect(groupingBy(
-						f -> (String) f.get("hashPath"),
-						HashMap::new,
-						mapping(f -> (FileMetadataEntity) f.get("fileMetadata"), toSet())));
-	}
+    @Override
+    @Transactional
+    public Map<String, Set<FileMetadataEntity>> getFileMetadatasByFileIds(final Collection<Integer> fileIds,
+                                                                          final String realm) {
+        return entityManager.createQuery("""
+                SELECT new map(DISTINCT(f.hashPath) AS hashPath, fm AS fileMetadata)
+                FROM FileEntity f
+                LEFT JOIN FileMetadataEntity fm ON fm.file = f
+                WHERE
+                    f.id IN :ids
+                    AND f.realm = :realm
+                    AND fm IS NOT NULL
+                """, Map.class)
+                .setParameter("ids", fileIds)
+                .setParameter("realm", realm)
+                .getResultStream()
+                .collect(groupingBy(
+                        f -> (String) f.get("hashPath"),
+                        HashMap::new,
+                        mapping(f -> (FileMetadataEntity) f.get("fileMetadata"), toSet())));
+    }
 
-	@Override
-	@Transactional(REQUIRES_NEW)
-	public Collection<FileMetadataEntity> addUpdateEntries(final FileEntity file,
-														   final Collection<FileMetadataEntity> items) {
-		final var allEntryCrcs = items.stream()
-				.map(FileMetadataEntity::getEntryCrc)
-				.distinct()
-				.toList();
+    @Override
+    @Transactional(REQUIRES_NEW)
+    public void addUpdateEntry(final FileEntity file, final FileMetadataEntity item) {
+        entityManager.createQuery("""
+                DELETE FROM FileMetadataEntity fm
+                WHERE fm.file = :file
+                AND fm.entryCrc = :entryCrc
+                """)
+                .setParameter("file", file)
+                .setParameter("entryCrc", item.getEntryCrc())
+                .executeUpdate();
 
-		entityManager.createQuery("""
-				DELETE FROM FileMetadataEntity fm
-				WHERE fm.file = :file
-				AND fm.entryCrc IN :allEntryCrcs
-				""")
-				.setParameter("file", file)
-				.setParameter("allEntryCrcs", allEntryCrcs)
-				.executeUpdate();
+        fileMetadataRepository.saveAndFlush(item);
+    }
 
-		return fileMetadataRepository.saveAllAndFlush(items);
-	}
+    @Override
+    @Transactional
+    public Optional<String> getMetadataValue(final FileEntity fileEntity,
+                                             final int layer,
+                                             final String classifier,
+                                             final String key) {
+        return entityManager.createQuery("""
+                SELECT fm.value
+                FROM FileMetadataEntity fm
+                LEFT JOIN FileEntity f ON f = fm.file
+                WHERE
+                    fm.file = :fileEntity
+                    AND fm.classifier = :classifier
+                    AND fm.layer = :layer
+                    AND fm.key = :key
+                """, String.class)
+                .setParameter("fileEntity", fileEntity)
+                .setParameter("classifier", classifier)
+                .setParameter("layer", layer)
+                .setParameter("key", key)
+                .setMaxResults(1)
+                .getResultStream()
+                .findFirst();
+    }
 
 }

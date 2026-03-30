@@ -45,7 +45,7 @@ public class Indexer implements DisposableBean {
     @Autowired
     JobKitEngine jobKit;
 
-    public void init(final MediaAssetService mediaAssetService) throws IOException {
+    public void init() throws IOException {
         if (conf.realms() == null) {
             return;
         }
@@ -66,7 +66,6 @@ public class Indexer implements DisposableBean {
                     realmName,
                     workingDirectory,
                     conf.env().explainSearchResults(),
-                    fileEntity -> mediaAssetService.getFromFileEntry(fileEntity, mediaAssetService),
                     entry.getValue().delayedSync());
             indexerByRealmName.put(realmName, realmIndexer);
         }
@@ -85,16 +84,12 @@ public class Indexer implements DisposableBean {
         indexerByRealmName.clear();
     }
 
-    public void reset(final String spoolName) {
+    public void reset(final String spoolName, final MediaAssetService mediaAssetService) {
         jobKit.runOneShot("Reset all indexes", spoolName, 0, () -> {
             indexerByRealmName.forEach((realm, indexer) -> {
                 log.info("Start to reset indexes on realm {}", realm);
-
-                try (var session = indexer.reset(conf.env().resetBatchSizeIndexer())) {
-                    fileDao.getAllFromRealm(realm, session);
-                } catch (final Exception e) {
-                    log.error("Can't run reset", e);
-                }
+                indexer.reset();
+                fileDao.getAllFromRealm(realm, mediaAssetService::updateIndexer);
             });
             log.info("All indexes are now reseted");
         }, e -> {

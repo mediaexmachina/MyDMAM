@@ -16,63 +16,73 @@
  */
 package media.mexm.mydmam.activity.component;
 
-import static media.mexm.mydmam.asset.FileMetadataResolutionTrait.MTD_TECHNICAL_CLASSIFIER;
-
-import java.util.Set;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
-import media.mexm.mydmam.asset.ManagedMimeTrait;
-import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
-import media.mexm.mydmam.service.RenderedFilesProducerService;
+import media.mexm.mydmam.repository.FileMetadataDao;
+import media.mexm.mydmam.service.MediaAssetService;
+import media.mexm.mydmam.service.MediaRenderedFilesUtilsService;
+import media.mexm.mydmam.service.MetadataThesaurusService;
 import media.mexm.mydmam.tools.ImageMagick;
 
 @Component
 @Slf4j
-public class ImageRasterPreviewActivity implements ActivityHandler, ManagedMimeTrait {
+public class ImageRasterPreviewActivity implements ActivityHandler {
 
     @Autowired
     ImageMagick imageMagick;
     @Autowired
-    RenderedFilesProducerService renderedFilesProducerService;
-
-    @Override
-    public Set<String> getManagedMimeTypes() {
-        return imageMagick.getManagedRasterMimeTypes();
-    }
+    MediaAssetService mediaAssetService;
+    @Autowired
+    FileMetadataDao fileMetadataDao;
+    @Autowired
+    MediaRenderedFilesUtilsService mediaRenderedFilesUtilsService;
+    @Autowired
+    MetadataThesaurusService metadataThesaurusService;
 
     @Override
     public boolean isEnabled() {
         return imageMagick.isEnabled();
     }
 
+    private boolean hasResolution(final FileEntity file) {
+        final var def = metadataThesaurusService.getReader(MtdThesaurusDefTechnical.class, file, 0);
+        return def.width().intValue(-1) > 0
+               && def.height().intValue(-1) > 0;
+    }
+
     @Override
-    public boolean canHandle(final MediaAsset asset,
+    public boolean canHandle(final FileEntity file,
                              final ActivityEventType eventType,
                              final RealmStorageConfiguredEnv storedOn) {
         return storedOn.isDAS()
                && storedOn.haveWorkingDir()
                && storedOn.haveRenderedDir()
-               && canHandleMimeType(asset)
-               && asset.hasResolution();
+               && metadataThesaurusService.getMimeType(file)
+                       .map(mimeType -> imageMagick.getManagedRasterMimeTypes().contains(mimeType))
+                       .orElse(false)
+               && hasResolution(file);
     }
 
     @Override
-    public void handle(final MediaAsset asset,
+    public void handle(final FileEntity file,
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) throws Exception {
-        final var assetFile = asset.getLocalInternalFile(storedOn.storage());
-        final var isImageTypeAlpha = asset.getMetadataValue(MTD_TECHNICAL_CLASSIFIER, "type")
+        final var assetFile = storedOn.getLocalInternalFile(file);
+        final var isImageTypeAlpha = metadataThesaurusService.getReader(MtdThesaurusDefTechnical.class, file, 0)
+                .type()
+                .value()
                 .orElse("")
                 .toLowerCase()
                 .contains("alpha");
 
-        renderedFilesProducerService.makeImageThumbnails(asset, storedOn, assetFile, isImageTypeAlpha, 0);
+        mediaRenderedFilesUtilsService.makeImageThumbnails(file, storedOn, assetFile, isImageTypeAlpha, 0);
     }
 
 }

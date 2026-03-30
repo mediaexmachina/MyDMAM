@@ -19,10 +19,8 @@ package media.mexm.mydmam.entity;
 import static jakarta.persistence.CascadeType.DETACH;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
-import static java.lang.Integer.toHexString;
 import static java.lang.Long.toHexString;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.commons.lang3.StringUtils.leftPad;
 
 import java.io.File;
 import java.io.Serializable;
@@ -48,122 +46,114 @@ import media.mexm.mydmam.dto.RenderedFileResponse;
 
 @Entity
 @Table(name = AssetRenderedFileEntity.TABLE_NAME,
-	   indexes = {
-				   @Index(columnList = "file_id", name = AssetRenderedFileEntity.TABLE_NAME + "_file_id_idx")
-	   })
+       indexes = {
+                   @Index(columnList = "file_id", name = AssetRenderedFileEntity.TABLE_NAME + "_file_id_idx")
+       })
 @Getter
 @ToString
-public class AssetRenderedFileEntity {
+public class AssetRenderedFileEntity implements RelativePathProvider {
 
-	public static final String GZIP_ENCODED = "gzip";
-	public static final String NOT_ENCODED = "identity";
-	public static final int NAME_LEN = 256;
+    public static final String GZIP_ENCODED = "gzip";
+    public static final String NOT_ENCODED = "identity";
+    public static final int NAME_LEN = 256;
 
-	public static final String TABLE_NAME = "asset_renderedfile";
+    public static final String TABLE_NAME = "asset_renderedfile";
 
-	@Id
-	@GeneratedValue(strategy = IDENTITY)
-	private Integer id;
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Integer id;
 
-	@NotNull
-	@Column(name = "create_date", updatable = false)
-	private Timestamp createDate;
+    @NotNull
+    @Column(name = "create_date", updatable = false)
+    private Timestamp createDate;
 
-	@NotNull
-	@JoinColumn(name = "file_id", updatable = false)
-	@ManyToOne(fetch = LAZY, cascade = DETACH, optional = false)
-	private FileEntity file;
+    @NotNull
+    @JoinColumn(name = "file_id", updatable = false)
+    @ManyToOne(fetch = LAZY, cascade = DETACH, optional = false)
+    private FileEntity file;
 
-	@NotBlank
-	@Column(length = 128, name = "mime_type", updatable = false)
-	private String mimeType;
+    @NotBlank
+    @Column(length = 128, name = "mime_type", updatable = false)
+    private String mimeType;
 
-	@NotBlank
-	@Column(length = 128, name = "preview_type", updatable = false)
-	private String previewType;
+    @NotBlank
+    @Column(length = 128, name = "preview_type", updatable = false)
+    private String previewType;
 
-	@NotBlank
-	@Column(length = 16, name = "encoded", updatable = false)
-	private String encoded;
+    @NotBlank
+    @Column(length = 16, name = "encoded", updatable = false)
+    private String encoded;
 
-	@NotNull
-	@Column(name = "indexref", updatable = false)
-	private Integer indexref;
+    @NotNull
+    @Column(name = "indexref", updatable = false)
+    private Integer indexref;
 
-	@NotBlank
-	@Column(length = 256, name = "name", updatable = false)
-	private String name;
+    @NotBlank
+    @Column(length = 256, name = "name", updatable = false)
+    private String name;
 
-	@NotNull
-	@Column(name = "length", updatable = false)
-	private Long length;
+    @NotNull
+    @Column(name = "length", updatable = false)
+    private Long length;
 
-	@NotNull
-	@Column(name = "etag", updatable = false)
-	private Long etag;
+    @NotNull
+    @Column(name = "etag", updatable = false)
+    private Long etag;
 
-	/**
-	 * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE
-	 */
-	public AssetRenderedFileEntity() {
-		// ONLY SET FOR HIBERNATE
-	}
+    /**
+     * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE
+     */
+    public AssetRenderedFileEntity() {
+        // ONLY SET FOR HIBERNATE
+    }
 
-	public AssetRenderedFileEntity(@NotNull final FileEntity file,
-								   @NotNull final DeclaredRenderedFile rendered) {
-		this.file = file;
-		createDate = new Timestamp(System.currentTimeMillis());
-		mimeType = rendered.mimeType();
-		previewType = rendered.previewType();
-		encoded = rendered.toGzip() ? GZIP_ENCODED : NOT_ENCODED;
-		indexref = rendered.index();
-		name = rendered.name();
-		length = rendered.workingFile().length();
+    public AssetRenderedFileEntity(@NotNull final FileEntity file,
+                                   @NotNull final DeclaredRenderedFile rendered) {
+        this.file = file;
+        createDate = new Timestamp(System.currentTimeMillis());
+        mimeType = rendered.mimeType();
+        previewType = rendered.previewType();
+        encoded = rendered.toGzip() ? GZIP_ENCODED : NOT_ENCODED;
+        indexref = rendered.index();
+        name = rendered.name();
+        length = rendered.workingFile().length();
 
-		final var nameb = name.getBytes(UTF_8);
-		final var numbers = ByteBuffer.allocate((64 + 32 + 32 + 64) / 8 + nameb.length);
-		numbers.putLong(length);
-		numbers.putInt(indexref);
-		numbers.putInt(file.getId());
-		numbers.putLong(createDate.getTime());
-		numbers.put(nameb);
+        final var nameb = name.getBytes(UTF_8);
+        final var numbers = ByteBuffer.allocate((64 + 32 + 32 + 64) / 8 + nameb.length);
+        numbers.putLong(length);
+        numbers.putInt(indexref);
+        numbers.putInt(file.getId());
+        numbers.putLong(createDate.getTime());
+        numbers.put(nameb);
 
-		final var crc = new CRC32();
-		crc.update(numbers.flip());
-		etag = crc.getValue();
-	}
+        final var crc = new CRC32();
+        crc.update(numbers.flip());
+        etag = crc.getValue();
+    }
 
-	public String getRelativePath() {
-		final var hex = leftPad(toHexString(file.getId()).toUpperCase(), 8, "00000000");
-		final var baseName = isGzipEncoded() ? name + ".gz" : name;
+    public RenderedFileResponse toRenderedReponse() {
+        return new RenderedFileResponse(previewType, name);
+    }
 
-		return "/" + hex.substring(0, 4)
-			   + "/" + hex.substring(4)
-			   + "/" + id + "." + indexref + "." + baseName;
-	}
+    public String getHexETag() {
+        return toHexString(etag);
+    }
 
-	public RenderedFileResponse toRenderedReponse() {
-		return new RenderedFileResponse(previewType, name);
-	}
+    @Override
+    public boolean isGzipEncoded() {
+        return GZIP_ENCODED.equals(encoded);
+    }
 
-	public String getHexETag() {
-		return toHexString(etag);
-	}
-
-	public boolean isGzipEncoded() {
-		return GZIP_ENCODED.equals(encoded);
-	}
-
-	public Map<String, Serializable> getAuditTrailPayload(final File renderedFile) {
-		return Map.of(
-				"file", renderedFile.getAbsolutePath(),
-				"encoded", encoded,
-				"etag", getHexETag(),
-				"indexref", indexref,
-				"length", length,
-				"mimeType", mimeType,
-				"name", name,
-				"previewType", previewType);
-	}
+    public Map<String, Serializable> getAuditTrailPayload(final File renderedFile) {
+        return Map.of(
+                "file", renderedFile.getAbsolutePath(),
+                "encoded", encoded,
+                "etag", getHexETag(),
+                "indexref", indexref,
+                "length", length,
+                "mimeType", mimeType,
+                "name", name,
+                "previewType", previewType);
+    }
 
 }

@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -59,58 +60,62 @@ import media.mexm.mydmam.service.MediaAssetService;
 @RequestMapping(value = CONTROLLER_BASE_MAPPING_API_PATH + "/content")
 public class ContentController {
 
-	@Autowired
-	MyDMAMConfigurationProperties conf;
-	@Autowired
-	AssetRenderedFileRepository assetRenderedFileRepository;
-	@Autowired
-	GetFileRequestComponent getFileRequestComponent;
-	@Autowired
-	MediaAssetService mediaAssetService;
+    @Autowired
+    MyDMAMConfigurationProperties conf;
+    @Autowired
+    AssetRenderedFileRepository assetRenderedFileRepository;
+    @Autowired
+    GetFileRequestComponent getFileRequestComponent;
+    @Autowired
+    MediaAssetService mediaAssetService;
 
-	@RequestMapping(value = "/rendered/{realm}/{hashPath}/{name}", method = { GET, HEAD })
-	@ResponseBody
-	public ResponseEntity<StreamingResponseBody> getAssetRenderedFiles(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
-																	   @PathVariable @NotBlank @Size(max = HASH_STRING_LEN) final String hashPath,
-																	   @PathVariable @NotBlank @Size(max = NAME_LEN) final String name,
-																	   @RequestParam(required = false,
-																					 defaultValue = "0") @Min(0) final Integer index,
-																	   @RequestParam(required = false,
-																					 defaultValue = "0") @Min(0) @Max(1) final Integer download,
-																	   @RequestHeader(value = "Range",
-																					  required = false) final String rangeHeader,
-																	   @RequestHeader(value = "If-None-Match",
-																					  required = false) final String ifNoneMatch,
-																	   final HttpMethod method) {
-		final var realmConf = conf.getRealmByName(realm);
-		if (realmConf.isEmpty()) {
-			return new ResponseEntity<>(BAD_REQUEST);
-		}
+    @RequestMapping(value = "/rendered/{realm}/{hashPath}/{name}", method = { GET, HEAD })
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<StreamingResponseBody> getAssetRenderedFiles(@PathVariable @NotBlank @Size(max = MAX_NAME_SIZE) final String realm,
+                                                                       @PathVariable @NotBlank @Size(max = HASH_STRING_LEN) final String hashPath,
+                                                                       @PathVariable @NotBlank @Size(max = NAME_LEN) final String name,
+                                                                       @RequestParam(required = false,
+                                                                                     defaultValue = "0") @Min(0) final Integer index,
+                                                                       @RequestParam(required = false,
+                                                                                     defaultValue = "0") @Min(0) @Max(1) final Integer download,
+                                                                       @RequestHeader(value = "Range",
+                                                                                      required = false) final String rangeHeader,
+                                                                       @RequestHeader(value = "If-None-Match",
+                                                                                      required = false) final String ifNoneMatch,
+                                                                       final HttpMethod method) {
+        final var realmConf = conf.getRealmByName(realm);
+        if (realmConf.isEmpty()) {
+            return new ResponseEntity<>(BAD_REQUEST);
+        }
 
-		final var renderedFileEntity = assetRenderedFileRepository.getRenderedFile(hashPath, realm, name, index);
-		if (renderedFileEntity == null) {
-			return new ResponseEntity<>(NOT_FOUND);
-		}
+        final var renderedFileEntity = assetRenderedFileRepository.getRenderedFile(hashPath, realm, name, index);
+        if (renderedFileEntity == null) {
+            return new ResponseEntity<>(NOT_FOUND);
+        }
 
-		final var renderedFileEntityName = renderedFileEntity.getName();
-		final String downloadedFileName;
-		if (index > 0) {
-			downloadedFileName = getBaseName(renderedFileEntityName)
-								 + "_" + index + "." + getExtension(renderedFileEntityName);
-		} else {
-			downloadedFileName = renderedFileEntityName;
-		}
+        final var renderedFileEntityName = renderedFileEntity.getName();
+        final String downloadedFileName;
+        if (index > 0) {
+            downloadedFileName = getBaseName(renderedFileEntityName)
+                                 + "_" + index + "." + getExtension(renderedFileEntityName);
+        } else {
+            downloadedFileName = renderedFileEntityName;
+        }
 
-		return getFileRequestComponent.makeResponseEntity(
-				new GetFileRequest(
-						mediaAssetService.getPhysicalRenderedFile(renderedFileEntity, realm),
-						method,
-						rangeHeader,
-						ifNoneMatch,
-						renderedFileEntity.getHexETag(),
-						renderedFileEntity.getMimeType(),
-						renderedFileEntity.getEncoded(),
-						download == 1 ? Optional.ofNullable(downloadedFileName) : empty()));
-	}
+        return getFileRequestComponent.makeResponseEntity(
+                new GetFileRequest(
+                        mediaAssetService.getPhysicalRenderedFile(
+                                renderedFileEntity.getFile(),
+                                renderedFileEntity,
+                                realm),
+                        method,
+                        rangeHeader,
+                        ifNoneMatch,
+                        renderedFileEntity.getHexETag(),
+                        renderedFileEntity.getMimeType(),
+                        renderedFileEntity.getEncoded(),
+                        download == 1 ? Optional.ofNullable(downloadedFileName) : empty()));
+    }
 
 }

@@ -20,6 +20,9 @@ import { BackendAPIService } from './backend-api.service';
 import { LocalStorageService } from './local-storage.service';
 import { ResetActivitiesRequest } from '../dto/reset-activities-request.interface';
 import { AssetResponse } from '../dto/asset-response.interface';
+import { MtdThesaurusDefTechnical } from './mtd-thesaurus-def-technical.service';
+import { MtdThesaurusDefFileFormat } from './mtd-thesaurus-def-file-format.service';
+import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
 
 @Injectable({
     providedIn: 'root',
@@ -28,6 +31,7 @@ export class AssetService {
 
     private readonly localStorageService = inject(LocalStorageService);
     private readonly backendAPIService = inject(BackendAPIService);
+    private readonly mtdThesaurusDefFileFormat = inject(MtdThesaurusDefFileFormat);
 
     public async resetActivities(hashPaths: Array<string>, recursive: boolean): Promise<null> {
         const request: ResetActivitiesRequest = {
@@ -41,8 +45,7 @@ export class AssetService {
 
     public getFileMetadataResponseValue(
             assetResponse: AssetResponse,
-            classifier:string,
-            key:string,
+            entry: MetadataThesaurusEntry,
             defaultValue:string,
             index:number = 0): string {
 
@@ -52,14 +55,15 @@ export class AssetService {
         
         return assetResponse.index[index]
             .fileMetadatas
-            .filter(m => m.classifier === classifier)
-            .filter(m => m.key === key)
+            .filter(m => m.classifier === entry.classifier)
+            .filter(m => m.key === entry.key)
             .map(m => m.value)
             .at(0) || defaultValue;
     }
 
     public getFileMetadataMimeType(assetResponse: AssetResponse): string {
-        return this.getFileMetadataResponseValue(assetResponse, "file-format", "mime-type", "application/octet-stream");
+        var mimeType = this.mtdThesaurusDefFileFormat.mimeType();
+        return this.getFileMetadataResponseValue(assetResponse, mimeType, "application/octet-stream");
     }
 
     private makeAssetRenderedFileBaseURL(hashPath: string, name: string, index: number): string {

@@ -16,12 +16,10 @@
  */
 package media.mexm.mydmam.activity;
 
-import java.util.Optional;
 import java.util.Set;
 
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.asset.MediaAsset;
-import media.mexm.mydmam.indexer.RealmIndexer;
+import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.repository.PendingActivityDao;
 import media.mexm.mydmam.service.PendingActivityService;
@@ -29,77 +27,72 @@ import tv.hd3g.jobkit.engine.Job;
 
 @Slf4j
 public record PendingActivityJob(RealmStorageConfiguredEnv configuredEnv,
-								 MediaAsset asset,
-								 ActivityHandler activityHandler,
-								 ActivityEventType eventType,
-								 Set<String> previousHandlers,
-								 String previousHandlersJson,
-								 PendingActivityDao pendingActivityDao,
-								 PendingActivityService pendingActivityService,
-								 Optional<RealmIndexer> oIndexer) implements Job {
+                                 FileEntity file,
+                                 ActivityHandler activityHandler,
+                                 ActivityEventType eventType,
+                                 Set<String> previousHandlers,
+                                 String previousHandlersJson,
+                                 PendingActivityDao pendingActivityDao,
+                                 PendingActivityService pendingActivityService) implements Job {
 
-	public PendingActivityJob evolve(final ActivityHandler activityHandler,
-									 final Set<String> previousHandlers,
-									 final String previousHandlersJson) {
-		return new PendingActivityJob(
-				configuredEnv,
-				asset,
-				activityHandler,
-				eventType,
-				previousHandlers,
-				previousHandlersJson,
-				pendingActivityDao,
-				pendingActivityService,
-				oIndexer);
-	}
+    public PendingActivityJob evolve(final ActivityHandler activityHandler,
+                                     final Set<String> previousHandlers,
+                                     final String previousHandlersJson) {
+        return new PendingActivityJob(
+                configuredEnv,
+                file,
+                activityHandler,
+                eventType,
+                previousHandlers,
+                previousHandlersJson,
+                pendingActivityDao,
+                pendingActivityService);
+    }
 
-	@Override
-	public void run() throws Exception {
-		if (pendingActivityDao.haveDeclaredActivity(asset.getFile(), activityHandler) == false) {
-			log.info("Cancel media asset activity {} on: {} as {}",
-					activityHandler.getHandlerName(),
-					asset,
-					eventType);
+    @Override
+    public void run() throws Exception {
+        if (pendingActivityDao.haveDeclaredActivity(file, activityHandler) == false) {
+            log.info("Cancel media asset activity {} on: {} as {}",
+                    activityHandler.getHandlerName(),
+                    file,
+                    eventType);
 
-			pendingActivityService.continueAssetActivity(this);
-			return;
-		}
+            pendingActivityService.continueAssetActivity(this);
+            return;
+        }
 
-		log.info("Start media asset activity {} on: {}, as {}",
-				activityHandler.getHandlerName(),
-				asset,
-				eventType);
+        log.info("Start media asset activity {} on: {}, as {}",
+                activityHandler.getHandlerName(),
+                file,
+                eventType);
 
-		/* FOR FUTURE NEEDS final var result = */
+        activityHandler.handle(file, eventType, configuredEnv);
 
-		activityHandler.handle(asset, eventType, configuredEnv);
-		asset.commit(oIndexer);
+        pendingActivityDao.endsActivity(file, activityHandler);
 
-		pendingActivityDao.endsActivity(asset.getFile(), activityHandler);
+        log.debug("Ends media asset activity {} on: {}, as {}",
+                activityHandler.getHandlerName(),
+                file,
+                eventType);
 
-		log.debug("Ends media asset activity {} on: {}, as {}",
-				activityHandler.getHandlerName(),
-				asset,
-				eventType);
+        pendingActivityService.continueAssetActivity(this);
+    }
 
-		pendingActivityService.continueAssetActivity(this);
-	}
+    @Override
+    public void onJobFail(final Exception e) {
+        pendingActivityDao.endsActivity(file, activityHandler);
 
-	@Override
-	public void onJobFail(final Exception e) {
-		pendingActivityDao.endsActivity(asset.getFile(), activityHandler);
+        log.error("Can't run media asset activity on: {}", file, e);
+    }
 
-		log.error("Can't run media asset activity on: {}", asset, e);
-	}
+    @Override
+    public String getJobName() {
+        return "Run media asset activity " + activityHandler.getHandlerName() + " on file: " + file.getName();
+    }
 
-	@Override
-	public String getJobName() {
-		return "Run media asset activity " + activityHandler.getHandlerName() + " on file: " + asset.getName();
-	}
-
-	@Override
-	public String getJobSpoolname() {
-		return configuredEnv.realm().spoolProcessAsset();
-	}
+    @Override
+    public String getJobSpoolname() {
+        return configuredEnv.realm().spoolProcessAsset();
+    }
 
 }

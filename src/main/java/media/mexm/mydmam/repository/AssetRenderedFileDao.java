@@ -21,15 +21,16 @@ import java.util.Map;
 import java.util.Set;
 
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
+import media.mexm.mydmam.entity.RelativePathProvider;
 
 public interface AssetRenderedFileDao {
 
-	Map<String, Set<AssetRenderedFileEntity>> getRenderedFilesByFileId(final Collection<Integer> ids,
-																	   final String realm);
+    Map<String, Set<AssetRenderedFileEntity>> getRenderedFilesByFileId(final Collection<Integer> ids,
+                                                                       final String realm);
 
-	/**
-	 * @return Map of AssetRenderedFileEntity.relativePath to delete by realm name
-	 */
-	Map<String, Set<String>> deleteRenderedFilesByFileId(Collection<Integer> ids);
+    /**
+     * @return Map of AssetRenderedFileEntity to delete by realm name
+     */
+    Map<String, Set<RelativePathProvider>> deleteRenderedFilesByFileId(Collection<Integer> ids);
 
 }

@@ -21,43 +21,45 @@ import java.util.Optional;
 
 public final class NamedIndexField {
 
-	public static final String DOCUMENT_TYPE = "type";
+    public static final String DOCUMENT_TYPE = "type";
 
-	public static final NamedIndexField FILE = new NamedIndexField("file");
-	public static final NamedIndexField ASSET = new NamedIndexField("asset");
-	public static final String DOCUMENT_TYPE_FILE = FILE.toString();
-	public static final String FILE_STORAGE = new NamedIndexField(FILE, "storage").toString();
-	public static final String FILE_DIRECTORY = new NamedIndexField(FILE, "directory").toString();
-	public static final String FILE_HIDDEN = new NamedIndexField(FILE, "hidden").toString();
-	public static final String FILE_LINK = new NamedIndexField(FILE, "link").toString();
-	public static final String FILE_SPECIAL = new NamedIndexField(FILE, "special").toString();
-	public static final String FILE_DATE = new NamedIndexField(FILE, "date").toString();
-	public static final String FILE_LENGTH = new NamedIndexField(FILE, "length").toString();
-	public static final String FILE_NAME = new NamedIndexField(FILE, "name").toString();
-	public static final String FILE_BASE_NAME = new NamedIndexField(FILE, "baseName").toString();
-	public static final String FILE_HASH_PATH = new NamedIndexField(FILE, "hashPath").toString();
-	public static final String FILE_PARENT_PATH = new NamedIndexField(FILE, "parentPath").toString();
-	public static final String FILE_PARENT_HASH_PATH = new NamedIndexField(FILE, "parentHashPath").toString();
+    public static final NamedIndexField FILE = new NamedIndexField("file");
+    public static final NamedIndexField ASSET = new NamedIndexField("asset");
 
-	private final Optional<NamedIndexField> oParent;
-	private final String name;
+    public static final String DOCUMENT_TYPE_FILE = FILE.toString();
+    public static final String FILE_STORAGE = new NamedIndexField(FILE, "storage").toString();
+    public static final String FILE_DIRECTORY = new NamedIndexField(FILE, "directory").toString();
+    public static final String FILE_HIDDEN = new NamedIndexField(FILE, "hidden").toString();
+    public static final String FILE_LINK = new NamedIndexField(FILE, "link").toString();
+    public static final String FILE_SPECIAL = new NamedIndexField(FILE, "special").toString();
+    public static final String FILE_DATE = new NamedIndexField(FILE, "date").toString();
+    public static final String FILE_LENGTH = new NamedIndexField(FILE, "length").toString();
+    public static final String FILE_NAME = new NamedIndexField(FILE, "name").toString();
+    public static final String FILE_BASE_NAME = new NamedIndexField(FILE, "baseName").toString();
+    public static final String FILE_HASH_PATH = new NamedIndexField(FILE, "hashPath").toString();
+    public static final String FILE_PARENT_PATH = new NamedIndexField(FILE, "parentPath").toString();
+    public static final String FILE_PARENT_HASH_PATH = new NamedIndexField(FILE, "parentHashPath").toString();
+    public static final String ASSET_FULL_TEXT = new NamedIndexField(ASSET, "full-text").toString();
 
-	public NamedIndexField(final NamedIndexField parent, final String name) {
-		oParent = Optional.ofNullable(parent);
-		this.name = Objects.requireNonNull(name, "\"name\" can't to be null");
-	}
+    private final Optional<NamedIndexField> oParent;
+    private final String name;
 
-	public NamedIndexField(final String name) {
-		oParent = Optional.empty();
-		this.name = Objects.requireNonNull(name, "\"name\" can't to be null");
-	}
+    public NamedIndexField(final NamedIndexField parent, final String name) {
+        oParent = Optional.ofNullable(parent);
+        this.name = Objects.requireNonNull(name, "\"name\" can't to be null");
+    }
 
-	@Override
-	public String toString() {
-		if (oParent.isPresent()) {
-			return oParent.get().toString() + "." + name;
-		}
-		return name;
-	}
+    public NamedIndexField(final String name) {
+        oParent = Optional.empty();
+        this.name = Objects.requireNonNull(name, "\"name\" can't to be null");
+    }
+
+    @Override
+    public String toString() {
+        if (oParent.isPresent()) {
+            return oParent.get().toString() + "." + name;
+        }
+        return name;
+    }
 
 }

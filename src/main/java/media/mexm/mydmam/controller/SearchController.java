@@ -57,6 +57,7 @@ import media.mexm.mydmam.dto.OpenSearchResponse;
 import media.mexm.mydmam.dto.SearchConstraintsRequest;
 import media.mexm.mydmam.indexer.FileSearchResult;
 import media.mexm.mydmam.repository.FileRepository;
+import media.mexm.mydmam.service.MediaAssetService;
 
 @RestController
 @Validated
@@ -71,6 +72,8 @@ public class SearchController {
     FileRepository fileRepository;
     @Autowired
     MyDMAMConfigurationProperties conf;
+    @Autowired
+    MediaAssetService mediaAssetService;
 
     @RequestMapping(value = "/{realm}", method = { GET, POST, PUT })
     @Transactional
@@ -117,7 +120,7 @@ public class SearchController {
 
     @PostMapping("/reset-all-indexes")
     public ResponseEntity<Void> reset() {
-        indexer.reset("admin-ops");
+        indexer.reset("admin-ops", mediaAssetService);
         return new ResponseEntity<>(OK);
     }
 

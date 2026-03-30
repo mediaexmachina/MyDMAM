@@ -20,7 +20,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.PendingActivityService;
 import media.mexm.mydmam.tools.ImageMagick;
 
@@ -37,14 +36,12 @@ public class Startup implements InitializingBean {
     Indexer indexer;
     @Autowired
     ImageMagick imageMagick;
-    @Autowired
-    MediaAssetService mediaAssetService;
 
     @Override
     public void afterPropertiesSet() throws Exception {
         imageMagick.init();
         auditTrail.init();
-        indexer.init(mediaAssetService);
+        indexer.init();
         pendingActivityService.restartPendingActivities();
         pathIndexer.init();
         pathIndexer.startScans();

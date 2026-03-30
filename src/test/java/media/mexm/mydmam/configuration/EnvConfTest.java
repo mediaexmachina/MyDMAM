@@ -44,7 +44,7 @@ class EnvConfTest {
     void init() {
         timeBetweenScans = Duration.ofMillis(timeBetweenScansValue);
         pendingActivityMaxAgeGraceRestart = Duration.ofMillis(abs(pendingActivityMaxAgeGraceRestartDuration));
-        ev = new EnvConf(timeBetweenScans, null, null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart);
+        ev = new EnvConf(timeBetweenScans, null, null, null, false, 0, 0, pendingActivityMaxAgeGraceRestart);
     }
 
     @Test
@@ -53,12 +53,12 @@ class EnvConfTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> new EnvConf(
-                        timeBetweenScans, null, null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart));
+                        timeBetweenScans, null, null, null, false, 0, 0, pendingActivityMaxAgeGraceRestart));
 
         pendingActivityMaxAgeGraceRestart = Duration.ZERO;
         assertThrows(IllegalArgumentException.class,
                 () -> new EnvConf(
-                        timeBetweenScans, null, null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart));
+                        timeBetweenScans, null, null, null, false, 0, 0, pendingActivityMaxAgeGraceRestart));
     }
 
     @Test
@@ -66,12 +66,12 @@ class EnvConfTest {
         timeBetweenScans = Duration.ofMillis(-timeBetweenScansValue);
         assertThrows(IllegalArgumentException.class,
                 () -> new EnvConf(
-                        timeBetweenScans, null, null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart));
+                        timeBetweenScans, null, null, null, false, 0, 0, pendingActivityMaxAgeGraceRestart));
 
         timeBetweenScans = Duration.ZERO;
         assertThrows(IllegalArgumentException.class,
                 () -> new EnvConf(
-                        timeBetweenScans, null, null, null, false, 0, 0, 0, pendingActivityMaxAgeGraceRestart));
+                        timeBetweenScans, null, null, null, false, 0, 0, pendingActivityMaxAgeGraceRestart));
     }
 
 }

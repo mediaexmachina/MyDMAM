@@ -23,42 +23,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
+import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.tools.ImageMagick;
 
 @Service
 @Slf4j
-public class RenderedFilesProducerServiceImpl implements RenderedFilesProducerService {
+public class MediaRenderedFilesUtilsServiceImpl implements MediaRenderedFilesUtilsService {
 
-    @Autowired
-    MimeTypeDetector mimeTypeDetector;
     @Autowired
     MyDMAMConfigurationProperties configuration;
     @Autowired
+    MediaAssetService mediaAssetService;
+    @Autowired
     ImageMagick imageMagick;
+    @Autowired
+    MimeTypeDetector mimeTypeDetector;
 
     @Override
-    public File makeWorkingFile(final String fileName,
-                                final MediaAsset asset,
-                                final RealmStorageConfiguredEnv storedOn) {
-        return storedOn.realm().makeWorkingFile(asset.getFile().getId() + "-" + fileName);
-    }
-
-    @Override
-    public void assetDeclareRenderedStaticFile(final MediaAsset asset,
-                                               final File workingFile,
-                                               final String name,
-                                               final boolean toGzip,
-                                               final int index,
-                                               final String previewType) throws IOException {
-        asset.declareRenderedStaticFile(workingFile, name, toGzip, mimeTypeDetector, index, previewType);
-    }
-
-    @Override
-    public void makeImageThumbnails(final MediaAsset asset,
+    public void makeImageThumbnails(final FileEntity file,
                                     final RealmStorageConfiguredEnv storedOn,
                                     final File sourceFile,
                                     final boolean isImageTypeAlpha,
@@ -67,10 +52,9 @@ public class RenderedFilesProducerServiceImpl implements RenderedFilesProducerSe
             throw new IllegalCallerException("ImageMagick is disabled, cancel image production");
         }
         final var thumbnailConf = configuration.renderedSpecs().thumbnail();
-
-        final var heroThumbnailFile = makeWorkingFile("hero-thumbnail.webp", asset, storedOn);
-        final var cartridgeThumbnailFile = makeWorkingFile("cartridge-thumbnail.webp", asset, storedOn);
-        final var iconThumbnailFile = makeWorkingFile("icon-thumbnail.webp", asset, storedOn);
+        final var heroThumbnailFile = storedOn.makeWorkingFile("hero-thumbnail.webp", file);
+        final var cartridgeThumbnailFile = storedOn.makeWorkingFile("cartridge-thumbnail.webp", file);
+        final var iconThumbnailFile = storedOn.makeWorkingFile("icon-thumbnail.webp", file);
 
         if (isImageTypeAlpha) {
             imageMagick.convertImage(thumbnailConf.heroAlphaCmd(), sourceFile, heroThumbnailFile);
@@ -82,16 +66,29 @@ public class RenderedFilesProducerServiceImpl implements RenderedFilesProducerSe
             imageMagick.convertImage(thumbnailConf.iconCmd(), sourceFile, iconThumbnailFile);
         }
 
-        asset.declareRenderedStaticFile(
+        mediaAssetService.declareRenderedStaticFile(
+                file,
                 heroThumbnailFile,
-                "hero-thumbnail.webp", false, mimeTypeDetector, index, "hero-thumbnail");
-        asset.declareRenderedStaticFile(
-                cartridgeThumbnailFile,
-                "cartridge-thumbnail.webp", false, mimeTypeDetector, index, "cartridge-thumbnail");
-        asset.declareRenderedStaticFile(
-                iconThumbnailFile,
-                "icon-thumbnail.webp", false, mimeTypeDetector, index, "icon-thumbnail");
+                "hero-thumbnail.webp",
+                false,
+                index,
+                "hero-thumbnail");
 
+        mediaAssetService.declareRenderedStaticFile(
+                file,
+                cartridgeThumbnailFile,
+                "cartridge-thumbnail.webp",
+                false,
+                index,
+                "cartridge-thumbnail");
+
+        mediaAssetService.declareRenderedStaticFile(
+                file,
+                iconThumbnailFile,
+                "icon-thumbnail.webp",
+                false,
+                index,
+                "icon-thumbnail");
     }
 
 }

@@ -70,6 +70,7 @@ import media.mexm.mydmam.indexer.RealmIndexer;
 import media.mexm.mydmam.indexer.SearchConstraintCondition;
 import media.mexm.mydmam.indexer.SearchResult;
 import media.mexm.mydmam.repository.FileRepository;
+import media.mexm.mydmam.service.MediaAssetService;
 import net.datafaker.Faker;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -99,6 +100,8 @@ class SearchControllerTest {
     Indexer indexer;
     @MockitoBean
     FileRepository fileRepository;
+    @MockitoBean
+    MediaAssetService mediaAssetService;
 
     @Mock
     RealmIndexer realmIndexer;
@@ -169,7 +172,7 @@ class SearchControllerTest {
     @AfterEach
     void ends() {
         reset(fileEntity);
-        verifyNoMoreInteractions(indexer, fileRepository);
+        verifyNoMoreInteractions(indexer, fileRepository, mediaAssetService);
     }
 
     @Test
@@ -315,7 +318,7 @@ class SearchControllerTest {
                 .headers(baseHeaders))
                 .andExpect(STATUS_OK);
 
-        verify(indexer, times(1)).reset("admin-ops");
+        verify(indexer, times(1)).reset("admin-ops", mediaAssetService);
     }
 
 }

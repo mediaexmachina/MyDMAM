@@ -35,12 +35,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import media.mexm.mydmam.FlatMetadataThesaurusService;
 import media.mexm.mydmam.activity.ActivityEventType;
-import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -50,65 +51,67 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ActiveProfiles({ "Default" })
 class MimeTypeActivityTest {
 
-	@MockitoBean
-	MimeTypeDetector mimeTypeDetector;
-	@MockitoBean
-	AuditTrail auditTrail;
+    @MockitoBean
+    MimeTypeDetector mimeTypeDetector;
+    @MockitoBean
+    AuditTrail auditTrail;
 
-	@Mock
-	MediaAsset asset;
-	@Mock
-	ActivityEventType eventType;
-	@Mock
-	RealmStorageConfiguredEnv storedOn;
-	@Mock
-	PathIndexingStorage pathIndexingStorage;
-	@Mock
-	FileEntity fileEntity;
-	@Fake
-	String mimeType;
-	@Fake
-	String realm;
-	@Fake
-	String hashPath;
+    @Mock
+    ActivityEventType eventType;
+    @Mock
+    RealmStorageConfiguredEnv storedOn;
+    @Mock
+    PathIndexingStorage pathIndexingStorage;
+    @Mock
+    FileEntity fileEntity;
+    @Fake
+    String mimeType;
+    @Fake
+    String realm;
+    @Fake
+    String hashPath;
 
-	@Autowired
-	MimeTypeActivity mta;
+    @Autowired
+    FlatMetadataThesaurusService metadataThesaurusService;
 
-	File internalFile;
+    @Autowired
+    MimeTypeActivity mta;
 
-	@Test
-	void testCanHandle() {
-		when(storedOn.isDAS()).thenReturn(true);
-		assertTrue(mta.canHandle(asset, eventType, storedOn));
+    File internalFile;
 
-		when(storedOn.isDAS()).thenReturn(false);
-		assertFalse(mta.canHandle(asset, eventType, storedOn));
+    @Test
+    void testCanHandle() {
+        when(storedOn.isDAS()).thenReturn(true);
+        assertTrue(mta.canHandle(fileEntity, eventType, storedOn));
 
-		verify(storedOn, times(2)).isDAS();
-	}
+        when(storedOn.isDAS()).thenReturn(false);
+        assertFalse(mta.canHandle(fileEntity, eventType, storedOn));
 
-	@Test
-	void testHandle() throws Exception {
-		internalFile = new File("<nothing>");
-		when(storedOn.storage()).thenReturn(pathIndexingStorage);
-		when(asset.getLocalInternalFile(pathIndexingStorage)).thenReturn(internalFile);
-		when(mimeTypeDetector.getMimeType(internalFile)).thenReturn(mimeType);
-		when(asset.getFile()).thenReturn(fileEntity);
-		when(asset.getHashPath()).thenReturn(hashPath);
-		when(fileEntity.getRealm()).thenReturn(realm);
+        verify(storedOn, times(2)).isDAS();
+    }
 
-		mta.handle(asset, eventType, storedOn);
+    @Test
+    void testHandle() throws Exception {
+        metadataThesaurusService.reset();
+        internalFile = new File("<nothing>");
+        when(storedOn.storage()).thenReturn(pathIndexingStorage);
+        when(storedOn.getLocalInternalFile(fileEntity)).thenReturn(internalFile);
+        when(mimeTypeDetector.getMimeType(internalFile)).thenReturn(mimeType);
+        when(fileEntity.getHashPath()).thenReturn(hashPath);
+        when(fileEntity.getRealm()).thenReturn(realm);
 
-		verify(storedOn, atLeastOnce()).storage();
-		verify(mimeTypeDetector, times(1)).getMimeType(internalFile);
-		verify(asset, times(1)).getLocalInternalFile(pathIndexingStorage);
-		verify(asset, times(1)).getFile();
-		verify(asset, times(1)).setMimeType(mta, mimeType);
-		verify(asset, times(1)).getHashPath();
-		verify(fileEntity, times(1)).getRealm();
-		verify(auditTrail, times(1)).asyncPersistForRealm(
-				realm, "mime-type", "direct-extracted-from-file", FILE_MIME_TYPE, hashPath, mimeType);
-	}
+        mta.handle(fileEntity, eventType, storedOn);
+
+        verify(mimeTypeDetector, times(1)).getMimeType(internalFile);
+        verify(storedOn, atLeastOnce()).getLocalInternalFile(fileEntity);
+
+        metadataThesaurusService.checkIfAdded(MtdThesaurusDefFileFormat.class, mimeType).mimeType();
+        metadataThesaurusService.endChecks(fileEntity);
+
+        verify(fileEntity, atLeastOnce()).getRealm();
+        verify(fileEntity, atLeastOnce()).getHashPath();
+        verify(auditTrail, times(1)).asyncPersistForRealm(
+                realm, "mime-type", "direct-extracted-from-file", FILE_MIME_TYPE, hashPath, mimeType);
+    }
 
 }

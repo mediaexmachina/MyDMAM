@@ -68,7 +68,7 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
                         a.activityHandler(),
                         a.eventType(),
                         a.previousHandlersJson(),
-                        a.asset().getFile(),
+                        a.file(),
                         hostName,
                         pid))
                 .toList();

@@ -24,44 +24,51 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
-import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.MimeTypeDetector;
+import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
+import media.mexm.mydmam.service.MetadataThesaurusService;
 
 @Component
 @Slf4j
 public class MimeTypeActivity implements ActivityHandler {
 
-	@Autowired
-	MimeTypeDetector mimeTypeDetector;
-	@Autowired
-	AuditTrail auditTrail;
+    @Autowired
+    MimeTypeDetector mimeTypeDetector;
+    @Autowired
+    AuditTrail auditTrail;
+    @Autowired
+    MetadataThesaurusService metadataThesaurusService;
 
-	@Override
-	public boolean canHandle(final MediaAsset asset,
-							 final ActivityEventType eventType,
-							 final RealmStorageConfiguredEnv storedOn) {
-		return storedOn.isDAS();
-	}
+    @Override
+    public boolean canHandle(final FileEntity file,
+                             final ActivityEventType eventType,
+                             final RealmStorageConfiguredEnv storedOn) {
+        return storedOn.isDAS();
+    }
 
-	@Override
-	public void handle(final MediaAsset asset,
-					   final ActivityEventType eventType,
-					   final RealmStorageConfiguredEnv storedOn) throws Exception {
-		final var internalFile = asset.getLocalInternalFile(storedOn.storage());
-		log.debug("Get mime type from {}", internalFile);
-		final var mimeType = mimeTypeDetector.getMimeType(internalFile);
-		log.debug("Founded mime type: {}", mimeType);
-		asset.setMimeType(this, mimeType);
+    @Override
+    public void handle(final FileEntity file,
+                       final ActivityEventType eventType,
+                       final RealmStorageConfiguredEnv storedOn) throws Exception {
+        final var internalFile = storedOn.getLocalInternalFile(file);
+        log.debug("Get mime type from {}", internalFile);
+        final var mimeType = mimeTypeDetector.getMimeType(internalFile);
+        log.debug("Founded mime type: {}", mimeType);
 
-		auditTrail.asyncPersistForRealm(
-				asset.getFile().getRealm(),
-				"mime-type",
-				"direct-extracted-from-file",
-				FILE_MIME_TYPE,
-				asset.getHashPath(),
-				mimeType);
-	}
+        metadataThesaurusService.getWriter(this, file, MtdThesaurusDefFileFormat.class)
+                .set(mimeType)
+                .mimeType();
+
+        auditTrail.asyncPersistForRealm(
+                file.getRealm(),
+                "mime-type",
+                "direct-extracted-from-file",
+                FILE_MIME_TYPE,
+                file.getHashPath(),
+                mimeType);
+    }
 
 }

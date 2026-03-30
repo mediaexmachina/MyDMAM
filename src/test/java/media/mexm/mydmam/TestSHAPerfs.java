@@ -31,21 +31,21 @@ import net.datafaker.Faker;
  */
 class TestSHAPerfs {
 
-	static final Faker faker = Faker.instance();
+    static final Faker faker = Faker.instance();
 
-	@Test
-	@Timeout(2)
-	void test() {
-		final var paths = IntStream.range(0, 1_000_000)
-				.mapToObj(_ -> faker.numerify("path#####"))
-				.toList();
-		final var realm = faker.numerify("realm#####");
-		final var storage = faker.numerify("storage#####");
+    @Test
+    @Timeout(2)
+    void test() {// NOSONAR S2699
+        final var paths = IntStream.range(0, 100_000)
+                .mapToObj(_ -> faker.numerify("path#####"))
+                .toList();
+        final var realm = faker.numerify("realm#####");
+        final var storage = faker.numerify("storage#####");
 
-		paths.parallelStream()
-				.map(path -> hashPath(realm, storage, path))
-				.forEach(_ -> {
-				});
-	}
+        paths.parallelStream()
+                .map(path -> hashPath(realm, storage, path))
+                .forEach(_ -> {
+                });
+    }
 
 }

@@ -25,25 +25,25 @@ import media.mexm.mydmam.entity.AssetRenderedFileEntity;
 
 public interface AssetRenderedFileRepository extends JpaRepository<AssetRenderedFileEntity, Long> {
 
-	@Query("SELECT arf FROM AssetRenderedFileEntity arf WHERE arf.file.id = :fileId AND arf.etag IN :etags")
-	Set<AssetRenderedFileEntity> getRenderedForFileByEtags(int fileId, Set<Long> etags);
+    @Query("SELECT arf FROM AssetRenderedFileEntity arf WHERE arf.file.id = :fileId AND arf.etag = :etag")
+    AssetRenderedFileEntity getRenderedForFileByEtag(int fileId, Long etag);
 
-	@Query("""
-			SELECT arf
-			FROM AssetRenderedFileEntity arf
-			WHERE arf.file.hashPath = :hashPath
-			AND arf.file.realm = :realm
-			AND arf.name = :name
-			AND arf.indexref = :indexref
-			""")
-	AssetRenderedFileEntity getRenderedFile(String hashPath, String realm, String name, int indexref);
+    @Query("""
+            SELECT arf
+            FROM AssetRenderedFileEntity arf
+            WHERE arf.file.hashPath = :hashPath
+            AND arf.file.realm = :realm
+            AND arf.name = :name
+            AND arf.indexref = :indexref
+            """)
+    AssetRenderedFileEntity getRenderedFile(String hashPath, String realm, String name, int indexref);
 
-	@Query("""
-			SELECT arf
-			FROM AssetRenderedFileEntity arf
-			WHERE arf.file.hashPath = :hashPath
-			AND arf.file.realm = :realm
-			""")
-	Set<AssetRenderedFileEntity> getAllRenderedFiles(String hashPath, String realm);
+    @Query("""
+            SELECT arf
+            FROM AssetRenderedFileEntity arf
+            WHERE arf.file.hashPath = :hashPath
+            AND arf.file.realm = :realm
+            """)
+    Set<AssetRenderedFileEntity> getAllRenderedFiles(String hashPath, String realm);
 
 }

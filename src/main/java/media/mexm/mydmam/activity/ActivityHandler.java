@@ -20,8 +20,8 @@ import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 
 import java.util.Set;
 
-import media.mexm.mydmam.asset.MediaAsset;
 import media.mexm.mydmam.dto.StorageStateClass;
+import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 
 /**
@@ -29,25 +29,25 @@ import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
  */
 public interface ActivityHandler {
 
-	default boolean isEnabled() {
-		return true;
-	}
+    default boolean isEnabled() {
+        return true;
+    }
 
-	default String getHandlerName() {
-		return getClass().getSimpleName();
-	}
+    default String getHandlerName() {
+        return getClass().getSimpleName();
+    }
 
-	/**
-	 * If empty => all is supported
-	 */
-	default Set<StorageStateClass> getSupportedStorageStateClasses() {
-		return Set.of(ONLINE);
-	}
+    /**
+     * If empty => all is supported
+     */
+    default Set<StorageStateClass> getSupportedStorageStateClasses() {
+        return Set.of(ONLINE);
+    }
 
-	boolean canHandle(MediaAsset asset, ActivityEventType eventType, RealmStorageConfiguredEnv storedOn);
+    boolean canHandle(FileEntity asset, ActivityEventType eventType, RealmStorageConfiguredEnv storedOn);
 
-	void handle(MediaAsset asset,
-				ActivityEventType eventType,
-				RealmStorageConfiguredEnv storedOn) throws Exception; // NOSONAR S112
+    void handle(FileEntity asset,
+                ActivityEventType eventType,
+                RealmStorageConfiguredEnv storedOn) throws Exception; // NOSONAR S112
 
 }

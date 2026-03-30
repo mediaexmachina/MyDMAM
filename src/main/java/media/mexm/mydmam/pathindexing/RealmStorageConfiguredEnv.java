@@ -18,24 +18,52 @@ package media.mexm.mydmam.pathindexing;
 
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
+import media.mexm.mydmam.entity.FileEntity;
+import tv.hd3g.transfertfiles.AbstractFileSystemURL;
+import tv.hd3g.transfertfiles.local.LocalFile;
 
 public record RealmStorageConfiguredEnv(String realmName,
-										String storageName,
-										RealmConf realm,
-										PathIndexingStorage storage) {
+                                        String storageName,
+                                        RealmConf realm,
+                                        PathIndexingStorage storage) {
 
-	public boolean isDAS() {
-		return DAS.equals(storage.getCategory());
-	}
+    public boolean isDAS() {
+        return DAS.equals(storage.getCategory());
+    }
 
-	public boolean haveWorkingDir() {
-		return realm.workingDirectory() != null;
-	}
+    public boolean haveWorkingDir() {
+        return realm.workingDirectory() != null;
+    }
 
-	public boolean haveRenderedDir() {
-		return realm.renderedMetadataDirectory() != null;
-	}
+    public boolean haveRenderedDir() {
+        return realm.renderedMetadataDirectory() != null;
+    }
 
+    public File makeWorkingFile(final String fileName, final FileEntity file) {
+        return realm.makeWorkingFile(file.getId() + "-" + fileName);
+    }
+
+    /**
+     * Please do checks before call: StorageCategory must be DAS.
+     * @return only local file, else throw UnsupportedOperationException
+     */
+    public File getLocalInternalFile(final FileEntity fileEntity) {
+        try (final var fileSystem = new AbstractFileSystemURL(storage.path())) {
+            final var aFile = fileSystem.getFromPath(fileEntity.getPath());
+
+            if (aFile instanceof final LocalFile localFile) {
+                return localFile.getInternalFile();
+            } else {
+                throw new UnsupportedOperationException("Can't manage non-local files from " + fileSystem.getClass());
+            }
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Can't access to file system", e);
+        }
+    }
 }

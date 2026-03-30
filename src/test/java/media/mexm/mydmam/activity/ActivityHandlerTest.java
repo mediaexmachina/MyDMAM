@@ -25,49 +25,49 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 
 class ActivityHandlerTest {
 
-	class Impl implements ActivityHandler {
+    class Impl implements ActivityHandler {
 
-		@Override
-		public boolean canHandle(final MediaAsset asset,
-								 final ActivityEventType eventType,
-								 final RealmStorageConfiguredEnv storedOn) {
-			throw new UnsupportedOperationException();
-		}
+        @Override
+        public boolean canHandle(final FileEntity file,
+                                 final ActivityEventType eventType,
+                                 final RealmStorageConfiguredEnv storedOn) {
+            throw new UnsupportedOperationException();
+        }
 
-		@Override
-		public void handle(final MediaAsset asset,
-						   final ActivityEventType eventType,
-						   final RealmStorageConfiguredEnv storedOn) throws Exception {
-			throw new UnsupportedOperationException();
-		}
-	}
+        @Override
+        public void handle(final FileEntity file,
+                           final ActivityEventType eventType,
+                           final RealmStorageConfiguredEnv storedOn) throws Exception {
+            throw new UnsupportedOperationException();
+        }
+    }
 
-	Impl ah;
+    Impl ah;
 
-	@BeforeEach
-	void init() {
-		ah = new Impl();
-	}
+    @BeforeEach
+    void init() {
+        ah = new Impl();
+    }
 
-	@Test
-	void testIsEnabled() {
-		assertTrue(ah.isEnabled());
-	}
+    @Test
+    void testIsEnabled() {
+        assertTrue(ah.isEnabled());
+    }
 
-	@Test
-	void testGetHandlerName() {
-		assertThat(ah.getHandlerName()).isEqualTo(Impl.class.getSimpleName());
-	}
+    @Test
+    void testGetHandlerName() {
+        assertThat(ah.getHandlerName()).isEqualTo(Impl.class.getSimpleName());
+    }
 
-	@Test
-	void testGetSupportedStorageStateClasses() {
-		assertThat(ah.getSupportedStorageStateClasses())
-				.isEqualTo(Set.of(ONLINE));
-	}
+    @Test
+    void testGetSupportedStorageStateClasses() {
+        assertThat(ah.getSupportedStorageStateClasses())
+                .isEqualTo(Set.of(ONLINE));
+    }
 
 }

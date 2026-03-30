@@ -19,24 +19,18 @@ package media.mexm.mydmam.service;
 import java.io.File;
 import java.io.IOException;
 
-import media.mexm.mydmam.asset.MediaAsset;
+import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 
-public interface RenderedFilesProducerService {
+public interface MediaRenderedFilesUtilsService {
 
-    File makeWorkingFile(String fileName, MediaAsset asset, RealmStorageConfiguredEnv storedOn);
+    String MTD_KEY_FULL_INDEXED_TEXT = "full-indexed-text";
+    String PREVIEW_TYPE_TEXT_CONTENT = "text-content";
 
-    void makeImageThumbnails(MediaAsset asset,
+    void makeImageThumbnails(FileEntity asset,
                              RealmStorageConfiguredEnv storedOn,
                              File sourceFile,
                              boolean isImageTypeAlpha,
                              int index) throws IOException;
-
-    void assetDeclareRenderedStaticFile(MediaAsset asset,
-                                        File workingFile,
-                                        String name,
-                                        boolean toGzip,
-                                        int index,
-                                        String previewType) throws IOException;
 
 }

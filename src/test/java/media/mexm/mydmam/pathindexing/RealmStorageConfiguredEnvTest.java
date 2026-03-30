@@ -19,7 +19,10 @@ package media.mexm.mydmam.pathindexing;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
 import static media.mexm.mydmam.dto.StorageCategory.NAS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,57 +37,92 @@ import org.mockito.Mock;
 
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
+import media.mexm.mydmam.entity.FileEntity;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
 @ExtendWith(MockToolsExtendsJunit.class)
 class RealmStorageConfiguredEnvTest {
 
-	@Mock
-	RealmConf realm;
-	@Mock
-	PathIndexingStorage storage;
-	@Fake
-	String realmName;
-	@Fake
-	String storageName;
+    @Mock
+    RealmConf realm;
+    @Mock
+    PathIndexingStorage storage;
+    @Mock
+    FileEntity fileEntity;
 
-	RealmStorageConfiguredEnv env;
+    @Fake
+    String realmName;
+    @Fake
+    String storageName;
+    @Fake
+    String fileName;
+    @Fake
+    int id;
 
-	@BeforeEach
-	void init() {
-		env = new RealmStorageConfiguredEnv(realmName, storageName, realm, storage);
-	}
+    File file;
+    RealmStorageConfiguredEnv env;
 
-	@Test
-	void testIsDAS() {
-		when(storage.getCategory()).thenReturn(DAS, NAS, EXTERNAL);
+    @BeforeEach
+    void init() {
+        env = new RealmStorageConfiguredEnv(realmName, storageName, realm, storage);
+        file = new File(fileName);
+    }
 
-		assertTrue(env.isDAS());
-		assertFalse(env.isDAS());
-		assertFalse(env.isDAS());
+    @Test
+    void testIsDAS() {
+        when(storage.getCategory()).thenReturn(DAS, NAS, EXTERNAL);
 
-		verify(storage, times(3)).getCategory();
-	}
+        assertTrue(env.isDAS());
+        assertFalse(env.isDAS());
+        assertFalse(env.isDAS());
 
-	@Test
-	void testHaveWorkingDir() {
-		when(realm.workingDirectory()).thenReturn(new File("."), (File) null);
+        verify(storage, times(3)).getCategory();
+    }
 
-		assertTrue(env.haveWorkingDir());
-		assertFalse(env.haveWorkingDir());
+    @Test
+    void testHaveWorkingDir() {
+        when(realm.workingDirectory()).thenReturn(new File("."), (File) null);
 
-		verify(realm, times(2)).workingDirectory();
-	}
+        assertTrue(env.haveWorkingDir());
+        assertFalse(env.haveWorkingDir());
 
-	@Test
-	void testHaveRenderedDir() {
-		when(realm.renderedMetadataDirectory()).thenReturn(new File("."), (File) null);
+        verify(realm, times(2)).workingDirectory();
+    }
 
-		assertTrue(env.haveRenderedDir());
-		assertFalse(env.haveRenderedDir());
+    @Test
+    void testHaveRenderedDir() {
+        when(realm.renderedMetadataDirectory()).thenReturn(new File("."), (File) null);
 
-		verify(realm, times(2)).renderedMetadataDirectory();
-	}
+        assertTrue(env.haveRenderedDir());
+        assertFalse(env.haveRenderedDir());
 
+        verify(realm, times(2)).renderedMetadataDirectory();
+    }
+
+    @Test
+    void testMakeWorkingFile() {
+        when(realm.makeWorkingFile(id + "-" + fileName)).thenReturn(file);
+        when(fileEntity.getId()).thenReturn(id);
+
+        final var result = env.makeWorkingFile(fileName, fileEntity);
+        assertThat(result.getPath()).isEqualTo(fileName);
+
+        verify(realm, times(1)).makeWorkingFile(id + "-" + fileName);
+        verify(fileEntity, times(1)).getId();
+    }
+
+    @Test
+    void testGetLocalInternalFile() {
+        final var pomFile = new File("pom.xml").getAbsoluteFile();
+        when(storage.path()).thenReturn("file://localhost/" + pomFile.getParent());
+        when(fileEntity.getPath()).thenReturn(pomFile.getName());
+
+        final var fileStorage = env.getLocalInternalFile(fileEntity);
+        assertNotNull(fileStorage);
+        assertEquals(fileStorage, pomFile);
+
+        verify(storage, times(1)).path();
+        verify(fileEntity, times(1)).getPath();
+    }
 }

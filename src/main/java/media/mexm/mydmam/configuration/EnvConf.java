@@ -31,7 +31,6 @@ public record EnvConf(@DefaultValue("1h") @NotNull Duration timeBetweenScans,
                       @DefaultValue("audittrail") @NotEmpty String auditTrailSpoolName,
                       @DefaultValue("async-api") @NotEmpty String asyncAPISpoolName,
                       @DefaultValue("false") boolean explainSearchResults,
-                      @DefaultValue("10000") @Min(0) int resetBatchSizeIndexer,
                       @DefaultValue("100") @Min(1) int dirListMaxSize,
                       @DefaultValue("100") @Min(1) int searchResultMaxSize,
                       @DefaultValue("24h") Duration pendingActivityMaxAgeGraceRestart) {
