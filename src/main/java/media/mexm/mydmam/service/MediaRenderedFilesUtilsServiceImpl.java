@@ -23,11 +23,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
-import media.mexm.mydmam.tools.ImageMagick;
 
 @Service
 @Slf4j

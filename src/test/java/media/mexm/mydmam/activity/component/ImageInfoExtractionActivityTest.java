@@ -56,6 +56,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.FlatMetadataThesaurusService;
 import media.mexm.mydmam.activity.ActivityEventType;
+import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
@@ -63,7 +64,6 @@ import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
-import media.mexm.mydmam.tools.ImageMagick;
 import media.mexm.mydmam.tools.JsonPathHelper;
 import net.datafaker.Faker;
 import tv.hd3g.commons.testtools.Fake;

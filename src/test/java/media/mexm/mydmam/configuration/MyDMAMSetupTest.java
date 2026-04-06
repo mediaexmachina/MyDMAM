@@ -27,7 +27,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.sqlite.SQLiteConfig;
 
 import eu.medsea.mimeutil.MimeUtil2;
-import media.mexm.mydmam.tools.ImageMagick;
+import media.mexm.mydmam.component.ImageMagick;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 

@@ -115,14 +115,13 @@ class IndexerTest {
         assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
         assertEquals(0, flatJobKitEngine.getEndEventsList().size());
         verifyNoMoreInteractions(
-                fileDao,
                 pathIndexer,
                 mediaAssetService);
     }
 
     @Test
     void testInit_nothing() throws IOException {
-        indexer.init();
+        indexer.internalServiceStart();
         assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
         verify(conf, atLeastOnce()).realms();
@@ -133,7 +132,7 @@ class IndexerTest {
         when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
         when(realmConf.workingDirectory()).thenReturn(null);
 
-        indexer.init();
+        indexer.internalServiceStart();
         assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
         verify(conf, atLeastOnce()).realms();
@@ -144,7 +143,7 @@ class IndexerTest {
     void testInitGetIndexerByRealm() throws IOException {
         when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
         when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
-        indexer.init();
+        indexer.internalServiceStart();
         assertThat(indexer.getIndexerByRealm(realmName)).isNotEmpty();
         assertThat(indexer.getIndexerByRealm(badRealmName)).isEmpty();
 
@@ -156,12 +155,12 @@ class IndexerTest {
     }
 
     @Test
-    void testDestroy() throws IOException {
+    void testInternalServiceStop() throws Exception {
         when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
         when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
 
-        indexer.init();
-        indexer.destroy();
+        indexer.internalServiceStart();
+        indexer.internalServiceStop();
         assertThat(indexer.getIndexerByRealm(realmName)).isEmpty();
 
         verify(conf, atLeastOnce()).realms();
@@ -228,7 +227,7 @@ class IndexerTest {
             when(conf.realms()).thenReturn(Map.of(new TechnicalName(realmName), realmConf));
             when(realmConf.workingDirectory()).thenReturn(realmWorkingDirectory);
 
-            indexer.init();
+            indexer.internalServiceStart();
 
             fileName = faker.numerify("baseName#####") + "." + faker.numerify("extention#####");
             path = parentPath + "/" + fileName;

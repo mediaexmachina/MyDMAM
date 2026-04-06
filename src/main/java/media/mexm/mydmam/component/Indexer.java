@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +33,7 @@ import tv.hd3g.jobkit.engine.JobKitEngine;
 
 @Component
 @Slf4j
-public class Indexer implements DisposableBean {
+public class Indexer implements InternalService {
 
     private final Map<String, RealmIndexer> indexerByRealmName = new HashMap<>();
 
@@ -45,7 +44,13 @@ public class Indexer implements DisposableBean {
     @Autowired
     JobKitEngine jobKit;
 
-    public void init() throws IOException {
+    @Override
+    public String getInternalServiceName() {
+        return "Indexer";
+    }
+
+    @Override
+    public void internalServiceStart() throws IOException {
         if (conf.realms() == null) {
             return;
         }
@@ -79,7 +84,7 @@ public class Indexer implements DisposableBean {
     }
 
     @Override
-    public void destroy() {
+    public void internalServiceStop() throws Exception {
         indexerByRealmName.values().forEach(RealmIndexer::close);
         indexerByRealmName.clear();
     }
@@ -99,4 +104,5 @@ public class Indexer implements DisposableBean {
         });
 
     }
+
 }

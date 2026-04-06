@@ -16,13 +16,11 @@
  */
 package media.mexm.mydmam.component;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,41 +30,38 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.service.PendingActivityService;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
-import tv.hd3g.jobkit.engine.FlatJobKitEngine;
 
 @SpringBootTest(webEnvironment = NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
-@ActiveProfiles({ "FlatJobKit" })
+@ActiveProfiles({ "MockInternalService" })
 class StartupTest {
 
     @MockitoBean
-    PendingActivityService pendingActivityService;
+    AuditTrail auditTrail;
+    @MockitoBean
+    ImageMagick imageMagick;
+    @MockitoBean
+    Indexer indexer;
     @MockitoBean
     PathIndexer pathIndexer;
     @MockitoBean
-    AuditTrail auditTrail;
+    PendingActivityService pendingActivityService;
+
+    @Autowired
+    InternalService service;
 
     @Autowired
     Startup startup;
-    @Autowired
-    FlatJobKitEngine flatJobKitEngine;
-
-    @AfterEach
-    void ends() {
-        verifyNoMoreInteractions(
-                pendingActivityService,
-                pathIndexer,
-                auditTrail);
-        assertThat(flatJobKitEngine.getEndEventsList()).isEmpty();
-        assertThat(flatJobKitEngine.isEmptyActiveServicesList()).isTrue();
-    }
 
     @Test
-    void test() {
-        verify(auditTrail, times(1)).init();
-        verify(pendingActivityService, times(1)).restartPendingActivities();
-        verify(pathIndexer, times(1)).init();
-        verify(pathIndexer, times(1)).startScans();
+    void test() throws Exception {
+        verify(service, atLeastOnce()).getInternalServiceName();
+        verify(service, times(1)).internalServiceStart();
+
+        startup.destroy();
+
+        verify(service, atLeastOnce()).getInternalServiceName();
+        verify(service, times(1)).internalServiceStop();
     }
 
 }

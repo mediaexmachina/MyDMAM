@@ -16,35 +16,37 @@
  */
 package media.mexm.mydmam.component;
 
+import java.util.List;
+
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import media.mexm.mydmam.service.PendingActivityService;
-import media.mexm.mydmam.tools.ImageMagick;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
-public class Startup implements InitializingBean {
+public class Startup implements InitializingBean, DisposableBean {
 
     @Autowired
-    PendingActivityService pendingActivityService;
-    @Autowired
-    PathIndexer pathIndexer;
-    @Autowired
-    AuditTrail auditTrail;
-    @Autowired
-    Indexer indexer;
-    @Autowired
-    ImageMagick imageMagick;
+    List<InternalService> internalServices;
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        imageMagick.init();
-        auditTrail.init();
-        indexer.init();
-        pendingActivityService.restartPendingActivities();
-        pathIndexer.init();
-        pathIndexer.startScans();
+        for (final var service : internalServices) {
+            log.info("Start internal service {}", service.getInternalServiceName());
+            service.internalServiceStart();
+        }
+
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        for (final var service : internalServices) {
+            log.debug("Stop internal service {}", service.getInternalServiceName());
+            service.internalServiceStop();
+        }
     }
 
 }

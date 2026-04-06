@@ -95,7 +95,7 @@ class PathIndexerTest {
         RealmConf piRealm;
 
         @BeforeEach
-        void init() {
+        void init() throws Exception {
             piStorage = new PathIndexingStorage(
                     description, location,
                     new File(".").getAbsolutePath(),
@@ -109,8 +109,7 @@ class PathIndexerTest {
 
             when(configuration.realms()).thenReturn(Map.of(new TechnicalName(realm), piRealm));
             pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
-            pi.init();
-            pi.startScans();
+            pi.internalServiceStart();
         }
 
         @AfterEach
@@ -161,10 +160,9 @@ class PathIndexerTest {
     class WithoutWatchfolder {
 
         @BeforeEach
-        void init() {
+        void init() throws Exception {
             pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);
-            pi.init();
-            pi.startScans();
+            pi.internalServiceStart();
         }
 
         @Test

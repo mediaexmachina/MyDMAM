@@ -98,7 +98,7 @@ class AuditTrailTest {
     void testGetAuditTrailByRealm_emptyConf() {
         when(conf.realms()).thenReturn(null);
 
-        auditTrail.init();
+        auditTrail.internalServiceStart();
 
         verify(conf, atLeastOnce()).realms();
         assertThat(auditTrail.getAuditTrailByRealm(realmName)).isEmpty();
@@ -108,7 +108,7 @@ class AuditTrailTest {
     void testGetAuditTrailByRealm_noWorkingDir() {
         when(realmConf.workingDirectory()).thenReturn(null);
 
-        auditTrail.init();
+        auditTrail.internalServiceStart();
 
         verify(conf, atLeastOnce()).realms();
         verify(realmConf, times(1)).workingDirectory();
@@ -117,7 +117,7 @@ class AuditTrailTest {
 
     @Test
     void testGetAuditTrailByRealm() {
-        auditTrail.init();
+        auditTrail.internalServiceStart();
 
         verify(conf, atLeastOnce()).realms();
         verify(conf, times(1)).env();
@@ -134,7 +134,7 @@ class AuditTrailTest {
      */
     @Test
     void testAsyncPersistForRealm() {
-        auditTrail.init();
+        auditTrail.internalServiceStart();
 
         auditTrail.asyncPersistForRealm(realmName, issuer, event, objectType, objectReference, objectPayload);
 

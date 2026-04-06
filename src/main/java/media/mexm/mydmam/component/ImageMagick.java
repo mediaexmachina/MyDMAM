@@ -14,7 +14,7 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.tools;
+package media.mexm.mydmam.component;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static java.lang.Runtime.getRuntime;
@@ -35,7 +35,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
@@ -44,9 +46,9 @@ import com.jayway.jsonpath.JsonPath;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import media.mexm.mydmam.component.XmlMapperWrapper;
 import media.mexm.mydmam.configuration.MagickConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
+import media.mexm.mydmam.tools.JsonPathHelper;
 import tv.hd3g.processlauncher.CapturedStdOutErrTextRetention;
 import tv.hd3g.processlauncher.ExecutionTimeLimiter;
 import tv.hd3g.processlauncher.ProcesslauncherBuilder;
@@ -55,7 +57,8 @@ import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 import tv.hd3g.processlauncher.cmdline.Parameters;
 
 @Slf4j
-public class ImageMagick {
+@Component
+public class ImageMagick implements InternalService {
 
     private static final String POLICY_RESOURCE = "resource";
     private static final String POLICY_CODER = "coder";
@@ -76,11 +79,11 @@ public class ImageMagick {
     @Getter
     private boolean enabled;
 
-    public ImageMagick(final ExecutableFinder executableFinder,
-                       final ScheduledExecutorService maxExecTimeScheduler,
-                       final MyDMAMConfigurationProperties configuration,
-                       final XmlMapperWrapper xmlMapper,
-                       final ObjectMapper objectMapper) {
+    public ImageMagick(@Autowired final ExecutableFinder executableFinder,
+                       @Autowired final ScheduledExecutorService maxExecTimeScheduler,
+                       @Autowired final MyDMAMConfigurationProperties configuration,
+                       @Autowired final XmlMapperWrapper xmlMapper,
+                       @Autowired final ObjectMapper objectMapper) {
         this.executableFinder = executableFinder;
         this.maxExecTimeScheduler = maxExecTimeScheduler;
         this.configuration = configuration;
@@ -89,7 +92,13 @@ public class ImageMagick {
         enabled = false;
     }
 
-    public void init() {
+    @Override
+    public String getInternalServiceName() {
+        return "ImageMagick";
+    }
+
+    @Override
+    public void internalServiceStart() {
         final var magickConf = configuration.magick();
         if (magickConf == null) {
             return;

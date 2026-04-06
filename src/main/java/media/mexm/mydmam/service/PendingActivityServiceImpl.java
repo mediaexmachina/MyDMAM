@@ -151,6 +151,11 @@ public class PendingActivityServiceImpl implements PendingActivityService {
     }
 
     @Override
+    public String getInternalServiceName() {
+        return "PendingActivityService";
+    }
+
+    @Override
     public void startsActivities(final String realmName,
                                  final String storageName,
                                  final RealmConf realm,
@@ -343,6 +348,12 @@ public class PendingActivityServiceImpl implements PendingActivityService {
                              final RealmConf realm,
                              final Set<? extends FileAttributesReference> losted) {
         losted.forEach(file -> mediaAssetService.purgeAssetArtefacts(realmName, storageName, file));
+    }
+
+    @Override
+    @Transactional
+    public void internalServiceStart() throws Exception {
+        restartPendingActivities();
     }
 
 }

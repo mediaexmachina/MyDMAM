@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
+import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
@@ -29,7 +30,6 @@ import media.mexm.mydmam.repository.FileMetadataDao;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MediaRenderedFilesUtilsService;
 import media.mexm.mydmam.service.MetadataThesaurusService;
-import media.mexm.mydmam.tools.ImageMagick;
 
 @Component
 @Slf4j

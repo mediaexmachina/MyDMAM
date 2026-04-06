@@ -51,6 +51,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 import media.mexm.mydmam.ConditionalExternalExecTest;
+import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.component.XmlMapperWrapper;
 import media.mexm.mydmam.configuration.MagickConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
@@ -110,14 +111,14 @@ class ImageMagickTest {
     @Test
     void testInit_noConf() {
         when(configuration.magick()).thenReturn(null);
-        im.init();
+        im.internalServiceStart();
         verify(configuration, times(1)).magick();
         assertFalse(im.isEnabled());
     }
 
     @Test
     void testInit() throws IOException {
-        im.init();
+        im.internalServiceStart();
 
         verify(configuration, times(1)).magick();
         verify(magickConf, atLeastOnce()).maxExecTime();
@@ -141,7 +142,7 @@ class ImageMagickTest {
     }
 
     private void setup() {
-        im.init();
+        im.internalServiceStart();
         reset(configuration, magickConf, xmlMapper, xmlMapperInternal, xmlObjectWriter);
     }
 

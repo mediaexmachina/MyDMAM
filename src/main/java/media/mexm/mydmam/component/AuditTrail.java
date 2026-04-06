@@ -36,7 +36,7 @@ import tv.hd3g.jobkit.engine.JobKitEngine;
 
 @Component
 @Slf4j
-public class AuditTrail {
+public class AuditTrail implements InternalService {
 
     private final Map<String, RealmAuditTrail> auditTrailByRealmName = new HashMap<>();
 
@@ -49,7 +49,13 @@ public class AuditTrail {
     @Autowired
     SQLiteConfig sqliteConfig;
 
-    public void init() {
+    @Override
+    public String getInternalServiceName() {
+        return "AuditTrail";
+    }
+
+    @Override
+    public void internalServiceStart() {
         if (conf.realms() == null) {
             return;
         }

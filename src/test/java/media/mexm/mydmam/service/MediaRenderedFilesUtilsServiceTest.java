@@ -45,12 +45,12 @@ import media.mexm.mydmam.asset.MetadataExtractorHandler;
 import media.mexm.mydmam.asset.RenderedFileSpecs;
 import media.mexm.mydmam.asset.RenderedFileSpecs.ThumbnailIMCmd;
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
+import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.FileMetadataEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
-import media.mexm.mydmam.tools.ImageMagick;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 

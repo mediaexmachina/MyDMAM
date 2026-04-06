@@ -25,6 +25,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.internal.util.MockUtil.isMock;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.activity.ActivityHandler;
+import media.mexm.mydmam.component.InternalService;
 import media.mexm.mydmam.component.PathIndexer;
 import media.mexm.mydmam.component.Startup;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
@@ -44,148 +47,179 @@ import tv.hd3g.jobkit.engine.JobKitEngine;
 
 class MockService {
 
-	@Configuration
-	@Profile({ "FlatJobKit" })
-	static class FlatJobKit {
+    @Configuration
+    @Profile({ "FlatJobKit" })
+    static class FlatJobKit {
 
-		@Bean
-		@Primary
-		FlatJobKitEngine flatJobKitEngine() {
-			return new FlatJobKitEngine();
-		}
+        @Bean
+        @Primary
+        FlatJobKitEngine flatJobKitEngine() {
+            return new FlatJobKitEngine();
+        }
 
-	}
+    }
 
-	@Configuration
-	@Profile({ "NoStartup" })
-	static class NoStartup {
+    @Configuration
+    @Profile({ "NoStartup" })
+    static class NoStartup {
 
-		@Bean
-		@Primary
-		Startup startup() {
-			return Mockito.mock(Startup.class);
-		}
+        @Bean
+        @Primary
+        Startup startup() {
+            return Mockito.mock(Startup.class);
+        }
 
-	}
+    }
 
-	@Configuration
-	@Profile({ "Default" })
-	static class Default {
+    @Configuration
+    @Profile({ "Default" })
+    static class Default {
 
-		@Bean
-		@Primary
-		Startup startup() {
-			return Mockito.mock(Startup.class);
-		}
+        @Bean
+        @Primary
+        Startup startup() {
+            return Mockito.mock(Startup.class);
+        }
 
-		@Bean
-		@Primary
-		FlatJobKitEngine flatJobKitEngine() {
-			return new FlatJobKitEngine();
-		}
+        @Bean
+        @Primary
+        FlatJobKitEngine flatJobKitEngine() {
+            return new FlatJobKitEngine();
+        }
 
-	}
+    }
 
-	@Configuration
-	@Profile({ "MockActivityHandler" })
-	static class MockActivityHandler {
+    @Configuration
+    @Profile({ "MockActivityHandler" })
+    static class MockActivityHandler {
 
-		@Bean
-		@Primary
-		ActivityHandler mockActivityHandler() {
-			return Mockito.mock(ActivityHandler.class);
-		}
+        @Bean
+        @Primary
+        ActivityHandler mockActivityHandler() {
+            return Mockito.mock(ActivityHandler.class);
+        }
 
-	}
+    }
 
-	/*
-	 * =========
-	 * TEST ZONE
-	 * =========
-	 */
+    @Configuration
+    @Profile({ "MockInternalService" })
+    static class MockInternalService {
 
-	@SpringBootTest
-	@ActiveProfiles({ "FlatJobKit" })
-	static class TestFlatJobKit {
+        @Bean
+        @Primary
+        InternalService mockInternalService() {
+            return Mockito.mock(InternalService.class);
+        }
 
-		@Autowired
-		JobKitEngine jobKitEngine;
-		@Autowired
-		FlatJobKitEngine flatJobKitEngine;
+        @Bean
+        @Primary
+        List<InternalService> mockInternalServices(final InternalService is) {
+            return List.of(is);
+        }
 
-		@Test
-		void test() {
-			assertFalse(isMock(jobKitEngine));
-			assertEquals(jobKitEngine, flatJobKitEngine);
-			assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
-			assertEquals(0, flatJobKitEngine.getEndEventsList().size());
-		}
-	}
+    }
 
-	@SpringBootTest
-	@ActiveProfiles({ "NoStartup" })
-	static class TestNoStartup {
+    /*
+     * =========
+     * TEST ZONE
+     * =========
+     */
 
-		@Autowired
-		Startup startup;
-		@MockitoBean
-		PathIndexer pathIndexer;
+    @SpringBootTest
+    @ActiveProfiles({ "FlatJobKit" })
+    static class TestFlatJobKit {
 
-		@Test
-		void test() throws Exception {
-			assertTrue(isMock(startup));
-			verify(startup, times(1)).afterPropertiesSet();
-			verifyNoMoreInteractions(startup);
+        @Autowired
+        JobKitEngine jobKitEngine;
+        @Autowired
+        FlatJobKitEngine flatJobKitEngine;
 
-			verifyNoInteractions(pathIndexer);
-		}
+        @Test
+        void test() {
+            assertFalse(isMock(jobKitEngine));
+            assertEquals(jobKitEngine, flatJobKitEngine);
+            assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
+            assertEquals(0, flatJobKitEngine.getEndEventsList().size());
+        }
+    }
 
-	}
+    @SpringBootTest
+    @ActiveProfiles({ "NoStartup" })
+    static class TestNoStartup {
 
-	@SpringBootTest
-	@ActiveProfiles({ "Default" })
-	static class TestDefault {
+        @Autowired
+        Startup startup;
+        @MockitoBean
+        PathIndexer pathIndexer;
 
-		@Autowired
-		Startup startup;
-		@MockitoBean
-		PathIndexer pathIndexer;
-		@Autowired
-		JobKitEngine jobKitEngine;
-		@Autowired
-		FlatJobKitEngine flatJobKitEngine;
+        @Test
+        void test() throws Exception {
+            assertTrue(isMock(startup));
+            verify(startup, times(1)).afterPropertiesSet();
+            verifyNoMoreInteractions(startup);
 
-		@Test
-		void testStartup() throws Exception {
-			assertTrue(isMock(startup));
-			verify(startup, times(1)).afterPropertiesSet();
-			verifyNoMoreInteractions(startup);
+            verifyNoInteractions(pathIndexer);
+        }
 
-			verifyNoInteractions(pathIndexer);
-		}
+    }
 
-		@Test
-		void testJobKit() {
-			assertFalse(isMock(jobKitEngine));
-			assertEquals(jobKitEngine, flatJobKitEngine);
-			assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
-			assertEquals(0, flatJobKitEngine.getEndEventsList().size());
-		}
+    @SpringBootTest
+    @ActiveProfiles({ "Default" })
+    static class TestDefault {
 
-	}
+        @Autowired
+        Startup startup;
+        @MockitoBean
+        PathIndexer pathIndexer;
+        @Autowired
+        JobKitEngine jobKitEngine;
+        @Autowired
+        FlatJobKitEngine flatJobKitEngine;
 
-	@SpringBootTest
-	@ActiveProfiles({ "MockActivityHandler" })
-	static class TestMockActivityHandler {
+        @Test
+        void testStartup() throws Exception {
+            assertTrue(isMock(startup));
+            verify(startup, times(1)).afterPropertiesSet();
+            verifyNoMoreInteractions(startup);
 
-		@Autowired
-		ActivityHandler activity;
+            verifyNoInteractions(pathIndexer);
+        }
 
-		@Test
-		void test() {
-			assertTrue(isMock(activity));
-			verifyNoInteractions(activity);
-		}
-	}
+        @Test
+        void testJobKit() {
+            assertFalse(isMock(jobKitEngine));
+            assertEquals(jobKitEngine, flatJobKitEngine);
+            assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
+            assertEquals(0, flatJobKitEngine.getEndEventsList().size());
+        }
 
+    }
+
+    @SpringBootTest
+    @ActiveProfiles({ "MockActivityHandler" })
+    static class TestMockActivityHandler {
+
+        @Autowired
+        ActivityHandler activity;
+
+        @Test
+        void test() {
+            assertTrue(isMock(activity));
+            verifyNoInteractions(activity);
+        }
+    }
+
+    @SpringBootTest
+    @ActiveProfiles({ "MockInternalService", "NoStartup" })
+    static class TestMockInternalService {
+
+        @Autowired
+        InternalService internalService;
+
+        @Test
+        void test() {
+            assertTrue(isMock(internalService));
+            verifyNoInteractions(internalService);
+        }
+    }
 }

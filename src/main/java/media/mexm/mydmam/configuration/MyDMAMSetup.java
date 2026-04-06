@@ -16,9 +16,6 @@
  */
 package media.mexm.mydmam.configuration;
 
-import java.util.concurrent.ScheduledExecutorService;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -29,11 +26,7 @@ import org.sqlite.SQLiteConfig.JournalMode;
 import org.sqlite.SQLiteConfig.SynchronousMode;
 import org.sqlite.SQLiteConfig.TempStore;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.medsea.mimeutil.MimeUtil2;
-import media.mexm.mydmam.component.XmlMapperWrapper;
-import media.mexm.mydmam.tools.ImageMagick;
 import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 
 @Configuration
@@ -70,15 +63,6 @@ public class MyDMAMSetup {
     @Bean
     ExecutableFinder getExecutableFinder() {
         return new ExecutableFinder();
-    }
-
-    @Bean
-    ImageMagick getImageMagick(@Autowired final ExecutableFinder executableFinder,
-                               @Autowired final ScheduledExecutorService maxExecTimeScheduler,
-                               @Autowired final MyDMAMConfigurationProperties configuration,
-                               @Autowired final XmlMapperWrapper xmlMapper,
-                               @Autowired final ObjectMapper objectMapper) {
-        return new ImageMagick(executableFinder, maxExecTimeScheduler, configuration, xmlMapper, objectMapper);
     }
 
 }
