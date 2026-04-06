@@ -89,7 +89,11 @@ public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
         final var techWriter = metadataThesaurusService.getWriter(this, file, MtdThesaurusDefTechnical.class);
         techWriter.set(jsonNode.read("$.image.geometry.width", Integer.class)).width();
         techWriter.set(jsonNode.read("$.image.geometry.height", Integer.class)).height();
-        techWriter.set(jsonNode.read("$.image.orientation", String.class)).orientation();
+
+        final var orientation = jsonNode.read("$.image.orientation", String.class).orElse("undefined");
+        if (orientation.equalsIgnoreCase("undefined") == false) {
+            techWriter.set(orientation).orientation();
+        }
         techWriter.set(jsonNode.read("$.image.colorspace", String.class)).colorspace();
         techWriter.set(jsonNode.read("$.image.type", String.class).map(String::toLowerCase)).type();
     }
