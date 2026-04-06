@@ -44,9 +44,9 @@ public interface ActivityHandler {
         return Set.of(ONLINE);
     }
 
-    boolean canHandle(FileEntity asset, ActivityEventType eventType, RealmStorageConfiguredEnv storedOn);
+    boolean canHandle(FileEntity fileEntity, ActivityEventType eventType, RealmStorageConfiguredEnv storedOn);
 
-    void handle(FileEntity asset,
+    void handle(FileEntity fileEntity,
                 ActivityEventType eventType,
                 RealmStorageConfiguredEnv storedOn) throws Exception; // NOSONAR S112
 

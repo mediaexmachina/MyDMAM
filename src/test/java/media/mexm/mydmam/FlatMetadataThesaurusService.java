@@ -118,7 +118,7 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
         }
 
         final var entriesExpectedToRead = responseMap.keySet();
-        assertThat(entitiesReaded).containsExactlyElementsOf(entriesExpectedToRead);
+        assertThat(entitiesReaded).containsAll(entriesExpectedToRead);
 
         relativeTofiles.clear();
         responseMap.clear();

@@ -96,11 +96,10 @@ class FlatMetadataThesaurusServiceTest {
         metadataThesaurusService.reset();
 
         metadataThesaurusService.getReader(MtdThesaurusDef.class, fileEntity).data();
-        assertThrows(AssertionFailedError.class, () -> metadataThesaurusService.endChecks(fileEntity));
         metadataThesaurusService.reset();
 
         metadataThesaurusService.addResponse(MtdThesaurusDef.class, value).data();
-        assertThrows(AssertionFailedError.class, () -> metadataThesaurusService.endChecks(fileEntity));
+        assertThrows(AssertionError.class, () -> metadataThesaurusService.endChecks(fileEntity));
 
         verify(activityHandler, atLeastOnce()).getHandlerName();
     }

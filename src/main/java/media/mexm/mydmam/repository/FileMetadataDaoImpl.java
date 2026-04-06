@@ -86,7 +86,7 @@ public class FileMetadataDaoImpl implements FileMetadataDao {
     }
 
     @Override
-    @Transactional
+    @Transactional(REQUIRES_NEW)
     public Optional<String> getMetadataValue(final FileEntity fileEntity,
                                              final int layer,
                                              final String classifier,
@@ -94,7 +94,6 @@ public class FileMetadataDaoImpl implements FileMetadataDao {
         return entityManager.createQuery("""
                 SELECT fm.value
                 FROM FileMetadataEntity fm
-                LEFT JOIN FileEntity f ON f = fm.file
                 WHERE
                     fm.file = :fileEntity
                     AND fm.classifier = :classifier
