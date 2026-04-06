@@ -29,4 +29,11 @@ public interface MtdThesaurusDefTechnical {
 
     MetadataThesaurusEntry type();
 
+    MetadataThesaurusEntry aspectRatio();
+
+    /**
+     * @see ImageAspectRatioDetectionActivity.PageOrientation
+     */
+    MetadataThesaurusEntry imageAspectFormat();
+
 }

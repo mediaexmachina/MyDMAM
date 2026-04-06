@@ -13,12 +13,20 @@ export class MtdThesaurusDefTechnical {
 
     public readonly classifier = "technical";
 
+    public aspectRatio(): MetadataThesaurusEntry {
+        return { key: "aspect-ratio", classifier: this.classifier };
+    }
+
     public colorspace(): MetadataThesaurusEntry {
         return { key: "colorspace", classifier: this.classifier };
     }
 
     public height(): MetadataThesaurusEntry {
         return { key: "height", classifier: this.classifier };
+    }
+
+    public imageAspectFormat(): MetadataThesaurusEntry {
+        return { key: "image-aspect-format", classifier: this.classifier };
     }
 
     public orientation(): MetadataThesaurusEntry {
