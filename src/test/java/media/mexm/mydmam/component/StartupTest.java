@@ -46,6 +46,8 @@ class StartupTest {
     PathIndexer pathIndexer;
     @MockitoBean
     PendingActivityService pendingActivityService;
+    @MockitoBean
+    XPDF xpdf;
 
     @Autowired
     InternalService service;

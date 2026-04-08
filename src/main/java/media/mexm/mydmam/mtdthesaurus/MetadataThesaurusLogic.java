@@ -74,14 +74,35 @@ public class MetadataThesaurusLogic implements MetadataThesaurusDefaultRegister 
         return getImplements().toString();
     }
 
-    /**
-     * @see https://www.baeldung.com/java-camel-snake-case-conversion
-     */
     public static String nameFormatter(final String name) {
-        return name
-                .replaceAll("([A-Z])(?=[A-Z])", "$1-")
-                .replaceAll("([a-z])([A-Z])", "$1-$2")
-                .toLowerCase();
+        final var result = new StringBuilder();
+
+        for (var pos = 0; pos < name.length(); pos++) {// NOSONAR 135
+            final var character = name.charAt(pos);
+            if (pos == 0 && character == '_') {
+                continue;
+            }
+
+            if (pos == 0
+                || pos == 1 && name.charAt(0) == '_') {
+                result.append(Character.toLowerCase(character));
+                continue;
+            }
+
+            if (Character.isUpperCase(character)
+                && Character.isLowerCase(name.charAt(pos - 1))
+                ||
+                pos > 1
+                   && Character.isLowerCase(character)
+                   && Character.isUpperCase(name.charAt(pos - 1))
+                   && Character.isUpperCase(name.charAt(pos - 2))) {
+                result.append("-");
+            }
+
+            result.append(Character.toLowerCase(character));
+        }
+
+        return result.toString();
     }
 
     @Override

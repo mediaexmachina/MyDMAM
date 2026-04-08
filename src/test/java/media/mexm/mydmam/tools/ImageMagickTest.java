@@ -53,6 +53,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import media.mexm.mydmam.ConditionalExternalExecTest;
 import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.component.XmlMapperWrapper;
+import media.mexm.mydmam.configuration.ExternalToolsConf;
 import media.mexm.mydmam.configuration.MagickConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -67,6 +68,8 @@ class ImageMagickTest {
 
     @Mock
     MyDMAMConfigurationProperties configuration;
+    @Mock
+    ExternalToolsConf tools;
     @Mock
     XmlMapperWrapper xmlMapper;
     @Mock
@@ -94,7 +97,8 @@ class ImageMagickTest {
 
         im = new ImageMagick(executableFinder, maxExecTimeScheduler, configuration, xmlMapper, objectMapper);
 
-        when(configuration.magick()).thenReturn(magickConf);
+        when(configuration.tools()).thenReturn(tools);
+        when(tools.magick()).thenReturn(magickConf);
         when(magickConf.maxExecTime()).thenReturn(ofSeconds(10));
         when(magickConf.tempDir()).thenReturn(MAGICK_TEMP_DIR.getAbsolutePath());
         when(magickConf.confDir()).thenReturn(MAGICK_TEMP_DIR.getAbsolutePath());
@@ -110,9 +114,10 @@ class ImageMagickTest {
 
     @Test
     void testInit_noConf() {
-        when(configuration.magick()).thenReturn(null);
+        when(tools.magick()).thenReturn(null);
         im.internalServiceStart();
-        verify(configuration, times(1)).magick();
+        verify(configuration, times(1)).tools();
+        verify(tools, times(1)).magick();
         assertFalse(im.isEnabled());
     }
 
@@ -120,7 +125,8 @@ class ImageMagickTest {
     void testInit() throws IOException {
         im.internalServiceStart();
 
-        verify(configuration, times(1)).magick();
+        verify(configuration, times(1)).tools();
+        verify(tools, times(1)).magick();
         verify(magickConf, atLeastOnce()).maxExecTime();
         verify(magickConf, atLeastOnce()).tempDir();
         verify(magickConf, atLeastOnce()).confDir();
@@ -143,7 +149,7 @@ class ImageMagickTest {
 
     private void setup() {
         im.internalServiceStart();
-        reset(configuration, magickConf, xmlMapper, xmlMapperInternal, xmlObjectWriter);
+        reset(configuration, tools, magickConf, xmlMapper, xmlMapperInternal, xmlObjectWriter);
     }
 
     @Test

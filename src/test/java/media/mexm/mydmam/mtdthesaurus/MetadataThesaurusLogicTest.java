@@ -40,6 +40,17 @@ class MetadataThesaurusLogicTest {
         assertEquals("name", nameFormatter("name"));
         assertEquals("key-name", nameFormatter("keyName"));
         assertEquals("name", nameFormatter("Name"));
+        assertEquals("name", nameFormatter("_name"));
+        assertEquals("name", nameFormatter("_Name"));
+        assertEquals("nam-e", nameFormatter("namE"));
+        assertEquals("test", nameFormatter("TEST"));
+        assertEquals("abc", nameFormatter("ABC"));
+        assertEquals("ab", nameFormatter("AB"));
+        assertEquals("a", nameFormatter("A"));
+        assertEquals("name-test-name", nameFormatter("nameTESTname"));
+        assertEquals("name-abc-name", nameFormatter("nameABCname"));
+        assertEquals("name-ab-name", nameFormatter("nameABname"));
+        assertEquals("name-aname", nameFormatter("nameAname"));
     }
 
     @MetadataThesaurusClassifier(value = "classifier")

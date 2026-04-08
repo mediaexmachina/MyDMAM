@@ -30,5 +30,7 @@ public interface FileMetadataDao {
 
     void addUpdateEntry(FileEntity file, FileMetadataEntity item);
 
+    void addUpdateEntries(FileEntity file, Collection<FileMetadataEntity> items);
+
     Optional<String> getMetadataValue(FileEntity fileEntity, int layer, String classifier, String key);
 }

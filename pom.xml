@@ -20,7 +20,7 @@
 
     <properties>
         <prodlib.version>23.0.0</prodlib.version>
-        <medialib.version>21.1.0</medialib.version>
+        <medialib.version>21.1.1</medialib.version>
         <lucene.version>10.3.2</lucene.version>
         <mime-util.version>2.1.3</mime-util.version>
         <front.build.path>${project.basedir}/dist/mydmam/browser</front.build.path>

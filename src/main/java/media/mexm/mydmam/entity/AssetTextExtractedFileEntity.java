@@ -64,10 +64,6 @@ public class AssetTextExtractedFileEntity implements RelativePathProvider {
     @ManyToOne(fetch = LAZY, cascade = DETACH, optional = false)
     private FileEntity file;
 
-    @NotNull
-    @Column(name = "indexref", updatable = false)
-    private Integer indexref;
-
     @NotBlank
     @Column(length = 256, name = "name", updatable = false)
     private String name;
@@ -85,11 +81,9 @@ public class AssetTextExtractedFileEntity implements RelativePathProvider {
 
     public AssetTextExtractedFileEntity(@NotNull final FileEntity file,
                                         @NotNull final String name,
-                                        @NotNull final int index,
                                         @NotNull final long length) {
         this.file = file;
         createDate = new Timestamp(System.currentTimeMillis());
-        indexref = index;
         this.name = name;
         this.length = length;
     }
@@ -97,7 +91,6 @@ public class AssetTextExtractedFileEntity implements RelativePathProvider {
     public Map<String, Serializable> getAuditTrailPayload(final File renderedFile) {
         return Map.of(
                 "file", renderedFile.getAbsolutePath(),
-                "indexref", indexref,
                 "length", length,
                 "name", name);
     }
@@ -107,4 +100,8 @@ public class AssetTextExtractedFileEntity implements RelativePathProvider {
         return true;
     }
 
+    @Override
+    public Integer getIndexref() {
+        return 0;
+    }
 }

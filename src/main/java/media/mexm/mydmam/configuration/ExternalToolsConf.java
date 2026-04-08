@@ -14,19 +14,16 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.mtdthesaurus;
+package media.mexm.mydmam.configuration;
 
-public interface MetadataThesaurusDefaultRegister {
+import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.validation.annotation.Validated;
 
-    <T> T makeInstance(Class<T> fromClass);
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
-    default void defaultRegister() {
-        makeInstance(MtdThesaurusDefTechnical.class);
-        makeInstance(MtdThesaurusDefFileFormat.class);
-        makeInstance(MtdThesaurusDefPDF.class);
-        makeInstance(MtdThesaurusDefDCMI.class);
-        makeInstance(MtdThesaurusDefDublinCore.class);
-        makeInstance(MtdThesaurusDefXMP.class);
-    }
+@Validated
+public record ExternalToolsConf(@DefaultValue @Valid @NotNull MagickConf magick,
+                                @DefaultValue @Valid @NotNull XPDFConf xpdf) {
 
 }

@@ -16,17 +16,23 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-public interface MetadataThesaurusDefaultRegister {
+/**
+ * @see https://github.com/adobe/XMP-Toolkit-SDK/blob/main/docs/XMPSpecificationPart1.pdf
+ */
+@MetadataThesaurusClassifier(value = "xmp")
+public interface MtdThesaurusDefXMP {
 
-    <T> T makeInstance(Class<T> fromClass);
+    MetadataThesaurusEntry createDate();
 
-    default void defaultRegister() {
-        makeInstance(MtdThesaurusDefTechnical.class);
-        makeInstance(MtdThesaurusDefFileFormat.class);
-        makeInstance(MtdThesaurusDefPDF.class);
-        makeInstance(MtdThesaurusDefDCMI.class);
-        makeInstance(MtdThesaurusDefDublinCore.class);
-        makeInstance(MtdThesaurusDefXMP.class);
-    }
+    MetadataThesaurusEntry creatorTool();
 
+    MetadataThesaurusEntry identifier();
+
+    MetadataThesaurusEntry label();
+
+    MetadataThesaurusEntry metadataDate();
+
+    MetadataThesaurusEntry modifyDate();
+
+    MetadataThesaurusEntry rating();
 }

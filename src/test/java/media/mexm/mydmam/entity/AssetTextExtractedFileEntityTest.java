@@ -38,8 +38,6 @@ class AssetTextExtractedFileEntityTest {
     @Fake
     String name;
     @Fake
-    int index;
-    @Fake
     long length;
 
     @Mock
@@ -49,14 +47,14 @@ class AssetTextExtractedFileEntityTest {
 
     @BeforeEach
     void init() {
-        atefe = new AssetTextExtractedFileEntity(file, name, index, length);
+        atefe = new AssetTextExtractedFileEntity(file, name, length);
     }
 
     @Test
     void testCreate() {
         assertEquals(file, atefe.getFile());
         assertEquals(name, atefe.getName());
-        assertEquals(index, atefe.getIndexref());
+        assertEquals(0, atefe.getIndexref());
         assertEquals(length, atefe.getLength());
         assertThat(atefe.getCreateDate()).isBeforeOrEqualTo(new Date());
         assertTrue(atefe.isGzipEncoded());
@@ -68,7 +66,6 @@ class AssetTextExtractedFileEntityTest {
         assertThat(atefe.getAuditTrailPayload(renderedFile))
                 .isEqualTo(Map.of(
                         "file", renderedFile.getAbsolutePath(),
-                        "indexref", index,
                         "length", length,
                         "name", name));
     }

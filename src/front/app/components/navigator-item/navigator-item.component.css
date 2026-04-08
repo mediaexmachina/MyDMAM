@@ -36,6 +36,11 @@ div.remarks {
     color: red;
     font-style: italic;
     font-weight: bold;
+    user-select: text;
+}
+
+pre {
+    user-select: text;
 }
 
 img.hero {

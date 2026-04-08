@@ -20,6 +20,7 @@ body {
     font-family: "Red Hat Text";
     margin: 0px;
     padding: 0px;
+    user-select: none;
 }
 
 select, input, button {

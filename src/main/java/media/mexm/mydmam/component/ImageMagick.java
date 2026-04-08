@@ -99,7 +99,7 @@ public class ImageMagick implements InternalService {
 
     @Override
     public void internalServiceStart() {
-        final var magickConf = configuration.magick();
+        final var magickConf = configuration.tools().magick();
         if (magickConf == null) {
             return;
         }

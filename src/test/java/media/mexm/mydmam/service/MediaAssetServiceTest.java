@@ -535,13 +535,12 @@ class MediaAssetServiceTest {
         final var fullText = Faker.instance().lorem().paragraphs(5).stream().collect(joining());
         write(workingTextFile, fullText, UTF_8);
 
-        mas.declareTextExtractedFile(fileEntity, workingTextFile, indexRef, renderedName);
+        mas.declareTextExtractedFile(fileEntity, workingTextFile, renderedName);
 
         verify(assetTextExtractedFileRepository, times(1)).saveAndFlush(assetTextExtractedFileEntityCaptor.capture());
         final var currentAssetTextExtractedFileEntity = assetTextExtractedFileEntityCaptor.getValue();
         assertThat(currentAssetTextExtractedFileEntity.getFile()).isEqualTo(fileEntity);
         assertThat(currentAssetTextExtractedFileEntity.getName()).isEqualTo(renderedName);
-        assertThat(currentAssetTextExtractedFileEntity.getIndexref()).isEqualTo(indexRef);
         assertThat(currentAssetTextExtractedFileEntity.getLength()).isLessThan(fullText.length());
 
         final var renderedFile = mas.getAbsolutePath(fileEntity, assetTextExtractedFileEntity);

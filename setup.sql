@@ -84,10 +84,9 @@ CREATE TABLE `asset_textextractedfile` (
   `create_date` datetime NOT NULL,
   `file_id` int NOT NULL,
   `name` varchar(256) NOT NULL,
-  `indexref` int NOT NULL,
   `length` bigint NOT NULL,
   PRIMARY KEY (`id`),
   KEY `asset_textextractedfile_file_id_idx` (`file_id`),
   CONSTRAINT asset_textextractedfile_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE,
-  CONSTRAINT asset_textextractedfile_uc UNIQUE (`file_id`, `name`, `indexref`)
+  CONSTRAINT asset_textextractedfile_uc UNIQUE (`file_id`, `name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

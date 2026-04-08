@@ -101,6 +101,12 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
             throw new UnsupportedOperationException();
         }
 
+        @Override
+        public void addUpdateEntries(final FileEntity file, final Collection<FileMetadataEntity> items) {
+            relativeTofiles.add(file);
+            entitiesAdded.addAll(items);
+        }
+
     }
 
     public void endChecks(final FileEntity... files) {
@@ -209,6 +215,7 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
         entitiesAdded.clear();
         responseMap.clear();
         entitiesReaded.clear();
+        backend.clearWritersByClasses();
     }
 
     @Override
@@ -237,6 +244,11 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
     public Optional<String> getMimeType(final FileEntity fileEntity) {
         relativeTofiles.add(fileEntity);
         return backend.getMimeType(fileEntity);
+    }
+
+    @Override
+    public <T> T makeInstance(final Class<T> fromClass) {
+        return backend.makeInstance(fromClass);
     }
 
 }

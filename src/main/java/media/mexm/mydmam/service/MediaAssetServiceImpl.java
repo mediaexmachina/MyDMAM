@@ -160,7 +160,6 @@ public class MediaAssetServiceImpl implements MediaAssetService {
     @Transactional(REQUIRES_NEW)
     public void declareTextExtractedFile(final FileEntity fileEntity,
                                          final File workingTextFile,
-                                         final int index,
                                          final String name) throws IOException {
         final var realmName = fileEntity.getRealm();
         final var validatedWorkingFile = new File(workingTextFile.getParentFile(), workingTextFile.getName() + ".gz");
@@ -170,7 +169,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
         }
         forceDelete(workingTextFile);
 
-        final var toCreate = new AssetTextExtractedFileEntity(fileEntity, name, index, validatedWorkingFile.length());
+        final var toCreate = new AssetTextExtractedFileEntity(fileEntity, name, validatedWorkingFile.length());
         assetTextExtractedFileRepository.saveAndFlush(toCreate);
         final var created = assetTextExtractedFileRepository.getTextExtractedByName(fileEntity.getId(), name);
 

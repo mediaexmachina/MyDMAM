@@ -87,6 +87,26 @@ public class FileMetadataDaoImpl implements FileMetadataDao {
 
     @Override
     @Transactional(REQUIRES_NEW)
+    public void addUpdateEntries(final FileEntity file, final Collection<FileMetadataEntity> items) {
+        final var allEntryCrcs = items.stream()
+                .map(FileMetadataEntity::getEntryCrc)
+                .distinct()
+                .toList();
+
+        entityManager.createQuery("""
+                DELETE FROM FileMetadataEntity fm
+                WHERE fm.file = :file
+                AND fm.entryCrc IN :allEntryCrcs
+                """)
+                .setParameter("file", file)
+                .setParameter("allEntryCrcs", allEntryCrcs)
+                .executeUpdate();
+
+        fileMetadataRepository.saveAllAndFlush(items);
+    }
+
+    @Override
+    @Transactional(REQUIRES_NEW)
     public Optional<String> getMetadataValue(final FileEntity fileEntity,
                                              final int layer,
                                              final String classifier,

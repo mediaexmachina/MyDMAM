@@ -42,7 +42,7 @@ public record MyDMAMConfigurationProperties(@Valid Map<TechnicalName, RealmConf>
                                             @DefaultValue @Valid @NotNull EnvConf env,
                                             @DefaultValue @Valid @NotNull SiteConf site,
                                             String instancename,
-                                            @DefaultValue @Valid @NotNull MagickConf magick,
+                                            @DefaultValue @Valid @NotNull ExternalToolsConf tools,
                                             @DefaultValue @Valid @NotNull AllowBlockLists activityHandlers,
                                             @DefaultValue @Valid @NotNull RenderedFileSpecs renderedSpecs) {
 

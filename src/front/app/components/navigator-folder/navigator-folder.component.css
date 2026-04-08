@@ -15,6 +15,10 @@
  *
  */
 
+h1 {
+    user-select: text;
+}
+
 section.item-toolbox {
     margin-top: 0.6em;
     display: flex;
@@ -368,38 +372,9 @@ PAGINATE
 ==============================================================
 */
 
-section.paginate ul {
-    font-size: 1.1em;
-    list-style-type: none;
-    padding-inline-start: 0em;
+section.paginate {
     display: flex;
-    flex-direction: row;
-    text-align: center;
     justify-content: center;
-    align-items: stretch;
-}
-
-section.paginate ul li {
-    vertical-align: middle;
-    margin: 0.2em;
-    padding: 0.6em 1.2em;
-    min-width: 0.7em;
-}
-
-section.paginate ul li.selected {
-    color: rgba(0, 0, 0, 0.484);
-    border: 0.1em solid rgba(0, 0, 0, 0.048);
-    cursor: default;
-}
-
-section.paginate ul li.button {
-    color: blue;
-    border: 0.1em solid rgba(0, 0, 0, 0.128);
-    cursor: pointer;
-}
-
-section.paginate ul li.button:hover {
-    border: 0.1em dotted rgba(0, 0, 0, 0.2);
 }
 
 div.dropdrown-list-result-count {

@@ -52,4 +52,5 @@ public interface MetadataThesaurusService {
 
     Optional<String> getMimeType(FileEntity fileEntity);
 
+    <T> T makeInstance(final Class<T> fromClass);
 }

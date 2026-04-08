@@ -31,6 +31,7 @@ import tv.hd3g.transfertfiles.FileAttributesReference;
 public interface MediaAssetService {
 
     String MEDIA_ASSET_AUDIT_ISSUER = "media-asset";
+    String FULL_TEXT_PDF = "full-text-pdf.txt";
 
     FileEntity getFromWatchfolder(String realmName,
                                   String storageName,
@@ -56,7 +57,6 @@ public interface MediaAssetService {
 
     void declareTextExtractedFile(FileEntity fileEntity,
                                   File workingTextFile,
-                                  int index,
                                   String name) throws IOException;
 
     void forEachTextExtractedFile(FileEntity fileEntity,

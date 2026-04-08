@@ -52,7 +52,7 @@ class MyDMAMConfigurationPropertiesTest {
     @Mock
     PathIndexingStorage storage;
     @Mock
-    MagickConf magick;
+    ExternalToolsConf tools;
     @Mock
     AllowBlockLists activityHandlers;
     @Mock
@@ -82,7 +82,7 @@ class MyDMAMConfigurationPropertiesTest {
                 envConf,
                 site,
                 instancename,
-                magick,
+                tools,
                 activityHandlers,
                 renderedFileSpecs);
     }
@@ -94,7 +94,7 @@ class MyDMAMConfigurationPropertiesTest {
                 envConf,
                 site,
                 null,
-                magick,
+                tools,
                 activityHandlers,
                 renderedFileSpecs);
         assertThat(c.instancename()).isNotEmpty();
@@ -107,7 +107,7 @@ class MyDMAMConfigurationPropertiesTest {
                 envConf,
                 site,
                 instancename,
-                magick,
+                tools,
                 activityHandlers,
                 renderedFileSpecs);
         assertThat(c.getRealmNames()).isEmpty();
@@ -180,7 +180,7 @@ class MyDMAMConfigurationPropertiesTest {
                 envConf,
                 site,
                 instancename,
-                magick,
+                tools,
                 activityHandlers,
                 null);
 
@@ -203,7 +203,7 @@ class MyDMAMConfigurationPropertiesTest {
                 envConf,
                 site,
                 instancename,
-                magick,
+                tools,
                 activityHandlers,
                 null);
 

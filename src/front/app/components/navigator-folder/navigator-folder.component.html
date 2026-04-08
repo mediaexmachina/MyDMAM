@@ -93,22 +93,24 @@
     </nav>
 
     <div>
-        <nav class="dirlist-mode-switch">
-            <select name="dropdrown-dirlist-mode-switch" (change)="onChangeDropdrownDirlistModeSwitch($event)">
-                <option [value]="_DirListStyle.DETAIL"        [attr.selected]="actualDirListStyle == _DirListStyle.DETAIL ? 'true' : null">
-                    Detail view
-                </option>
-                <option [value]="_DirListStyle.SMALL_ICONS"   [attr.selected]="actualDirListStyle == _DirListStyle.SMALL_ICONS ? 'true' : null">
-                    Small icons view
-                </option>
-                <option [value]="_DirListStyle.MOSAIC_MEDIUM" [attr.selected]="actualDirListStyle == _DirListStyle.MOSAIC_MEDIUM ? 'true' : null">
-                    Mosaic view
-                </option>
-                <option [value]="_DirListStyle.MOSAIC_LARGE"  [attr.selected]="actualDirListStyle == _DirListStyle.MOSAIC_LARGE ? 'true' : null">
-                    Mosaic large view
-                </option>
-            </select>
-        </nav>
+        @if (dirList?.currentItem?.directory || dirList?.path == "/") {
+            <nav class="dirlist-mode-switch">
+                <select name="dropdrown-dirlist-mode-switch" (change)="onChangeDropdrownDirlistModeSwitch($event)">
+                    <option [value]="_DirListStyle.DETAIL"        [attr.selected]="actualDirListStyle == _DirListStyle.DETAIL ? 'true' : null">
+                        Detail view
+                    </option>
+                    <option [value]="_DirListStyle.SMALL_ICONS"   [attr.selected]="actualDirListStyle == _DirListStyle.SMALL_ICONS ? 'true' : null">
+                        Small icons view
+                    </option>
+                    <option [value]="_DirListStyle.MOSAIC_MEDIUM" [attr.selected]="actualDirListStyle == _DirListStyle.MOSAIC_MEDIUM ? 'true' : null">
+                        Mosaic view
+                    </option>
+                    <option [value]="_DirListStyle.MOSAIC_LARGE"  [attr.selected]="actualDirListStyle == _DirListStyle.MOSAIC_LARGE ? 'true' : null">
+                        Mosaic large view
+                    </option>
+                </select>
+            </nav>
+        }
 
         <nav class="actions">
             @if (dirList?.currentItem?.directory) {
@@ -137,7 +139,9 @@
 </section>
 
 @if (dirList != null) {
-    <app-navigator-item [fileResponse]="dirList"></app-navigator-item>
+    <div style="margin-top: 1em;">
+        <app-navigator-item [fileResponse]="dirList"></app-navigator-item>
+    </div>
     
     @if ((dirList.listSize || 0) > 0) {
 
@@ -252,39 +256,15 @@
 
 @if (dirList?.listSize != dirList?.total) {
     <section class="paginate">
-        <ul>
-            @let hashPath = dirList?.currentItem?.hashPath || '';
-
-            @let previousButton = pageNavigatePreviousButton();
-            @if (previousButton["display"] != 0) {
-                <li class="button" (click)="list(hashPath, previousButton['skip'])">Previous</li>
-            }
-
-            @for (page of pageNavigate(); track page["page"]) {
-                @if (page["separator"] == 1) {
-                    @if (page["displayCurent"] > 0) {
-                        <li class="selected">... {{ page["displayCurent"] }} ...</li>
-                    } @else {
-                        <li>...</li>
-                    }
-                } @else {
-                    @let currentPage = page["page"];
-                    @let currentSkip = page["skip"];
-
-                    @if (page["selected"] == 1) {
-                        <li class="selected">{{ currentPage }}</li>
-                    } @else {
-                        <li class="button" (click)="list(hashPath, currentSkip)">{{ currentPage }}</li>
-                    }
-                }
-            }
-
-            @let nextButton = pageNavigateNextButton();
-            @if (nextButton["display"] != 0) {
-                <li class="button" (click)="list(hashPath,nextButton['skip'])">Next</li>
-            }
-
-        </ul>
+        <app-pagination
+            [skip]="dirList.skipCount"
+            [listResultCount]="listResultCount()"
+            [listSize]="dirList.listSize"
+            [total]="dirList.total"
+            [maxPageCount]="10"
+            (onClickBtn)="onClickPagination($event)"
+            [buttonContent]="paginationButtonContent">
+        </app-pagination>
     </section>
 
 } @else if (dirList?.currentItem == null || dirList?.currentItem?.directory) {

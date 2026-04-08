@@ -14,20 +14,54 @@
     Copyright (C) Media ex Machina 2026
     
 -->
+
 @let medatadas = itemMedatadas();
 @if (medatadas != null) {
+    @let currentPageCount = pageCount();
+
+    @let currentRenderedHeroImagePreview = renderedHeroImagePreview();
+    @if (currentRenderedHeroImagePreview != null) {
+        @let currentSelectedPage = selectedPage();
+        @if (currentSelectedPage > 0) {
+            <p>
+                Display page {{ currentSelectedPage }}/{{ currentPageCount }}
+                @if ( currentSelectedPage > 1) {
+                    <button (click)='onClickGoToPage($event, currentSelectedPage - 1)'>
+                        Go to previous page
+                    </button>
+                }
+                @if ( currentSelectedPage < currentPageCount) {
+                    <button (click)='onClickGoToPage($event, currentSelectedPage + 1)'>
+                        Go to next page
+                    </button>
+                }
+            </p>
+        }
+
+        <img [src]="currentRenderedHeroImagePreview" class="hero" />
+    }
+
+    @if (currentPageCount > 1) {
+        <section class="paginate-pages">
+            <app-pagination
+                [skip]="skipCountPageNavigation"
+                [listResultCount]="1"
+                [listSize]="1"
+                [total]="currentPageCount"
+                [maxPageCount]="20"
+                (onClickBtn)="onClickPagination($event)"
+                [buttonContent]="paginationButtonContent.bind(this)">
+            </app-pagination>
+        </section>
+    }
+
     @let currentDefaultIndexMetadata = defaultIndexMetadatas();
     @if (currentDefaultIndexMetadata != null) {
-
-        @let currentRenderedHeroImagePreview = renderedHeroImagePreview();
-        @if (currentRenderedHeroImagePreview != null) {
-            <img [src]="currentRenderedHeroImagePreview" class="hero" />
-        }
 
         @let classifiers = getClassifiers(currentDefaultIndexMetadata);
         @if (classifiers.length > 0) {
             <p>Properties extracted from file:</p>
-            <ul>
+            <ul style="user-select: text;">
                 @for (classifier of classifiers; track classifier) {
                     @let keyValues = getKeyValueByClassifierName(classifier, currentDefaultIndexMetadata);
                     <li>{{ classifier | firstUpperCase }} ({{ keyValues.length }})</li>
@@ -41,50 +75,50 @@
                 }
             </ul>
         }
+    }
 
-        @let currentRenderedDisplayList = renderedDisplayList();
-        @if (currentRenderedDisplayList.length > 0) {
-            <div>
-                <p>Display raw artifacts extracted from file:</p>
-                @let selected = renderedDisplaySelected();
+    @let currentRenderedDisplayList = renderedDisplayList();
+    @if (currentRenderedDisplayList.length > 0) {
+        <div>
+            <p>Display raw artifacts extracted from file:</p>
+            @let selected = renderedDisplaySelected();
 
-                <ul>
-                    @for (rendered of currentRenderedDisplayList; track rendered.name) {
-                        <li>
-                            @if (selected == rendered) {
-                                {{ rendered.previewType | firstUpperCase }}: {{ rendered.name }}
-                            } @else {
-                                <button (click)="onClickSelectRenderedDisplay($event, rendered)">
-                                    Display {{ rendered.previewType | firstUpperCase }}: {{ rendered.name }}
-                                </button>
-                            }
-                        </li>
-                    }
-                </ul>
-                @if (selected != null) {
-                    <div class="selected-rendered-display">
-                        @let url = assetService.makeAssetRenderedFileDownloadURL(this.fileHashPath(), selected.name, 0);
-                        <h4>{{ selected.name }} <a [href]="url" class="small">Download</a></h4>
-                        <div class="remarks">{{ getMessageFromRenderedSelected() }}</div>
-                        <pre [innerHtml]="getJsonContentFromRenderedSelected()" class="json-container"></pre>
-                        <a [href]="url" class="small">Download {{ selected.name }}</a>                             
-                    </div>
-                }
-            </div>
-        }
-
-        @let currentRenderedDownloadList = renderedDownloadList();
-        @if (currentRenderedDownloadList.length > 0) {
-            <p>Download artifacts extracted from file:</p>
             <ul>
-                @for (rendered of currentRenderedDownloadList; track rendered.name) {
+                @for (rendered of currentRenderedDisplayList; track rendered.name) {
                     <li>
-                        @let url = assetService.makeAssetRenderedFileDownloadURL(this.fileHashPath(), rendered.name, 0);
-                        {{ rendered.previewType | firstUpperCase }}: <a [href]="url">{{ rendered.name }}</a>
+                        @if (selected == rendered) {
+                            {{ rendered.previewType | firstUpperCase }}: {{ rendered.name }}
+                        } @else {
+                            <button (click)="onClickSelectRenderedDisplay($event, rendered)">
+                                Display {{ rendered.previewType | firstUpperCase }}: {{ rendered.name }}
+                            </button>
+                        }
                     </li>
                 }
             </ul>
-        }
-        
+            @if (selected != null) {
+                <div class="selected-rendered-display">
+                    @let url = assetService.makeAssetRenderedFileDownloadURL(this.fileHashPath(), selected.name, 0);
+                    <h4>{{ selected.name }} <a [href]="url" class="small">Download</a></h4>
+                    <div class="remarks">{{ getMessageFromRenderedSelected() }}</div>
+                    <pre [innerHtml]="getJsonContentFromRenderedSelected()" class="json-container"></pre>
+                    <a [href]="url" class="small">Download {{ selected.name }}</a>                             
+                </div>
+            }
+        </div>
+    }    
+
+    @let currentRenderedDownloadList = renderedDownloadList();
+    @if (currentRenderedDownloadList.length > 0) {
+        <p>Download artifacts extracted from file:</p>
+        <ul>
+            @for (rendered of currentRenderedDownloadList; track rendered.name) {
+                <li>
+                    @let url = assetService.makeAssetRenderedFileDownloadURL(this.fileHashPath(), rendered.name, 0);
+                    {{ rendered.previewType | firstUpperCase }}: <a [href]="url">{{ rendered.name }}</a>
+                </li>
+            }
+        </ul>
     }
+
 }

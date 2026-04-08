@@ -48,7 +48,10 @@ class MetadataThesaurusDefaultRegisterTest {
         assertThat(i.called)
                 .containsExactlyInAnyOrder(
                         MtdThesaurusDefTechnical.class,
-                        MtdThesaurusDefFileFormat.class);
+                        MtdThesaurusDefFileFormat.class,
+                        MtdThesaurusDefPDF.class,
+                        MtdThesaurusDefDCMI.class,
+                        MtdThesaurusDefDublinCore.class,
+                        MtdThesaurusDefXMP.class);
     }
-
 }

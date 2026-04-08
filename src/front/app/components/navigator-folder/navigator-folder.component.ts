@@ -30,6 +30,7 @@ import { NavigatorItemComponent } from "../navigator-item/navigator-item.compone
 import { DirListStyle } from '../../enums/dir-list-style.enum';
 import { RemoveFileNameExtensionPipe } from '../../pipes/remove-file-name-extension-pipe';
 import { GetFileNameExtensionPipe } from '../../pipes/get-file-name-extension-pipe';
+import { PaginationComponent } from '../toolkit/pagination.component';
 
 @Component({
   selector: 'app-navigator-folder',
@@ -37,6 +38,7 @@ import { GetFileNameExtensionPipe } from '../../pipes/get-file-name-extension-pi
     RouterLink,
     SpanDateTimeComponent,
     SpanFileSizeComponent,
+    PaginationComponent,
     NavigatorColumnSortComponent,
     NavigatorItemComponent,
     RemoveFileNameExtensionPipe, 
@@ -240,102 +242,6 @@ export class NavigatorFolderComponent {
         return result;
     });
 
-    private makePageNavigateButton(pageNum:number, limit:number, skip: number): Record<string, number> {
-        return {
-            "page": pageNum + 1,
-            "skip": pageNum * limit,
-            "selected": ((pageNum * limit <= skip) && (skip < (pageNum + 1) * limit)) ? 1 : 0,
-            "separator": 0,
-        }
-    }
-
-    readonly pageNavigate = computed(() => {
-        const dirListResponse = this.dirListResponse();
-        if (dirListResponse == null) {
-            return [];
-        }
-        const skip = dirListResponse.skipCount;
-        const limit = Math.max(this.listResultCount(), dirListResponse.listSize);
-        const total = dirListResponse.total;
-        const currentPage = Math.ceil(skip / limit);
-        const pageCount = Math.ceil(total / limit);
-        const result = new Array<Record<string, number>>();
-
-        if (pageCount < this.maxPageCount) {
-            for (let pageNum = 0; pageNum < pageCount; pageNum++) {
-                result.push(this.makePageNavigateButton(pageNum, limit, skip));
-            }
-        } else {
-            const splitPageCount = this.maxPageCount / 2;
-            for (let pageNum = 0; pageNum < splitPageCount; pageNum++) {
-                result.push(this.makePageNavigateButton(pageNum, limit, skip));
-            }
-
-            if (currentPage > splitPageCount - 1
-                && currentPage < (pageCount - splitPageCount)) {
-                result.push({
-                    "separator": 1,
-                    "displayCurent": currentPage + 1
-                });
-            } else {
-                result.push({
-                    "separator": 1,
-                    "displayCurent": 0
-                });
-            }
-
-            for (let pageNum = pageCount - splitPageCount; pageNum < pageCount; pageNum++) {
-                result.push(this.makePageNavigateButton(pageNum, limit, skip));
-            }
-
-        }
-
-        return result;
-    });
-
-    readonly pageNavigatePreviousButton = computed(() => {
-        const dirListResponse = this.dirListResponse();
-        if (dirListResponse == null) {
-            return {"display": 0};
-        }
-
-        const skip = dirListResponse.skipCount;
-        const limit = Math.max(this.listResultCount(), dirListResponse.listSize);
-        const currentPage = Math.ceil(skip / limit);
-        const isFirstPage = currentPage == 0;
-
-        if (isFirstPage) {
-            return {"display": 0};
-        }
-
-        return {
-            "page": currentPage - 1,
-            "skip": (currentPage - 1) * limit
-        }        
-    });
-
-    readonly pageNavigateNextButton = computed(() => {
-        const dirListResponse = this.dirListResponse();
-        if (dirListResponse == null) {
-            return {"display": 0};
-        }
-
-        const skip = dirListResponse.skipCount;
-        const limit = Math.max(this.listResultCount(), dirListResponse.listSize);
-        const total = dirListResponse.total;
-        const currentPage = Math.ceil(skip / limit);
-        const isLastPage = total - skip < limit;
-
-        if (isLastPage) {
-            return {"display": 0};
-        }
-
-        return {
-            "page": currentPage + 1,
-            "skip": (currentPage + 1) * limit
-        }        
-    });
-
     readonly allHashPaths = computed(() => {
         const dirListResponse = this.dirListResponse();
         if (dirListResponse == null) {
@@ -347,4 +253,17 @@ export class NavigatorFolderComponent {
         return [...itemHashPaths, currentItemHashPath, parentHashPath];
     });
 
+    onClickPagination(pageNavigateButton:any):void {
+        const hashPath = this.dirListResponse()?.currentItem?.hashPath;
+        if (hashPath == null) {
+            return;
+        }
+        this.list(hashPath, pageNavigateButton["skip"] || 0);
+    }
+
+    paginationButtonContent(pageNavigateButton:any):any {
+        return {
+            label: pageNavigateButton["page"]
+        };
+    }
 }
