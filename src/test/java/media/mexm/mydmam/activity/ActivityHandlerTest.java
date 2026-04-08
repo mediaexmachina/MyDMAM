@@ -65,6 +65,11 @@ class ActivityHandlerTest {
     }
 
     @Test
+    void testGetMetadataOriginName() {
+        assertThat(ah.getMetadataOriginName()).isEqualTo(Impl.class.getSimpleName());
+    }
+
+    @Test
     void testGetSupportedStorageStateClasses() {
         assertThat(ah.getSupportedStorageStateClasses())
                 .isEqualTo(Set.of(ONLINE));

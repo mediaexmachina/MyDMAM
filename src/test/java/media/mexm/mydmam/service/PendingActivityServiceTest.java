@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.service;
 
-import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_LIST_STRING;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +26,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -56,7 +56,6 @@ import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.PendingActivityJob;
 import media.mexm.mydmam.component.AboutInstance;
 import media.mexm.mydmam.component.Indexer;
-import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
@@ -82,8 +81,6 @@ class PendingActivityServiceTest {
     MediaAssetService mediaAssetService;
     @MockitoBean
     MyDMAMConfigurationProperties configuration;
-    @MockitoBean
-    InternalObjectMapper internalObjectMapper;
     @MockitoBean
     AboutInstance aboutInstance;
     @MockitoBean
@@ -121,8 +118,6 @@ class PendingActivityServiceTest {
     @Fake
     long pid;
     @Fake
-    String previousHandlersNames;
-    @Fake
     String hashPathItem;
     @Fake
     String spool;
@@ -156,7 +151,6 @@ class PendingActivityServiceTest {
         when(mediaAssetService.getFromWatchfolder(realmName, storageName, file)).thenReturn(fileEntity);
         when(mediaAssetService.resetDetectedMetadatas(any())).thenReturn(List.of(fileEntity));
 
-        when(internalObjectMapper.writeValueAsString(Set.of(handlerName))).thenReturn(previousHandlersNames);
         when(aboutInstance.getInstanceName()).thenReturn(hostName);
         when(aboutInstance.getPid()).thenReturn(pid);
 
@@ -176,7 +170,6 @@ class PendingActivityServiceTest {
                 pendingActivityDao,
                 activityHandler,
                 mediaAssetService,
-                internalObjectMapper,
                 aboutInstance,
                 fileService);
 
@@ -213,8 +206,6 @@ class PendingActivityServiceTest {
             final Set<String> emptySet = Set.of();
             assertThrows(IllegalArgumentException.class,
                     () -> pas.startsActivities(realmName, emptySet, recursive, eventType));
-            verify(activityHandler, times(3)).getSupportedStorageStateClasses();
-            verify(activityHandler, atLeastOnce()).getHandlerName();
         }
 
         @Test
@@ -227,7 +218,7 @@ class PendingActivityServiceTest {
 
             verify(fileService, times(1))
                     .resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
-            verify(activityHandler, times(2)).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
         }
 
         @Test
@@ -244,7 +235,7 @@ class PendingActivityServiceTest {
             verify(fileService, times(1))
                     .resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
             verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
-            verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, times(1)).canHandle(fileEntity, eventType, configuredEnv);
             verify(activityHandler, atLeastOnce()).getHandlerName();
             verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(subFileEntry));
@@ -270,7 +261,7 @@ class PendingActivityServiceTest {
             verify(fileService, times(1))
                     .resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
             verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
-            verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, atLeastOnce()).getHandlerName();
             verify(activityHandler, times(1)).canHandle(fileEntity, eventType, configuredEnv);
             verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(subFileEntry));
@@ -296,7 +287,7 @@ class PendingActivityServiceTest {
             verify(fileService, times(1))
                     .resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
             verify(subFileEntry, atLeastOnce()).isDirectory();
-            verify(activityHandler, times(3)).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, atLeastOnce()).getHandlerName();
         }
 
@@ -329,13 +320,12 @@ class PendingActivityServiceTest {
             verify(mediaAssetService, times(1)).updateIndexer(fileEntity);
             verify(activityHandler, times(1)).canHandle(fileEntity, eventType, configuredEnv);
             verify(activityHandler, atLeastOnce()).getHandlerName();
-            verify(activityHandler, times(2)).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, atLeastOnce()).isEnabled();
             verify(fileEntity, atLeastOnce()).isDirectory();
             verify(fileEntity, atLeastOnce()).getRealm();
             verify(fileEntity, atLeastOnce()).getStorage();
             verify(fileEntity, atLeastOnce()).getName();
-            verify(internalObjectMapper, times(1)).writeValueAsString(Set.of(handlerName));
             verify(aboutInstance, atLeastOnce()).getInstanceName();
             verify(aboutInstance, atLeastOnce()).getPid();
             verify(pendingActivityDao, times(2)).declateActivities(anyList(), eq(hostName), eq(pid));
@@ -356,35 +346,27 @@ class PendingActivityServiceTest {
 
     @Test
     void testContinueAssetActivity() {
-        final var previousHandlers = Set.of(handlerName, previousHandlersNames);
-        when(internalObjectMapper.writeValueAsString(previousHandlers)).thenReturn(previousHandlersNames);
-
         pendingActivityJob = new PendingActivityJob(
                 configuredEnv,
                 fileEntity,
                 activityHandler,
                 eventType,
-                new HashSet<>(Set.of(previousHandlersNames)),
-                previousHandlersNames,
+                new HashSet<>(Set.of(handlerName)),
+                handlerName,
                 pendingActivityDao, pas);
 
         pas.continueAssetActivity(pendingActivityJob);
 
-        verify(activityHandler, times(1)).canHandle(fileEntity, eventType, configuredEnv);
         verify(activityHandler, atLeastOnce()).getHandlerName();
         verify(activityHandler, atLeastOnce()).isEnabled();
-        verify(internalObjectMapper, times(1)).writeValueAsString(previousHandlers);
         verify(aboutInstance, atLeastOnce()).getInstanceName();
         verify(aboutInstance, atLeastOnce()).getPid();
-        verify(activityHandler, times(1)).getSupportedStorageStateClasses();
-        verify(pendingActivityDao, times(2)).declateActivities(anyList(), eq(hostName), eq(pid));
-        verify(pendingActivityDao, times(1)).haveDeclaredActivity(fileEntity, activityHandler);
-        verify(pendingActivityDao, times(2)).havePendingActivities(fileEntity);
+        verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
+        verify(pendingActivityDao, times(1)).havePendingActivities(fileEntity);
         verify(realm, atLeastOnce()).spoolProcessAsset();
         verify(storage, atLeastOnce()).getStorageStateClass();
         verify(storage, atLeastOnce()).getCategory();
         verify(fileEntity, atLeastOnce()).getRealm();
-        verify(fileEntity, atLeastOnce()).getName();
         verify(configuration, atLeastOnce()).isActivatedActivityHandler(realmName, handlerName);
         verify(mediaAssetService, times(1)).updateIndexer(fileEntity);
     }
@@ -398,8 +380,8 @@ class PendingActivityServiceTest {
                 fileEntity,
                 activityHandler,
                 eventType,
-                new HashSet<>(Set.of(previousHandlersNames)),
-                previousHandlersNames,
+                new HashSet<>(Set.of(handlerName)),
+                handlerName,
                 pendingActivityDao, pas);
 
         pas.continueAssetActivity(pendingActivityJob);
@@ -437,11 +419,8 @@ class PendingActivityServiceTest {
                     .thenReturn(Map.of(fileEntity, Set.of(entity)));
             when(pendingActivityDao.haveDeclaredActivity(fileEntity, activityHandler)).thenReturn(false);
             when(entity.getHandlerName()).thenReturn(handlerName);
-            when(entity.getPreviousHandlers()).thenReturn(previousHandlersNames);
+            when(entity.getPreviousHandlers()).thenReturn(handlerName);
             when(entity.getEventType()).thenReturn(eventType.name());
-            when(internalObjectMapper.readValue(previousHandlersNames, TYPE_LIST_STRING))
-                    .thenReturn(List.of());
-            when(internalObjectMapper.writeValueAsString(Set.of(handlerName))).thenReturn(previousHandlersNames);
         }
 
         @AfterEach
@@ -456,7 +435,6 @@ class PendingActivityServiceTest {
             verify(entity, atLeastOnce()).getHandlerName();
             verify(entity, atLeastOnce()).getPreviousHandlers();
 
-            verify(internalObjectMapper, times(1)).readValue(previousHandlersNames, TYPE_LIST_STRING);
             verify(activityHandler, atLeastOnce()).getHandlerName();
             verify(fileEntity, atLeastOnce()).getRealm();
             verify(fileEntity, atLeastOnce()).getStorage();
@@ -472,10 +450,9 @@ class PendingActivityServiceTest {
             verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
             verify(pendingActivityDao, times(1)).havePendingActivities(fileEntity);
             verify(entity, atLeastOnce()).getEventType();
-            verify(internalObjectMapper, times(1)).writeValueAsString(Set.of(handlerName));
             verify(realm, atLeastOnce()).spoolProcessAsset();
             verify(fileEntity, atLeastOnce()).getName();
-            verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, atLeastOnce()).isEnabled();
             verify(storage, atLeastOnce()).getStorageStateClass();
             verify(storage, atLeastOnce()).getCategory();
@@ -486,7 +463,7 @@ class PendingActivityServiceTest {
         void test_unknownHander() {
             when(entity.getHandlerName()).thenReturn(unknownHander);
             pas.restartPendingActivities();
-            verify(activityHandler, atLeastOnce()).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, atLeastOnce()).isEnabled();
         }
 

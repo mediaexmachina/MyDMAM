@@ -54,6 +54,7 @@ public class FileMetadataEntity {
 
     public static final String TABLE_NAME = "file_metadata";
     public static final int MAX_VALUE_LENGTH = 1024;
+    public static final int MAX_ORIGIN_LENGTH = 32;
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -69,7 +70,7 @@ public class FileMetadataEntity {
     private FileEntity file;
 
     @NotNull
-    @Column(length = 32, updatable = false)
+    @Column(length = MAX_ORIGIN_LENGTH, updatable = false)
     private String origin;
 
     @NotNull

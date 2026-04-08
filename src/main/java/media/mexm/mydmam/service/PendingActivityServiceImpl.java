@@ -18,8 +18,8 @@ package media.mexm.mydmam.service;
 
 import static java.util.Collections.synchronizedSet;
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toUnmodifiableSet;
-import static media.mexm.mydmam.component.InternalObjectMapper.TYPE_LIST_STRING;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 
@@ -40,7 +40,6 @@ import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.PendingActivityJob;
 import media.mexm.mydmam.component.AboutInstance;
-import media.mexm.mydmam.component.InternalObjectMapper;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
@@ -74,8 +73,6 @@ public class PendingActivityServiceImpl implements PendingActivityService {
     MediaAssetService mediaAssetService;
     @Autowired
     MyDMAMConfigurationProperties configuration;
-    @Autowired
-    InternalObjectMapper internalObjectMapper;
     @Autowired
     AboutInstance aboutInstance;
 
@@ -131,7 +128,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
                                     activityHandler,
                                     eventType,
                                     previousHandlers,
-                                    internalObjectMapper.writeValueAsString(previousHandlers),
+                                    previousHandlers.stream().sorted().collect(joining(" ")),
                                     pendingActivityDao,
                                     this));
                 })
@@ -235,7 +232,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
                 .map(activityHandler -> pendingActivityJob.evolve(
                         activityHandler,
                         previousHandlers,
-                        internalObjectMapper.writeValueAsString(previousHandlers)))
+                        previousHandlers.stream().sorted().collect(joining(" "))))
                 .toList();
 
         pendingActivityDao.declateActivities(
@@ -291,8 +288,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
                     final var previousHandlersFromDb = pendings.stream()
                             .map(PendingActivityEntity::getPreviousHandlers)
-                            .map(ph -> internalObjectMapper.readValue(ph, TYPE_LIST_STRING))
-                            .flatMap(List::stream);
+                            .flatMap(ph -> Stream.of(ph.split(" ")));
                     final var actualHandlersFromDb = pendings.stream()
                             .map(PendingActivityEntity::getHandlerName);
 
@@ -323,7 +319,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
                                         oActivityHander.get(),
                                         ActivityEventType.valueOf(pending.getEventType()),
                                         previousHandlers,
-                                        internalObjectMapper.writeValueAsString(previousHandlers),
+                                        previousHandlers.stream().sorted().collect(joining(" ")),
                                         pendingActivityDao,
                                         this);
                             })

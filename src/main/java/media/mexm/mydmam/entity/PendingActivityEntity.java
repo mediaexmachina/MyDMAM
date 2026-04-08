@@ -50,6 +50,7 @@ import media.mexm.mydmam.activity.ActivityHandler;
 public class PendingActivityEntity {
 
     public static final String TABLE_NAME = "pending_activity";
+    public static final int PREVIOUS_HANDLERS_SIZES = 2048;
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -73,7 +74,7 @@ public class PendingActivityEntity {
     private String eventType;
 
     @NotBlank
-    @Column(length = 2048, name = "previous_handlers")
+    @Column(length = PREVIOUS_HANDLERS_SIZES, name = "previous_handlers")
     private String previousHandlers;
 
     @NotNull
