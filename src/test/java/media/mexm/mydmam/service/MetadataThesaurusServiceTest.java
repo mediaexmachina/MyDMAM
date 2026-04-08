@@ -38,7 +38,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 
 import media.mexm.mydmam.activity.ActivityHandler;
-import media.mexm.mydmam.asset.MetadataExtractorHandler;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.FileMetadataEntity;
@@ -59,8 +58,6 @@ class MetadataThesaurusServiceTest {
     FileEntity fileEntity;
     @Mock
     ActivityHandler activityHandler;
-    @Mock
-    MetadataExtractorHandler metadataExtractorHandler;
 
     @Captor
     ArgumentCaptor<FileMetadataEntity> fileMetadataEntityCaptor;
@@ -95,10 +92,9 @@ class MetadataThesaurusServiceTest {
                 anyInt(),
                 eq("classifier"),
                 eq("empty-result"))).thenReturn(empty());
-        when(activityHandler.getHandlerName()).thenReturn(origin);
+        when(activityHandler.getMetadataOriginName()).thenReturn(origin);
         when(auditTrail.getAuditTrailByRealm(realm)).thenReturn(empty());
         when(fileEntity.getRealm()).thenReturn(realm);
-        when(metadataExtractorHandler.getHandlerName()).thenReturn(origin);
 
         mts = new MetadataThesaurusServiceImpl(fileMetadataDao, auditTrail);
     }
@@ -151,7 +147,7 @@ class MetadataThesaurusServiceTest {
         assertNotNull(writer);
         assertNull(writer.set(layer, value).key());
 
-        verify(activityHandler, times(1)).getHandlerName();
+        verify(activityHandler, times(1)).getMetadataOriginName();
         verify(fileMetadataDao, times(1)).addUpdateEntry(eq(fileEntity), fileMetadataEntityCaptor.capture());
 
         final var entity = fileMetadataEntityCaptor.getValue();
@@ -173,7 +169,7 @@ class MetadataThesaurusServiceTest {
         assertNotNull(writer);
         assertNull(writer.set(layer, empty()).key());
 
-        verify(activityHandler, times(1)).getHandlerName();
+        verify(activityHandler, times(1)).getMetadataOriginName();
     }
 
     @Test
@@ -182,7 +178,7 @@ class MetadataThesaurusServiceTest {
         assertNotNull(writer);
         assertNull(writer.set(value).key());
 
-        verify(activityHandler, times(1)).getHandlerName();
+        verify(activityHandler, times(1)).getMetadataOriginName();
         verify(fileMetadataDao, times(1)).addUpdateEntry(eq(fileEntity), fileMetadataEntityCaptor.capture());
 
         final var entity = fileMetadataEntityCaptor.getValue();
@@ -196,13 +192,6 @@ class MetadataThesaurusServiceTest {
         verify(fileEntity, atLeastOnce()).getRealm();
         verify(fileEntity, atLeast(0)).getHashPath();
         verify(auditTrail, times(1)).getAuditTrailByRealm(realm);
-    }
-
-    @Test
-    void testGetWriter_withMetadataExtractorHandler() {
-        final var writer = mts.getWriter(metadataExtractorHandler, fileEntity, TechDef.class);
-        assertNotNull(writer);
-        verify(metadataExtractorHandler, times(1)).getMetadataOriginName();
     }
 
     @Test

@@ -41,7 +41,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import media.mexm.mydmam.asset.MetadataExtractorHandler;
+import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.asset.RenderedFileSpecs;
 import media.mexm.mydmam.asset.RenderedFileSpecs.ThumbnailIMCmd;
 import media.mexm.mydmam.audittrail.RealmAuditTrail;
@@ -81,7 +81,7 @@ class MediaRenderedFilesUtilsServiceTest {
     @Mock
     RealmStorageConfiguredEnv storedOn;
     @Mock
-    MetadataExtractorHandler mtdHander;
+    ActivityHandler mtdHander;
 
     @Captor
     ArgumentCaptor<Collection<FileMetadataEntity>> fileMetadataEntitiesCaptor;

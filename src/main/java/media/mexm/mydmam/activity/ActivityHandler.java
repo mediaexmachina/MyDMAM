@@ -37,6 +37,10 @@ public interface ActivityHandler {
         return getClass().getSimpleName();
     }
 
+    default String getMetadataOriginName() {
+        return getHandlerName();
+    }
+
     /**
      * If empty => all is supported
      */

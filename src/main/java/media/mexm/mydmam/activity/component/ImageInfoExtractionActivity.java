@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
-import media.mexm.mydmam.asset.MetadataExtractorHandler;
+import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
@@ -32,7 +32,7 @@ import media.mexm.mydmam.service.MetadataThesaurusService;
 
 @Component
 @Slf4j
-public class ImageInfoExtractionActivity implements MetadataExtractorHandler {
+public class ImageInfoExtractionActivity implements ActivityHandler {
 
     @Autowired
     ImageMagick imageMagick;

@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
-import media.mexm.mydmam.asset.MetadataExtractorHandler;
+import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.dto.StorageStateClass;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
@@ -37,7 +37,7 @@ import media.mexm.mydmam.service.MetadataThesaurusService;
 
 @Component
 @Slf4j
-public class ImageAspectRatioDetectionActivity implements MetadataExtractorHandler {
+public class ImageAspectRatioDetectionActivity implements ActivityHandler {
 
     @Autowired
     MetadataThesaurusService metadataThesaurusService;

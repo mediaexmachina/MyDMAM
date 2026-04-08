@@ -27,7 +27,6 @@ import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityHandler;
-import media.mexm.mydmam.asset.MetadataExtractorHandler;
 import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.entity.FileEntity;
@@ -75,13 +74,7 @@ public class MetadataThesaurusServiceImpl implements MetadataThesaurusService {
     public <T> MetadataThesaurusDefinitionWriter<T> getWriter(final ActivityHandler handler,
                                                               final FileEntity fileEntity,
                                                               final Class<T> fromClass) {
-        final String origin;
-        if (handler instanceof final MetadataExtractorHandler mtdHander) {
-            origin = mtdHander.getMetadataOriginName();
-        } else {
-            origin = handler.getHandlerName();
-        }
-
+        final var origin = handler.getMetadataOriginName();
         final var def = new MetadataThesaurusDefinitionWriter<T>();
         final var instance = logic.injectInstanceWriteEntities(entry -> {
             final var writed = def.get();

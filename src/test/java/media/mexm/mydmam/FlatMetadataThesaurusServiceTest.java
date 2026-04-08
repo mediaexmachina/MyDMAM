@@ -73,7 +73,7 @@ class FlatMetadataThesaurusServiceTest {
     @BeforeEach
     void init() {
         metadataThesaurusService.reset();
-        when(activityHandler.getHandlerName()).thenReturn(handlerName);
+        when(activityHandler.getMetadataOriginName()).thenReturn(handlerName);
     }
 
     @AfterEach
@@ -101,14 +101,14 @@ class FlatMetadataThesaurusServiceTest {
         metadataThesaurusService.addResponse(MtdThesaurusDef.class, value).data();
         assertThrows(AssertionError.class, () -> metadataThesaurusService.endChecks(fileEntity));
 
-        verify(activityHandler, atLeastOnce()).getHandlerName();
+        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
     }
 
     @Test
     void testCheckIfAdded() {
         metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class).set(value).data();
         metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, value).data();
-        verify(activityHandler, atLeastOnce()).getHandlerName();
+        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
         metadataThesaurusService.endChecks(fileEntity);
     }
 
@@ -116,7 +116,7 @@ class FlatMetadataThesaurusServiceTest {
     void testCheckIfAdded_withLayer() {
         metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class).set(layer, value).data();
         metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, layer, value).data();
-        verify(activityHandler, atLeastOnce()).getHandlerName();
+        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
         metadataThesaurusService.endChecks(fileEntity);
     }
 
@@ -125,7 +125,7 @@ class FlatMetadataThesaurusServiceTest {
         metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class).set(value).data();
         final var added = metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, layer, value);
         assertThrows(AssertionFailedError.class, added::data);
-        verify(activityHandler, atLeastOnce()).getHandlerName();
+        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
     }
 
     @Test
@@ -143,7 +143,7 @@ class FlatMetadataThesaurusServiceTest {
 
         final var added = metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, value);
         assertThrows(AssertionFailedError.class, added::data);
-        verify(activityHandler, atLeastOnce()).getHandlerName();
+        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
     }
 
     @Test
@@ -151,7 +151,7 @@ class FlatMetadataThesaurusServiceTest {
         metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class).set(value).data();
         final var added = metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, badValue);
         assertThrows(AssertionFailedError.class, added::data);
-        verify(activityHandler, atLeastOnce()).getHandlerName();
+        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
     }
 
     @Test
@@ -236,7 +236,7 @@ class FlatMetadataThesaurusServiceTest {
         assertNotNull(w);
         assertNull(w.set(value).data());
         metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, value).data();
-        verify(activityHandler, atLeastOnce()).getHandlerName();
+        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
         metadataThesaurusService.endChecks(fileEntity);
     }
 
@@ -246,7 +246,7 @@ class FlatMetadataThesaurusServiceTest {
         assertNotNull(w);
         assertNull(w.set(layer, value).data());
         metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, layer, value).data();
-        verify(activityHandler, atLeastOnce()).getHandlerName();
+        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
         metadataThesaurusService.endChecks(fileEntity);
     }
 
@@ -255,7 +255,7 @@ class FlatMetadataThesaurusServiceTest {
         final var w = metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class);
         assertNotNull(w);
         w.set(value);
-        verify(activityHandler, atLeastOnce()).getHandlerName();
+        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
         metadataThesaurusService.endChecks(fileEntity);
     }
 
