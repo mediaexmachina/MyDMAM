@@ -19,3 +19,18 @@ _No one are mandatory. If they are found, they will be used._
   - See `package.json` for direct Node/Angular dependencies.
   - Embedded _Red Hat Text_ font is under the OFL licence (see OFL.txt)
   - Icons from https://www.svgrepo.com/collection/octicons-interface-icons/
+
+## Dev
+
+### Update npm
+
+```bash
+npm update
+rm package-lock.json
+rm -rf node_modules
+rm -rf .angular
+npm install
+git add package-lock.json
+git commit -m "Automatic npm update"
+git push
+```
