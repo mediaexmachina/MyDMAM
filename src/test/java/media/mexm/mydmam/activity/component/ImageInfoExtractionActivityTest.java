@@ -60,7 +60,7 @@ import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
@@ -233,7 +233,7 @@ class ImageInfoExtractionActivityTest {
             verify(jsonNode, atLeastOnce()).read(anyString(), eq(String.class));
             verify(jsonNode, atLeastOnce()).read(anyString(), eq(Integer.class));
 
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefFileFormat.class, imageMimeType).mimeType();
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefDublinCore.class, imageMimeType).format();
             metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, width).width();
             metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, height).height();
             metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, orientation).orientation();

@@ -199,12 +199,12 @@ class MetadataThesaurusServiceTest {
         when(fileMetadataDao.getMetadataValue(
                 fileEntity,
                 0,
-                "file-format",
-                "mime-type")).thenReturn(Optional.ofNullable(value));
+                "dc",
+                "format")).thenReturn(Optional.ofNullable(value));
 
         assertThat(mts.getMimeType(fileEntity)).contains(value);
         verify(fileMetadataDao, times(1))
-                .getMetadataValue(fileEntity, 0, "file-format", "mime-type");
+                .getMetadataValue(fileEntity, 0, "dc", "format");
     }
 
 }

@@ -35,7 +35,7 @@ import media.mexm.mydmam.entity.FileMetadataEntity;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.repository.FileMetadataDao;
 
 @Service
@@ -121,7 +121,7 @@ public class MetadataThesaurusServiceImpl implements MetadataThesaurusService {
 
     @Override
     public Optional<String> getMimeType(final FileEntity fileEntity) {
-        return getReader(MtdThesaurusDefFileFormat.class, fileEntity, 0).mimeType().value();
+        return getReader(MtdThesaurusDefDublinCore.class, fileEntity, 0).format().value();
     }
 
     @Override

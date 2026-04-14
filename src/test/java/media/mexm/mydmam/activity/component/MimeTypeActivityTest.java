@@ -41,7 +41,7 @@ import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -105,7 +105,7 @@ class MimeTypeActivityTest {
         verify(mimeTypeDetector, times(1)).getMimeType(internalFile);
         verify(storedOn, atLeastOnce()).getLocalInternalFile(fileEntity);
 
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefFileFormat.class, mimeType).mimeType();
+        metadataThesaurusService.checkIfAdded(MtdThesaurusDefDublinCore.class, mimeType).format();
         metadataThesaurusService.endChecks(fileEntity);
 
         verify(fileEntity, atLeastOnce()).getRealm();

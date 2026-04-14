@@ -24,7 +24,7 @@ import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
@@ -82,9 +82,9 @@ public class ImageInfoExtractionActivity implements ActivityHandler {
         mediaAssetService.declareRenderedStaticFile(
                 file, workingFile, "identify.json", true, 0, "image-format");
 
-        metadataThesaurusService.getWriter(this, file, MtdThesaurusDefFileFormat.class)
+        metadataThesaurusService.getWriter(this, file, MtdThesaurusDefDublinCore.class)
                 .set(jsonNode.read("$.image.mimeType", String.class))
-                .mimeType();
+                .format();
 
         final var techWriter = metadataThesaurusService.getWriter(this, file, MtdThesaurusDefTechnical.class);
         techWriter.set(jsonNode.read("$.image.geometry.width", Integer.class)).width();

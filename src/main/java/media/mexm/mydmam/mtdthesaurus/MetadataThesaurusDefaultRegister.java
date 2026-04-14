@@ -22,7 +22,6 @@ public interface MetadataThesaurusDefaultRegister {
 
     default void defaultRegister() {
         makeInstance(MtdThesaurusDefTechnical.class);
-        makeInstance(MtdThesaurusDefFileFormat.class);
         makeInstance(MtdThesaurusDefPDF.class);
         makeInstance(MtdThesaurusDefDCMI.class);
         makeInstance(MtdThesaurusDefDublinCore.class);

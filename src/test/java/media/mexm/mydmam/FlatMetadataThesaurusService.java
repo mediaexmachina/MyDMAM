@@ -42,7 +42,7 @@ import media.mexm.mydmam.entity.FileMetadataEntity;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefFileFormat;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.repository.FileMetadataDao;
 import media.mexm.mydmam.service.MetadataThesaurusService;
 import media.mexm.mydmam.service.MetadataThesaurusServiceImpl;
@@ -206,7 +206,7 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
     }
 
     public FlatMetadataThesaurusService setMimeType(final String value) {
-        addResponse(MtdThesaurusDefFileFormat.class, value).mimeType();
+        addResponse(MtdThesaurusDefDublinCore.class, value).format();
         return this;
     }
 

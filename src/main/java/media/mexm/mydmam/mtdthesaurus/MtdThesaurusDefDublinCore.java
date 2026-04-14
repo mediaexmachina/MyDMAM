@@ -29,6 +29,9 @@ public interface MtdThesaurusDefDublinCore {
 
     MetadataThesaurusEntry description();
 
+    /**
+     * mime-type
+     */
     MetadataThesaurusEntry format();
 
     MetadataThesaurusEntry identifier();

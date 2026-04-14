@@ -20,8 +20,7 @@ import { BackendAPIService } from './backend-api.service';
 import { LocalStorageService } from './local-storage.service';
 import { ResetActivitiesRequest } from '../dto/reset-activities-request.interface';
 import { AssetResponse } from '../dto/asset-response.interface';
-import { MtdThesaurusDefTechnical } from './mtd-thesaurus-def-technical.service';
-import { MtdThesaurusDefFileFormat } from './mtd-thesaurus-def-file-format.service';
+import { MtdThesaurusDefDublinCore } from './mtd-thesaurus-def-dublin-core.service';
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
 
 @Injectable({
@@ -31,7 +30,7 @@ export class AssetService {
 
     private readonly localStorageService = inject(LocalStorageService);
     private readonly backendAPIService = inject(BackendAPIService);
-    private readonly mtdThesaurusDefFileFormat = inject(MtdThesaurusDefFileFormat);
+    private readonly mtdThesaurusDefDublinCore = inject(MtdThesaurusDefDublinCore);
 
     public async resetActivities(hashPaths: Array<string>, recursive: boolean): Promise<null> {
         const request: ResetActivitiesRequest = {
@@ -62,7 +61,7 @@ export class AssetService {
     }
 
     public getFileMetadataMimeType(assetResponse: AssetResponse): string {
-        var mimeType = this.mtdThesaurusDefFileFormat.mimeType();
+        var mimeType = this.mtdThesaurusDefDublinCore.format();
         return this.getFileMetadataResponseValue(assetResponse, mimeType, "application/octet-stream");
     }
 
