@@ -59,6 +59,8 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
     private final Set<ResponseValueKey> entitiesReaded;
     private final MetadataThesaurusLogic logic;
 
+    private final ConcurrentHashMap<Class<?>, MetadataThesaurusDefinitionWriter<?>> writersByClasses;
+
     public FlatMetadataThesaurusService() {
         relativeTofiles = synchronizedSet(new HashSet<>());
         entitiesAdded = synchronizedSet(new HashSet<>());
@@ -71,6 +73,7 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
         when(auditTrail.getAuditTrailByRealm(anyString())).thenReturn(empty());
         backend = new MetadataThesaurusServiceImpl(flatFileMetadataDao, auditTrail);
         logic = new MetadataThesaurusLogic();
+        writersByClasses = new ConcurrentHashMap<>();
     }
 
     record ResponseValueKey(int layer, String classifier, String key) {
@@ -215,7 +218,7 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
         entitiesAdded.clear();
         responseMap.clear();
         entitiesReaded.clear();
-        backend.clearWritersByClasses();
+        writersByClasses.clear();
     }
 
     @Override
@@ -233,11 +236,13 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> MetadataThesaurusDefinitionWriter<T> getWriter(final ActivityHandler handler,
                                                               final FileEntity fileEntity,
                                                               final Class<T> fromClass) {
         relativeTofiles.add(fileEntity);
-        return backend.getWriter(handler, fileEntity, fromClass);
+        return (MetadataThesaurusDefinitionWriter<T>) writersByClasses.computeIfAbsent(fromClass,
+                c -> backend.getWriter(handler, fileEntity, c));
     }
 
     @Override

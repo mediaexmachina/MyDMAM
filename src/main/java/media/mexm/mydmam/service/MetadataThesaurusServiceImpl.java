@@ -21,7 +21,6 @@ import static media.mexm.mydmam.service.MediaAssetService.MEDIA_ASSET_AUDIT_ISSU
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,21 +44,12 @@ public class MetadataThesaurusServiceImpl implements MetadataThesaurusService {
     private final FileMetadataDao fileMetadataDao;
     private final MetadataThesaurusLogic logic;
     private final AuditTrail auditTrail;
-    private final ConcurrentHashMap<Class<?>, MetadataThesaurusDefinitionWriter<?>> writersByClasses;
 
     public MetadataThesaurusServiceImpl(@Autowired final FileMetadataDao fileMetadataDao,
                                         @Autowired final AuditTrail auditTrail) {
         this.fileMetadataDao = fileMetadataDao;
         this.auditTrail = auditTrail;
         logic = new MetadataThesaurusLogic();
-        writersByClasses = new ConcurrentHashMap<>();
-    }
-
-    /**
-     * Only set for test/mock purposes
-     */
-    public void clearWritersByClasses() {
-        writersByClasses.clear();
     }
 
     @Override
@@ -81,34 +71,29 @@ public class MetadataThesaurusServiceImpl implements MetadataThesaurusService {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> MetadataThesaurusDefinitionWriter<T> getWriter(final ActivityHandler handler,
                                                               final FileEntity fileEntity,
                                                               final Class<T> fromClass) {
-        return (MetadataThesaurusDefinitionWriter<T>) writersByClasses.computeIfAbsent(
-                fromClass,
-                _ -> {
-                    final var origin = handler.getMetadataOriginName();
-                    final var def = new MetadataThesaurusDefinitionWriter<T>();
-                    final var instance = logic.injectInstanceWriteEntities(entry -> {
-                        final var writed = def.get();
-                        if (writed.isEmpty()) {
-                            return;
-                        }
-                        final var dbEntry = new FileMetadataEntity(
-                                fileEntity,
-                                origin,
-                                entry,
-                                writed.get().layer(),
-                                writed.get().value());
+        final var origin = handler.getMetadataOriginName();
+        final var def = new MetadataThesaurusDefinitionWriter<T>();
+        final var instance = logic.injectInstanceWriteEntities(entry -> {
+            final var writed = def.get();
+            if (writed.isEmpty()) {
+                return;
+            }
+            final var dbEntry = new FileMetadataEntity(
+                    fileEntity,
+                    origin,
+                    entry,
+                    writed.get().layer(),
+                    writed.get().value());
 
-                        log.debug("Save FileMetadata {}", dbEntry);
-                        fileMetadataDao.addUpdateEntry(fileEntity, dbEntry);
-                        updateAuditTrail(fileEntity, dbEntry);
-                    }, fromClass);
-                    def.setInstance(instance);
-                    return def;
-                });
+            log.debug("Save FileMetadata {}", dbEntry);
+            fileMetadataDao.addUpdateEntry(fileEntity, dbEntry);
+            updateAuditTrail(fileEntity, dbEntry);
+        }, fromClass);
+        def.setInstance(instance);
+        return def;
     }
 
     private void updateAuditTrail(final FileEntity fileEntity, final FileMetadataEntity insert) {
