@@ -79,9 +79,9 @@ public class ContentController {
                                                                                      defaultValue = "0") @Min(0) final Integer index,
                                                                        @RequestParam(required = false,
                                                                                      defaultValue = "0") @Min(0) @Max(1) final Integer download,
-                                                                       @RequestHeader(value = "Range",
+                                                                       @RequestHeader(value = "range",
                                                                                       required = false) final String rangeHeader,
-                                                                       @RequestHeader(value = "If-None-Match",
+                                                                       @RequestHeader(value = "if-none-match",
                                                                                       required = false) final String ifNoneMatch,
                                                                        final HttpMethod method) {
         final var realmConf = conf.getRealmByName(realm);

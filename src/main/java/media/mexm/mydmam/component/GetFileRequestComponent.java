@@ -48,65 +48,74 @@ import media.mexm.mydmam.tools.TransfertFileRangeToOutputStream;
 @Component
 public class GetFileRequestComponent {
 
-	public ResponseEntity<StreamingResponseBody> makeResponseEntity(final GetFileRequest request) {
-		final var responseHeaders = new HttpHeaders();
-		responseHeaders.setETag(request.etag);
-		responseHeaders.setCacheControl(maxAge(ofMinutes(1)).noTransform().cachePrivate().mustRevalidate());
-		responseHeaders.set(CONTENT_TYPE, request.contentType);
-		responseHeaders.set(CONTENT_ENCODING, request.contentEncoded);
-		responseHeaders.set(ACCEPT_RANGES, "bytes");
+    public ResponseEntity<StreamingResponseBody> makeResponseEntity(final GetFileRequest request) {
+        final var responseHeaders = new HttpHeaders();
+        responseHeaders.setETag(request.etag);
+        responseHeaders.setCacheControl(maxAge(ofMinutes(1)).noTransform().cachePrivate().mustRevalidate());
+        responseHeaders.set(CONTENT_TYPE, request.contentType);
+        responseHeaders.set(CONTENT_ENCODING, request.contentEncoded);
+        responseHeaders.set(ACCEPT_RANGES, "bytes");
 
-		if (request.etag.equalsIgnoreCase(request.ifNoneMatch)) {
-			return new ResponseEntity<>(responseHeaders, NOT_MODIFIED);
-		}
+        if (request.etag.equalsIgnoreCase(request.getIfNoneMatch())) {
+            return new ResponseEntity<>(responseHeaders, NOT_MODIFIED);
+        }
 
-		final var fileLength = request.fileToSend.length();
-		final var rangeRequest = new HTTPRangeRequest(request.rangeHeader, fileLength);
-		responseHeaders.setContentLength(rangeRequest.contentLength());
+        final var fileLength = request.fileToSend.length();
+        final var rangeRequest = new HTTPRangeRequest(request.rangeHeader, fileLength);
+        responseHeaders.setContentLength(rangeRequest.contentLength());
 
-		if (rangeRequest.partial()) {
-			responseHeaders.add(CONTENT_RANGE,
-					"bytes " + rangeRequest.start() + "-" + rangeRequest.end() + "/" + fileLength);
-		}
+        if (rangeRequest.partial()) {
+            responseHeaders.add(CONTENT_RANGE,
+                    "bytes " + rangeRequest.start() + "-" + rangeRequest.end() + "/" + fileLength);
+        }
 
-		final var status = rangeRequest.partial() ? PARTIAL_CONTENT : OK;
+        final var status = rangeRequest.partial() ? PARTIAL_CONTENT : OK;
 
-		if (HttpMethod.HEAD.equals(request.method)) {
-			return new ResponseEntity<>(
-					responseHeaders,
-					status);
-		}
+        if (HttpMethod.HEAD.equals(request.method)) {
+            return new ResponseEntity<>(
+                    responseHeaders,
+                    status);
+        }
 
-		request.oDownloadedFileName.ifPresent(downloadedFileName -> {
-			final var contentDisposition = attachment()
-					.filename(downloadedFileName, UTF_8)
-					.build();
-			responseHeaders.setContentDisposition(contentDisposition);
-		});
+        request.oDownloadedFileName.ifPresent(downloadedFileName -> {
+            final var contentDisposition = attachment()
+                    .filename(downloadedFileName, UTF_8)
+                    .build();
+            responseHeaders.setContentDisposition(contentDisposition);
+        });
 
-		try {
-			final var renderedFile = request.fileToSend.getAbsoluteFile().getCanonicalFile();
-			if (renderedFile.exists() == false) {
-				throw new FileNotFoundException(request.fileToSend.getPath());
-			}
-			return new ResponseEntity<>(
-					output -> new TransfertFileRangeToOutputStream(renderedFile, rangeRequest).send(output),
-					responseHeaders,
-					status);
-		} catch (final IOException e) {
-			log.error("Can't access to file {}", request.fileToSend, e);
-			return new ResponseEntity<>(INTERNAL_SERVER_ERROR);
-		}
-	}
+        try {
+            final var renderedFile = request.fileToSend.getAbsoluteFile().getCanonicalFile();
+            if (renderedFile.exists() == false) {
+                throw new FileNotFoundException(request.fileToSend.getPath());
+            }
+            return new ResponseEntity<>(
+                    output -> new TransfertFileRangeToOutputStream(renderedFile, rangeRequest).send(output),
+                    responseHeaders,
+                    status);
+        } catch (final IOException e) {
+            log.error("Can't access to file {}", request.fileToSend, e);
+            return new ResponseEntity<>(INTERNAL_SERVER_ERROR);
+        }
+    }
 
-	public static record GetFileRequest(File fileToSend,
-										HttpMethod method,
-										String rangeHeader,
-										String ifNoneMatch,
-										String etag,
-										String contentType,
-										String contentEncoded,
-										Optional<String> oDownloadedFileName) {
-	}
+    public static record GetFileRequest(File fileToSend,
+                                        HttpMethod method,
+                                        String rangeHeader,
+                                        String ifNoneMatch,
+                                        String etag,
+                                        String contentType,
+                                        String contentEncoded,
+                                        Optional<String> oDownloadedFileName) {
+
+        String getIfNoneMatch() {
+            if (ifNoneMatch != null
+                && ifNoneMatch.startsWith("\"")
+                && ifNoneMatch.endsWith("\"")) {
+                return ifNoneMatch.substring(1, ifNoneMatch.length() - 1);
+            }
+            return ifNoneMatch;
+        }
+    }
 
 }
