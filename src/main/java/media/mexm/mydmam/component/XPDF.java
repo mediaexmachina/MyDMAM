@@ -32,7 +32,6 @@ import static tv.hd3g.processlauncher.CapturedStreams.BOTH_STDOUT_STDERR;
 import static tv.hd3g.processlauncher.cmdline.Parameters.bulk;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +50,7 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefPDF;
+import media.mexm.mydmam.tools.ExternalExecCapabilityEvaluator;
 import tv.hd3g.processlauncher.CapturedStdOutErrTextRetention;
 import tv.hd3g.processlauncher.ExecutionTimeLimiter;
 import tv.hd3g.processlauncher.ProcesslauncherBuilder;
@@ -60,6 +60,8 @@ import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 @Slf4j
 @Component
 public class XPDF implements InternalService {
+
+    private static final String VERSION = "version";
 
     public static final char FORM_FEED = (char) 0x0C;
 
@@ -72,6 +74,7 @@ public class XPDF implements InternalService {
     private final ExecutableFinder executableFinder;
     private final ScheduledExecutorService maxExecTimeScheduler;
     private final MyDMAMConfigurationProperties configuration;
+    private final ExternalExecCapabilities externalExecCapabilities;
 
     private ExecutionTimeLimiter executionTimeLimiter;
 
@@ -82,15 +85,18 @@ public class XPDF implements InternalService {
     private boolean enabledPdfToPpm;
     @Getter
     private boolean enabledPdfToText;
+
     private int maxPageCount;
     private int resolution;
 
     public XPDF(@Autowired final ExecutableFinder executableFinder,
                 @Autowired final ScheduledExecutorService maxExecTimeScheduler,
-                @Autowired final MyDMAMConfigurationProperties configuration) {
+                @Autowired final MyDMAMConfigurationProperties configuration,
+                @Autowired final ExternalExecCapabilities externalExecCapabilities) {
         this.executableFinder = executableFinder;
         this.maxExecTimeScheduler = maxExecTimeScheduler;
         this.configuration = configuration;
+        this.externalExecCapabilities = externalExecCapabilities;
         enabledPdfInfo = false;
         enabledPdfToPpm = false;
         enabledPdfToText = false;
@@ -106,9 +112,10 @@ public class XPDF implements InternalService {
     @Override
     public void internalServiceStart() throws Exception {
         final var xpdfConf = configuration.tools().xpdf();
-        if (xpdfConf == null) {
+        if (xpdfConf == null) {// NOSONAR S2583 - for test purposes (mock conf)
             return;
         }
+
         maxPageCount = xpdfConf.maxPageCount();
         resolution = xpdfConf.resolution();
         tempDir = new File(xpdfConf.tempDir()).getAbsoluteFile().getCanonicalFile();
@@ -117,53 +124,29 @@ public class XPDF implements InternalService {
         executionTimeLimiter = new ExecutionTimeLimiter(
                 magickMaxExecTimeSeconds + 1, SECONDS, maxExecTimeScheduler);
 
-        try {
-            log.debug("Try to found XPDF binaries: pdfinfo");
-            executableFinder.get(PDFINFO);
-            log.info(USE_XPDF, getVersion(PDFINFO));
-            enabledPdfInfo = true;
-        } catch (final FileNotFoundException e) {
-            log.warn("Can't found XPDF pdfinfo binary, disable all operations with XPDF");
-            return;
-        }
-        try {
-            log.debug("Try to found XPDF binaries: pdftoppm");
-            executableFinder.get(PDFTOPPM);
-            log.info(USE_XPDF, getVersion(PDFTOPPM));
-            enabledPdfToPpm = true;
-        } catch (final FileNotFoundException e) {
-            log.warn("Can't found XPDF pdftoppm binary, disable PDF image preview extractions");
-        }
-        try {
-            log.debug("Try to found XPDF binaries: pdftotext");
-            executableFinder.get(PDFTOTEXT);
-            log.info(USE_XPDF, getVersion(PDFTOTEXT));
-            enabledPdfToText = true;
-        } catch (final FileNotFoundException e) {
-            log.warn("Can't found XPDF pdftotext binary, disable PDF text indexation");
-        }
+        final var param = bulk("-v");
+        externalExecCapabilities.addPlaybook(PDFINFO, "info", param, this::checkAndEvaluate);
+        externalExecCapabilities.tearDown(PDFINFO);
+        enabledPdfInfo = externalExecCapabilities.getPassingPlaybookNames(PDFINFO).contains("info");
 
+        externalExecCapabilities.addPlaybook(PDFTOPPM, "image", param, this::checkAndEvaluate);
+        externalExecCapabilities.tearDown(PDFTOPPM);
+        enabledPdfToPpm = externalExecCapabilities.getPassingPlaybookNames(PDFTOPPM).contains("image");
+
+        externalExecCapabilities.addPlaybook(PDFTOTEXT, "text", param, this::checkAndEvaluate);
+        externalExecCapabilities.tearDown(PDFTOTEXT);
+        enabledPdfToText = externalExecCapabilities.getPassingPlaybookNames(PDFTOTEXT).contains("text");
     }
 
-    /**
-     * @return like "pdftoppm version 24.02.0"
-     */
-    private String getVersion(final String execName) throws IOException {
-        final var commandLine = new CommandLine(execName, "-v", executableFinder);
-
-        final var processlauncherBuilder = new ProcesslauncherBuilder(commandLine);
-        final var capText = new CapturedStdOutErrTextRetention();
-        processlauncherBuilder.getSetCaptureStandardOutputAsOutputText(BOTH_STDOUT_STDERR)
-                .addObserver(capText);
-        processlauncherBuilder.setExecutionTimeLimiter(executionTimeLimiter);
-        processlauncherBuilder.setWorkingDirectory(tempDir);
-        processlauncherBuilder.setExecCodeMustBeZero(false);
-        processlauncherBuilder.start().checkExecution();
-
-        return capText.getStdouterrLines(false)
-                .filter(l -> l.toLowerCase().contains("version"))
-                .findFirst()
-                .orElseThrow(() -> new IOException("Can't extract version string from XPDF " + commandLine));
+    private boolean checkAndEvaluate(final ExternalExecCapabilityEvaluator evaluator) {
+        if (evaluator.haveReturnCode(0, 99) == false
+            || evaluator.haveStringInStdOutErr(VERSION) == false) {
+            return false;
+        }
+        log.info(USE_XPDF, evaluator.captured().getStdouterrLines(false)
+                .filter(l -> l.toLowerCase().contains(VERSION))
+                .findFirst().orElse(""));
+        return true;
     }
 
     /**

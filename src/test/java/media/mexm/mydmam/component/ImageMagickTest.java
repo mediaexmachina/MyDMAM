@@ -30,20 +30,29 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
+import static tv.hd3g.processlauncher.cmdline.Parameters.bulk;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,7 +62,9 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import media.mexm.mydmam.configuration.ExternalToolsConf;
 import media.mexm.mydmam.configuration.MagickConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
+import media.mexm.mydmam.tools.ExternalExecCapabilityEvaluator;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
+import tv.hd3g.processlauncher.CapturedStdOutErrTextRetention;
 import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 
 @ExtendWith(MockToolsExtendsJunit.class)
@@ -73,6 +84,14 @@ class ImageMagickTest {
     XmlMapper xmlMapperInternal;
     @Mock
     ObjectWriter xmlObjectWriter;
+    @Mock
+    ExternalExecCapabilities externalExecCapabilities;
+    @Mock
+    CapturedStdOutErrTextRetention capturedStdOutErrTextRetention;
+    @Captor
+    ArgumentCaptor<Predicate<ExternalExecCapabilityEvaluator>> evaluatorCaptor;
+    @Mock
+    ExternalExecCapabilityEvaluator evaluator;
 
     @Mock
     MagickConf magickConf;
@@ -92,7 +111,13 @@ class ImageMagickTest {
     void init() {
         objectMapper = new ObjectMapper();
 
-        im = new ImageMagick(executableFinder, maxExecTimeScheduler, configuration, xmlMapper, objectMapper);
+        im = new ImageMagick(
+                executableFinder,
+                maxExecTimeScheduler,
+                configuration,
+                xmlMapper,
+                objectMapper,
+                externalExecCapabilities);
 
         when(configuration.tools()).thenReturn(tools);
         when(tools.magick()).thenReturn(magickConf);
@@ -105,6 +130,19 @@ class ImageMagickTest {
         when(xmlMapperInternal.writer()).thenReturn(xmlObjectWriter);
         when(xmlObjectWriter.withRootName("policymap")).thenReturn(xmlObjectWriter);
         when(xmlObjectWriter.with(INDENT_OUTPUT)).thenReturn(xmlObjectWriter);
+
+        try {
+            executableFinder.get("magick");
+            when(externalExecCapabilities.getPassingPlaybookNames("magick")).thenReturn(Set.of("im"));
+        } catch (final FileNotFoundException e) {
+            when(externalExecCapabilities.getPassingPlaybookNames("magick")).thenReturn(Set.of());
+        }
+        try {
+            executableFinder.get("convert");
+            when(externalExecCapabilities.getPassingPlaybookNames("convert")).thenReturn(Set.of("im"));
+        } catch (final FileNotFoundException e) {
+            when(externalExecCapabilities.getPassingPlaybookNames("convert")).thenReturn(Set.of());
+        }
 
         policyFile = new File(MAGICK_TEMP_DIR, "policy.xml");
     }
@@ -142,6 +180,8 @@ class ImageMagickTest {
         verify(xmlObjectWriter, times(1)).writeValue(eq(policyFile), any());
 
         assertTrue(im.isEnabled());
+
+        checkExternalExecCapabilities();
     }
 
     private void setup() {
@@ -152,8 +192,47 @@ class ImageMagickTest {
     @Test
     void testGetMagickVersion() {
         assertThat(im.getMagickVersion()).isNull();
+
+        when(evaluator.haveReturnCode(0)).thenReturn(true);
+        when(evaluator.captured()).thenReturn(capturedStdOutErrTextRetention);
+        when(capturedStdOutErrTextRetention.getStdoutLines(false)).then(_ -> Stream.of(
+                "Version: ImageMagick 7.1.2-13 Q16-HDRI x64 dd991e2:20260119 https://imagemagick.org",
+                "Copyright: (C) 1999 ImageMagick Studio LLC",
+                "License: https://imagemagick.org/license/",
+                "Features: Channel-masks(64-bit) Cipher DPC HDRI Modules OpenCL OpenMP(2.0)",
+                "Delegates (built-in): bzlib cairo freetype gslib heic jng jp2 jpeg jxl lcms lqr lzma openexr pangocairo png ps raqm raw rsvg tiff webp xml zip zlib",
+                "Compiler: Visual Studio 2022 (194435222)"));
+
         setup();
-        assertThat(im.getMagickVersion()).isNotBlank();
+
+        checkExternalExecCapabilities();
+        assertThat(im.getMagickVersion()).isEqualTo("7.1.2-13");
+
+        verify(evaluator, atLeastOnce()).haveReturnCode(0);
+        verify(evaluator, atLeastOnce()).captured();
+        verify(evaluator, atLeastOnce()).name();
+        verify(capturedStdOutErrTextRetention, atLeastOnce()).getStdoutLines(false);
+    }
+
+    private void checkExternalExecCapabilities() {
+        verify(externalExecCapabilities, atLeast(0))
+                .addPlaybook(eq("magick"), eq("im"), eq(bulk("-version")), evaluatorCaptor.capture());
+        evaluatorCaptor.getValue().test(evaluator);
+
+        verify(externalExecCapabilities, atLeast(0))
+                .addPlaybook(eq("convert"), eq("im"), eq(bulk("-version")), evaluatorCaptor.capture());
+        Optional.ofNullable(evaluatorCaptor.getValue()).ifPresent(c -> c.test(evaluator));
+
+        verify(evaluator, atLeast(0)).haveReturnCode(0);
+
+        verify(externalExecCapabilities, atLeast(0))
+                .tearDown("magick");
+        verify(externalExecCapabilities, atLeast(0))
+                .tearDown("convert");
+        verify(externalExecCapabilities, atLeast(0))
+                .getPassingPlaybookNames("magick");
+        verify(externalExecCapabilities, atLeast(0))
+                .getPassingPlaybookNames("convert");
     }
 
     @Test
@@ -161,6 +240,7 @@ class ImageMagickTest {
         assertFalse(im.isEnabled());
         setup();
         assertTrue(im.isEnabled());
+        checkExternalExecCapabilities();
     }
 
     static File getWhitePng() {
@@ -195,6 +275,8 @@ class ImageMagickTest {
                         "PNG",
                         "Portable Network Graphics");
         forceDelete(saveJsonDest);
+
+        checkExternalExecCapabilities();
     }
 
     @Test
@@ -222,6 +304,7 @@ class ImageMagickTest {
         assertThat(whitePng).exists();
         assertThat(createdImage).exists().size().isGreaterThan(100);
         forceDelete(createdImage);
+        checkExternalExecCapabilities();
     }
 
 }

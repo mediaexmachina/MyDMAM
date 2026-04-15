@@ -16,6 +16,8 @@
  */
 package media.mexm.mydmam.component;
 
+import static org.apache.commons.lang3.SystemUtils.IS_OS_MAC_OSX;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE;
 
@@ -33,19 +35,47 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ActiveProfiles({ "Default" })
 class AboutInstanceTest {
 
-	@Autowired
-	AboutInstance ai;
-	@Autowired
-	MyDMAMConfigurationProperties conf;
+    @Autowired
+    AboutInstance ai;
+    @Autowired
+    MyDMAMConfigurationProperties conf;
 
-	@Test
-	void testGetInstanceName() {
-		assertThat(ai.getInstanceName()).isEqualTo(conf.instancename());
-	}
+    @Test
+    void testGetInstanceName() {
+        assertThat(ai.getInstanceName()).isEqualTo(conf.instancename());
+    }
 
-	@Test
-	void testGetPid() {
-		assertThat(ai.getPid()).isGreaterThan(0l);
-	}
+    @Test
+    void testGetPid() {
+        assertThat(ai.getPid()).isGreaterThan(0l);
+    }
 
+    @Test
+    void testHostName() {
+        assertThat(ai.getHostName()).isNotBlank();
+    }
+
+    @Test
+    void testGetEtcHostname() {
+        if (IS_OS_WINDOWS) {
+            assertThat(ai.getEtcHostname()).isEmpty();
+        } else if (IS_OS_MAC_OSX) {
+            /**
+             * Somebody want to test ?
+             */
+            return;
+        } else {
+            assertThat(ai.getEtcHostname()).asString().isNotBlank();
+        }
+    }
+
+    @Test
+    void testGetCmdHostname() {
+        assertThat(ai.getCmdHostname()).asString().isNotBlank();
+    }
+
+    @Test
+    void testGetInetAddressHostname() {
+        assertThat(ai.getCmdHostname()).isNotNull();
+    }
 }

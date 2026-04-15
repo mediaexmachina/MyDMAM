@@ -30,16 +30,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
+import static tv.hd3g.processlauncher.cmdline.Parameters.bulk;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,6 +53,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 
 import media.mexm.mydmam.FlatMetadataThesaurusService;
@@ -59,8 +66,10 @@ import media.mexm.mydmam.configuration.XPDFConf;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefPDF;
+import media.mexm.mydmam.tools.ExternalExecCapabilityEvaluator;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
+import tv.hd3g.processlauncher.CapturedStdOutErrTextRetention;
 import tv.hd3g.processlauncher.InvalidExecution;
 import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 
@@ -83,6 +92,14 @@ class XPDFTest {
     ActivityHandler handler;
     @Mock
     FileEntity fileEntity;
+    @Mock
+    ExternalExecCapabilities externalExecCapabilities;
+    @Mock
+    CapturedStdOutErrTextRetention capturedStdOutErrTextRetention;
+    @Captor
+    ArgumentCaptor<Predicate<ExternalExecCapabilityEvaluator>> evaluatorCaptor;
+    @Mock
+    ExternalExecCapabilityEvaluator evaluator;
 
     @Fake
     boolean print;
@@ -110,7 +127,7 @@ class XPDFTest {
 
     @BeforeEach
     void init() {
-        xpdf = new XPDF(executableFinder, maxExecTimeScheduler, configuration);
+        xpdf = new XPDF(executableFinder, maxExecTimeScheduler, configuration, externalExecCapabilities);
 
         metadataThesaurusService = new FlatMetadataThesaurusService();
         when(handler.getMetadataOriginName()).thenReturn("");
@@ -123,6 +140,9 @@ class XPDFTest {
         when(xpdfConf.tempDir()).thenReturn(PDF_TEMP_DIR.getAbsolutePath());
         when(xpdfConf.resolution()).thenReturn(75);
         when(xpdfConf.maxExecTime()).thenReturn(ofSeconds(10));
+        when(externalExecCapabilities.getPassingPlaybookNames("pdfinfo")).thenReturn(Set.of("info"));
+        when(externalExecCapabilities.getPassingPlaybookNames("pdftoppm")).thenReturn(Set.of("image"));
+        when(externalExecCapabilities.getPassingPlaybookNames("pdftotext")).thenReturn(Set.of("text"));
     }
 
     @AfterEach
@@ -147,6 +167,31 @@ class XPDFTest {
         assertFalse(xpdf.isEnabledPdfToText());
     }
 
+    private void checkExternalExecCapabilities() {
+        verify(externalExecCapabilities, atLeast(0))
+                .addPlaybook(eq("pdfinfo"), eq("info"), eq(bulk("-v")), evaluatorCaptor.capture());
+        verify(externalExecCapabilities, atLeast(0))
+                .addPlaybook(eq("pdftoppm"), eq("image"), eq(bulk("-v")), evaluatorCaptor.capture());
+        verify(externalExecCapabilities, atLeast(0))
+                .addPlaybook(eq("pdftotext"), eq("text"), eq(bulk("-v")), evaluatorCaptor.capture());
+
+        evaluatorCaptor.getValue().test(evaluator);
+
+        verify(evaluator, atLeast(0)).haveReturnCode(0, 99);
+        verify(externalExecCapabilities, atLeastOnce())
+                .tearDown("pdfinfo");
+        verify(externalExecCapabilities, atLeastOnce())
+                .tearDown("pdftoppm");
+        verify(externalExecCapabilities, atLeastOnce())
+                .tearDown("pdftotext");
+        verify(externalExecCapabilities, atLeastOnce())
+                .getPassingPlaybookNames("pdfinfo");
+        verify(externalExecCapabilities, atLeastOnce())
+                .getPassingPlaybookNames("pdftoppm");
+        verify(externalExecCapabilities, atLeastOnce())
+                .getPassingPlaybookNames("pdftotext");
+    }
+
     @Test
     void testInternalServiceStart() throws Exception {
         xpdf.internalServiceStart();
@@ -161,6 +206,7 @@ class XPDFTest {
         verify(xpdfConf, times(1)).resolution();
         verify(xpdfConf, times(1)).tempDir();
         verify(xpdfConf, times(1)).maxExecTime();
+        checkExternalExecCapabilities();
     }
 
     @Test
@@ -185,6 +231,8 @@ class XPDFTest {
         verify(xpdfConf, atLeastOnce()).tempDir();
         verify(xpdfConf, atLeastOnce()).maxPageCount();
         verify(xpdfConf, atLeastOnce()).resolution();
+
+        checkExternalExecCapabilities();
     }
 
     static File getImagePdf() {

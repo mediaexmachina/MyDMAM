@@ -1,6 +1,7 @@
 application*.yml
 logback*.xml
 .config
+exec-capabilities.json
 
 # Windows / macOS
 desktop.ini

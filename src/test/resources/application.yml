@@ -7,11 +7,14 @@ spring:
         log-startup-info: false
     datasource:
         driver-class-name: org.h2.Driver
-        url: jdbc:h2:mem:db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL;NON_KEYWORDS=USER
+        url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;DATABASE_TO_UPPER=false;MODE=MySQL;NON_KEYWORDS=USER
         username: sa
         password: sa
     jpa:
         open-in-view: false
         database-platform: org.hibernate.dialect.H2Dialect
+        defer-datasource-initialization: false
+        hibernate:
+          ddl-auto: update
 server:
     port: 0

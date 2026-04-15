@@ -48,6 +48,8 @@ class StartupTest {
     PendingActivityService pendingActivityService;
     @MockitoBean
     XPDF xpdf;
+    @MockitoBean
+    FFmpegExecCapabilities ffmpegExecCapabilities;
 
     @Autowired
     InternalService service;

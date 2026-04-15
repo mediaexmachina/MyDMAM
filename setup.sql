@@ -90,3 +90,40 @@ CREATE TABLE `asset_textextractedfile` (
   CONSTRAINT asset_textextractedfile_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE,
   CONSTRAINT asset_textextractedfile_uc UNIQUE (`file_id`, `name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `instance` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `create_date` datetime NOT NULL,
+  `name` varchar(256) NOT NULL,
+  `host` varchar(256) NOT NULL,
+  `last_pid` bigint NOT NULL,
+  `last_start_date` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `name_idx` (`name`),
+  CONSTRAINT `name_uc` UNIQUE (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `external_exec` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `create_date` datetime NOT NULL,
+  `instance_id` int NOT NULL,
+  `exec_name` varchar(64) NOT NULL,
+  `exec_path` varchar(256) NOT NULL,
+  `exec_modified` datetime NOT NULL,
+  `exec_length` bigint NOT NULL,
+  `exec_crc` bigint NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT external_exec_instance_id_fk FOREIGN KEY (instance_id) REFERENCES instance(id) ON DELETE CASCADE,
+  CONSTRAINT external_exec_name_uc UNIQUE (`instance_id`, `exec_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `external_exec_capability` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `create_date` datetime NOT NULL,
+  `external_exec_id` int NOT NULL,
+  `playbook` varchar(256) NOT NULL,
+  `pass` tinyint NOT NULL CHECK (`pass` in (0,1)),
+  PRIMARY KEY (`id`),
+  CONSTRAINT external_exec_capability_external_exec_id_fk FOREIGN KEY (external_exec_id) REFERENCES external_exec(id) ON DELETE CASCADE,
+  CONSTRAINT external_exec_playbook_uc UNIQUE (`external_exec_id`, `playbook`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

@@ -24,9 +24,9 @@ import static org.apache.commons.io.FileUtils.forceMkdir;
 import static org.apache.commons.io.FileUtils.write;
 import static org.apache.commons.io.FileUtils.writeByteArrayToFile;
 import static tv.hd3g.processlauncher.CapturedStreams.BOTH_STDOUT_STDERR;
+import static tv.hd3g.processlauncher.cmdline.Parameters.bulk;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
@@ -48,6 +48,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MagickConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
+import media.mexm.mydmam.tools.ExternalExecCapabilityEvaluator;
 import media.mexm.mydmam.tools.JsonPathHelper;
 import tv.hd3g.processlauncher.CapturedStdOutErrTextRetention;
 import tv.hd3g.processlauncher.ExecutionTimeLimiter;
@@ -60,6 +61,8 @@ import tv.hd3g.processlauncher.cmdline.Parameters;
 @Component
 public class ImageMagick implements InternalService {
 
+    private static final String CONVERT = "convert";
+    private static final String MAGICK = "magick";
     private static final String POLICY_RESOURCE = "resource";
     private static final String POLICY_CODER = "coder";
 
@@ -68,6 +71,7 @@ public class ImageMagick implements InternalService {
     private final MyDMAMConfigurationProperties configuration;
     private final XmlMapperWrapper xmlMapper;
     private final ObjectMapper objectMapper;
+    private final ExternalExecCapabilities externalExecCapabilities;
 
     private String execName;
     private File magickConfigurationDir;
@@ -83,12 +87,14 @@ public class ImageMagick implements InternalService {
                        @Autowired final ScheduledExecutorService maxExecTimeScheduler,
                        @Autowired final MyDMAMConfigurationProperties configuration,
                        @Autowired final XmlMapperWrapper xmlMapper,
-                       @Autowired final ObjectMapper objectMapper) {
+                       @Autowired final ObjectMapper objectMapper,
+                       @Autowired final ExternalExecCapabilities externalExecCapabilities) {
         this.executableFinder = executableFinder;
         this.maxExecTimeScheduler = maxExecTimeScheduler;
         this.configuration = configuration;
         this.xmlMapper = xmlMapper;
         this.objectMapper = objectMapper;
+        this.externalExecCapabilities = externalExecCapabilities;
         enabled = false;
     }
 
@@ -100,7 +106,7 @@ public class ImageMagick implements InternalService {
     @Override
     public void internalServiceStart() {
         final var magickConf = configuration.tools().magick();
-        if (magickConf == null) {
+        if (magickConf == null) {// NOSONAR S2583 - for test purposes (mock conf)
             return;
         }
 
@@ -108,39 +114,61 @@ public class ImageMagick implements InternalService {
         executionTimeLimiter = new ExecutionTimeLimiter(
                 magickMaxExecTimeSeconds + 1, SECONDS, maxExecTimeScheduler);
 
-        execName = "magick";
-        File execFile;
-        try {
-            log.debug("Try to found ImageMagick binary with {}", execName);
-            execFile = executableFinder.get(execName);
-        } catch (final FileNotFoundException e) {
-            try {
-                execName = "convert";
-                log.debug("Fail. Now, try to found ImageMagick binary with {}", execName);
-                execFile = executableFinder.get(execName);
-            } catch (final FileNotFoundException e2) {
-                log.warn("Can't found ImageMagick binary (magick / convert), disable all operations with it");
+        final var param = bulk("-version");
+        externalExecCapabilities.addPlaybook(MAGICK, "im", param, this::checkAndEvaluate);
+        externalExecCapabilities.tearDown(MAGICK);
+        if (externalExecCapabilities.getPassingPlaybookNames(MAGICK).contains("im")) {
+            execName = MAGICK;
+        } else {
+            externalExecCapabilities.addPlaybook(CONVERT, "im", param, this::checkAndEvaluate);
+            externalExecCapabilities.tearDown(CONVERT);
+            if (externalExecCapabilities.getPassingPlaybookNames(CONVERT).contains("im")) {
+                execName = CONVERT;
+            } else {
                 return;
             }
         }
-
         final var tempDir = prepareTempDir(magickConf);
         magickConfigurationDir = preparePolicyFile(xmlMapper, magickConf, magickMaxExecTimeSeconds, tempDir);
+        iccSRGBProfile = extractICCFile(magickConfigurationDir);
+        enabled = true;
+    }
 
-        try {
-            magickVersion = getVersion();
-            final var majorVersion = Integer.valueOf(magickVersion.split("\\.")[0]);
-            if (majorVersion < 6 || majorVersion > 7) {
-                log.warn("Use ImageMagick version {} (probably unsupported) from {}", magickVersion, execFile);
-            } else {
-                log.info("Use ImageMagick version {} from {}", magickVersion, execFile);
-            }
-            enabled = true;
-        } catch (final IOException e) {
-            log.error("Can't exec ImageMagick, disable all operations with it", e);
+    private boolean checkAndEvaluate(final ExternalExecCapabilityEvaluator evaluator) {
+        if (evaluator.haveReturnCode(0) == false) {
+            return false;
         }
 
-        iccSRGBProfile = extractICCFile(magickConfigurationDir);
+        /**
+         * Version: ImageMagick 7.1.2-13 Q16-HDRI x64 dd991e2:20260119 https://imagemagick.org
+         */
+        final var versionLine = evaluator.captured().getStdoutLines(false)
+                .filter(l -> l.toLowerCase().startsWith("version"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Can't extract version string from ImageMagick " + evaluator.name()));
+        final var items = Arrays.asList(versionLine.split(" "));
+        if (items.size() < 3) {
+            throw new IllegalStateException(
+                    "Invalid version string from ImageMagick: \"" + versionLine + "\", " + evaluator.name());
+        }
+
+        /**
+         * like "7.1.2-13"
+         */
+        magickVersion = items.get(2);
+        try {
+            final var majorVersion = Integer.valueOf(magickVersion.split("\\.")[0]);
+            if (majorVersion < 6 || majorVersion > 7) {
+                log.warn("Use ImageMagick version {} (probably unsupported) from {}", magickVersion, evaluator.name());
+            } else {
+                log.info("Use ImageMagick version {} from {}", magickVersion, evaluator.name());
+            }
+        } catch (final NumberFormatException e) {
+            log.warn("Can't extract ImageMagick version from \"{}\"", magickVersion);
+        }
+
+        return true;
     }
 
     /**
@@ -246,29 +274,6 @@ public class ImageMagick implements InternalService {
         }
 
         return capText;
-    }
-
-    /**
-     * @return like "7.1.2-13"
-     */
-    private String getVersion() throws IOException {
-        final var commandLine = new CommandLine(execName, "-version", executableFinder);
-        final var capText = runMagick(commandLine, new File(".").getAbsoluteFile());
-
-        final var versionLine = capText.getStdoutLines(false)
-                .filter(l -> l.toLowerCase().startsWith("version"))
-                .findFirst()
-                .orElseThrow(() -> new IOException("Can't extract version string from ImageMagick " + commandLine));
-
-        /**
-         * Version: ImageMagick 7.1.2-13 Q16-HDRI x64 dd991e2:20260119 https://imagemagick.org
-         */
-        final var items = Arrays.asList(versionLine.split(" "));
-        if (items.size() < 3) {
-            throw new IOException("Invalid version string from ImageMagick: \"" + versionLine + "\", " + commandLine);
-        }
-
-        return items.get(2);
     }
 
     private void checkDisabled() throws IOException {
