@@ -61,8 +61,9 @@ import tv.hd3g.processlauncher.cmdline.Parameters;
  */
 @Slf4j
 @Component
-public class ExternalExecCapabilities { // TODO test
+public class ExternalExecCapabilities {
 
+    private final ReentrantLock lock;
     private final ExecutableFinder executableFinder;
     private final ObjectMapper objectMapper;
     private final ConcurrentHashMap<File, List<Parameters>> setupParamsByExec;
@@ -70,9 +71,7 @@ public class ExternalExecCapabilities { // TODO test
     private final ExecutionTimeLimiter executionTimeLimiter;
     private final File execCapabilitiesTempDir;
     private final ExternalExecCapabilityDb db;
-    private final ReentrantLock lock;
-
-    private File execCapabilitiesJsonFile;
+    private final File execCapabilitiesJsonFile;
 
     public ExternalExecCapabilities(@Autowired final ExecutableFinder executableFinder,
                                     @Autowired final ScheduledExecutorService maxExecTimeScheduler,
@@ -84,37 +83,31 @@ public class ExternalExecCapabilities { // TODO test
         setupParamsByExec = new ConcurrentHashMap<>();
         currentSetupDirByExec = new ConcurrentHashMap<>();
         executionTimeLimiter = new ExecutionTimeLimiter(30, SECONDS, maxExecTimeScheduler);
-        execCapabilitiesTempDir = Optional.ofNullable(configuration.tools().execCapabilitiesTempDir())
+
+        execCapabilitiesTempDir = Optional.ofNullable(configuration.tools())
+                .flatMap(t -> Optional.ofNullable(t.execCapabilitiesTempDir()))
                 .map(File::new)
                 .map(File::getAbsoluteFile)
                 .orElse(new File(getTempDirectory(), "mydmam-exec-capabilities-test-zone"));
-        log.debug("Use {} as working temp directory", execCapabilitiesTempDir);
+        log.debug("Use {} as working temp directory", execCapabilitiesTempDir);// TODO remove to display for tests
 
-        final var execCapabilitiesJsonFileName = configuration.tools().execCapabilitiesJsonFile();
-        if (execCapabilitiesJsonFileName == null) {
-            db = new ExternalExecCapabilityDb();
-        } else {
-            execCapabilitiesJsonFile = new File(execCapabilitiesJsonFileName);
-            if (execCapabilitiesJsonFile.exists()) {
-                log.info("Load exec capabilities json file {}", execCapabilitiesJsonFile);
-                try {
-                    db = objectMapper.readValue(execCapabilitiesJsonFile, ExternalExecCapabilityDb.class);
-                } catch (final IOException e) {
-                    throw new UncheckedIOException("Can't read from json file " + execCapabilitiesJsonFile, e);
-                }
-            } else {
-                db = new ExternalExecCapabilityDb();
-                save();
+        execCapabilitiesJsonFile = Optional.ofNullable(configuration.tools())
+                .flatMap(t -> Optional.ofNullable(t.execCapabilitiesJsonFile()))
+                .map(File::new)
+                .orElse(new File(getTempDirectory(), "mydmam-exec-capabilities.json"));
+        if (execCapabilitiesJsonFile.exists()) {
+            log.info("Load exec capabilities json file {}", execCapabilitiesJsonFile);
+            try {
+                db = objectMapper.readValue(execCapabilitiesJsonFile, ExternalExecCapabilityDb.class);
+            } catch (final IOException e) {
+                throw new UncheckedIOException("Can't read from json file " + execCapabilitiesJsonFile, e);
             }
+        } else {
+            db = new ExternalExecCapabilityDb();
         }
     }
 
     private void save() {
-        if (execCapabilitiesJsonFile == null) {
-            log.debug("Can't save, disabled {}", getClass().getSimpleName());
-            return;
-        }
-
         lock.lock();
         try {
             log.debug("Save exec capabilities json file to {}", execCapabilitiesJsonFile);
@@ -143,6 +136,7 @@ public class ExternalExecCapabilities { // TODO test
         final var newWorkingDir = new File(execCapabilitiesTempDir, name);
         if (newWorkingDir.exists()) {
             try {
+                log.debug("Clean directory {}", newWorkingDir);
                 cleanDirectory(newWorkingDir);
             } catch (final IOException e) {
                 throw new UncheckedIOException("Can't setup working directory " + newWorkingDir, e);
@@ -242,10 +236,9 @@ public class ExternalExecCapabilities { // TODO test
             return;
         }
 
-        log.debug("Tear down {}", execName);
-
         final var workingDir = currentSetupDirByExec.remove(oExec.get());
         if (workingDir != null) {
+            log.debug("Tear down {}", execName);
             try {
                 forceDelete(workingDir);
             } catch (final IOException e) {

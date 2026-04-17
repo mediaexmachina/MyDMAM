@@ -76,10 +76,12 @@ public class ExternalExecCapabilityDb {// TODO test
             return checkedBinaries.get(path);
         }
 
+        final var computedDate = ceilDiv(exec.lastModified(), 1000) * 1000;
+
         if (binaries.containsKey(path)) {
             final var result = binaries.get(path);
 
-            if (result.getDate() == ceilDiv(exec.lastModified(), 1000)
+            if (result.getDate() == computedDate
                 && result.getSize() == exec.length()
                 && result.getCrc() == getCrc(exec)) {
                 checkedBinaries.put(path, result);
@@ -88,7 +90,7 @@ public class ExternalExecCapabilityDb {// TODO test
         }
 
         final var result = new ExecPlaybooks();
-        result.setDate(ceilDiv(exec.lastModified(), 1000));
+        result.setDate(computedDate);
         result.setSize(exec.length());
         result.setCrc(getCrc(exec));
         result.setResults(new HashMap<>());
