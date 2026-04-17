@@ -30,6 +30,7 @@ import media.mexm.mydmam.tools.MetadataThesaurusToAngularClasses;
 @SpringBootApplication
 public class App {
 
+    public static final long START_DATE = System.currentTimeMillis();
     public static final String CONTROLLER_BASE_MAPPING_API_PATH = "/api/v1";
     public static final Pattern REPLACE_NORMALIZED = Pattern.compile("\\p{M}");
 

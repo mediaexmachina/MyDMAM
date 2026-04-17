@@ -14,17 +14,12 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.configuration;
+package media.mexm.mydmam.repository;
 
-import org.springframework.boot.context.properties.bind.DefaultValue;
-import org.springframework.validation.annotation.Validated;
+import media.mexm.mydmam.entity.InstanceEntity;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+public interface InstanceDao {
 
-@Validated
-public record ExternalToolsConf(@DefaultValue @Valid @NotNull MagickConf magick,
-                                @DefaultValue @Valid @NotNull XPDFConf xpdf,
-                                String execCapabilitiesTempDir) {
+    InstanceEntity getSelfInstance();
 
 }

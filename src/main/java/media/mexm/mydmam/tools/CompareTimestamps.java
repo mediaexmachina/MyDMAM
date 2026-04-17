@@ -14,17 +14,20 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.configuration;
+package media.mexm.mydmam.tools;
 
-import org.springframework.boot.context.properties.bind.DefaultValue;
-import org.springframework.validation.annotation.Validated;
+import static java.lang.Math.round;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import java.sql.Timestamp;
 
-@Validated
-public record ExternalToolsConf(@DefaultValue @Valid @NotNull MagickConf magick,
-                                @DefaultValue @Valid @NotNull XPDFConf xpdf,
-                                String execCapabilitiesTempDir) {
+public class CompareTimestamps { // TODO test
+
+    public static boolean equalsTimestamps(final Timestamp l, final Timestamp r) {
+        return equalsTimestamps(l, r.getTime());
+    }
+
+    public static boolean equalsTimestamps(final Timestamp l, final long r) {
+        return round(l.getTime() / 1000d) == round(r / 1000d);
+    }
 
 }

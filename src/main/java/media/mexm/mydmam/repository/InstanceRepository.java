@@ -14,17 +14,12 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.configuration;
+package media.mexm.mydmam.repository;
 
-import org.springframework.boot.context.properties.bind.DefaultValue;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import media.mexm.mydmam.entity.InstanceEntity;
 
-@Validated
-public record ExternalToolsConf(@DefaultValue @Valid @NotNull MagickConf magick,
-                                @DefaultValue @Valid @NotNull XPDFConf xpdf,
-                                String execCapabilitiesTempDir) {
+public interface InstanceRepository extends JpaRepository<InstanceEntity, Long> {
 
 }

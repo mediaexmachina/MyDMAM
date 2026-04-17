@@ -21,7 +21,6 @@ import static media.mexm.mydmam.SimpleApp.OUT_FILE_CONTENT;
 import static media.mexm.mydmam.SimpleApp.OUT_FILE_NAME;
 import static media.mexm.mydmam.SimpleApp.STATUS;
 import static media.mexm.mydmam.SimpleApp.SYS_OUT;
-import static org.apache.commons.io.FileUtils.forceDelete;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE;
@@ -29,30 +28,27 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import jakarta.transaction.Transactional;
 import media.mexm.mydmam.SimpleApp;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.tools.ExternalExecCapabilityDb;
+import media.mexm.mydmam.repository.ExternalExecDao;
+import media.mexm.mydmam.repository.ExternalExecRepository;
 import media.mexm.mydmam.tools.ExternalExecCapabilityEvaluator;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 import tv.hd3g.processlauncher.cmdline.Parameters;
 
-@SpringBootTest(webEnvironment = NONE,
-                properties = {
-                               "mydmam.tools.exec-capabilities-json-file=target/exec-capabilities-test.json"
-                })
+@SpringBootTest(webEnvironment = NONE)
 @ActiveProfiles({ "Default" })
 @ExtendWith(MockToolsExtendsJunit.class)
 class ExternalExecCapabilitiesTest {
@@ -64,17 +60,21 @@ class ExternalExecCapabilitiesTest {
     @Autowired
     MyDMAMConfigurationProperties configuration;
     @Autowired
-    ObjectMapper objectMapper;
+    ExternalExecDao externalExecDao;
+    @Autowired
+    ExternalExecRepository externalExecRepository;
 
+    @Autowired
     ExternalExecCapabilities eec;
+
+    @BeforeEach
+    @Transactional
+    void init() {
+        externalExecRepository.deleteAll();
+    }
 
     @Test
     void testEndToEnd() throws IOException {
-        final var execCapabilitiesJsonFile = new File(configuration.tools().execCapabilitiesJsonFile());
-        if (execCapabilitiesJsonFile.exists()) {
-            forceDelete(execCapabilitiesJsonFile);
-        }
-
         final var ext = IS_OS_WINDOWS ? ".exe" : "";
         final var execFile = new File((String) System.getProperties().get("java.home") + "/bin/java" + ext)
                 .getAbsoluteFile()
@@ -88,7 +88,6 @@ class ExternalExecCapabilitiesTest {
                                            + ".java");
         assertThat(javaClassFile).exists();
 
-        eec = new ExternalExecCapabilities(executableFinder, maxExecTimeScheduler, configuration, objectMapper);
         eec.setup(execName, List.of(Parameters.bulk("-version")));
 
         assertThat(eec.getPassingPlaybookNames(execName)).isEmpty();
@@ -135,29 +134,15 @@ class ExternalExecCapabilitiesTest {
 
         assertThat(evaluator.workingDir()).doesNotExist();
 
-        assertThat(execCapabilitiesJsonFile).exists();
-        final var db = objectMapper.readValue(execCapabilitiesJsonFile, ExternalExecCapabilityDb.class);
-
-        final var execPath = execFile.getCanonicalPath();
-        assertThat(db.getVersion()).isEqualTo(1);
-        assertThat(db.getBinaries()).containsKey(execPath);
-        final var execPlaybooks = db.getBinaries().get(execPath);
-        assertThat(execPlaybooks.getCrc()).isNotZero();
-        assertThat(execPlaybooks.getDate()).isNotZero();
-        assertThat(execPlaybooks.getSize()).isNotZero();
-        assertThat(execPlaybooks.getResults())
-                .hasSize(3)
-                .contains(
-                        Map.entry(playbookNameOk, true),
-                        Map.entry(playbookNameFail, false),
-                        Map.entry(playbookNameBadExec, true));
-
         assertThat(eec.getPassingPlaybookNames(execName))
                 .hasSize(2)
                 .contains(playbookNameOk, playbookNameBadExec);
 
-        eec = new ExternalExecCapabilities(executableFinder, maxExecTimeScheduler, configuration, objectMapper);
+        assertThat(evaluator.workingDir()).doesNotExist();
+
         eec.setup(execName, List.of(Parameters.bulk("-NOPENOPE")));
+        assertThat(evaluator.workingDir()).doesNotExist();
+
         eec.addPlaybook(
                 execName,
                 playbookNameOk,
@@ -165,29 +150,20 @@ class ExternalExecCapabilitiesTest {
                 _ -> {
                     throw new IllegalStateException();
                 });
+        assertThat(evaluator.workingDir()).exists();
 
-        assertThat(evaluator.workingDir()).doesNotExist();
         eec.tearDown(execName);
 
         assertThat(eec.getPassingPlaybookNames(execName))
                 .hasSize(2)
                 .contains(playbookNameOk, playbookNameBadExec);
-        assertThat(execCapabilitiesJsonFile).exists();
         assertThat(evaluator.workingDir()).doesNotExist();
-
-        forceDelete(execCapabilitiesJsonFile);
     }
 
     @Test
-    void testNotFoundBinary() throws IOException {
-        final var execCapabilitiesJsonFile = new File(configuration.tools().execCapabilitiesJsonFile());
-        if (execCapabilitiesJsonFile.exists()) {
-            forceDelete(execCapabilitiesJsonFile);
-        }
-
+    void testNotFoundBinary() {
         final var execName = "not-found-binary";
 
-        eec = new ExternalExecCapabilities(executableFinder, maxExecTimeScheduler, configuration, objectMapper);
         eec.setup(execName, List.of(Parameters.bulk()));
 
         assertThat(eec.getPassingPlaybookNames(execName)).isEmpty();
@@ -208,8 +184,6 @@ class ExternalExecCapabilitiesTest {
         eec.tearDown(execName);
 
         assertThat(eec.getPassingPlaybookNames(execName)).isEmpty();
-
-        assertThat(execCapabilitiesJsonFile).doesNotExist();
     }
 
 }

@@ -19,7 +19,6 @@ package media.mexm.mydmam.component;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toUnmodifiableSet;
 import static org.apache.commons.io.FileUtils.cleanDirectory;
 import static org.apache.commons.io.FileUtils.forceDelete;
 import static org.apache.commons.io.FileUtils.forceMkdir;
@@ -29,24 +28,25 @@ import static tv.hd3g.processlauncher.CapturedStreams.BOTH_STDOUT_STDERR;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.zip.CRC32;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.tools.ExternalExecCapabilityDb;
+import media.mexm.mydmam.repository.ExternalExecDao;
 import media.mexm.mydmam.tools.ExternalExecCapabilityEvaluator;
 import tv.hd3g.processlauncher.CapturedStdOutErrTextRetention;
 import tv.hd3g.processlauncher.ExecutionTimeLimiter;
@@ -65,25 +65,21 @@ public class ExternalExecCapabilities {
 
     private final ReentrantLock lock;
     private final ExecutableFinder executableFinder;
-    private final ObjectMapper objectMapper;
-    private final ConcurrentHashMap<File, List<Parameters>> setupParamsByExec;
-    private final ConcurrentHashMap<File, File> currentSetupDirByExec;
+    private final ExternalExecDao externalExecDao;
+    private final ConcurrentHashMap<File, ExecConf> execConfs;
     private final ExecutionTimeLimiter executionTimeLimiter;
     private final File execCapabilitiesTempDir;
-    private final ExternalExecCapabilityDb db;
-    private final File execCapabilitiesJsonFile;
 
     // TODO implements with IM, XPDF, FFMPEG
 
     public ExternalExecCapabilities(@Autowired final ExecutableFinder executableFinder,
                                     @Autowired final ScheduledExecutorService maxExecTimeScheduler,
                                     @Autowired final MyDMAMConfigurationProperties configuration,
-                                    @Autowired final ObjectMapper objectMapper) {
+                                    @Autowired final ExternalExecDao externalExecDao) {
         lock = new ReentrantLock();
         this.executableFinder = executableFinder;
-        this.objectMapper = objectMapper;
-        setupParamsByExec = new ConcurrentHashMap<>();
-        currentSetupDirByExec = new ConcurrentHashMap<>();
+        this.externalExecDao = externalExecDao;
+        execConfs = new ConcurrentHashMap<>();
         executionTimeLimiter = new ExecutionTimeLimiter(30, SECONDS, maxExecTimeScheduler);
 
         execCapabilitiesTempDir = Optional.ofNullable(configuration.tools())
@@ -92,32 +88,45 @@ public class ExternalExecCapabilities {
                 .map(File::getAbsoluteFile)
                 .orElse(new File(getTempDirectory(), "mydmam-exec-capabilities-test-zone"));
         log.debug("Use {} as working temp directory", execCapabilitiesTempDir);// TODO remove to display for tests
-
-        execCapabilitiesJsonFile = Optional.ofNullable(configuration.tools())
-                .flatMap(t -> Optional.ofNullable(t.execCapabilitiesJsonFile()))
-                .map(File::new)
-                .orElse(new File(getTempDirectory(), "mydmam-exec-capabilities.json"));
-        if (execCapabilitiesJsonFile.exists()) {
-            log.info("Load exec capabilities json file {}", execCapabilitiesJsonFile);
-            try {
-                db = objectMapper.readValue(execCapabilitiesJsonFile, ExternalExecCapabilityDb.class);
-            } catch (final IOException e) {
-                throw new UncheckedIOException("Can't read from json file " + execCapabilitiesJsonFile, e);
-            }
-        } else {
-            db = new ExternalExecCapabilityDb();
-        }
     }
 
-    private void save() {
-        lock.lock();
-        try {
-            log.debug("Save exec capabilities json file to {}", execCapabilitiesJsonFile);
-            objectMapper.writeValue(execCapabilitiesJsonFile, db);
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Can't save json", e);
-        } finally {
-            lock.unlock();
+    private record ExecConf(String name,
+                            File exec,
+                            File workingDir,
+                            List<Parameters> setupParams,
+                            long crc,
+                            AtomicBoolean isSetup) {
+
+        ExecConf(final String name,
+                 final File exec,
+                 final List<Parameters> setupParams,
+                 final File execCapabilitiesTempDir) {
+            var crcValue = 0L;
+            try (final var reader = new RandomAccessFile(exec, "r")) {
+                final var channel = reader.getChannel();
+                final var buff = ByteBuffer.allocateDirect((int) Math.min(100_000l, exec.length()));
+
+                final var crc = new CRC32();
+                while (channel.read(buff) > 0) {
+                    crc.update(buff.flip());
+                    buff.clear();
+                }
+                crcValue = crc.getValue();
+            } catch (final IOException e) {
+                throw new UncheckedIOException("Can't read " + exec, e);
+            }
+
+            final var workingDir = new File(execCapabilitiesTempDir, name);
+            if (workingDir.exists()) {
+                try {
+                    log.debug("Delete working directory {}", workingDir);
+                    cleanDirectory(workingDir);
+                } catch (final IOException e) {
+                    throw new UncheckedIOException("Can't setup working directory " + workingDir, e);
+                }
+            }
+
+            this(name, exec, workingDir, setupParams, crcValue, new AtomicBoolean());
         }
     }
 
@@ -127,30 +136,22 @@ public class ExternalExecCapabilities {
             return;
         }
         log.debug("Setup {}", execName);
-        setupParamsByExec.put(oExec.get(), params);
+        final var exec = oExec.get();
+        execConfs.put(exec, new ExecConf(execName, exec, params, execCapabilitiesTempDir));
     }
 
-    private File setupRun(final String name,
-                          final File exec) {
-        final var paramListToSetup = setupParamsByExec.get(exec);
-        requireNonNull(paramListToSetup, "Please setup() " + exec + " before addPlaybook()");
+    private File setupRun(final File exec) {
+        final var execConf = execConfs.get(exec);
+        requireNonNull(execConf, "Please setup() " + exec + " before addPlaybook()");
 
-        final var newWorkingDir = new File(execCapabilitiesTempDir, name);
-        if (newWorkingDir.exists()) {
-            try {
-                log.debug("Clean directory {}", newWorkingDir);
-                cleanDirectory(newWorkingDir);
-            } catch (final IOException e) {
-                throw new UncheckedIOException("Can't setup working directory " + newWorkingDir, e);
-            }
-        }
-
-        paramListToSetup.forEach(p -> {
-            log.info("Setup exec to process capabilities: {} {} [on {}]", exec, p, newWorkingDir);
-            run(name, "setup", exec, p, newWorkingDir, _ -> true);
+        final var workingDir = execConf.workingDir();
+        execConf.setupParams().forEach(p -> {
+            log.info("Setup exec to process capabilities: {} {} [on {}]", exec, p, workingDir);
+            run(execConf.name(), "setup", exec, p, workingDir, _ -> true);
         });
 
-        return newWorkingDir;
+        execConf.isSetup().set(true);
+        return workingDir;
     }
 
     private Optional<File> executableFinderGet(final String execName) {
@@ -173,9 +174,19 @@ public class ExternalExecCapabilities {
 
         lock.lock();
         try {
+            final var conf = execConfs.computeIfAbsent(exec, newExec -> {
+                final var newConf = new ExecConf(execName, newExec, List.of(), execCapabilitiesTempDir);
+                newConf.isSetup().set(true);
+                return newConf;
+            });
+
+            if (conf.isSetup().get() == false) {
+                setupRun(exec);
+            }
+
             log.debug("Add playbook \"{}\": {} {}", playbookName, exec, params);
 
-            final var playbookResult = db.getPlaybookResult(exec, playbookName);
+            final var playbookResult = externalExecDao.getPlaybookResult(execName, exec, playbookName, conf.crc());
             if (playbookResult.isPresent()) {
                 final var playbookResultStatus = (boolean) playbookResult.get();
                 log.trace("Contains playbook \"{}\" [{}] for {}",
@@ -185,16 +196,15 @@ public class ExternalExecCapabilities {
                 return;
             }
 
-            final var workingDir = currentSetupDirByExec.computeIfAbsent(exec, newExec -> setupRun(execName, newExec));
-            final var pass = run(execName, playbookName, exec, params, workingDir, evaluator);
+            final var pass = run(execName, playbookName, exec, params, conf.workingDir(), evaluator);
 
             log.info("Playbook compute result \"{}\" is {}: {} {}",
                     playbookName,
                     pass ? "passing" : "fail",
                     exec,
                     params);
-            db.addPlaybookResult(exec, playbookName, pass);
-            save();
+
+            externalExecDao.addPlaybookResult(execName, exec, playbookName, pass, conf.crc());
         } finally {
             lock.unlock();
         }
@@ -238,11 +248,12 @@ public class ExternalExecCapabilities {
             return;
         }
 
-        final var workingDir = currentSetupDirByExec.remove(oExec.get());
-        if (workingDir != null) {
+        final var oldSetup = execConfs.remove(oExec.get());
+        final var workingDir = oldSetup.workingDir();
+        if (oldSetup != null && workingDir.exists()) {
             log.debug("Tear down {}", execName);
             try {
-                forceDelete(workingDir);
+                forceDelete(oldSetup.workingDir());
             } catch (final IOException e) {
                 log.error("Can't delete {}", workingDir, e);
             }
@@ -257,12 +268,14 @@ public class ExternalExecCapabilities {
 
         lock.lock();
         try {
-            return db.getAllPlaybookResults(oExec.get())
-                    .entrySet()
-                    .stream()
-                    .filter(entry -> entry.getValue() == true)
-                    .map(Entry::getKey)
-                    .collect(toUnmodifiableSet());
+            final var exec = oExec.get();
+            final var conf = execConfs.computeIfAbsent(exec, newExec -> {
+                final var newConf = new ExecConf(execName, newExec, List.of(), execCapabilitiesTempDir);
+                newConf.isSetup().set(true);
+                return newConf;
+            });
+
+            return externalExecDao.getAllPlaybookPass(execName, exec, conf.crc());
         } finally {
             lock.unlock();
         }

@@ -14,17 +14,18 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.configuration;
+package media.mexm.mydmam.repository;
 
-import org.springframework.boot.context.properties.bind.DefaultValue;
-import org.springframework.validation.annotation.Validated;
+import java.io.File;
+import java.util.Optional;
+import java.util.Set;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+public interface ExternalExecDao {
 
-@Validated
-public record ExternalToolsConf(@DefaultValue @Valid @NotNull MagickConf magick,
-                                @DefaultValue @Valid @NotNull XPDFConf xpdf,
-                                String execCapabilitiesTempDir) {
+    void addPlaybookResult(String execName, File exec, String playbook, boolean pass, long crc);
+
+    Optional<Boolean> getPlaybookResult(String execName, File exec, String playbook, long crc);
+
+    Set<String> getAllPlaybookPass(String execName, File exec, long crc);
 
 }
