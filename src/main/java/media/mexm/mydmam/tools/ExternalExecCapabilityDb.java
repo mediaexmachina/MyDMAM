@@ -33,6 +33,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Data;
 
+/**
+ * Not thread safe!
+ */
 @Data
 public class ExternalExecCapabilityDb {// TODO test
 

@@ -25,6 +25,7 @@ import jakarta.validation.constraints.NotNull;
 @Validated
 public record ExternalToolsConf(@DefaultValue @Valid @NotNull MagickConf magick,
                                 @DefaultValue @Valid @NotNull XPDFConf xpdf,
-                                @DefaultValue("exec-capabilities.json") String execCapabilitiesJsonFile) {
+                                @DefaultValue("exec-capabilities.json") String execCapabilitiesJsonFile,
+                                String execCapabilitiesTempDir) {
 
 }
