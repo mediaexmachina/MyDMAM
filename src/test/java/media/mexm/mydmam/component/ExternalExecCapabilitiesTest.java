@@ -94,21 +94,35 @@ class ExternalExecCapabilitiesTest {
         assertThat(eec.getPassingPlaybookNames(execName)).isEmpty();
 
         final var evaluatorRef = new AtomicReference<ExternalExecCapabilityEvaluator>();
-        final var playbookName = SimpleApp.class.getSimpleName();
+        final var playbookNameOk = SimpleApp.class.getSimpleName() + "-ok";
         eec.addPlaybook(
                 execName,
-                playbookName,
+                playbookNameOk,
                 Parameters.bulk(javaClassFile.getAbsolutePath()),
                 evaluator -> {
                     evaluatorRef.set(evaluator);
                     return true;
                 });
 
+        final var playbookNameFail = SimpleApp.class.getSimpleName() + "-fail";
+        eec.addPlaybook(
+                execName,
+                playbookNameFail,
+                Parameters.bulk("-version"),
+                _ -> false);
+
+        final var playbookNameBadExec = SimpleApp.class.getSimpleName() + "-bad-exec";
+        eec.addPlaybook(
+                execName,
+                playbookNameBadExec,
+                Parameters.bulk("-NOPENOPE"),
+                _ -> true);
+
         final var evaluator = evaluatorRef.get();
         assertThat(evaluator).isNotNull();
 
         assertThat(evaluator.name()).isEqualTo(execName);
-        assertThat(evaluator.playbookName()).isEqualTo(playbookName);
+        assertThat(evaluator.playbookName()).isEqualTo(playbookNameOk);
 
         final var expectFile = new File(evaluator.workingDir(), OUT_FILE_NAME);
         assertThat(expectFile).exists().content().isEqualTo(OUT_FILE_CONTENT);
@@ -131,13 +145,22 @@ class ExternalExecCapabilitiesTest {
         assertThat(execPlaybooks.getCrc()).isNotZero();
         assertThat(execPlaybooks.getDate()).isNotZero();
         assertThat(execPlaybooks.getSize()).isNotZero();
-        assertThat(execPlaybooks.getResults()).hasSize(1).containsExactly(Map.entry(playbookName, true));
+        assertThat(execPlaybooks.getResults())
+                .hasSize(3)
+                .contains(
+                        Map.entry(playbookNameOk, true),
+                        Map.entry(playbookNameFail, false),
+                        Map.entry(playbookNameBadExec, true));
+
+        assertThat(eec.getPassingPlaybookNames(execName))
+                .hasSize(2)
+                .contains(playbookNameOk, playbookNameBadExec);
 
         eec = new ExternalExecCapabilities(executableFinder, maxExecTimeScheduler, configuration, objectMapper);
         eec.setup(execName, List.of(Parameters.bulk("-NOPENOPE")));
         eec.addPlaybook(
                 execName,
-                playbookName,
+                playbookNameOk,
                 Parameters.bulk("NOPENOPE"),
                 _ -> {
                     throw new IllegalStateException();
@@ -146,15 +169,47 @@ class ExternalExecCapabilitiesTest {
         assertThat(evaluator.workingDir()).doesNotExist();
         eec.tearDown(execName);
 
-        assertThat(eec.getPassingPlaybookNames(execName)).containsExactly(playbookName);
+        assertThat(eec.getPassingPlaybookNames(execName))
+                .hasSize(2)
+                .contains(playbookNameOk, playbookNameBadExec);
         assertThat(execCapabilitiesJsonFile).exists();
         assertThat(evaluator.workingDir()).doesNotExist();
 
         forceDelete(execCapabilitiesJsonFile);
     }
 
-    // TODO test with not empty newWorkingDir
-    // TODO test with not found exec
-    // TODO test with not passing
+    @Test
+    void testNotFoundBinary() throws IOException {
+        final var execCapabilitiesJsonFile = new File(configuration.tools().execCapabilitiesJsonFile());
+        if (execCapabilitiesJsonFile.exists()) {
+            forceDelete(execCapabilitiesJsonFile);
+        }
+
+        final var execName = "not-found-binary";
+
+        eec = new ExternalExecCapabilities(executableFinder, maxExecTimeScheduler, configuration, objectMapper);
+        eec.setup(execName, List.of(Parameters.bulk()));
+
+        assertThat(eec.getPassingPlaybookNames(execName)).isEmpty();
+
+        final var evaluatorRef = new AtomicReference<ExternalExecCapabilityEvaluator>();
+        final var playbookName = SimpleApp.class.getSimpleName();
+        eec.addPlaybook(
+                execName,
+                playbookName,
+                Parameters.bulk(),
+                evaluator -> {
+                    evaluatorRef.set(evaluator);
+                    return true;
+                });
+
+        assertThat(evaluatorRef.get()).isNull();
+
+        eec.tearDown(execName);
+
+        assertThat(eec.getPassingPlaybookNames(execName)).isEmpty();
+
+        assertThat(execCapabilitiesJsonFile).doesNotExist();
+    }
 
 }

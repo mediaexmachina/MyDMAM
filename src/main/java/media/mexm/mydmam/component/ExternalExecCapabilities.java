@@ -73,6 +73,8 @@ public class ExternalExecCapabilities {
     private final ExternalExecCapabilityDb db;
     private final File execCapabilitiesJsonFile;
 
+    // TODO implements with IM, XPDF, FFMPEG
+
     public ExternalExecCapabilities(@Autowired final ExecutableFinder executableFinder,
                                     @Autowired final ScheduledExecutorService maxExecTimeScheduler,
                                     @Autowired final MyDMAMConfigurationProperties configuration,
