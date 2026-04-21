@@ -1,3 +1,6 @@
+##################################################
+################## MyDMAM added ##################
+##################################################
 # Magic data for KMimeMagic (originally for file(1) command)
 #
 # Note on adding additional MIME types:
@@ -27,9 +30,8 @@
 #    Column #4: MIME type of result
 #    Column #5: MIME encoding of result (optional)
 
-##################################################
-################## MyDMAM added ##################
-##################################################
+4   string  ftypheic    image/heic
+
 0	belong	0x802a5fd7
 >4	belong	0x00000800
 >8	belong	0x00000400

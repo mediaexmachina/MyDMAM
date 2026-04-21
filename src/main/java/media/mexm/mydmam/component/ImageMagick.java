@@ -336,6 +336,10 @@ public class ImageMagick implements InternalService {
 
     public Set<String> getManagedRasterMimeTypes() {
         return Set.of(
+                "image/heif",
+                "image/heic",
+                "image/avci",
+                "image/avif",
                 "image/jpeg",
                 "image/png",
                 "image/bmp",
