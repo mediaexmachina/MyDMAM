@@ -78,4 +78,14 @@ class AboutInstanceTest {
     void testGetInetAddressHostname() {
         assertThat(ai.getCmdHostname()).isNotNull();
     }
+
+    @Test
+    void testQueryPingTime() {
+        assertThat(ai.getQueryPingTime()).isBetween(0l, 1_000l);
+    }
+
+    @Test
+    void testDatabaseDeltaTime() {
+        assertThat(ai.getDatabaseDeltaTime()).isBetween(0l, 1_000l);
+    }
 }

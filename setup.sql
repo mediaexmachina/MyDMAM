@@ -33,6 +33,7 @@ CREATE TABLE `instance` (
   `host` varchar(256) NOT NULL,
   `last_pid` bigint NOT NULL,
   `last_start_date` datetime NOT NULL,
+  `last_presence_date` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `name_idx` (`name`),
   CONSTRAINT `name_uc` UNIQUE (`name`)

@@ -80,4 +80,17 @@ public class InstanceDaoImpl implements InstanceDao {
 
         return instanceRepository.saveAndFlush(new InstanceEntity(name, host, pid, startDate));
     }
+
+    @Override
+    @Transactional(REQUIRES_NEW)
+    public void updatePresenceInstance(final int id) {
+        entityManager.createQuery("""
+                UPDATE InstanceEntity e
+                SET e.lastPresenceDate = CURRENT_TIMESTAMP()
+                WHERE e.id = :id
+                """)
+                .setParameter("id", id)
+                .executeUpdate();
+    }
+
 }

@@ -50,6 +50,8 @@ class StartupTest {
     XPDF xpdf;
     @MockitoBean
     FFmpegExecCapabilities ffmpegExecCapabilities;
+    @MockitoBean
+    UpdateDbPresenceInstance updateDbPresenceInstance;
 
     @Autowired
     InternalService service;

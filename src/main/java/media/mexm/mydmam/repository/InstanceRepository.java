@@ -16,10 +16,18 @@
  */
 package media.mexm.mydmam.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import java.sql.Timestamp;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import jakarta.transaction.Transactional;
 import media.mexm.mydmam.entity.InstanceEntity;
 
 public interface InstanceRepository extends JpaRepository<InstanceEntity, Long> {
+
+    @Transactional
+    @Query("SELECT CURRENT_TIMESTAMP()")
+    Timestamp currentTimestamp();
 
 }

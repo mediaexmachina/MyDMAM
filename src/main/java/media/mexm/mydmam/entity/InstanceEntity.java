@@ -79,6 +79,11 @@ public class InstanceEntity {
     @Column(name = "last_start_date")
     private Timestamp lastStartDate;
 
+    @NotNull
+    @Setter
+    @Column(name = "last_presence_date")
+    private Timestamp lastPresenceDate;
+
     @OneToMany(mappedBy = "instance", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
     private final Set<ExternalExecEntity> externalExecEntities = new HashSet<>();
 
@@ -101,6 +106,7 @@ public class InstanceEntity {
         lastPid = pid;
         lastStartDate = roundToTimestamp(startDate);
         createDate = roundToTimestamp(System.currentTimeMillis());
+        lastPresenceDate = createDate;
     }
 
 }

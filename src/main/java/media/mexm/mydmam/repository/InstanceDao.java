@@ -22,4 +22,6 @@ public interface InstanceDao {
 
     InstanceEntity getSelfInstance();
 
+    void updatePresenceInstance(int id);
+
 }
