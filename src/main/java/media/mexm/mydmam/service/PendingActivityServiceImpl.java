@@ -39,7 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.PendingActivityJob;
-import media.mexm.mydmam.component.AboutInstance;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
@@ -47,6 +46,7 @@ import media.mexm.mydmam.entity.PendingActivityEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.repository.FileRepository;
+import media.mexm.mydmam.repository.InstanceDao;
 import media.mexm.mydmam.repository.PendingActivityDao;
 import tv.hd3g.jobkit.engine.JobKitEngine;
 import tv.hd3g.transfertfiles.FileAttributesReference;
@@ -59,6 +59,8 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
     @Autowired
     PendingActivityDao pendingActivityDao;
+    @Autowired
+    InstanceDao instanceDao;
     @Autowired
     FileService fileService;
     @Autowired
@@ -73,8 +75,6 @@ public class PendingActivityServiceImpl implements PendingActivityService {
     MediaAssetService mediaAssetService;
     @Autowired
     MyDMAMConfigurationProperties configuration;
-    @Autowired
-    AboutInstance aboutInstance;
 
     private boolean checkSupportedStorageStateClasses(final ActivityHandler activityHandler,
                                                       final RealmStorageConfiguredEnv confEnv) {
@@ -94,6 +94,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
     private void runAssetsActivities(final ActivityEventType eventType,
                                      final List<FileEntity> sourceFiles) {
+        final var instance = instanceDao.getSelfInstance();
 
         sourceFiles.forEach(file -> {
             if (file.isDirectory()) {
@@ -138,8 +139,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
         pendingActivityDao.declateActivities(
                 allActivitiesJobs,
-                aboutInstance.getInstanceName(),
-                aboutInstance.getPid());
+                Optional.ofNullable(instance));
 
         allActivitiesJobs.forEach(a -> {
             log.trace(LOG_QUEUE_RUN_FOR_ON, a.file(), a.activityHandler().getHandlerName());
@@ -237,8 +237,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
         pendingActivityDao.declateActivities(
                 newJobs,
-                aboutInstance.getInstanceName(),
-                aboutInstance.getPid());
+                Optional.ofNullable(instanceDao.getSelfInstance()));
 
         newJobs.forEach(job -> {
             log.trace(LOG_QUEUE_RUN_FOR_ON, file, job.activityHandler().getHandlerName());
@@ -266,9 +265,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
         log.info("Restart pending activities...");
 
         final var activityFilesIds = pendingActivityDao.getFilesAndWithResetPendingActivities(
-                configuration.getRealmNames(),
-                aboutInstance.getInstanceName(),
-                aboutInstance.getPid());
+                configuration.getRealmNames());
 
         if (activityFilesIds.isEmpty()) {
             log.info("No pending activities to restart");

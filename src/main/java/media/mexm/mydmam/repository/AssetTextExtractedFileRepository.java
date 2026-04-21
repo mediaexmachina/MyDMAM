@@ -19,8 +19,10 @@ package media.mexm.mydmam.repository;
 import java.util.Set;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import jakarta.transaction.Transactional;
 import media.mexm.mydmam.entity.AssetTextExtractedFileEntity;
 import media.mexm.mydmam.entity.FileEntity;
 
@@ -28,6 +30,15 @@ public interface AssetTextExtractedFileRepository extends JpaRepository<AssetTex
 
     @Query("SELECT ate FROM AssetTextExtractedFileEntity ate WHERE ate.file.id = :fileId AND ate.name = :name")
     AssetTextExtractedFileEntity getTextExtractedByName(int fileId, String name);
+
+    @Query("""
+            DELETE FROM AssetTextExtractedFileEntity ate
+            WHERE ate.file = :file
+            AND ate.name = :name
+            """)
+    @Modifying
+    @Transactional
+    void deletePrevious(FileEntity file, String name);
 
     @Query("""
             SELECT ate

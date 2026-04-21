@@ -19,14 +19,27 @@ package media.mexm.mydmam.repository;
 import java.util.Set;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import jakarta.transaction.Transactional;
 import media.mexm.mydmam.entity.AssetRenderedFileEntity;
+import media.mexm.mydmam.entity.FileEntity;
 
 public interface AssetRenderedFileRepository extends JpaRepository<AssetRenderedFileEntity, Long> {
 
     @Query("SELECT arf FROM AssetRenderedFileEntity arf WHERE arf.file.id = :fileId AND arf.etag = :etag")
     AssetRenderedFileEntity getRenderedForFileByEtag(int fileId, Long etag);
+
+    @Query("""
+            DELETE FROM AssetRenderedFileEntity arf
+            WHERE arf.file = :file
+            AND arf.name = :name
+            AND arf.indexref = :indexref
+            """)
+    @Modifying
+    @Transactional
+    void deletePrevious(FileEntity file, String name, int indexref);
 
     @Query("""
             SELECT arf

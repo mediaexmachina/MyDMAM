@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.entity;
 
+import static jakarta.persistence.CascadeType.DETACH;
 import static jakarta.persistence.CascadeType.REMOVE;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
@@ -80,6 +81,9 @@ public class InstanceEntity {
 
     @OneToMany(mappedBy = "instance", fetch = LAZY, orphanRemoval = true, cascade = REMOVE)
     private final Set<ExternalExecEntity> externalExecEntities = new HashSet<>();
+
+    @OneToMany(mappedBy = "instance", fetch = LAZY, orphanRemoval = false, cascade = DETACH)
+    private final Set<PendingActivityEntity> pendingActivities = new HashSet<>();
 
     /**
      * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE

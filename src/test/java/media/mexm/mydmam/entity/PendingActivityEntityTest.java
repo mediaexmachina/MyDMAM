@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import java.util.Date;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,8 @@ class PendingActivityEntityTest {
     ActivityHandler activityHandler;
     @Mock
     FileEntity file;
+    @Mock
+    InstanceEntity instanceEntity;
 
     @Fake
     ActivityEventType eventType;
@@ -58,7 +61,8 @@ class PendingActivityEntityTest {
     @BeforeEach
     void init() {
         when(activityHandler.getHandlerName()).thenReturn(handlerName);
-        pae = new PendingActivityEntity(activityHandler, eventType, previousHandlers, file, host, pid);
+        pae = new PendingActivityEntity(activityHandler, eventType, previousHandlers, file,
+                Optional.ofNullable(instanceEntity));
         verify(activityHandler, times(1)).getHandlerName();
     }
 

@@ -312,6 +312,7 @@ class MediaAssetServiceTest {
             verify(configuration, atLeastOnce()).getRealmByName(realmName);
             verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
             verify(assetRenderedFileRepository, times(1)).getRenderedForFileByEtag(eq(fileId), any());
+            verify(assetRenderedFileRepository, times(1)).deletePrevious(fileEntity, renderedName, indexRef);
             verify(declaredRenderedFile, atLeastOnce()).name();
             verify(declaredRenderedFile, atLeastOnce()).workingFile();
             verify(declaredRenderedFile, atLeastOnce()).index();
@@ -337,6 +338,7 @@ class MediaAssetServiceTest {
         void testDeclare_explicit() throws IOException {
             mas.declareRenderedStaticFile(fileEntity, workingFile, renderedName, false, indexRef, previewType);
 
+            verify(assetRenderedFileRepository, times(1)).deletePrevious(fileEntity, renderedName, indexRef);
             verify(assetRenderedFileRepository, times(1)).saveAndFlush(any());
 
             assertThat(expectedRenderedFile).exists().hasContent(renderedContent);
@@ -371,6 +373,7 @@ class MediaAssetServiceTest {
             assertThrows(IOException.class,
                     () -> mas.declareRenderedStaticFile(fileEntity, declaredRenderedFile));
 
+            verify(assetRenderedFileRepository, times(1)).deletePrevious(fileEntity, renderedName, indexRef);
             verify(assetRenderedFileRepository, times(1)).saveAndFlush(any());
 
             verify(fileEntity, atLeastOnce()).getRealm();
@@ -537,7 +540,9 @@ class MediaAssetServiceTest {
 
         mas.declareTextExtractedFile(fileEntity, workingTextFile, renderedName);
 
+        verify(assetTextExtractedFileRepository, times(1)).deletePrevious(fileEntity, renderedName);
         verify(assetTextExtractedFileRepository, times(1)).saveAndFlush(assetTextExtractedFileEntityCaptor.capture());
+
         final var currentAssetTextExtractedFileEntity = assetTextExtractedFileEntityCaptor.getValue();
         assertThat(currentAssetTextExtractedFileEntity.getFile()).isEqualTo(fileEntity);
         assertThat(currentAssetTextExtractedFileEntity.getName()).isEqualTo(renderedName);

@@ -120,6 +120,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
                                           final DeclaredRenderedFile declaredRenderedFile) throws IOException {
         final var realmName = fileEntity.getRealm();
         final var toCreate = new AssetRenderedFileEntity(fileEntity, declaredRenderedFile);
+        assetRenderedFileRepository.deletePrevious(fileEntity, toCreate.getName(), toCreate.getIndexref());
         assetRenderedFileRepository.saveAndFlush(toCreate);
 
         final var created = assetRenderedFileRepository.getRenderedForFileByEtag(
@@ -170,6 +171,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
         forceDelete(workingTextFile);
 
         final var toCreate = new AssetTextExtractedFileEntity(fileEntity, name, validatedWorkingFile.length());
+        assetTextExtractedFileRepository.deletePrevious(fileEntity, name);
         assetTextExtractedFileRepository.saveAndFlush(toCreate);
         final var created = assetTextExtractedFileRepository.getTextExtractedByName(fileEntity.getId(), name);
 

@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.PendingActivityJob;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.InstanceEntity;
 import media.mexm.mydmam.entity.PendingActivityEntity;
 
 @Repository
@@ -52,6 +54,8 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
     EntityManager entityManager;
 
     @Autowired
+    InstanceDao instanceDao;
+    @Autowired
     FileRepository fileRepository;
     @Autowired
     PendingActivityRepository pendingActivityRepository;
@@ -61,16 +65,14 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
     @Override
     @Transactional(REQUIRES_NEW)
     public void declateActivities(final List<PendingActivityJob> allActivitiesJobs,
-                                  final String hostName,
-                                  final long pid) {
+                                  final Optional<InstanceEntity> oInstance) {
         final var toAdd = allActivitiesJobs.stream()
                 .map(a -> new PendingActivityEntity(
                         a.activityHandler(),
                         a.eventType(),
                         a.previousHandlersJson(),
                         a.file(),
-                        hostName,
-                        pid))
+                        oInstance))
                 .toList();
 
         pendingActivityRepository.saveAllAndFlush(toAdd);
@@ -151,9 +153,8 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
 
     @Override
     @Transactional(REQUIRES_NEW)
-    public List<Integer> getFilesAndWithResetPendingActivities(final Set<String> realms,
-                                                               final String hostName,
-                                                               final long pid) {
+    public List<Integer> getFilesAndWithResetPendingActivities(final Set<String> realms) {
+        final var instance = instanceDao.getSelfInstance();
         final var olderThan = new Timestamp(System.currentTimeMillis()
                                             - conf.env().pendingActivityMaxAgeGraceRestart().toMillis());
 
@@ -162,23 +163,21 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
                 FROM FileEntity f
                 LEFT JOIN PendingActivityEntity pa ON pa.file = f
                 WHERE pa IS NOT NULL
-                AND (pa.workerHost = :workerHost OR pa.updated < :olderThan)
+                AND (pa.instance = :instance OR pa.updated < :olderThan)
                 AND f.realm IN :realms
                 """, FileEntity.class)
-                .setParameter("workerHost", hostName)
+                .setParameter("instance", instance)
                 .setParameter("olderThan", olderThan)
                 .setParameter("realms", realms)
                 .getResultList();
 
         entityManager.createQuery("""
                 UPDATE PendingActivityEntity pa
-                SET pa.workerHost = :workerHost,
-                    pa.workerPid = :workerPid,
+                SET pa.instance = :instance,
                     pa.updated = CURRENT_TIMESTAMP()
                 WHERE pa.file IN :files
                 """)
-                .setParameter("workerHost", hostName)
-                .setParameter("workerPid", pid)
+                .setParameter("instance", instance)
                 .setParameter("files", files)
                 .executeUpdate();
 

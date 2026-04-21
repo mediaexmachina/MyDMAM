@@ -54,16 +54,17 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.PendingActivityJob;
-import media.mexm.mydmam.component.AboutInstance;
 import media.mexm.mydmam.component.Indexer;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.entity.InstanceEntity;
 import media.mexm.mydmam.entity.PendingActivityEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.repository.FileDao;
 import media.mexm.mydmam.repository.FileRepository;
+import media.mexm.mydmam.repository.InstanceDao;
 import media.mexm.mydmam.repository.PendingActivityDao;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -78,11 +79,11 @@ class PendingActivityServiceTest {
     @MockitoBean
     PendingActivityDao pendingActivityDao;
     @MockitoBean
+    InstanceDao instanceDao;
+    @MockitoBean
     MediaAssetService mediaAssetService;
     @MockitoBean
     MyDMAMConfigurationProperties configuration;
-    @MockitoBean
-    AboutInstance aboutInstance;
     @MockitoBean
     FileRepository fileRepository;
     @MockitoBean
@@ -104,6 +105,8 @@ class PendingActivityServiceTest {
     PendingActivityEntity entity;
     @Mock
     FileEntity fileEntity;
+    @Mock
+    InstanceEntity instanceEntity;
 
     @Fake
     String realmName;
@@ -113,10 +116,6 @@ class PendingActivityServiceTest {
     ActivityEventType eventType;
     @Fake
     String handlerName;
-    @Fake
-    String hostName;
-    @Fake
-    long pid;
     @Fake
     String hashPathItem;
     @Fake
@@ -151,9 +150,6 @@ class PendingActivityServiceTest {
         when(mediaAssetService.getFromWatchfolder(realmName, storageName, file)).thenReturn(fileEntity);
         when(mediaAssetService.resetDetectedMetadatas(any())).thenReturn(List.of(fileEntity));
 
-        when(aboutInstance.getInstanceName()).thenReturn(hostName);
-        when(aboutInstance.getPid()).thenReturn(pid);
-
         when(fileEntity.isDirectory()).thenReturn(false);
         when(fileEntity.getRealm()).thenReturn(realmName);
         when(fileEntity.getStorage()).thenReturn(storageName);
@@ -162,15 +158,16 @@ class PendingActivityServiceTest {
         when(storage.getStorageStateClass()).thenReturn(ONLINE);
 
         when(pendingActivityDao.havePendingActivities(any())).thenReturn(false);
+        when(instanceDao.getSelfInstance()).thenReturn(instanceEntity);
     }
 
     @AfterEach
     void ends() {
         verifyNoMoreInteractions(
                 pendingActivityDao,
+                instanceDao,
                 activityHandler,
                 mediaAssetService,
-                aboutInstance,
                 fileService);
 
         assertTrue(jobKitEngine.isEmptyActiveServicesList());
@@ -234,13 +231,12 @@ class PendingActivityServiceTest {
 
             verify(fileService, times(1))
                     .resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
-            verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
+            verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(Optional.ofNullable(instanceEntity)));
+            verify(instanceDao, times(1)).getSelfInstance();
             verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, times(1)).canHandle(fileEntity, eventType, configuredEnv);
             verify(activityHandler, atLeastOnce()).getHandlerName();
             verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(subFileEntry));
-            verify(aboutInstance, atLeastOnce()).getInstanceName();
-            verify(aboutInstance, atLeastOnce()).getPid();
             verify(fileEntity, atLeastOnce()).getRealm();
             verify(fileEntity, atLeastOnce()).getStorage();
             verify(subFileEntry, atLeastOnce()).isDirectory();
@@ -260,13 +256,12 @@ class PendingActivityServiceTest {
 
             verify(fileService, times(1))
                     .resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
-            verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
+            verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(Optional.ofNullable(instanceEntity)));
+            verify(instanceDao, times(1)).getSelfInstance();
             verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, atLeastOnce()).getHandlerName();
             verify(activityHandler, times(1)).canHandle(fileEntity, eventType, configuredEnv);
             verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(subFileEntry));
-            verify(aboutInstance, atLeastOnce()).getInstanceName();
-            verify(aboutInstance, atLeastOnce()).getPid();
             verify(fileEntity, atLeastOnce()).getRealm();
             verify(fileEntity, atLeastOnce()).getStorage();
             verify(subFileEntry, atLeastOnce()).isDirectory();
@@ -326,11 +321,10 @@ class PendingActivityServiceTest {
             verify(fileEntity, atLeastOnce()).getRealm();
             verify(fileEntity, atLeastOnce()).getStorage();
             verify(fileEntity, atLeastOnce()).getName();
-            verify(aboutInstance, atLeastOnce()).getInstanceName();
-            verify(aboutInstance, atLeastOnce()).getPid();
-            verify(pendingActivityDao, times(2)).declateActivities(anyList(), eq(hostName), eq(pid));
+            verify(pendingActivityDao, times(2)).declateActivities(anyList(), eq(Optional.ofNullable(instanceEntity)));
             verify(pendingActivityDao, times(1)).haveDeclaredActivity(fileEntity, activityHandler);
             verify(pendingActivityDao, times(1)).havePendingActivities(fileEntity);
+            verify(instanceDao, times(2)).getSelfInstance();
             verify(configuration, times(1)).getRealmAndStorage(realmName, storageName);
             verify(storage, atLeastOnce()).getStorageStateClass();
             verify(storage, atLeastOnce()).getCategory();
@@ -359,10 +353,9 @@ class PendingActivityServiceTest {
 
         verify(activityHandler, atLeastOnce()).getHandlerName();
         verify(activityHandler, atLeastOnce()).isEnabled();
-        verify(aboutInstance, atLeastOnce()).getInstanceName();
-        verify(aboutInstance, atLeastOnce()).getPid();
-        verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
+        verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(Optional.ofNullable(instanceEntity)));
         verify(pendingActivityDao, times(1)).havePendingActivities(fileEntity);
+        verify(instanceDao, times(1)).getSelfInstance();
         verify(realm, atLeastOnce()).spoolProcessAsset();
         verify(storage, atLeastOnce()).getStorageStateClass();
         verify(storage, atLeastOnce()).getCategory();
@@ -391,16 +384,14 @@ class PendingActivityServiceTest {
 
     @Test
     void testRestartPendingActivities_empty() {
-        when(pendingActivityDao.getFilesAndWithResetPendingActivities(Set.of(realmName), hostName, pid))
+        when(pendingActivityDao.getFilesAndWithResetPendingActivities(Set.of(realmName)))
                 .thenReturn(List.of());
 
         pas.restartPendingActivities();
 
         verify(configuration, atLeastOnce()).getRealmNames();
-        verify(aboutInstance, atLeastOnce()).getInstanceName();
-        verify(aboutInstance, atLeastOnce()).getPid();
         verify(pendingActivityDao, times(1))
-                .getFilesAndWithResetPendingActivities(Set.of(realmName), hostName, pid);
+                .getFilesAndWithResetPendingActivities(Set.of(realmName));
     }
 
     @Nested
@@ -413,7 +404,7 @@ class PendingActivityServiceTest {
 
         @BeforeEach
         void init() {
-            when(pendingActivityDao.getFilesAndWithResetPendingActivities(Set.of(realmName), hostName, pid))
+            when(pendingActivityDao.getFilesAndWithResetPendingActivities(Set.of(realmName)))
                     .thenReturn(List.of(activityFileId));
             when(pendingActivityDao.getFilesAndPendingActivityByFileId(List.of(activityFileId)))
                     .thenReturn(Map.of(fileEntity, Set.of(entity)));
@@ -426,10 +417,8 @@ class PendingActivityServiceTest {
         @AfterEach
         void end() {
             verify(configuration, atLeastOnce()).getRealmNames();
-            verify(aboutInstance, atLeastOnce()).getInstanceName();
-            verify(aboutInstance, atLeastOnce()).getPid();
             verify(pendingActivityDao, times(1))
-                    .getFilesAndWithResetPendingActivities(Set.of(realmName), hostName, pid);
+                    .getFilesAndWithResetPendingActivities(Set.of(realmName));
             verify(pendingActivityDao, times(1))
                     .getFilesAndPendingActivityByFileId(List.of(activityFileId));
             verify(entity, atLeastOnce()).getHandlerName();
@@ -447,8 +436,9 @@ class PendingActivityServiceTest {
 
             verify(pendingActivityDao, times(1))
                     .haveDeclaredActivity(fileEntity, activityHandler);
-            verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(hostName), eq(pid));
+            verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(Optional.ofNullable(instanceEntity)));
             verify(pendingActivityDao, times(1)).havePendingActivities(fileEntity);
+            verify(instanceDao, times(1)).getSelfInstance();
             verify(entity, atLeastOnce()).getEventType();
             verify(realm, atLeastOnce()).spoolProcessAsset();
             verify(fileEntity, atLeastOnce()).getName();

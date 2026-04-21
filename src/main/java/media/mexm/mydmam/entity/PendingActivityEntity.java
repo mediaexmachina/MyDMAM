@@ -22,6 +22,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static java.util.Objects.requireNonNull;
 
 import java.sql.Timestamp;
+import java.util.Optional;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,6 +35,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
@@ -81,13 +83,10 @@ public class PendingActivityEntity {
     @Column(name = "updated")
     private Timestamp updated;
 
-    @NotBlank
-    @Column(length = 128, name = "worker_host")
-    private String workerHost;
-
-    @NotNull
-    @Column(name = "worker_pid")
-    private Long workerPid;
+    @Setter
+    @JoinColumn(name = "instance_id", updatable = true)
+    @ManyToOne(fetch = LAZY, cascade = DETACH, optional = true)
+    private InstanceEntity instance;
 
     /**
      * NEVER USE DIRECTLY, ONLY SET FOR HIBERNATE
@@ -100,16 +99,14 @@ public class PendingActivityEntity {
                                  final ActivityEventType eventType,
                                  final String previousHandlers,
                                  final FileEntity file,
-                                 final String host,
-                                 final long pid) {
+                                 final Optional<InstanceEntity> oInstance) {
         handlerName = requireNonNull(activityHandler).getHandlerName();
         this.eventType = requireNonNull(eventType).name();
         this.previousHandlers = requireNonNull(previousHandlers);
         createDate = new Timestamp(System.currentTimeMillis());
         updated = createDate;
         this.file = requireNonNull(file);
-        workerHost = requireNonNull(host);
-        workerPid = pid;
+        oInstance.ifPresent(this::setInstance);
     }
 
 }

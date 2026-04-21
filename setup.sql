@@ -26,6 +26,18 @@ CREATE TABLE `file` (
   KEY `file_storage_idx` (`storage`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE `instance` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `create_date` datetime NOT NULL,
+  `name` varchar(256) NOT NULL,
+  `host` varchar(256) NOT NULL,
+  `last_pid` bigint NOT NULL,
+  `last_start_date` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `name_idx` (`name`),
+  CONSTRAINT `name_uc` UNIQUE (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 CREATE TABLE `pending_activity` (
   `id` int NOT NULL AUTO_INCREMENT,
   `create_date` datetime NOT NULL,
@@ -34,13 +46,13 @@ CREATE TABLE `pending_activity` (
   `event_type` varchar(64) NOT NULL,
   `previous_handlers` varchar(2048) NOT NULL,
   `updated` datetime NOT NULL,
-  `worker_host` varchar(128) NOT NULL,
-  `worker_pid` bigint NOT NULL,
+  `instance_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `pending_activity_worker_host_idx` (`worker_host`),
+  KEY `pending_activity_instance_id_idx` (`instance_id`),
   KEY `pending_activity_updated_idx` (`updated`),
   KEY `pending_activity_file_id_idx` (`file_id`),
-  CONSTRAINT pending_activity_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE
+  CONSTRAINT pending_activity_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE,
+  CONSTRAINT pending_activity_instance_id_fk FOREIGN KEY (instance_id) REFERENCES instance(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `file_metadata` (
@@ -89,18 +101,6 @@ CREATE TABLE `asset_textextractedfile` (
   KEY `asset_textextractedfile_file_id_idx` (`file_id`),
   CONSTRAINT asset_textextractedfile_file_id_fk FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE,
   CONSTRAINT asset_textextractedfile_uc UNIQUE (`file_id`, `name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `instance` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `create_date` datetime NOT NULL,
-  `name` varchar(256) NOT NULL,
-  `host` varchar(256) NOT NULL,
-  `last_pid` bigint NOT NULL,
-  `last_start_date` datetime NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `name_idx` (`name`),
-  CONSTRAINT `name_uc` UNIQUE (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `external_exec` (
