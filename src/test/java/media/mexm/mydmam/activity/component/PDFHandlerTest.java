@@ -17,6 +17,8 @@
 package media.mexm.mydmam.activity.component;
 
 import static java.io.File.createTempFile;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.FULL_PREVIEW;
 import static media.mexm.mydmam.service.MediaAssetService.FULL_TEXT_PDF;
 import static org.apache.commons.io.FileUtils.touch;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -142,6 +144,11 @@ class PDFHandlerTest {
                 mediaAssetService,
                 mediaRenderedFilesUtilsService,
                 fileMetadataDao);
+    }
+
+    @Test
+    void testGetLimitPolicy() {
+        assertEquals(FILE_INFORMATION, pdf.getLimitPolicy());
     }
 
     @Test
@@ -312,6 +319,7 @@ class PDFHandlerTest {
             when(storedOn.haveRenderedDir()).thenReturn(true);
             when(storedOn.haveWorkingDir()).thenReturn(true);
             when(storedOn.realm()).thenReturn(realmConf);
+            when(storedOn.getActivityLimitPolicy()).thenReturn(FULL_PREVIEW);
             when(realmConf.workingDirectory()).thenReturn(workingDirectory);
         }
 
@@ -321,7 +329,7 @@ class PDFHandlerTest {
             verify(xpdf, times(1)).pdfInfo(assetFile);
             verify(xpdf, times(1)).getInfo(pdfInfo, "Pages");
 
-            verify(configuration, times(1)).tools();
+            verify(configuration, atLeastOnce()).tools();
             verify(externalToolsConf, times(1)).xpdf();
             verify(xPDFConf, times(1)).maxPageCount();
         }
@@ -433,6 +441,7 @@ class PDFHandlerTest {
             verify(storedOn, atLeastOnce()).haveWorkingDir();
             verify(storedOn, atLeastOnce()).realmName();
             verify(storedOn, atLeastOnce()).storageName();
+            verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             reset(fileEntity);
         }
 
@@ -445,6 +454,7 @@ class PDFHandlerTest {
             verify(fileMetadataDao, times(1)).addUpdateEntries(eq(fileEntity), any());
             verify(storedOn, atLeastOnce()).haveRenderedDir();
             verify(storedOn, atLeastOnce()).haveWorkingDir();
+            verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
             verify(xpdf, times(1)).isEnabledPdfToPpm();
             verify(xpdf, times(1)).isEnabledPdfToText();
@@ -470,6 +480,7 @@ class PDFHandlerTest {
             verify(storedOn, atLeastOnce()).haveRenderedDir();
             verify(storedOn, atLeastOnce()).haveWorkingDir();
             verify(storedOn, atLeastOnce()).realm();
+            verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             verify(realmConf, atLeastOnce()).workingDirectory();
             verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
             verify(xpdf, times(1)).isEnabledPdfToPpm();
@@ -499,6 +510,7 @@ class PDFHandlerTest {
             verify(storedOn, atLeastOnce()).haveRenderedDir();
             verify(storedOn, atLeastOnce()).haveWorkingDir();
             verify(storedOn, atLeastOnce()).realm();
+            verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             verify(realmConf, atLeastOnce()).workingDirectory();
             verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
             verify(xpdf, times(1)).isEnabledPdfToPpm();
@@ -513,6 +525,22 @@ class PDFHandlerTest {
             assertThat(exportedImage1).doesNotExist();
             assertThat(exportedImage2).doesNotExist();
             assertThat(pdfExportDir).doesNotExist();
+        }
+
+        @Test
+        void testPdfToPpm_lowerActivityLimitPolicy() throws Exception {
+            when(storedOn.getActivityLimitPolicy()).thenReturn(FILE_INFORMATION);
+
+            pdf.handle(fileEntity, eventType, storedOn);
+
+            checkIfAddedMtd(true);
+
+            verify(fileMetadataDao, times(1)).addUpdateEntries(eq(fileEntity), any());
+            verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
+            verify(storedOn, atLeastOnce()).realmName();
+            verify(storedOn, atLeastOnce()).storageName();
+            verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
+            reset(fileEntity);
         }
 
         @ParameterizedTest
@@ -532,6 +560,7 @@ class PDFHandlerTest {
             verify(storedOn, atLeastOnce()).haveRenderedDir();
             verify(storedOn, atLeastOnce()).haveWorkingDir();
             verify(storedOn, atLeastOnce()).realm();
+            verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             verify(realmConf, atLeastOnce()).workingDirectory();
             verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
             verify(xpdf, times(1)).isEnabledPdfToPpm();

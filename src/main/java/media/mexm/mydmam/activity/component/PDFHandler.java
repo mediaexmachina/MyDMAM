@@ -18,6 +18,9 @@ package media.mexm.mydmam.activity.component;
 
 import static java.lang.Math.min;
 import static java.util.function.Predicate.not;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.FULL_PREVIEW;
 import static media.mexm.mydmam.service.MediaAssetService.FULL_TEXT_PDF;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.forceDelete;
@@ -36,6 +39,7 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
+import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.component.XPDF;
 import media.mexm.mydmam.component.XPDF.PageInfo;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
@@ -69,6 +73,11 @@ public class PDFHandler implements ActivityHandler {
     MetadataThesaurusService metadataThesaurusService;
     @Autowired
     FileMetadataDao fileMetadataDao;
+
+    @Override
+    public ActivityLimitPolicy getLimitPolicy() {
+        return FILE_INFORMATION;
+    }
 
     @Override
     public String getMetadataOriginName() {
@@ -151,6 +160,15 @@ public class PDFHandler implements ActivityHandler {
                     pagesFormats.stream()
                             .flatMap(pageInfo -> makePageEntities(fileEntity, defPdf, pageInfo, -1))
                             .toList());
+        }
+
+        if (storedOn.getActivityLimitPolicy()
+                .isLevelLowerThan(pageCount == 1 ? BASE_PREVIEW : FULL_PREVIEW)) {
+            log.trace("Cancel pdf extraction on {} {}: too low ActivityLimitPolicy={}",
+                    storedOn.realmName(),
+                    storedOn.storageName(),
+                    storedOn.getActivityLimitPolicy());
+            return;
         }
 
         if (storedOn.haveRenderedDir() == false || storedOn.haveWorkingDir() == false) {

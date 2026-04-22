@@ -32,6 +32,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.PositiveOrZero;
+import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.dto.StorageCategory;
 import media.mexm.mydmam.dto.StorageStateClass;
 import tv.hd3g.jobkit.watchfolder.ObservedFolder;
@@ -40,88 +41,89 @@ import tv.hd3g.transfertfiles.URLAccess;
 
 @Validated
 public record PathIndexingStorage(@DefaultValue("") String description,
-								  @DefaultValue("") String location,
-								  @NotEmpty String path,
-								  @Valid @PositiveOrZero @Max(100) @DefaultValue("10") int maxDeep,
-								  @DefaultValue("1h") Duration timeBetweenScans,
-								  @DefaultValue("10") int retryAfterTimeFactor,
-								  Set<String> allowedExtentions,
-								  Set<String> blockedExtentions,
-								  Set<String> ignoreRelativePaths,
-								  @DefaultValue("[\"desktop.ini\", \".DS_Store\", \"Thumbs.db\"]") Set<String> ignoreFiles,
-								  Set<String> allowedFileNames,
-								  Set<String> allowedDirNames,
-								  Set<String> blockedFileNames,
-								  Set<String> blockedDirNames,
-								  @DefaultValue("true") boolean allowedHidden,
-								  @DefaultValue("false") boolean allowedLinks,
-								  @DefaultValue("20s") Duration minFixedStateTime,
-								  @DefaultValue("false") boolean noScans,
-								  @DefaultValue("pathindexing") @NotEmpty String spoolScans,
-								  @DefaultValue("false") boolean disablePathCheckOnBoot) {
+                                  @DefaultValue("") String location,
+                                  @NotEmpty String path,
+                                  @Valid @PositiveOrZero @Max(100) @DefaultValue("10") int maxDeep,
+                                  @DefaultValue("1h") Duration timeBetweenScans,
+                                  @DefaultValue("10") int retryAfterTimeFactor,
+                                  Set<String> allowedExtentions,
+                                  Set<String> blockedExtentions,
+                                  Set<String> ignoreRelativePaths,
+                                  @DefaultValue("[\"desktop.ini\", \".DS_Store\", \"Thumbs.db\"]") Set<String> ignoreFiles,
+                                  Set<String> allowedFileNames,
+                                  Set<String> allowedDirNames,
+                                  Set<String> blockedFileNames,
+                                  Set<String> blockedDirNames,
+                                  @DefaultValue("true") boolean allowedHidden,
+                                  @DefaultValue("false") boolean allowedLinks,
+                                  @DefaultValue("20s") Duration minFixedStateTime,
+                                  @DefaultValue("false") boolean noScans,
+                                  @DefaultValue("pathindexing") @NotEmpty String spoolScans,
+                                  @DefaultValue("false") boolean disablePathCheckOnBoot,
+                                  ActivityLimitPolicy activityLimit) {
 
-	private static final String FILE_PROTOCOL = "file://";
+    private static final String FILE_PROTOCOL = "file://";
 
-	public PathIndexingStorage {
-		if (timeBetweenScans != null && (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative())) {
-			throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
-		}
+    public PathIndexingStorage {
+        if (timeBetweenScans != null && (timeBetweenScans == Duration.ZERO || timeBetweenScans.isNegative())) {
+            throw new IllegalArgumentException("Invalid mockTimeBetweenScans=" + timeBetweenScans);
+        }
 
-		try {
-			final var localPath = new File(path);
-			if (localPath.exists()) {
-				final var newTargetFolder = FILE_PROTOCOL + "localhost" + normalizePath(localPath.getCanonicalFile()
-						.getAbsolutePath());
-				path = newTargetFolder;
-			} else {
-				new URLAccess(path);
-			}
-			if (disablePathCheckOnBoot == false) {
-				new AbstractFileSystemURL(path).close();
-			}
-		} catch (final Exception e) {
-			throw new IllegalArgumentException(
-					"Can't found directory, or it doesn't seem to be an valid URL: \"" + path + "\"", e);
-		}
-	}
+        try {
+            final var localPath = new File(path);
+            if (localPath.exists()) {
+                final var newTargetFolder = FILE_PROTOCOL + "localhost" + normalizePath(localPath.getCanonicalFile()
+                        .getAbsolutePath());
+                path = newTargetFolder;
+            } else {
+                new URLAccess(path);
+            }
+            if (disablePathCheckOnBoot == false) {
+                new AbstractFileSystemURL(path).close();
+            }
+        } catch (final Exception e) {
+            throw new IllegalArgumentException(
+                    "Can't found directory, or it doesn't seem to be an valid URL: \"" + path + "\"", e);
+        }
+    }
 
-	/**
-	 * @see ObservedFolder
-	 */
-	public ObservedFolder makeObservedFolder(final String realmName,
-											 final String storageName) {
-		final var observedFolder = new ObservedFolder();
-		observedFolder.setLabel(realmName + ":" + storageName);
-		observedFolder.setAllowedDirNames(allowedDirNames);
-		observedFolder.setAllowedExtentions(allowedExtentions);
-		observedFolder.setAllowedFileNames(allowedFileNames);
-		observedFolder.setAllowedHidden(allowedHidden);
-		observedFolder.setAllowedLinks(allowedLinks);
-		observedFolder.setBlockedDirNames(blockedDirNames);
-		observedFolder.setBlockedExtentions(blockedExtentions);
-		observedFolder.setBlockedFileNames(blockedFileNames);
-		observedFolder.setDisabled(noScans);
-		observedFolder.setIgnoreFiles(ignoreFiles);
-		observedFolder.setIgnoreRelativePaths(ignoreRelativePaths);
-		observedFolder.setMinFixedStateTime(minFixedStateTime);
-		observedFolder.setRetryAfterTimeFactor(retryAfterTimeFactor);
-		observedFolder.setRecursive(true);
-		observedFolder.setRetryAfterTimeFactor(retryAfterTimeFactor);
-		observedFolder.setSpoolScans(spoolScans);
-		observedFolder.setTargetFolder(path);
-		observedFolder.setTimeBetweenScans(timeBetweenScans);
-		return observedFolder;
-	}
+    /**
+     * @see ObservedFolder
+     */
+    public ObservedFolder makeObservedFolder(final String realmName,
+                                             final String storageName) {
+        final var observedFolder = new ObservedFolder();
+        observedFolder.setLabel(realmName + ":" + storageName);
+        observedFolder.setAllowedDirNames(allowedDirNames);
+        observedFolder.setAllowedExtentions(allowedExtentions);
+        observedFolder.setAllowedFileNames(allowedFileNames);
+        observedFolder.setAllowedHidden(allowedHidden);
+        observedFolder.setAllowedLinks(allowedLinks);
+        observedFolder.setBlockedDirNames(blockedDirNames);
+        observedFolder.setBlockedExtentions(blockedExtentions);
+        observedFolder.setBlockedFileNames(blockedFileNames);
+        observedFolder.setDisabled(noScans);
+        observedFolder.setIgnoreFiles(ignoreFiles);
+        observedFolder.setIgnoreRelativePaths(ignoreRelativePaths);
+        observedFolder.setMinFixedStateTime(minFixedStateTime);
+        observedFolder.setRetryAfterTimeFactor(retryAfterTimeFactor);
+        observedFolder.setRecursive(true);
+        observedFolder.setRetryAfterTimeFactor(retryAfterTimeFactor);
+        observedFolder.setSpoolScans(spoolScans);
+        observedFolder.setTargetFolder(path);
+        observedFolder.setTimeBetweenScans(timeBetweenScans);
+        return observedFolder;
+    }
 
-	public StorageCategory getCategory() {
-		return path.startsWith(FILE_PROTOCOL) ? DAS : NAS;
-	}
+    public StorageCategory getCategory() {
+        return path.startsWith(FILE_PROTOCOL) ? DAS : NAS;
+    }
 
-	/**
-	 * No specific class attribute here, now.
-	 */
-	public StorageStateClass getStorageStateClass() {
-		return ONLINE;
-	}
+    /**
+     * No specific class attribute here, now.
+     */
+    public StorageStateClass getStorageStateClass() {
+        return ONLINE;
+    }
 
 }

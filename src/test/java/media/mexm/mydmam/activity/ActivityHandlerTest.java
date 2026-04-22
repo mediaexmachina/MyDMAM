@@ -45,6 +45,12 @@ class ActivityHandlerTest {
                            final RealmStorageConfiguredEnv storedOn) throws Exception {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public ActivityLimitPolicy getLimitPolicy() {
+            throw new UnsupportedOperationException();
+        }
+
     }
 
     Impl ah;

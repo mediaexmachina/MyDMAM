@@ -17,6 +17,7 @@
 package media.mexm.mydmam.activity.component;
 
 import static java.io.File.createTempFile;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -97,6 +98,11 @@ class ImageRasterPreviewActivityTest {
     void ends() {
         metadataThesaurusService.endChecks(file);
         verifyNoMoreInteractions(imageMagick, mediaAssetService, mediaRenderedFilesUtilsService);
+    }
+
+    @Test
+    void testGetLimitPolicy() {
+        assertEquals(BASE_PREVIEW, irpa.getLimitPolicy());
     }
 
     @ParameterizedTest

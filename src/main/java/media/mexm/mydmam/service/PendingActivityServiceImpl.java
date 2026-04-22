@@ -20,6 +20,7 @@ import static java.util.Collections.synchronizedSet;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toUnmodifiableSet;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.DISABLED;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 
@@ -76,8 +77,14 @@ public class PendingActivityServiceImpl implements PendingActivityService {
     @Autowired
     MyDMAMConfigurationProperties configuration;
 
-    private boolean checkSupportedStorageStateClasses(final ActivityHandler activityHandler,
-                                                      final RealmStorageConfiguredEnv confEnv) {
+    private boolean checkSupportedHandler(final ActivityHandler activityHandler,
+                                          final RealmStorageConfiguredEnv confEnv) {
+        final var confActivityLimitPolicy = confEnv.getActivityLimitPolicy();
+        if (confActivityLimitPolicy == DISABLED
+            || confActivityLimitPolicy.isLevelLowerThan(activityHandler.getLimitPolicy())) {
+            return false;
+        }
+
         final var supported = Optional.ofNullable(activityHandler.getSupportedStorageStateClasses())
                 .orElse(Set.of());
         if (supported.isEmpty()) {
@@ -94,8 +101,6 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
     private void runAssetsActivities(final ActivityEventType eventType,
                                      final List<FileEntity> sourceFiles) {
-        final var instance = instanceDao.getSelfInstance();
-
         sourceFiles.forEach(file -> {
             if (file.isDirectory()) {
                 throw new IllegalArgumentException("Can't run activities on directory (for " + file + ")");
@@ -110,7 +115,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
                     final var confEnv = configuration.getRealmAndStorage(realmName, file.getStorage());
 
                     final var selectedHandlers = getAvailableHandlers(realmName)
-                            .filter(activityHandler -> checkSupportedStorageStateClasses(activityHandler, confEnv))
+                            .filter(activityHandler -> checkSupportedHandler(activityHandler, confEnv))
                             .filter(activityHandler -> activityHandler.canHandle(file, eventType, confEnv))
                             .toList();
 
@@ -135,11 +140,16 @@ public class PendingActivityServiceImpl implements PendingActivityService {
                 })
                 .toList();
 
+        if (allActivitiesJobs.isEmpty()) {
+            log.debug("No activities to run, after apply filter on {}", files.size());
+            return;
+        }
+
         log.info("Prepare {} activity(ies) to run as {}", allActivitiesJobs.size(), eventType);
 
         pendingActivityDao.declateActivities(
                 allActivitiesJobs,
-                Optional.ofNullable(instance));
+                Optional.ofNullable(instanceDao.getSelfInstance()));
 
         log.debug("All {} activity(ies) has added to database, now start to queue", allActivitiesJobs.size());
 
@@ -219,7 +229,7 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
         final var selectedHandlers = getAvailableHandlers(file.getRealm())
                 .filter(handler -> previousHandlers.contains(handler.getHandlerName()) == false)
-                .filter(activityHandler -> checkSupportedStorageStateClasses(activityHandler, confEnv))
+                .filter(activityHandler -> checkSupportedHandler(activityHandler, confEnv))
                 .filter(handler -> handler.canHandle(file, eventType, confEnv))
                 .toList();
 

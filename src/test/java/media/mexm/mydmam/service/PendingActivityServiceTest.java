@@ -16,6 +16,9 @@
  */
 package media.mexm.mydmam.service;
 
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.DISABLED;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.FULL_PREVIEW;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.TYPE_EXTRACTION;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -140,13 +143,15 @@ class PendingActivityServiceTest {
 
         when(activityHandler.isEnabled()).thenReturn(true);
         when(activityHandler.getHandlerName()).thenReturn(handlerName);
-        when(activityHandler.getSupportedStorageStateClasses()).thenReturn(Set.of());
+        when(activityHandler.getSupportedStorageStateClasses()).thenReturn(Set.of(ONLINE));
+        when(activityHandler.getLimitPolicy()).thenReturn(FULL_PREVIEW);
         when(activityHandler.canHandle(any(), eq(eventType), eq(configuredEnv))).thenReturn(true);
 
         when(configuration.getRealmNames()).thenReturn(Set.of(realmName));
         when(configuration.getRealmByName(realmName)).thenReturn(Optional.ofNullable(realm));
         when(configuration.getRealmAndStorage(realmName, storageName)).thenReturn(configuredEnv);
-        when(configuration.isActivatedActivityHandler(eq(realmName), anyString())).thenReturn(true);
+        when(configuration.isActivatedActivityHandler(eq(realmName), anyString())).thenReturn(false);
+        when(configuration.isActivatedActivityHandler(realmName, handlerName)).thenReturn(true);
 
         when(realm.spoolProcessAsset()).thenReturn("spool");
         when(file.isDirectory()).thenReturn(false);
@@ -159,6 +164,7 @@ class PendingActivityServiceTest {
         when(fileEntity.getHashPath()).thenReturn(hashPathItem);
 
         when(storage.getStorageStateClass()).thenReturn(ONLINE);
+        when(storage.activityLimit()).thenReturn(FULL_PREVIEW);
 
         when(pendingActivityDao.havePendingActivities(any())).thenReturn(false);
         when(instanceDao.getSelfInstance()).thenReturn(instanceEntity);
@@ -206,6 +212,7 @@ class PendingActivityServiceTest {
             final Set<String> emptySet = Set.of();
             assertThrows(IllegalArgumentException.class,
                     () -> pas.startsActivities(realmName, emptySet, recursive, eventType));
+            verify(activityHandler, atLeastOnce()).getLimitPolicy();
         }
 
         @Test
@@ -219,6 +226,7 @@ class PendingActivityServiceTest {
             verify(fileService, times(1))
                     .resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
             verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getLimitPolicy();
         }
 
         @Test
@@ -234,9 +242,8 @@ class PendingActivityServiceTest {
 
             verify(fileService, times(1))
                     .resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
-            verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(Optional.ofNullable(instanceEntity)));
-            verify(instanceDao, times(1)).getSelfInstance();
             verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeastOnce()).getLimitPolicy();
             verify(activityHandler, times(1)).canHandle(fileEntity, eventType, configuredEnv);
             verify(activityHandler, atLeastOnce()).getHandlerName();
             verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(subFileEntry));
@@ -244,7 +251,7 @@ class PendingActivityServiceTest {
             verify(fileEntity, atLeastOnce()).getStorage();
             verify(subFileEntry, atLeastOnce()).isDirectory();
             verify(storage, atLeastOnce()).getStorageStateClass();
-            verify(storage, atLeastOnce()).getCategory();
+            verify(storage, atLeastOnce()).activityLimit();
             verify(configuration, atLeastOnce()).isActivatedActivityHandler(realmName, handlerName);
         }
 
@@ -259,9 +266,8 @@ class PendingActivityServiceTest {
 
             verify(fileService, times(1))
                     .resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
-            verify(pendingActivityDao, times(1)).declateActivities(anyList(), eq(Optional.ofNullable(instanceEntity)));
-            verify(instanceDao, times(1)).getSelfInstance();
             verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getLimitPolicy();
             verify(activityHandler, atLeastOnce()).getHandlerName();
             verify(activityHandler, times(1)).canHandle(fileEntity, eventType, configuredEnv);
             verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(subFileEntry));
@@ -269,7 +275,7 @@ class PendingActivityServiceTest {
             verify(fileEntity, atLeastOnce()).getStorage();
             verify(subFileEntry, atLeastOnce()).isDirectory();
             verify(storage, atLeastOnce()).getStorageStateClass();
-            verify(storage, atLeastOnce()).getCategory();
+            verify(storage, atLeastOnce()).activityLimit();
             verify(configuration, atLeastOnce()).isActivatedActivityHandler(realmName, handlerName);
         }
 
@@ -286,6 +292,7 @@ class PendingActivityServiceTest {
                     .resolveHashPaths(hashPaths, Set.of(DAS), Set.of(ONLINE), realmName, recursive);
             verify(subFileEntry, atLeastOnce()).isDirectory();
             verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getLimitPolicy();
             verify(activityHandler, atLeastOnce()).getHandlerName();
         }
 
@@ -319,6 +326,7 @@ class PendingActivityServiceTest {
             verify(activityHandler, times(1)).canHandle(fileEntity, eventType, configuredEnv);
             verify(activityHandler, atLeastOnce()).getHandlerName();
             verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
+            verify(activityHandler, atLeast(0)).getLimitPolicy();
             verify(activityHandler, atLeastOnce()).isEnabled();
             verify(fileEntity, atLeastOnce()).isDirectory();
             verify(fileEntity, atLeastOnce()).getRealm();
@@ -330,8 +338,48 @@ class PendingActivityServiceTest {
             verify(instanceDao, times(2)).getSelfInstance();
             verify(configuration, times(1)).getRealmAndStorage(realmName, storageName);
             verify(storage, atLeastOnce()).getStorageStateClass();
-            verify(storage, atLeastOnce()).getCategory();
+            verify(storage, atLeastOnce()).activityLimit();
         }
+
+        @Test
+        void testStartsActivities_disabledConfActivityLimitPolicy() {
+            when(storage.activityLimit()).thenReturn(DISABLED);
+
+            pas.startsActivities(realmName, storageName, realm, Set.of(file), eventType);
+
+            verify(file, atLeastOnce()).isDirectory();
+            verify(mediaAssetService, times(1)).getFromWatchfolder(realmName, storageName, file);
+            verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(fileEntity));
+            verify(activityHandler, atLeastOnce()).getHandlerName();
+            verify(activityHandler, atLeastOnce()).isEnabled();
+            verify(fileEntity, atLeastOnce()).isDirectory();
+            verify(fileEntity, atLeastOnce()).getRealm();
+            verify(fileEntity, atLeastOnce()).getStorage();
+            verify(configuration, times(1)).getRealmAndStorage(realmName, storageName);
+            verify(storage, atLeastOnce()).activityLimit();
+        }
+
+        @Test
+        void testStartsActivities_lowerConfActivityLimitPolicy() {
+            when(storage.activityLimit()).thenReturn(TYPE_EXTRACTION);
+
+            System.out.println(activityHandler.getLimitPolicy());
+
+            pas.startsActivities(realmName, storageName, realm, Set.of(file), eventType);
+
+            verify(file, atLeastOnce()).isDirectory();
+            verify(mediaAssetService, times(1)).getFromWatchfolder(realmName, storageName, file);
+            verify(mediaAssetService, times(1)).resetDetectedMetadatas(List.of(fileEntity));
+            verify(activityHandler, atLeastOnce()).getHandlerName();
+            verify(activityHandler, atLeast(1)).getLimitPolicy();
+            verify(activityHandler, atLeastOnce()).isEnabled();
+            verify(fileEntity, atLeastOnce()).isDirectory();
+            verify(fileEntity, atLeastOnce()).getRealm();
+            verify(fileEntity, atLeastOnce()).getStorage();
+            verify(configuration, times(1)).getRealmAndStorage(realmName, storageName);
+            verify(storage, atLeastOnce()).activityLimit();
+        }
+
     }
 
     @Test
@@ -360,8 +408,7 @@ class PendingActivityServiceTest {
         verify(pendingActivityDao, times(1)).havePendingActivities(fileEntity);
         verify(instanceDao, times(1)).getSelfInstance();
         verify(realm, atLeastOnce()).spoolProcessAsset();
-        verify(storage, atLeastOnce()).getStorageStateClass();
-        verify(storage, atLeastOnce()).getCategory();
+        verify(storage, atLeastOnce()).activityLimit();
         verify(fileEntity, atLeastOnce()).getRealm();
         verify(configuration, atLeastOnce()).isActivatedActivityHandler(realmName, handlerName);
         verify(mediaAssetService, times(1)).updateIndexer(fileEntity);
@@ -441,8 +488,8 @@ class PendingActivityServiceTest {
             verify(fileEntity, atLeastOnce()).getName();
             verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, atLeastOnce()).isEnabled();
-            verify(storage, atLeastOnce()).getStorageStateClass();
-            verify(storage, atLeastOnce()).getCategory();
+            verify(activityHandler, atLeast(0)).getLimitPolicy();
+            verify(storage, atLeastOnce()).activityLimit();
             verify(mediaAssetService, times(1)).updateIndexer(fileEntity);
         }
 
@@ -452,6 +499,7 @@ class PendingActivityServiceTest {
             pas.restartPendingActivities(firstBoot);
             verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, atLeastOnce()).isEnabled();
+            verify(activityHandler, atLeast(0)).getLimitPolicy();
         }
 
     }

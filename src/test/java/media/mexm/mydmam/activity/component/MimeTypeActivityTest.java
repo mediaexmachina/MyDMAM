@@ -16,7 +16,9 @@
  */
 package media.mexm.mydmam.activity.component;
 
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.TYPE_EXTRACTION;
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE_MIME_TYPE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
@@ -78,6 +80,11 @@ class MimeTypeActivityTest {
     MimeTypeActivity mta;
 
     File internalFile;
+
+    @Test
+    void testGetLimitPolicy() {
+        assertEquals(TYPE_EXTRACTION, mta.getLimitPolicy());
+    }
 
     @Test
     void testCanHandle() {

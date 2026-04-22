@@ -16,12 +16,16 @@
  */
 package media.mexm.mydmam.activity.component;
 
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
+import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
@@ -40,6 +44,11 @@ public class ImageInfoExtractionActivity implements ActivityHandler {
     MediaAssetService mediaAssetService;
     @Autowired
     MetadataThesaurusService metadataThesaurusService;
+
+    @Override
+    public ActivityLimitPolicy getLimitPolicy() {
+        return FILE_INFORMATION;
+    }
 
     @Override
     public String getMetadataOriginName() {
@@ -79,8 +88,15 @@ public class ImageInfoExtractionActivity implements ActivityHandler {
             throw new IllegalArgumentException("Can't support JSON version " + version);
         }
 
-        mediaAssetService.declareRenderedStaticFile(
-                file, workingFile, "identify.json", true, 0, "image-format");
+        if (storedOn.getActivityLimitPolicy().isLevelLowerThan(BASE_PREVIEW)) {
+            log.trace("Cancel to write identify.json on {} {}: too low ActivityLimitPolicy={}",
+                    storedOn.realmName(),
+                    storedOn.storageName(),
+                    storedOn.getActivityLimitPolicy());
+        } else {
+            mediaAssetService.declareRenderedStaticFile(
+                    file, workingFile, "identify.json", true, 0, "image-format");
+        }
 
         metadataThesaurusService.getWriter(this, file, MtdThesaurusDefDublinCore.class)
                 .set(jsonNode.read("$.image.mimeType", String.class))

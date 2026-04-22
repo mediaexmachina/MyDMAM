@@ -40,6 +40,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.dto.StorageCategory;
 import media.mexm.mydmam.dto.StorageStateClass;
 import media.mexm.mydmam.tools.AllowBlockLists;
@@ -54,7 +55,8 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
                         File renderedMetadataDirectory,
                         DelayedSyncConfiguration delayedSync,
                         @DefaultValue @Valid @NotNull AllowBlockLists activityHandlers,
-                        @DefaultValue @Valid @NotNull RealmAboutConf about) {
+                        @DefaultValue @Valid @NotNull RealmAboutConf about,
+                        ActivityLimitPolicy activityLimit) {
 
     public RealmConf {
         storages = Optional.ofNullable(storages).orElse(Map.of());

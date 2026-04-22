@@ -48,6 +48,11 @@ public interface ActivityHandler {
         return Set.of(ONLINE);
     }
 
+    /**
+     * @return the *lowest* level managed
+     */
+    ActivityLimitPolicy getLimitPolicy();
+
     boolean canHandle(FileEntity fileEntity, ActivityEventType eventType, RealmStorageConfiguredEnv storedOn);
 
     void handle(FileEntity fileEntity,

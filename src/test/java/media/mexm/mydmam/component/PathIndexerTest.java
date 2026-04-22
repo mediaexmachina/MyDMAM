@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
+import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.configuration.EnvConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
@@ -75,6 +76,8 @@ class PathIndexerTest {
     AllowBlockLists activityHandlers;
     @Mock
     RealmAboutConf realmAboutConf;
+    @Mock
+    ActivityLimitPolicy activityLimit;
 
     private FlatJobKitEngine jobKitEngine;
     private PathIndexer pi;
@@ -103,9 +106,9 @@ class PathIndexerTest {
                     duration,
                     0,
                     null, null, null, null, null, null, null, null, false, false,
-                    Duration.ZERO, false, "pathindexing", false);
+                    Duration.ZERO, false, "pathindexing", false, null);
             piRealm = new RealmConf(Map.of(new TechnicalName(storage), piStorage),
-                    duration, spoolEvents, null, null, null, activityHandlers, realmAboutConf);
+                    duration, spoolEvents, null, null, null, activityHandlers, realmAboutConf, activityLimit);
 
             when(configuration.realms()).thenReturn(Map.of(new TechnicalName(realm), piRealm));
             pi = new PathIndexer(jobKitEngine, pathIndexerService, configuration);

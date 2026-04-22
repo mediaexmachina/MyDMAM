@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.activity.component;
 
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.TYPE_EXTRACTION;
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE_MIME_TYPE;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
+import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.entity.FileEntity;
@@ -41,6 +43,11 @@ public class MimeTypeActivity implements ActivityHandler {
     AuditTrail auditTrail;
     @Autowired
     MetadataThesaurusService metadataThesaurusService;
+
+    @Override
+    public ActivityLimitPolicy getLimitPolicy() {
+        return TYPE_EXTRACTION;
+    }
 
     @Override
     public boolean canHandle(final FileEntity file,

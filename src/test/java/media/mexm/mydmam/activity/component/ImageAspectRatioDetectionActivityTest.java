@@ -17,10 +17,12 @@
 package media.mexm.mydmam.activity.component;
 
 import static java.lang.Math.round;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.LANDSCAPE;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.PORTRAIT;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.SQUARE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
@@ -73,6 +75,11 @@ class ImageAspectRatioDetectionActivityTest {
     @AfterEach
     void ends() {
         metadataThesaurusService.endChecks(fileEntity);
+    }
+
+    @Test
+    void testGetLimitPolicy() {
+        assertEquals(FILE_INFORMATION, iarda.getLimitPolicy());
     }
 
     @Test

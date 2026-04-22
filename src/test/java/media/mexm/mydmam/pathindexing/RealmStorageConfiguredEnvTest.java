@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.pathindexing;
 
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageCategory.EXTERNAL;
 import static media.mexm.mydmam.dto.StorageCategory.NAS;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -35,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
+import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
@@ -125,4 +128,25 @@ class RealmStorageConfiguredEnvTest {
         verify(storage, times(1)).path();
         verify(fileEntity, times(1)).getPath();
     }
+
+    @Fake
+    ActivityLimitPolicy activityLimitPolicy;
+
+    @Test
+    void testGetActivityLimitPolicy() {
+        when(storage.activityLimit()).thenReturn(activityLimitPolicy);
+        assertThat(env.getActivityLimitPolicy()).isEqualTo(activityLimitPolicy);
+
+        when(storage.activityLimit()).thenReturn(null);
+        when(realm.activityLimit()).thenReturn(activityLimitPolicy);
+        assertThat(env.getActivityLimitPolicy()).isEqualTo(activityLimitPolicy);
+
+        when(storage.activityLimit()).thenReturn(null);
+        when(realm.activityLimit()).thenReturn(null);
+        assertThat(env.getActivityLimitPolicy()).isEqualTo(BASE_PREVIEW);
+
+        verify(storage, atLeastOnce()).activityLimit();
+        verify(realm, atLeastOnce()).activityLimit();
+    }
+
 }

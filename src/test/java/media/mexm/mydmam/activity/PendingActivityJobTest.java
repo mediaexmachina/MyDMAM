@@ -79,6 +79,8 @@ class PendingActivityJobTest {
     String storageName;
     @Fake
     String previousHandlersJson;
+    @Fake
+    ActivityLimitPolicy activityLimitPolicy;
 
     Set<String> previousHandlers;
     PendingActivityJob job;
@@ -160,6 +162,14 @@ class PendingActivityJobTest {
     void testGetJobSpoolname() {
         assertEquals(spoolName, job.getJobSpoolname());
         verify(realm, times(1)).spoolProcessAsset();
+    }
+
+    @Test
+    void testGetJobPriority() {
+        when(storage.activityLimit()).thenReturn(activityLimitPolicy);
+        assertThat(job.getJobPriority())
+                .isEqualTo(activityLimitPolicy.getJobPriority());
+        verify(storage, times(1)).activityLimit();
     }
 
 }

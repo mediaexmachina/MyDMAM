@@ -17,6 +17,7 @@
 package media.mexm.mydmam.activity.component;
 
 import static java.lang.Math.round;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.LANDSCAPE;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.PORTRAIT;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.SQUARE;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
+import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.dto.StorageStateClass;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
@@ -45,6 +47,11 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
     @Override
     public Set<StorageStateClass> getSupportedStorageStateClasses() {
         return Set.of();
+    }
+
+    @Override
+    public ActivityLimitPolicy getLimitPolicy() {
+        return FILE_INFORMATION;
     }
 
     @Override

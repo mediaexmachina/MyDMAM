@@ -95,4 +95,9 @@ public record PendingActivityJob(RealmStorageConfiguredEnv configuredEnv,
         return configuredEnv.realm().spoolProcessAsset();
     }
 
+    @Override
+    public int getJobPriority() {
+        return configuredEnv.getActivityLimitPolicy().getJobPriority();
+    }
+
 }

@@ -16,12 +16,15 @@
  */
 package media.mexm.mydmam.pathindexing;
 
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Optional;
 
+import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
@@ -32,6 +35,12 @@ public record RealmStorageConfiguredEnv(String realmName,
                                         String storageName,
                                         RealmConf realm,
                                         PathIndexingStorage storage) {
+
+    public ActivityLimitPolicy getActivityLimitPolicy() {
+        return Optional.ofNullable(storage.activityLimit())
+                .or(() -> Optional.ofNullable(realm.activityLimit()))
+                .orElse(BASE_PREVIEW);
+    }
 
     public boolean isDAS() {
         return DAS.equals(storage.getCategory());

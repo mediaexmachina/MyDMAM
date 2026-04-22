@@ -51,6 +51,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
+import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.dto.StorageCategory;
 import media.mexm.mydmam.dto.StorageStateClass;
 import media.mexm.mydmam.tools.AllowBlockLists;
@@ -71,6 +72,8 @@ class RealmConfTest {
     AllowBlockLists activityHandlers;
     @Mock
     RealmAboutConf realmAboutConf;
+    @Mock
+    ActivityLimitPolicy activityLimit;
 
     @Fake
     String spool;
@@ -99,7 +102,8 @@ class RealmConfTest {
                 renderedMetadataDirectory,
                 delayedSyncConfiguration,
                 activityHandlers,
-                realmAboutConf);
+                realmAboutConf,
+                activityLimit);
     }
 
     @AfterEach
@@ -130,6 +134,7 @@ class RealmConfTest {
                 null,
                 null,
                 null,
+                null,
                 null);
 
         final var result = conf.storages().entrySet().stream().toList();
@@ -138,7 +143,7 @@ class RealmConfTest {
 
     @Test
     void testStoragesStream_null() {
-        conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null, null, null, null);
+        conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null, null, null, null, null);
 
         final var result = conf.storages().entrySet().stream().toList();
         assertThat(result).isEmpty();
@@ -146,7 +151,7 @@ class RealmConfTest {
 
     @Test
     void testGetValidWorkingDirectory_empty() {
-        conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null, null, null, null);
+        conf = new RealmConf(null, mockTimeBetweenScans, spool, null, null, null, null, null, null);
         assertThat(conf.workingDirectory()).isNull();
     }
 
@@ -178,7 +183,8 @@ class RealmConfTest {
                 renderedMetadataDirectory,
                 delayedSyncConfiguration,
                 activityHandlers,
-                realmAboutConf));
+                realmAboutConf,
+                activityLimit));
     }
 
     @Test
@@ -186,22 +192,22 @@ class RealmConfTest {
         final var map = Map.of(new TechnicalName(storageName), piStorage);
 
         conf = new RealmConf(map, null, spool, workingDirectory, renderedMetadataDirectory,
-                delayedSyncConfiguration, null, null);
+                delayedSyncConfiguration, null, null, null);
         assertThat(conf.timeBetweenScans()).isNull();
 
         timeBetweenScans = Duration.ofMillis(duration);
         conf = new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
-                delayedSyncConfiguration, null, null);
+                delayedSyncConfiguration, null, null, null);
         assertThat(conf.timeBetweenScans()).isEqualTo(Duration.ofMillis(duration));
 
         timeBetweenScans = Duration.ZERO;
         assertThrows(IllegalArgumentException.class,
                 () -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
-                        delayedSyncConfiguration, null, null));
+                        delayedSyncConfiguration, null, null, null));
         timeBetweenScans = Duration.ofMillis(-duration);
         assertThrows(IllegalArgumentException.class,
                 () -> new RealmConf(map, timeBetweenScans, spool, workingDirectory, renderedMetadataDirectory,
-                        delayedSyncConfiguration, null, null));
+                        delayedSyncConfiguration, null, null, null));
     }
 
     @Test

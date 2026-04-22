@@ -19,6 +19,8 @@ package media.mexm.mydmam.activity.component;
 import static java.io.File.createTempFile;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.empty;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.writeStringToFile;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -100,6 +102,11 @@ class ImageInfoExtractionActivityTest {
     @AfterEach
     void ends() {
         verifyNoMoreInteractions(imageMagick, mediaAssetService);
+    }
+
+    @Test
+    void testGetLimitPolicy() {
+        assertEquals(FILE_INFORMATION, iiea.getLimitPolicy());
     }
 
     @ParameterizedTest
@@ -189,8 +196,9 @@ class ImageInfoExtractionActivityTest {
             when(storedOn.storage()).thenReturn(storage);
             when(storedOn.realm()).thenReturn(realm);
             when(storedOn.makeWorkingFile(any(), eq(file))).thenReturn(workingFile);
-
             when(storedOn.getLocalInternalFile(file)).thenReturn(assetFile);
+            when(storedOn.getActivityLimitPolicy()).thenReturn(BASE_PREVIEW);
+
             when(realm.makeWorkingFile(any())).thenReturn(workingFile);
             when(file.getId()).thenReturn(fileId);
             when(imageMagick.extractIdentifyJsonFile(assetFile, workingFile))
@@ -227,6 +235,7 @@ class ImageInfoExtractionActivityTest {
 
             verify(storedOn, times(1)).makeWorkingFile("identify.json", file);
             verify(storedOn, atLeastOnce()).getLocalInternalFile(file);
+            verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             verify(imageMagick, times(1)).extractIdentifyJsonFile(assetFile, workingFile);
             verify(mediaAssetService, times(1))
                     .declareRenderedStaticFile(file, workingFile, "identify.json", true, 0, "image-format");
