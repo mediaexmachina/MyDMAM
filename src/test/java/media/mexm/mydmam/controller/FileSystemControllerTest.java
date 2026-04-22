@@ -143,9 +143,9 @@ class FileSystemControllerTest {
     String storage;
     @Fake
     String storage1;
-    @Fake(min = 0, max = 10000)
+    @Fake(min = 1, max = 10000)
     int skip;
-    @Fake(min = 0, max = 100)
+    @Fake(min = 1, max = 100)
     int limit;
     @Fake
     String hashPath;
@@ -153,9 +153,9 @@ class FileSystemControllerTest {
     String basePath;
     @Fake
     String baseName;
-    @Fake
+    @Fake(min = 1, max = 10000)
     int totalSize;
-    @Fake
+    @Fake(min = 1, max = 10000)
     long length;
     @Fake
     String specifications;
