@@ -37,6 +37,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import media.mexm.mydmam.entity.InstanceEntity;
 import media.mexm.mydmam.repository.InstanceDao;
+import media.mexm.mydmam.service.PendingActivityService;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.jobkit.engine.FlatJobKitEngine;
@@ -44,10 +45,13 @@ import tv.hd3g.jobkit.engine.FlatJobKitEngine;
 @SpringBootTest(webEnvironment = NONE)
 @ExtendWith(MockToolsExtendsJunit.class)
 @ActiveProfiles({ "Default" })
-class UpdateDbPresenceInstanceTest {
+class DbPollersTest {
 
     @MockitoBean
     InstanceDao instanceDao;
+    @MockitoBean
+    PendingActivityService pendingActivityService;
+
     @Mock
     InstanceEntity instanceEntity;
     @Fake
@@ -56,7 +60,7 @@ class UpdateDbPresenceInstanceTest {
     @Autowired
     FlatJobKitEngine flatJobKitEngine;
     @Autowired
-    UpdateDbPresenceInstance updateDbPresenceInstance;
+    DbPollers dbPollers;
 
     @BeforeEach
     void init() {
@@ -66,7 +70,7 @@ class UpdateDbPresenceInstanceTest {
 
     @AfterEach
     void ends() {
-        verifyNoMoreInteractions(instanceDao);
+        verifyNoMoreInteractions(instanceDao, pendingActivityService);
     }
 
     @Test
@@ -77,7 +81,7 @@ class UpdateDbPresenceInstanceTest {
 
     @Test
     void testInternalServiceStart() throws Exception {
-        updateDbPresenceInstance.internalServiceStart();
+        dbPollers.internalServiceStart();
 
         assertThat(flatJobKitEngine.getEndEventsList()).isEmpty();
         assertFalse(flatJobKitEngine.isEmptyActiveServicesList());
@@ -87,6 +91,15 @@ class UpdateDbPresenceInstanceTest {
 
         flatJobKitEngine.runAllServicesOnce();
         verify(instanceDao, times(1)).updatePresenceInstance(instanceId);
+        verify(pendingActivityService, times(1)).restartPendingActivities(true);
+
+        flatJobKitEngine.runAllServicesOnce();
+        verify(instanceDao, times(2)).updatePresenceInstance(instanceId);
+        verify(pendingActivityService, times(1)).restartPendingActivities(false);
+
+        flatJobKitEngine.runAllServicesOnce();
+        verify(instanceDao, times(3)).updatePresenceInstance(instanceId);
+        verify(pendingActivityService, times(2)).restartPendingActivities(false);
 
         assertThat(flatJobKitEngine.getEndEventsList()).isEmpty();
         assertFalse(flatJobKitEngine.isEmptyActiveServicesList());
@@ -94,16 +107,16 @@ class UpdateDbPresenceInstanceTest {
 
     @Test
     void testInternalServiceStop() throws Exception {
-        updateDbPresenceInstance.internalServiceStop();
+        dbPollers.internalServiceStop();
 
         assertThat(flatJobKitEngine.getEndEventsList()).isEmpty();
         assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
 
-        updateDbPresenceInstance.internalServiceStart();
+        dbPollers.internalServiceStart();
         verify(instanceDao, times(1)).getSelfInstance();
         verify(instanceEntity, times(1)).getId();
 
-        updateDbPresenceInstance.internalServiceStop();
+        dbPollers.internalServiceStop();
 
         assertThat(flatJobKitEngine.getEndEventsList()).isEmpty();
         assertTrue(flatJobKitEngine.isEmptyActiveServicesList());
@@ -111,6 +124,6 @@ class UpdateDbPresenceInstanceTest {
 
     @Test
     void testGetInternalServiceName() {
-        assertThat(updateDbPresenceInstance.getInternalServiceName()).isNotBlank();
+        assertThat(dbPollers.getInternalServiceName()).isNotBlank();
     }
 }

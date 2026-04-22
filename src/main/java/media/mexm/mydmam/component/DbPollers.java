@@ -19,7 +19,9 @@ package media.mexm.mydmam.component;
 import static java.time.Duration.ofHours;
 import static tv.hd3g.jobkit.engine.RunnableWithException.nothing;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -27,24 +29,31 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.repository.InstanceDao;
+import media.mexm.mydmam.service.PendingActivityService;
 import tv.hd3g.jobkit.engine.BackgroundService;
 import tv.hd3g.jobkit.engine.JobKitEngine;
 
 @Slf4j
 @Component
-public class UpdateDbPresenceInstance implements InternalService {
+public class DbPollers implements InternalService {
 
     private final InstanceDao instanceDao;
+    private final PendingActivityService pendingActivityService;
     private final JobKitEngine jobKit;
     private final MyDMAMConfigurationProperties configuration;
-    private BackgroundService service;
+    private final AtomicBoolean firstRestartPendingActivities;
+    private final List<BackgroundService> services;
 
-    public UpdateDbPresenceInstance(@Autowired final InstanceDao instanceDao,
-                                    @Autowired final JobKitEngine jobKit,
-                                    @Autowired final MyDMAMConfigurationProperties configuration) {
+    public DbPollers(@Autowired final InstanceDao instanceDao,
+                     @Autowired final PendingActivityService pendingActivityService,
+                     @Autowired final JobKitEngine jobKit,
+                     @Autowired final MyDMAMConfigurationProperties configuration) {
         this.instanceDao = instanceDao;
+        this.pendingActivityService = pendingActivityService;
         this.jobKit = jobKit;
         this.configuration = configuration;
+        firstRestartPendingActivities = new AtomicBoolean(true);
+        services = new ArrayList<>();
     }
 
     @Override
@@ -52,11 +61,17 @@ public class UpdateDbPresenceInstance implements InternalService {
         final int instanceId = instanceDao.getSelfInstance().getId();
         final var spoolName = configuration.env().spoolEvents();
 
-        service = jobKit.startService("Update instance ref in db", spoolName, ofHours(1),
+        services.add(jobKit.startService("Update instance ref in db", spoolName, ofHours(1),
                 () -> {
                     log.debug("Update db presence for this instance");
                     instanceDao.updatePresenceInstance(instanceId);
-                }, nothing);
+                }, nothing));
+
+        final var pendingActivityMaxAgeGraceRestart = configuration.env().pendingActivityMaxAgeGraceRestart();
+        services.add(jobKit.startService("Check and restart losted pending activities", spoolName,
+                pendingActivityMaxAgeGraceRestart,
+                () -> pendingActivityService.restartPendingActivities(firstRestartPendingActivities.getAndSet(false)),
+                nothing));
     }
 
     @Override
@@ -66,6 +81,6 @@ public class UpdateDbPresenceInstance implements InternalService {
 
     @Override
     public void internalServiceStop() throws Exception {
-        Optional.ofNullable(service).ifPresent(BackgroundService::disable);
+        services.forEach(BackgroundService::disable);
     }
 }

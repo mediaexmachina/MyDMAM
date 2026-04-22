@@ -141,15 +141,12 @@ public class PendingActivityServiceImpl implements PendingActivityService {
                 allActivitiesJobs,
                 Optional.ofNullable(instance));
 
+        log.debug("All {} activity(ies) has added to database, now start to queue", allActivitiesJobs.size());
+
         allActivitiesJobs.forEach(a -> {
             log.trace(LOG_QUEUE_RUN_FOR_ON, a.file(), a.activityHandler().getHandlerName());
             jobKitEngine.runOneShot(a);
         });
-    }
-
-    @Override
-    public String getInternalServiceName() {
-        return "PendingActivityService";
     }
 
     @Override
@@ -261,21 +258,19 @@ public class PendingActivityServiceImpl implements PendingActivityService {
 
     @Override
     @Transactional
-    public void restartPendingActivities() {
+    public void restartPendingActivities(final boolean firstBoot) {
         log.info("Restart pending activities...");
 
-        final var activityFilesIds = pendingActivityDao.getFilesAndWithResetPendingActivities(
-                configuration.getRealmNames());
+        final var pendingActivitiesByFile = pendingActivityDao.restartCurrentInstancePendingActivities(firstBoot);
 
-        if (activityFilesIds.isEmpty()) {
+        if (pendingActivitiesByFile.isEmpty()) {
             log.info("No pending activities to restart");
             return;
         }
 
-        log.info("Prepare to restart {} activity(ies)...", activityFilesIds.size());
+        log.info("Prepare to restart {} activity(ies)...", pendingActivitiesByFile.size());
 
         final var unknownActivityHanders = new HashSet<String>();
-        final var pendingActivitiesByFile = pendingActivityDao.getFilesAndPendingActivityByFileId(activityFilesIds);
 
         final var allActivitiesJobs = pendingActivitiesByFile.entrySet()
                 .stream()
@@ -341,12 +336,6 @@ public class PendingActivityServiceImpl implements PendingActivityService {
                              final RealmConf realm,
                              final Set<? extends FileAttributesReference> losted) {
         losted.forEach(file -> mediaAssetService.purgeAssetArtefacts(realmName, storageName, file));
-    }
-
-    @Override
-    @Transactional
-    public void internalServiceStart() throws Exception {
-        restartPendingActivities();
     }
 
 }

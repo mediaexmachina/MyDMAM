@@ -20,11 +20,10 @@ import java.util.Set;
 
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.PendingActivityJob;
-import media.mexm.mydmam.component.InternalService;
 import media.mexm.mydmam.configuration.RealmConf;
 import tv.hd3g.transfertfiles.FileAttributesReference;
 
-public interface PendingActivityService extends InternalService {
+public interface PendingActivityService {
 
     void continueAssetActivity(PendingActivityJob pendingActivityJob);
 
@@ -44,5 +43,5 @@ public interface PendingActivityService extends InternalService {
                       RealmConf realm,
                       Set<? extends FileAttributesReference> losted);
 
-    void restartPendingActivities();
+    void restartPendingActivities(boolean firstBoot);
 }

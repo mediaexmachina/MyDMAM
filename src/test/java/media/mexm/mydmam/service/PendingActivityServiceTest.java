@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -45,6 +46,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -382,21 +385,21 @@ class PendingActivityServiceTest {
         verify(pendingActivityDao, times(1)).havePendingActivities(fileEntity);
     }
 
-    @Test
-    void testRestartPendingActivities_empty() {
-        when(pendingActivityDao.getFilesAndWithResetPendingActivities(Set.of(realmName)))
-                .thenReturn(List.of());
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void testRestartPendingActivities_empty(final boolean firstBoot) {
+        when(pendingActivityDao.restartCurrentInstancePendingActivities(anyBoolean())).thenReturn(Map.of());
 
-        pas.restartPendingActivities();
+        pas.restartPendingActivities(firstBoot);
 
-        verify(configuration, atLeastOnce()).getRealmNames();
-        verify(pendingActivityDao, times(1))
-                .getFilesAndWithResetPendingActivities(Set.of(realmName));
+        verify(pendingActivityDao, times(1)).restartCurrentInstancePendingActivities(firstBoot);
     }
 
     @Nested
     class RestartPendingActivities {
 
+        @Fake
+        boolean firstBoot;
         @Fake
         int activityFileId;
         @Fake
@@ -404,9 +407,7 @@ class PendingActivityServiceTest {
 
         @BeforeEach
         void init() {
-            when(pendingActivityDao.getFilesAndWithResetPendingActivities(Set.of(realmName)))
-                    .thenReturn(List.of(activityFileId));
-            when(pendingActivityDao.getFilesAndPendingActivityByFileId(List.of(activityFileId)))
+            when(pendingActivityDao.restartCurrentInstancePendingActivities(firstBoot))
                     .thenReturn(Map.of(fileEntity, Set.of(entity)));
             when(pendingActivityDao.haveDeclaredActivity(fileEntity, activityHandler)).thenReturn(false);
             when(entity.getHandlerName()).thenReturn(handlerName);
@@ -416,11 +417,7 @@ class PendingActivityServiceTest {
 
         @AfterEach
         void end() {
-            verify(configuration, atLeastOnce()).getRealmNames();
-            verify(pendingActivityDao, times(1))
-                    .getFilesAndWithResetPendingActivities(Set.of(realmName));
-            verify(pendingActivityDao, times(1))
-                    .getFilesAndPendingActivityByFileId(List.of(activityFileId));
+            verify(pendingActivityDao, times(1)).restartCurrentInstancePendingActivities(firstBoot);
             verify(entity, atLeastOnce()).getHandlerName();
             verify(entity, atLeastOnce()).getPreviousHandlers();
 
@@ -432,7 +429,7 @@ class PendingActivityServiceTest {
 
         @Test
         void test() {
-            pas.restartPendingActivities();
+            pas.restartPendingActivities(firstBoot);
 
             verify(pendingActivityDao, times(1))
                     .haveDeclaredActivity(fileEntity, activityHandler);
@@ -452,7 +449,7 @@ class PendingActivityServiceTest {
         @Test
         void test_unknownHander() {
             when(entity.getHandlerName()).thenReturn(unknownHander);
-            pas.restartPendingActivities();
+            pas.restartPendingActivities(firstBoot);
             verify(activityHandler, atLeast(0)).getSupportedStorageStateClasses();
             verify(activityHandler, atLeastOnce()).isEnabled();
         }

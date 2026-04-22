@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.repository;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,8 +37,6 @@ public interface PendingActivityDao {
 
     boolean havePendingActivities(FileEntity file);
 
-    Map<FileEntity, Set<PendingActivityEntity>> getFilesAndPendingActivityByFileId(Collection<Integer> ids);
-
-    List<Integer> getFilesAndWithResetPendingActivities(Set<String> realms);
+    Map<FileEntity, Set<PendingActivityEntity>> restartCurrentInstancePendingActivities(boolean firstBoot);
 
 }

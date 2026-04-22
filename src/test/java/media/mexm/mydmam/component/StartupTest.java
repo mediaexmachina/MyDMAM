@@ -28,7 +28,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import media.mexm.mydmam.service.PendingActivityService;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
 @SpringBootTest(webEnvironment = NONE)
@@ -45,13 +44,11 @@ class StartupTest {
     @MockitoBean
     PathIndexer pathIndexer;
     @MockitoBean
-    PendingActivityService pendingActivityService;
-    @MockitoBean
     XPDF xpdf;
     @MockitoBean
     FFmpegExecCapabilities ffmpegExecCapabilities;
     @MockitoBean
-    UpdateDbPresenceInstance updateDbPresenceInstance;
+    DbPollers dbPollers;
 
     @Autowired
     InternalService service;

@@ -22,7 +22,6 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 
 import java.sql.Timestamp;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,61 +128,56 @@ public class PendingActivityDaoImpl implements PendingActivityDao {
     }
 
     @Override
-    @Transactional
-    public Map<FileEntity, Set<PendingActivityEntity>> getFilesAndPendingActivityByFileId(final Collection<Integer> ids) {
-        final var items = entityManager.createQuery("""
-                SELECT new map(f as kFileEntity, pa as kPendingActivityEntity)
-                FROM FileEntity f
-                LEFT JOIN PendingActivityEntity pa ON pa.file = f
-                WHERE f.id IN :ids
-                """, Map.class)
-                .setParameter("ids", ids)
-                .getResultList();
-
-        if (items.size() != ids.size()) {
-            log.warn("Invalid items get: ids={}, but get only {}", ids.size(), items.size());
-        }
-
-        return items.stream()
-                .collect(groupingBy(f -> (FileEntity) f.get("kFileEntity"),
-                        HashMap::new,
-                        mapping(f -> (PendingActivityEntity) f.get("kPendingActivityEntity"),
-                                toSet())));
-    }
-
-    @Override
     @Transactional(REQUIRES_NEW)
-    public List<Integer> getFilesAndWithResetPendingActivities(final Set<String> realms) {
+    public Map<FileEntity, Set<PendingActivityEntity>> restartCurrentInstancePendingActivities(final boolean firstBoot) {
         final var instance = instanceDao.getSelfInstance();
         final var olderThan = new Timestamp(System.currentTimeMillis()
                                             - conf.env().pendingActivityMaxAgeGraceRestart().toMillis());
 
-        final var files = entityManager.createQuery("""
-                SELECT DISTINCT(f)
-                FROM FileEntity f
-                LEFT JOIN PendingActivityEntity pa ON pa.file = f
-                WHERE pa IS NOT NULL
-                AND (pa.instance = :instance OR pa.updated < :olderThan)
-                AND f.realm IN :realms
-                """, FileEntity.class)
-                .setParameter("instance", instance)
-                .setParameter("olderThan", olderThan)
-                .setParameter("realms", realms)
-                .getResultList();
+        @SuppressWarnings("rawtypes")
+        final List<Map> lostedPendingActivitiesRawList;
+        if (firstBoot) {
+            lostedPendingActivitiesRawList = entityManager.createQuery("""
+                    SELECT new map(pa.file as kFileEntity, pa as kPendingActivityEntity)
+                    FROM PendingActivityEntity pa
+                    WHERE pa.instance = :instance
+                    """, Map.class)
+                    .setParameter("instance", instance)
+                    .getResultList();
+        } else {
+            lostedPendingActivitiesRawList = entityManager.createQuery("""
+                    SELECT new map(pa.f as kFileEntity, pa as kPendingActivityEntity)
+                    FROM PendingActivityEntity pa
+                    WHERE pa.instance = :instance
+                          AND pa.updated < :olderThan
+                    """, Map.class)
+                    .setParameter("instance", instance)
+                    .setParameter("olderThan", olderThan)
+                    .getResultList();
+
+        }
+
+        if (lostedPendingActivitiesRawList.isEmpty()) {
+            return Map.of();
+        }
+
+        final var lostedPendingActivities = lostedPendingActivitiesRawList.stream()
+                .map(f -> (PendingActivityEntity) f.get("kPendingActivityEntity"))
+                .toList();
 
         entityManager.createQuery("""
                 UPDATE PendingActivityEntity pa
-                SET pa.instance = :instance,
-                    pa.updated = CURRENT_TIMESTAMP()
-                WHERE pa.file IN :files
+                SET pa.updated = CURRENT_TIMESTAMP()
+                WHERE pa IN :lostedPendingActivities
                 """)
-                .setParameter("instance", instance)
-                .setParameter("files", files)
+                .setParameter("lostedPendingActivities", lostedPendingActivities)
                 .executeUpdate();
 
-        return files.stream()
-                .map(FileEntity::getId)
-                .toList();
+        return lostedPendingActivitiesRawList.stream()
+                .collect(groupingBy(f -> (FileEntity) f.get("kFileEntity"),
+                        HashMap::new,
+                        mapping(f -> (PendingActivityEntity) f.get("kPendingActivityEntity"),
+                                toSet())));
     }
 
 }
