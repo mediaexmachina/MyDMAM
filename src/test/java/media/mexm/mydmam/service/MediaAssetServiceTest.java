@@ -203,13 +203,14 @@ class MediaAssetServiceTest {
         when(assetRenderedFileEntity.getId()).thenReturn(renderedId);
         when(assetRenderedFileEntity.getIndexref()).thenReturn(indexRef);
         when(assetRenderedFileEntity.isGzipEncoded()).thenReturn(false);
+        when(assetRenderedFileEntity.getRenderedFileNamePrefix()).thenReturn("");
 
         when(assetTextExtractedFileEntity.getAuditTrailPayload(any())).thenReturn(auditTrailPayload);
         when(assetTextExtractedFileEntity.getName()).thenReturn(renderedName);
         when(assetTextExtractedFileEntity.getFile()).thenReturn(fileEntity);
         when(assetTextExtractedFileEntity.getId()).thenReturn(renderedId);
-        when(assetTextExtractedFileEntity.getIndexref()).thenReturn(indexRef);
         when(assetTextExtractedFileEntity.isGzipEncoded()).thenReturn(false);
+        when(assetTextExtractedFileEntity.getRenderedFileNamePrefix()).thenReturn("text-");
 
         when(storedOn.realm()).thenReturn(realm);
         when(fileEntity.getHashPath()).thenReturn(fileHashpath);
@@ -321,9 +322,9 @@ class MediaAssetServiceTest {
             verify(declaredRenderedFile, atLeastOnce()).toGzip();
             verify(assetRenderedFileEntity, times(1)).getAuditTrailPayload(expectedRenderedFile);
             verify(assetRenderedFileEntity, atLeastOnce()).getId();
-            verify(assetRenderedFileEntity, atLeastOnce()).getIndexref();
             verify(assetRenderedFileEntity, atLeastOnce()).getName();
             verify(assetRenderedFileEntity, atLeastOnce()).isGzipEncoded();
+            verify(assetRenderedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
 
             verify(auditTrail, times(1)).getAuditTrailByRealm(realmName);
             verify(realmAuditTrail, times(1))
@@ -352,9 +353,9 @@ class MediaAssetServiceTest {
             verify(assetRenderedFileRepository, times(1)).getRenderedForFileByEtag(eq(fileId), any());
             verify(assetRenderedFileEntity, times(1)).getAuditTrailPayload(expectedRenderedFile);
             verify(assetRenderedFileEntity, atLeastOnce()).getId();
-            verify(assetRenderedFileEntity, atLeastOnce()).getIndexref();
             verify(assetRenderedFileEntity, atLeastOnce()).getName();
             verify(assetRenderedFileEntity, atLeastOnce()).isGzipEncoded();
+            verify(assetRenderedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
             verify(mimeTypeDetector, times(1)).getMimeType(workingFile);
 
             verify(auditTrail, times(1)).getAuditTrailByRealm(realmName);
@@ -381,9 +382,9 @@ class MediaAssetServiceTest {
             verify(configuration, atLeastOnce()).getRealmByName(realmName);
             verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
             verify(assetRenderedFileEntity, atLeastOnce()).getId();
-            verify(assetRenderedFileEntity, atLeastOnce()).getIndexref();
             verify(assetRenderedFileEntity, atLeastOnce()).getName();
             verify(assetRenderedFileEntity, atLeastOnce()).isGzipEncoded();
+            verify(assetRenderedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
             verify(declaredRenderedFile, atLeastOnce()).name();
             verify(declaredRenderedFile, atLeastOnce()).workingFile();
             verify(declaredRenderedFile, atLeastOnce()).index();
@@ -422,9 +423,9 @@ class MediaAssetServiceTest {
 
             verify(assetRenderedFileEntity, atLeastOnce()).getLength();
             verify(assetRenderedFileEntity, atLeastOnce()).getId();
-            verify(assetRenderedFileEntity, atLeastOnce()).getIndexref();
             verify(assetRenderedFileEntity, atLeastOnce()).getName();
             verify(assetRenderedFileEntity, atLeastOnce()).isGzipEncoded();
+            verify(assetRenderedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
             verify(fileEntity, atLeastOnce()).getRealm();
             verify(fileEntity, atLeastOnce()).getId();
         }
@@ -438,9 +439,9 @@ class MediaAssetServiceTest {
 
             verify(assetRenderedFileEntity, atLeastOnce()).getLength();
             verify(assetRenderedFileEntity, atLeastOnce()).getId();
-            verify(assetRenderedFileEntity, atLeastOnce()).getIndexref();
             verify(assetRenderedFileEntity, atLeastOnce()).getName();
             verify(assetRenderedFileEntity, atLeastOnce()).isGzipEncoded();
+            verify(assetRenderedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
             verify(fileEntity, atLeastOnce()).getRealm();
             verify(fileEntity, atLeastOnce()).getId();
         }
@@ -451,9 +452,9 @@ class MediaAssetServiceTest {
                     () -> mas.getPhysicalRenderedFile(fileEntity, assetRenderedFileEntity, realmName));
 
             verify(assetRenderedFileEntity, atLeastOnce()).getId();
-            verify(assetRenderedFileEntity, atLeastOnce()).getIndexref();
             verify(assetRenderedFileEntity, atLeastOnce()).getName();
             verify(assetRenderedFileEntity, atLeastOnce()).isGzipEncoded();
+            verify(assetRenderedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
             verify(fileEntity, atLeastOnce()).getRealm();
             verify(fileEntity, atLeastOnce()).getId();
         }
@@ -510,9 +511,9 @@ class MediaAssetServiceTest {
             verify(assetTextExtractedFileDao, times(1)).deleteTextExtractedFilesByFileId(fileIdsToReset);
             verify(assetRenderedFileEntity, atLeastOnce()).getFile();
             verify(assetRenderedFileEntity, atLeastOnce()).getId();
-            verify(assetRenderedFileEntity, atLeastOnce()).getIndexref();
             verify(assetRenderedFileEntity, atLeastOnce()).getName();
             verify(assetRenderedFileEntity, atLeastOnce()).isGzipEncoded();
+            verify(assetRenderedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
             verify(fileEntity, atLeastOnce()).getRealm();
             verify(fileEntity, atLeastOnce()).getId();
         }
@@ -562,9 +563,9 @@ class MediaAssetServiceTest {
         verify(fileEntity, atLeastOnce()).getHashPath();
         verify(assetTextExtractedFileEntity, times(1)).getAuditTrailPayload(renderedFile);
         verify(assetTextExtractedFileEntity, atLeastOnce()).getId();
-        verify(assetTextExtractedFileEntity, atLeastOnce()).getIndexref();
         verify(assetTextExtractedFileEntity, atLeastOnce()).getName();
         verify(assetTextExtractedFileEntity, atLeastOnce()).isGzipEncoded();
+        verify(assetTextExtractedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
         verify(assetTextExtractedFileRepository, times(1)).getTextExtractedByName(fileId, renderedName);
         verify(auditTrail, times(1)).getAuditTrailByRealm(realmName);
         verify(realmAuditTrail, times(1))
@@ -604,9 +605,9 @@ class MediaAssetServiceTest {
         verify(fileEntity, atLeastOnce()).getId();
         verify(assetTextExtractedFileRepository, times(1)).getAllTextExtracted(fileEntity);
         verify(assetTextExtractedFileEntity, atLeastOnce()).getId();
-        verify(assetTextExtractedFileEntity, atLeastOnce()).getIndexref();
         verify(assetTextExtractedFileEntity, atLeastOnce()).getName();
         verify(assetTextExtractedFileEntity, atLeastOnce()).isGzipEncoded();
+        verify(assetTextExtractedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
         assertThat(count.get()).isEqualTo(1);
     }
 
@@ -622,13 +623,13 @@ class MediaAssetServiceTest {
         if (isGzip) {
             suffix = ".gz";
         }
-        assertThat(path).isEqualTo("/1234/ABCD/" + renderedId + "." + indexRef + "." + renderedName + suffix);
+        assertThat(path).isEqualTo("/1234/ABCD/" + renderedId + "." + renderedName + suffix);
 
         verify(fileEntity, atLeastOnce()).getId();
         verify(assetRenderedFileEntity, atLeastOnce()).getId();
-        verify(assetRenderedFileEntity, atLeastOnce()).getIndexref();
         verify(assetRenderedFileEntity, atLeastOnce()).getName();
         verify(assetRenderedFileEntity, atLeastOnce()).isGzipEncoded();
+        verify(assetRenderedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
     }
 
     @Test
@@ -643,9 +644,9 @@ class MediaAssetServiceTest {
 
         verify(realmConf, atLeastOnce()).renderedMetadataDirectory();
         verify(assetRenderedFileEntity, atLeastOnce()).getId();
-        verify(assetRenderedFileEntity, atLeastOnce()).getIndexref();
         verify(assetRenderedFileEntity, atLeastOnce()).getName();
         verify(assetRenderedFileEntity, atLeastOnce()).isGzipEncoded();
+        verify(assetRenderedFileEntity, atLeastOnce()).getRenderedFileNamePrefix();
         verify(fileEntity, atLeastOnce()).getRealm();
         verify(fileEntity, atLeastOnce()).getId();
 

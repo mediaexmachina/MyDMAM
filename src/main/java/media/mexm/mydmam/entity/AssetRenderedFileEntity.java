@@ -156,4 +156,8 @@ public class AssetRenderedFileEntity implements RelativePathProvider {
                 "previewType", previewType);
     }
 
+    @Override
+    public String getRenderedFileNamePrefix() {
+        return "";
+    }
 }

@@ -101,7 +101,7 @@ public class AssetTextExtractedFileEntity implements RelativePathProvider {
     }
 
     @Override
-    public Integer getIndexref() {
-        return 0;
+    public String getRenderedFileNamePrefix() {
+        return "text-";
     }
 }

@@ -190,6 +190,11 @@ class AssetRenderedFileEntityTest {
     }
 
     @Test
+    void testGetRenderedFileNamePrefix() {
+        assertThat(arf.getRenderedFileNamePrefix()).isEmpty();
+    }
+
+    @Test
     void testGetAuditTrailPayload() {
         final var payload = arf.getAuditTrailPayload(workingFile);
         assertThat(payload)

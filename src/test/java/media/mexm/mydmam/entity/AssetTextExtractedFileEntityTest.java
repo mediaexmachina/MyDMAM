@@ -54,8 +54,8 @@ class AssetTextExtractedFileEntityTest {
     void testCreate() {
         assertEquals(file, atefe.getFile());
         assertEquals(name, atefe.getName());
-        assertEquals(0, atefe.getIndexref());
         assertEquals(length, atefe.getLength());
+        assertEquals("text-", atefe.getRenderedFileNamePrefix());
         assertThat(atefe.getCreateDate()).isBeforeOrEqualTo(new Date());
         assertTrue(atefe.isGzipEncoded());
     }

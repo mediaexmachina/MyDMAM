@@ -22,10 +22,9 @@ public interface RelativePathProvider {
 
     Integer getId();
 
-    Integer getIndexref();
-
     String getName();
 
     boolean isGzipEncoded();
 
+    String getRenderedFileNamePrefix();
 }

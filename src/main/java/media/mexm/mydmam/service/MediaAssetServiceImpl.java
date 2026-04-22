@@ -19,6 +19,7 @@ package media.mexm.mydmam.service;
 import static jakarta.transaction.Transactional.TxType.REQUIRES_NEW;
 import static java.lang.Integer.toHexString;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 import static java.util.stream.Stream.concat;
@@ -39,7 +40,6 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -222,9 +222,8 @@ public class MediaAssetServiceImpl implements MediaAssetService {
         sb.append("/");
         sb.append(hex.substring(4));
         sb.append("/");
+        sb.append(requireNonNull(relativePathProvider.getRenderedFileNamePrefix()));
         sb.append(relativePathProvider.getId());
-        sb.append(".");
-        sb.append(relativePathProvider.getIndexref());
         sb.append(".");
         sb.append(relativePathProvider.getName());
         if (relativePathProvider.isGzipEncoded()) {
@@ -237,7 +236,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
     @Transactional
     public File getAbsolutePath(final FileEntity fileEntity, final RelativePathProvider relativePathProvider) {
         final var realmName = fileEntity.getRealm();
-        final var renderedMetadataDirectory = Objects.requireNonNull(configuration.getRealmByName(realmName)
+        final var renderedMetadataDirectory = requireNonNull(configuration.getRealmByName(realmName)
                 .orElseThrow()
                 .renderedMetadataDirectory());
         try {
