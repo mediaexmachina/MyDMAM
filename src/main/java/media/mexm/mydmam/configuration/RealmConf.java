@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.configuration;
 
+import static java.time.Duration.ofMinutes;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.dto.StorageCategory.DAS;
 import static media.mexm.mydmam.dto.StorageStateClass.ONLINE;
@@ -66,7 +67,7 @@ public record RealmConf(@Valid Map<TechnicalName, PathIndexingStorage> storages,
         }
 
         if (delayedSync == null) {
-            delayedSync = new DelayedSyncConfiguration(1000, Duration.ofMinutes(1));
+            delayedSync = new DelayedSyncConfiguration(2000, ofMinutes(10));
         }
     }
 
