@@ -31,6 +31,7 @@ import { DirListStyle } from '../../enums/dir-list-style.enum';
 import { RemoveFileNameExtensionPipe } from '../../pipes/remove-file-name-extension-pipe';
 import { GetFileNameExtensionPipe } from '../../pipes/get-file-name-extension-pipe';
 import { PaginationComponent } from '../toolkit/pagination.component';
+import { AppTitle } from '../../app.title';
 
 @Component({
   selector: 'app-navigator-folder',
@@ -52,6 +53,7 @@ export class NavigatorFolderComponent {
     readonly _SortOrder = SortOrder;
     readonly _DirListStyle = DirListStyle;
     readonly route = inject(ActivatedRoute);
+    readonly appTitle = inject(AppTitle);
     readonly localStorageService = inject(LocalStorageService);
     readonly fileSystemService = inject(FileSystemService);
     readonly assetService = inject(AssetService);
@@ -81,7 +83,25 @@ export class NavigatorFolderComponent {
             this.list(hashPath);
         });
     }
-    
+
+    private onListResponse(r: FileResponse|null) {
+        this.dirListResponse.set(r);
+        if (r != null) {
+            if (r.path == "/") {
+                this.appTitle.set(r.storage + " storage");
+            } else {
+                const pos = r.path.lastIndexOf("/");
+                const name = r.path.substring(pos + 1);
+                const parentDir = r.path.substring(0, pos);
+                if (parentDir == "") {
+                    this.appTitle.set(name + " | " + r.storage);
+                } else {
+                    this.appTitle.set(name + " | " + r.storage + ":" + parentDir);
+                }
+            }
+        }
+    }
+
     list(hashPath:string, skip: number = 0):void {
         if (hashPath == "") {
             this.fileSystemService.listRoot(
@@ -94,7 +114,7 @@ export class NavigatorFolderComponent {
                 this.currentSortOrder["type"],
                 this.currentSortOrder["date"],
                 this.currentSortOrder["size"])
-                .then(r => this.dirListResponse.set(r));
+                .then(r => this.onListResponse(r));
         } else {
             this.fileSystemService.list(
                 this.storage(),
@@ -107,7 +127,7 @@ export class NavigatorFolderComponent {
                 this.currentSortOrder["type"],
                 this.currentSortOrder["date"],
                 this.currentSortOrder["size"])
-                .then(r => this.dirListResponse.set(r));
+                .then(r => this.onListResponse(r));
         }
     }
 

@@ -32,6 +32,7 @@ import { SearchConstraintsSizeRangeEditorComponent } from "./search-constraints-
 import { SpanFileSizeComponent } from "../toolkit/span-file-size.component";
 import { SearchConstraintsStorageEditorComponent } from "./search-constraints-storage-editor.component";
 import { SearchConstraintsParentPathEditorComponent } from "./search-constraints-parent-path-editor.component";
+import { AppTitle } from '../../app.title';
 
 @Component({
     selector: 'app-search-page-results',
@@ -51,6 +52,7 @@ import { SearchConstraintsParentPathEditorComponent } from "./search-constraints
 export class SearchPageResultsComponent {
 
     readonly route = inject(ActivatedRoute);
+    readonly appTitle = inject(AppTitle);
     readonly searchService = inject(SearchService);
     readonly fileSystemService = inject(FileSystemService);
     readonly pendingSearch = signal<boolean>(false);
@@ -73,6 +75,9 @@ export class SearchPageResultsComponent {
 
         this.searchService.openSearch(q, 0, true, searchConstraints).then((response) => {
             this.searchResponse.set(response);
+            if (response?.q) {
+                this.appTitle.set("Search results for \"" + response?.q + "\"");
+            }
         }).finally(() => {
             this.pendingSearch.set(false);
         });
