@@ -14,7 +14,7 @@
  * Copyright (C) Media ex Machina 2026
  * 
  */
-import { effect, inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 import { InstanceService } from './services/instance.service';
@@ -35,7 +35,7 @@ export class AppTitle extends TitleStrategy {
 
     override updateTitle(routerState: RouterStateSnapshot) {
         const routerTitle = this.buildTitle(routerState);
-        if (routerTitle != undefined && routerTitle != null) {
+        if (routerTitle != undefined) {
             this.set(routerTitle);
         } else {
             this.set("");
