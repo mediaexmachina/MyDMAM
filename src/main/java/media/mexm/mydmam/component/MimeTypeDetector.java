@@ -40,55 +40,56 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class MimeTypeDetector {
 
-	public static final String DEFAULT_MIME_TYPE = UNKNOWN_MIME_TYPE.toString();
+    public static final String DEFAULT_MIME_TYPE = UNKNOWN_MIME_TYPE.toString();
 
-	@Autowired
-	MimeUtil2 magicMimeUtil;
-	@Autowired
-	MimeUtil2 extensionMimeUtil;
+    @Autowired
+    MimeUtil2 magicMimeUtil;
+    @Autowired
+    MimeUtil2 extensionMimeUtil;
 
-	public String getMimeType(final String filename) {
-		final var file = new File("TEMP_DETECTION_MYDMAM." + getExtension(filename));
-		return getMostSpecificMimeType(extensionMimeUtil.getMimeTypes(file)).toString();
-	}
+    public String getMimeType(final String filename) {
+        final var file = new File("TEMP_DETECTION_MYDMAM." + getExtension(filename).toLowerCase());
+        return getMostSpecificMimeType(extensionMimeUtil.getMimeTypes(file)).toString().toLowerCase();
+    }
 
-	public String getMimeType(final File source) {
-		final var detectedTypes = castList(magicMimeUtil.getMimeTypes(source));
-		final var extensionTypes = castList(extensionMimeUtil.getMimeTypes(source));
+    public String getMimeType(final File source) {
+        final var detectedTypes = castList(magicMimeUtil.getMimeTypes(source));
+        final var extensionTypes = castList(extensionMimeUtil.getMimeTypes(source));
 
-		log.debug("File \"{}\" detected as mime type {}, extension type {}",
-				source.getAbsolutePath(), detectedTypes, extensionTypes);
+        log.debug("File \"{}\" detected as mime type {}, extension type {}",
+                source.getAbsolutePath(), detectedTypes, extensionTypes);
 
-		for (final var dT : detectedTypes) {
-			for (final var eT : extensionTypes) {
-				if (dT.equals(eT)) {
-					return dT.toString();
-				}
-			}
-		}
+        for (final var dT : detectedTypes) {
+            for (final var eT : extensionTypes) {
+                if (dT.equals(eT)) {
+                    return dT.toString();
+                }
+            }
+        }
 
-		final var allTypes = new LinkedHashSet<MimeType>();
-		allTypes.addAll(detectedTypes);
-		if (detectedTypes.isEmpty()) {
-			allTypes.addAll(extensionTypes);
-		}
+        final var allTypes = new LinkedHashSet<MimeType>();
+        allTypes.addAll(detectedTypes);
+        if (detectedTypes.isEmpty()) {
+            allTypes.addAll(extensionTypes);
+        }
 
-		return allTypes.stream()
-				.sorted((l, r) -> r.compareTo(l))
-				.findFirst()
-				.map(Object::toString)
-				.orElse(DEFAULT_MIME_TYPE);
-	}
+        return allTypes.stream()
+                .sorted((l, r) -> r.compareTo(l))
+                .findFirst()
+                .map(Object::toString)
+                .map(String::toLowerCase)
+                .orElse(DEFAULT_MIME_TYPE);
+    }
 
-	static List<MimeType> castList(final Collection<?> rawCollection) {
-		final List<MimeType> result = new ArrayList<>(rawCollection.size());
-		for (final Object o : rawCollection) {
-			if (o.toString().equals(DEFAULT_MIME_TYPE)) {
-				continue;
-			}
-			result.add(MimeType.class.cast(o));
-		}
-		return result;
-	}
+    static List<MimeType> castList(final Collection<?> rawCollection) {
+        final List<MimeType> result = new ArrayList<>(rawCollection.size());
+        for (final Object o : rawCollection) {
+            if (o.toString().equals(DEFAULT_MIME_TYPE)) {
+                continue;
+            }
+            result.add(MimeType.class.cast(o));
+        }
+        return result;
+    }
 
 }
