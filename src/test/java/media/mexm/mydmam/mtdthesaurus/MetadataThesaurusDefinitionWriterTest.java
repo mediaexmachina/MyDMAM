@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
+import static java.time.Duration.ofMillis;
 import static java.util.Optional.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,6 +44,8 @@ class MetadataThesaurusDefinitionWriterTest {
     String value;
     @Fake
     int number;
+    @Fake
+    long duration;
 
     MetadataThesaurusDefinitionWriter<Object> w;
 
@@ -61,20 +64,20 @@ class MetadataThesaurusDefinitionWriterTest {
     void testGetSet() {
         w.setInstance(object);
 
-        assertThat(w.get()).isEmpty();
+        assertThat(w.getAndRemoveCurrentValue()).isEmpty();
         assertEquals(object, w.set(layer, value));
-        assertThat(w.get()).contains(new WritedLayerValue(layer, value));
-        assertThat(w.get()).isEmpty();
+        assertThat(w.getAndRemoveCurrentValue()).contains(new WritedLayerValue(layer, value));
+        assertThat(w.getAndRemoveCurrentValue()).isEmpty();
     }
 
     @Test
     void testGetSet_defaultLayer() {
         w.setInstance(object);
 
-        assertThat(w.get()).isEmpty();
+        assertThat(w.getAndRemoveCurrentValue()).isEmpty();
         assertEquals(object, w.set(value));
-        assertThat(w.get()).contains(new WritedLayerValue(0, value));
-        assertThat(w.get()).isEmpty();
+        assertThat(w.getAndRemoveCurrentValue()).contains(new WritedLayerValue(0, value));
+        assertThat(w.getAndRemoveCurrentValue()).isEmpty();
     }
 
     @Test
@@ -82,7 +85,7 @@ class MetadataThesaurusDefinitionWriterTest {
         w.setInstance(object);
 
         assertEquals(object, w.set(null));
-        assertThat(w.get()).isEmpty();
+        assertThat(w.getAndRemoveCurrentValue()).isEmpty();
     }
 
     @Test
@@ -90,7 +93,7 @@ class MetadataThesaurusDefinitionWriterTest {
         w.setInstance(object);
 
         assertEquals(object, w.set(empty()));
-        assertThat(w.get()).isEmpty();
+        assertThat(w.getAndRemoveCurrentValue()).isEmpty();
     }
 
     @Test
@@ -98,7 +101,7 @@ class MetadataThesaurusDefinitionWriterTest {
         w.setInstance(object);
 
         assertEquals(object, w.set(Optional.ofNullable(value)));
-        assertThat(w.get()).contains(new WritedLayerValue(0, value));
+        assertThat(w.getAndRemoveCurrentValue()).contains(new WritedLayerValue(0, value));
     }
 
     @Test
@@ -106,7 +109,14 @@ class MetadataThesaurusDefinitionWriterTest {
         w.setInstance(object);
 
         assertEquals(object, w.set(number));
-        assertThat(w.get()).contains(new WritedLayerValue(0, String.valueOf(number)));
+        assertThat(w.getAndRemoveCurrentValue()).contains(new WritedLayerValue(0, String.valueOf(number)));
+    }
+
+    @Test
+    void testSet_duration() {
+        w.setInstance(object);
+        assertEquals(object, w.set(ofMillis(duration)));
+        assertThat(w.getAndRemoveCurrentValue()).contains(new WritedLayerValue(0, String.valueOf(duration)));
     }
 
     @Test

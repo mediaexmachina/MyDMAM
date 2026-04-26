@@ -77,7 +77,7 @@ public class MetadataThesaurusServiceImpl implements MetadataThesaurusService {
         final var origin = handler.getMetadataOriginName();
         final var def = new MetadataThesaurusDefinitionWriter<T>();
         final var instance = logic.injectInstanceWriteEntities(entry -> {
-            final var writed = def.get();
+            final var writed = def.getAndRemoveCurrentValue();
             if (writed.isEmpty()) {
                 return;
             }

@@ -16,12 +16,20 @@
  */
 package media.mexm.mydmam.activity.component;
 
+import static java.lang.Integer.compare;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableSet;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
+import static org.apache.commons.io.FileUtils.write;
 import static tv.hd3g.processlauncher.cmdline.Parameters.bulk;
 
+import java.io.IOException;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,22 +41,39 @@ import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.component.ExternalExecCapabilities;
 import media.mexm.mydmam.entity.FileEntity;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MetadataThesaurusService;
+import tv.hd3g.fflauncher.recipes.ProbeMedia;
+import tv.hd3g.ffprobejaxb.FFprobeJAXB;
+import tv.hd3g.ffprobejaxb.FFprobeReference;
+import tv.hd3g.ffprobejaxb.data.FFProbeStream;
+import tv.hd3g.ffprobejaxb.data.FFProbeStreamDisposition;
+import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 
 @Slf4j
 @Component
 public class FFprobeInfoActivity implements ActivityHandler { // TODO test
 
+    private static final String AUDIO_SLASH = "audio/";
+    private static final String VIDEO_SLASH = "video/";
     @Autowired
     MediaAssetService mediaAssetService;
     @Autowired
     MetadataThesaurusService metadataThesaurusService;
     @Autowired
     ExternalExecCapabilities externalExecCapabilities;
+    @Autowired
+    ScheduledExecutorService maxExecTimeScheduler;
+    @Autowired
+    ExecutableFinder executableFinder;
 
     private Set<String> passingPlaybookNames;
+
+    // TODO display and download from front, like identify "ffprobe-base" >> "ffprobe.xml"
 
     @Override
     public boolean isEnabled() {
@@ -158,6 +183,8 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             AUDIO_MIME_TYPES.stream())
             .collect(toUnmodifiableSet());
 
+    // TODO manage raster images
+
     @Override
     public boolean canHandle(final FileEntity fileEntity,
                              final ActivityEventType eventType,
@@ -172,15 +199,116 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
     public void handle(final FileEntity fileEntity,
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) throws Exception {
-        // TODO Auto-generated method stub
+        final var assetFile = storedOn.getLocalInternalFile(fileEntity);
+        final var probeMedia = new ProbeMedia("ffprobe", maxExecTimeScheduler);
+        probeMedia.setExecutableFinder(executableFinder);
+        final var ffprobeJAXB = probeMedia.process(assetFile).getResult();
+
+        saveFFprobeXMLFile(fileEntity, storedOn, ffprobeJAXB);
+
+        final var writer = metadataThesaurusService.getWriter(this, fileEntity, MtdThesaurusDefTechnical.class);
+
+        writer.set(ffprobeJAXB.getTimecode(false)).timecode();
+        writer.set(ffprobeJAXB.getDuration()).duration();
+        setMediaSummary(ffprobeJAXB, writer);
+
+        filterValidVideoStreams(ffprobeJAXB, true)
+                .sorted((l, r) -> compare(r.width() * r.height(), l.width() * l.height()))
+                .findFirst()
+                .ifPresent(biggestVStream -> {
+                    writer.set(biggestVStream.width()).width();
+                    writer.set(biggestVStream.height()).height();
+                });
+
+        final var mediaStreams = ffprobeJAXB.getStreams();
+        // ffprobeJAXB.getStreams().stream().map(FFProbeStream::index);
+
+        // TODO
+        ffprobeJAXB.getChapters();
+        ffprobeJAXB.getFormat();
+        ffprobeJAXB.getPrograms();
 
         /*
-        if (container.getSummary().getMimetype().startsWith("video") && result.hasVideo() == false) {
-             // No video, only audio is present but with bad mime category
-            container.getSummary().setMimetype("audio" + container.getSummary().getMimetype().substring(5));
-        }
+        MetadataThesaurusEntry colorspace();
         */
 
+        final var validVideoStreams = filterValidVideoStreams(ffprobeJAXB, false).toList();
+
+        final var currentMimeType = metadataThesaurusService.getMimeType(fileEntity).orElseThrow();
+        final var haveVideo = validVideoStreams.isEmpty() == false;
+        final var haveAudio = ffprobeJAXB.getAudioStreams().count() > 0l;
+
+        final var dublinCoreWriter = metadataThesaurusService.getWriter(this, fileEntity,
+                MtdThesaurusDefDublinCore.class);
+        patchInvalidAVMimeTypes(dublinCoreWriter, currentMimeType, haveVideo, haveAudio);
+
+    }
+
+    void saveFFprobeXMLFile(final FileEntity fileEntity,
+                            final RealmStorageConfiguredEnv storedOn,
+                            final FFprobeJAXB ffprobeJAXB) throws IOException {
+        if (storedOn.haveWorkingDir()
+            && storedOn.haveRenderedDir()
+            && storedOn.getActivityLimitPolicy().isLevelLowerThan(BASE_PREVIEW) == false) {
+            final var workingFile = storedOn.makeWorkingFile("ffprobe.xml", fileEntity);
+
+            log.debug("Write and save ffprobe XML {} from {}", workingFile, fileEntity);
+            write(workingFile, ffprobeJAXB.getXmlContent(), UTF_8);
+            mediaAssetService.declareRenderedStaticFile(
+                    fileEntity, workingFile, "ffprobe.xml", true, 0, "ffprobe-base");
+        }
+    }
+
+    static void patchInvalidAVMimeTypes(final MetadataThesaurusDefinitionWriter<MtdThesaurusDefDublinCore> writer,
+                                        final String currentMimeType,
+                                        final boolean haveVideo,
+                                        final boolean haveAudio) {
+        if (currentMimeType.startsWith(VIDEO_SLASH) && haveVideo == false && haveAudio) {
+            writer.set(currentMimeType.replace(VIDEO_SLASH, AUDIO_SLASH)).format();
+        } else if (currentMimeType.startsWith(AUDIO_SLASH) && haveVideo == true) {
+            writer.set(currentMimeType.replace(AUDIO_SLASH, VIDEO_SLASH)).format();
+        }
+    }
+
+    static Stream<FFProbeStream> filterValidVideoStreams(final FFprobeReference ffprobe, final boolean ensureDefault) {
+        final var streams = ffprobe.getVideoStreams().toList();
+        final var containsStreamDispositionAsDefault = streams.stream()
+                .map(FFProbeStream::disposition)
+                .filter(not(Objects::isNull))
+                .anyMatch(FFProbeStreamDisposition::asDefault);
+
+        return streams.stream()
+                .filter(s -> s.width() > 0 && s.height() > 0)
+                .filter(s -> {
+                    if (s.disposition() != null) {
+                        if (s.disposition().attachedPic()
+                            || s.disposition().timedThumbnails()) {
+                            return false;
+                        }
+                        if (containsStreamDispositionAsDefault && ensureDefault) {
+                            return s.disposition().asDefault();
+                        }
+                        if (s.disposition().forced()) {
+                            return true;
+                        }
+                    }
+                    return true;
+                });
+    }
+
+    static void setMediaSummary(final FFprobeJAXB ffprobeJAXB,
+                                final MetadataThesaurusDefinitionWriter<MtdThesaurusDefTechnical> writer) {
+        final var mediaSummary = ffprobeJAXB.getMediaSummary();
+        if (mediaSummary.format().isEmpty() == false) {
+            writer.set(-1, mediaSummary.format()).type();
+        }
+        final var mediaSummaryStreams = mediaSummary.streams();
+        for (var pos = 0; pos < mediaSummaryStreams.size(); pos++) {
+            final var mediaSummaryForStream = mediaSummaryStreams.get(pos);
+            if (mediaSummaryForStream.isEmpty() == false) {
+                writer.set(pos, mediaSummaryForStream).type();
+            }
+        }
     }
 
     // XXX

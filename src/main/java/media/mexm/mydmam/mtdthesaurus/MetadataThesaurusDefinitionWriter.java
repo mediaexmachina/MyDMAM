@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,7 +39,7 @@ public class MetadataThesaurusDefinitionWriter<T> {
         this.instance = instance;
     }
 
-    public Optional<WritedLayerValue> get() {
+    public Optional<WritedLayerValue> getAndRemoveCurrentValue() {
         final var result = Optional.ofNullable(currentValue.get());
         currentValue.set(null);
         return result;
@@ -56,9 +57,11 @@ public class MetadataThesaurusDefinitionWriter<T> {
             currentValue.set(null);
         } else if (value instanceof final String s) {
             currentValue.set(new WritedLayerValue(layer, s));
+        } else if (value instanceof final Duration d) {
+            currentValue.set(new WritedLayerValue(layer, String.valueOf(d.toMillis())));
         } else if (value instanceof final Optional<?> o) {
             if (o.isPresent()) {
-                currentValue.set(new WritedLayerValue(layer, String.valueOf(o.get())));
+                return set(layer, o.get());
             } else {
                 currentValue.set(null);
             }

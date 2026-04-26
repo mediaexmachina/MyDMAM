@@ -36,4 +36,8 @@ public interface MtdThesaurusDefTechnical {
      */
     MetadataThesaurusEntry imageAspectFormat();
 
+    MetadataThesaurusEntry timecode();
+
+    MetadataThesaurusEntry duration();
+
 }
