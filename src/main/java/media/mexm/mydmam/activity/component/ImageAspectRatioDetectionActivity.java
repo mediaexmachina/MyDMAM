@@ -84,6 +84,8 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
         final var height = reader.height().value().map(Float::parseFloat).orElseThrow();
         final var width = reader.width().value().map(Float::parseFloat).orElseThrow();
 
+        // TODO manage ffprobe results sampleAspectRatio() + displayAspectRatio() on layers
+
         final var dar = width / height;
         writer.set(round(dar * 1000.0) / 1000.0).aspectRatio();
 
