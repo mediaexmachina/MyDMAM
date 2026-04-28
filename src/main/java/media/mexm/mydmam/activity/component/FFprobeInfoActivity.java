@@ -513,7 +513,6 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             "audio/amr-wb",
             "audio/amr-wb+",
             "audio/speex",
-            "audio/g719",
             "audio/g722",
             "audio/g7221",
             "audio/g723",
@@ -521,78 +520,81 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             "audio/g726-24",
             "audio/g726-32",
             "audio/g726-40",
-            "audio/g728",
             "audio/g729",
             "audio/g7291",
             "audio/g729d",
             "audio/g729e",
             "audio/gsm");
 
-    boolean isCanUsedInMasterAsPreview(final String mimeType, final FFprobeJAXB ffprobeJAXB) {
+    private static final Set<String> MASTER_AS_PREVIEW_VIDEO_CODECS = Set.of(
+            "h264",
+            "hevc",
+            "vp8",
+            "vp9",
+            "av1",
+            "mpeg4");
+
+    private static final Set<String> MASTER_AS_PREVIEW_AUDIO_CODECS = Set.of(
+            "aac",
+            "adpcm_g722",
+            "adpcm_g726",
+            "adpcm_g726le",
+            "amr_nb",
+            "amr_wb",
+            "g723_1",
+            "g729",
+            "gsm",
+            "ilbc",
+            "mp2",
+            "mp3",
+            "opus",
+            "pcm_f16le",
+            "pcm_f24le",
+            "pcm_f32be",
+            "pcm_f32le",
+            "pcm_s16be",
+            "pcm_s16le",
+            "pcm_s24be",
+            "pcm_s24le",
+            "pcm_s32be",
+            "pcm_s32le",
+            "pcm_s8",
+            "speex",
+            "vorbis");
+
+    boolean isCanBeUsedInMasterAsPreview(final String mimeType, final FFprobeJAXB ffprobeJAXB) {
+        if (MASTER_AS_PREVIEW_MIME_TYPES.contains(mimeType) == false) {
+            return false;
+        }
+
         final var oVideoStream = ffprobeJAXB.getFirstVideoStream();
         final var oAudioStream = ffprobeJAXB.getAudioStreams().findFirst();
-
-        // TODO
+        if (oVideoStream.isEmpty() && oAudioStream.isEmpty()) {
+            return false;
+        }
 
         if (oVideoStream.isPresent()) {
             final var videoStream = oVideoStream.get();
-
+            if (videoStream.bitRate() > 8_000_000
+                || videoStream.width() > 1920
+                || videoStream.height() > 1080
+                || Optional.ofNullable(videoStream.sampleAspectRatio()).orElse("1:1").equals("1:1") == false
+                || Optional.ofNullable(videoStream.fieldOrder()).orElse("progressive").equals("progressive") == false
+                || MASTER_AS_PREVIEW_VIDEO_CODECS.contains(videoStream.codecName()) == false) {
+                return false;
+            }
         }
 
         if (oAudioStream.isPresent()) {
             final var audioStream = oAudioStream.get();
-
-            audioStream.sampleRate();
-            audioStream.codecName();
-
-            if (audioStream.channels() > 6) {
+            if (audioStream.sampleRate() > 48000
+                || audioStream.channels() > 6
+                || MASTER_AS_PREVIEW_AUDIO_CODECS.contains(audioStream.codecName()) == false) {
                 return false;
             }
-
         }
 
-        return false;
+        return true;
     }
 
-    /*
-
-    //TODO MasterAsPreview
-
-    MP3
-    AAC (all flavors)
-    Vorbis
-    
-    G.729
-    AMR-NB
-    AMR-WB (G.722.2)
-    Speex
-    iSAC
-    iLBC
-    G.722.1 (all variants)
-    G.719
-
-
-                video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].sample_rate", Comparator.EQUALS, 48000, 44100, 32000);
-                video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].codec_name", Comparator.EQUALS, "aac");
-                video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].channels", Comparator.EQUALS, 1, 2);
-                video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].bit_rate", Comparator.EQUALS_OR_SMALLER_THAN, 384000);
-                ***
-                video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'video')].codec_name", Comparator.EQUALS, "h264");
-                video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'video')].width", Comparator.EQUALS_OR_SMALLER_THAN, 1920);
-                video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'video')].height", Comparator.EQUALS_OR_SMALLER_THAN, 1080);
-                video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'video')].level", Comparator.EQUALS_OR_SMALLER_THAN, 42);
-                video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'video')].bit_rate", Comparator.EQUALS_OR_SMALLER_THAN, 4000000);
-    
-                audio_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].codec_name", Comparator.EQUALS, "aac", "mp3");
-                audio_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].channels", Comparator.EQUALS, 1, 2);
-                audio_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].bit_rate", Comparator.EQUALS_OR_SMALLER_THAN, 384000);
-
-            if (video_webbrowser_validation.validate(container)) {
-                Loggers.Transcode_Metadata_Validation.debug("Master as preview (video) ok for " + container.getOrigin().toString());
-                return true;
-            } else if (audio_webbrowser_validation.validate(container)) {
-                Loggers.Transcode_Metadata_Validation.debug("Master as preview (audio) ok for " + container.getOrigin().toString());
-                return true;
-            }
-    */
 }
