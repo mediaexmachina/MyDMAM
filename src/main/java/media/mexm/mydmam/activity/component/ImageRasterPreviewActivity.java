@@ -28,6 +28,7 @@ import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.repository.FileMetadataDao;
 import media.mexm.mydmam.service.MediaAssetService;
@@ -60,7 +61,7 @@ public class ImageRasterPreviewActivity implements ActivityHandler {
     }
 
     private boolean hasResolution(final FileEntity file) {
-        final var def = metadataThesaurusService.getReader(MtdThesaurusDefTechnical.class, file, 0);
+        final var def = metadataThesaurusService.getReader(MtdThesaurusDefTechnicalImage.class, file, 0);
         return def.width().intValue(-1) > 0
                && def.height().intValue(-1) > 0;
     }

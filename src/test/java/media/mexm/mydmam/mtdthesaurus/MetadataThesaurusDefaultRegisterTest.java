@@ -48,6 +48,14 @@ class MetadataThesaurusDefaultRegisterTest {
         assertThat(i.called)
                 .containsExactlyInAnyOrder(
                         MtdThesaurusDefTechnical.class,
+                        MtdThesaurusDefChapter.class,
+                        MtdThesaurusDefTechnicalAudio.class,
+                        MtdThesaurusDefTechnicalStream.class,
+                        MtdThesaurusDefTechnicalImage.class,
+                        MtdThesaurusDefTechnicalTransportStream.class,
+                        MtdThesaurusDefTechnicalVideo.class,
+                        MtdThesaurusDefTechnicalContainer.class,
+                        MtdThesaurusDefTechnicalMXF.class,
                         MtdThesaurusDefPDF.class,
                         MtdThesaurusDefDCMI.class,
                         MtdThesaurusDefDublinCore.class,

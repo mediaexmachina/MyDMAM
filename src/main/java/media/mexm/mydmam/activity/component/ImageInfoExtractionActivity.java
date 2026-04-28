@@ -30,6 +30,7 @@ import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MetadataThesaurusService;
@@ -102,15 +103,17 @@ public class ImageInfoExtractionActivity implements ActivityHandler {
                 .set(jsonNode.read("$.image.mimeType", String.class))
                 .format();
 
-        final var techWriter = metadataThesaurusService.getWriter(this, file, MtdThesaurusDefTechnical.class);
-        techWriter.set(jsonNode.read("$.image.geometry.width", Integer.class)).width();
-        techWriter.set(jsonNode.read("$.image.geometry.height", Integer.class)).height();
+        final var imageWriter = metadataThesaurusService.getWriter(this, file, MtdThesaurusDefTechnicalImage.class);
+        imageWriter.set(jsonNode.read("$.image.geometry.width", Integer.class)).width();
+        imageWriter.set(jsonNode.read("$.image.geometry.height", Integer.class)).height();
 
         final var orientation = jsonNode.read("$.image.orientation", String.class).orElse("undefined");
         if (orientation.equalsIgnoreCase("undefined") == false) {
-            techWriter.set(orientation).orientation();
+            imageWriter.set(orientation).orientation();
         }
-        techWriter.set(jsonNode.read("$.image.colorspace", String.class)).colorspace();
+        imageWriter.set(jsonNode.read("$.image.colorspace", String.class)).colorspace();
+
+        final var techWriter = metadataThesaurusService.getWriter(this, file, MtdThesaurusDefTechnical.class);
         techWriter.set(jsonNode.read("$.image.type", String.class).map(String::toLowerCase)).type();
     }
 

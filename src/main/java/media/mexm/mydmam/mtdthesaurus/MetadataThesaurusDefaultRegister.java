@@ -22,6 +22,14 @@ public interface MetadataThesaurusDefaultRegister {
 
     default void defaultRegister() {
         makeInstance(MtdThesaurusDefTechnical.class);
+        makeInstance(MtdThesaurusDefChapter.class);
+        makeInstance(MtdThesaurusDefTechnicalAudio.class);
+        makeInstance(MtdThesaurusDefTechnicalStream.class);
+        makeInstance(MtdThesaurusDefTechnicalImage.class);
+        makeInstance(MtdThesaurusDefTechnicalTransportStream.class);
+        makeInstance(MtdThesaurusDefTechnicalVideo.class);
+        makeInstance(MtdThesaurusDefTechnicalContainer.class);
+        makeInstance(MtdThesaurusDefTechnicalMXF.class);
         makeInstance(MtdThesaurusDefPDF.class);
         makeInstance(MtdThesaurusDefDCMI.class);
         makeInstance(MtdThesaurusDefDublinCore.class);

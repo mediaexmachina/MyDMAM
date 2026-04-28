@@ -17,47 +17,8 @@
 package media.mexm.mydmam.mtdthesaurus;
 
 @MetadataThesaurusClassifier(value = "technical")
-public interface MtdThesaurusDefTechnical {// TODO split with image/video
-
-    // TODO declare all new Thresaurus
-
-    MetadataThesaurusEntry width();
-
-    MetadataThesaurusEntry height();
-
-    MetadataThesaurusEntry pixelformat();
-
-    MetadataThesaurusEntry colorspace();
-
-    MetadataThesaurusEntry colorrange();
-
-    MetadataThesaurusEntry colorprimaries();
-
-    MetadataThesaurusEntry colortransfer();
-
-    MetadataThesaurusEntry orientation();
+public interface MtdThesaurusDefTechnical {
 
     MetadataThesaurusEntry type();
-
-    MetadataThesaurusEntry aspectRatio();
-
-    /**
-     * 1:1
-     */
-    MetadataThesaurusEntry sampleAspectRatio();
-
-    /**
-     * 16:9
-     */
-    MetadataThesaurusEntry displayAspectRatio();
-
-    /**
-     * @see ImageAspectRatioDetectionActivity.PageOrientation
-     */
-    MetadataThesaurusEntry imageAspectFormat();
-
-    MetadataThesaurusEntry timecode();
-
-    MetadataThesaurusEntry duration();
 
 }

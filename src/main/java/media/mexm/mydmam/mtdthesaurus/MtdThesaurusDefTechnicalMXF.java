@@ -16,13 +16,21 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical:video")
-public interface MtdThesaurusDefTechnicalVideo {
+@MetadataThesaurusClassifier(value = "technical:mxf")
+public interface MtdThesaurusDefTechnicalMXF {
 
-    MetadataThesaurusEntry fieldOrder();
+    MetadataThesaurusEntry operationalPatternUL();
 
-    MetadataThesaurusEntry frameRate();
+    MetadataThesaurusEntry uid();
 
-    MetadataThesaurusEntry averageFrameRate();
+    MetadataThesaurusEntry generationUID();
+
+    MetadataThesaurusEntry materialPackageUMID();
+
+    MetadataThesaurusEntry trackName();
+
+    MetadataThesaurusEntry filePackageUMID();
+
+    MetadataThesaurusEntry filePackageName();
 
 }

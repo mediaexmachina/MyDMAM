@@ -41,7 +41,7 @@ import org.springframework.test.context.ActiveProfiles;
 import media.mexm.mydmam.FlatMetadataThesaurusService;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -99,26 +99,26 @@ class ImageAspectRatioDetectionActivityTest {
 
     @Test
     void testCanHandle_onlyHeight() {
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, high).height();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).height();
         assertFalse(iarda.canHandle(fileEntity, eventType, storedOn));
     }
 
     @Test
     void testCanHandle() {
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, high).height();
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, high).width();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).height();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).width();
         assertTrue(iarda.canHandle(fileEntity, eventType, storedOn));
     }
 
     @Test
     void testHandle_SQUARE() {
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, high).width();
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, high).height();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).width();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).height();
 
         iarda.handle(fileEntity, eventType, storedOn);
 
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, 1f).aspectRatio();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, SQUARE).imageAspectFormat();
+        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, 1f).aspectRatio();
+        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, SQUARE).imageAspectFormat();
 
         verify(fileEntity, atLeastOnce()).getRealm();
         verify(fileEntity, atLeastOnce()).getHashPath();
@@ -126,14 +126,14 @@ class ImageAspectRatioDetectionActivityTest {
 
     @Test
     void testHandle_LANDSCAPE() {
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, high).width();
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, low).height();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).width();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, low).height();
 
         iarda.handle(fileEntity, eventType, storedOn);
 
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class,
+        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class,
                 round(high * 1000.0 / low) / 1000.0).aspectRatio();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, LANDSCAPE).imageAspectFormat();
+        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, LANDSCAPE).imageAspectFormat();
 
         verify(fileEntity, atLeastOnce()).getRealm();
         verify(fileEntity, atLeastOnce()).getHashPath();
@@ -141,14 +141,14 @@ class ImageAspectRatioDetectionActivityTest {
 
     @Test
     void testHandle_PORTRAIT() {
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, low).width();
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, high).height();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, low).width();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).height();
 
         iarda.handle(fileEntity, eventType, storedOn);
 
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class,
+        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class,
                 round(low * 1000.0 / high) / 1000.0).aspectRatio();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, PORTRAIT).imageAspectFormat();
+        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, PORTRAIT).imageAspectFormat();
 
         verify(fileEntity, atLeastOnce()).getRealm();
         verify(fileEntity, atLeastOnce()).getHashPath();

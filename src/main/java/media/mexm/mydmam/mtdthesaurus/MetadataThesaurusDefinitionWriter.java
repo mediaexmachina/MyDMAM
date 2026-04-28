@@ -56,7 +56,11 @@ public class MetadataThesaurusDefinitionWriter<T> {
         if (value == null) {
             currentValue.set(null);
         } else if (value instanceof final String s) {
-            currentValue.set(new WritedLayerValue(layer, s));
+            if (s.isBlank() == false) {// TODO test
+                currentValue.set(new WritedLayerValue(layer, s));
+            } else {
+                currentValue.set(null);
+            }
         } else if (value instanceof final Duration d) {
             currentValue.set(new WritedLayerValue(layer, String.valueOf(d.toMillis())));
         } else if (value instanceof final Optional<?> o) {
@@ -66,7 +70,7 @@ public class MetadataThesaurusDefinitionWriter<T> {
                 currentValue.set(null);
             }
         } else {
-            currentValue.set(new WritedLayerValue(layer, String.valueOf(value)));
+            set(layer, String.valueOf(value));
         }
 
         return instance;

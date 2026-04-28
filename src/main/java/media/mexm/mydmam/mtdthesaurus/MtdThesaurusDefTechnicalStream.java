@@ -16,7 +16,7 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical.stream")
+@MetadataThesaurusClassifier(value = "technical:stream")
 public interface MtdThesaurusDefTechnicalStream {
 
     MetadataThesaurusEntry isSecondary();
@@ -38,5 +38,7 @@ public interface MtdThesaurusDefTechnicalStream {
     MetadataThesaurusEntry level();
 
     MetadataThesaurusEntry profile();
+
+    MetadataThesaurusEntry startTime();
 
 }

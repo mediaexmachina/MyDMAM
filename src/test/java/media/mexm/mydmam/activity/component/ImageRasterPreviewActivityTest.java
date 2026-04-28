@@ -49,6 +49,7 @@ import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MediaRenderedFilesUtilsService;
@@ -132,8 +133,8 @@ class ImageRasterPreviewActivityTest {
         when(storedOn.haveRenderedDir()).thenReturn(true);
         assertFalse(irpa.canHandle(file, eventType, storedOn));
 
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, 1).width();
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, 1).height();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, 1).width();
+        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, 1).height();
 
         assertFalse(irpa.canHandle(file, eventType, storedOn));
 

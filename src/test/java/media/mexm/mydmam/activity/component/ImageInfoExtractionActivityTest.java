@@ -64,6 +64,7 @@ import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.tools.JsonPathHelper;
@@ -243,10 +244,10 @@ class ImageInfoExtractionActivityTest {
             verify(jsonNode, atLeastOnce()).read(anyString(), eq(Integer.class));
 
             metadataThesaurusService.checkIfAdded(MtdThesaurusDefDublinCore.class, imageMimeType).format();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, width).width();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, height).height();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, orientation).orientation();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, colorspace).colorspace();
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, width).width();
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, height).height();
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, orientation).orientation();
+            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, colorspace).colorspace();
             metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, imageType.toLowerCase()).type();
 
             verify(file, atLeastOnce()).getRealm();

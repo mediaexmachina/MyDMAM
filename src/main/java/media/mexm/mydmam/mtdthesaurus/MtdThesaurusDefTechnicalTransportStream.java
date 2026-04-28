@@ -16,13 +16,17 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical:video")
-public interface MtdThesaurusDefTechnicalVideo {
+@MetadataThesaurusClassifier(value = "technical:transportstream")
+public interface MtdThesaurusDefTechnicalTransportStream {
 
-    MetadataThesaurusEntry fieldOrder();
+    MetadataThesaurusEntry programNum();
 
-    MetadataThesaurusEntry frameRate();
+    MetadataThesaurusEntry pcrPid();
 
-    MetadataThesaurusEntry averageFrameRate();
+    MetadataThesaurusEntry pmtPid();
+
+    MetadataThesaurusEntry serviceName();
+
+    MetadataThesaurusEntry serviceProvider();
 
 }

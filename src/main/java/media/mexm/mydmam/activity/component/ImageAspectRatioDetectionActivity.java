@@ -21,6 +21,7 @@ import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.LANDSCAPE;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.PORTRAIT;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.SQUARE;
+import static org.apache.commons.lang3.math.Fraction.getReducedFraction;
 
 import java.util.Set;
 
@@ -33,7 +34,7 @@ import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.dto.StorageStateClass;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MetadataThesaurusService;
 
@@ -63,9 +64,10 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
     public boolean canHandle(final FileEntity fileEntity,
                              final ActivityEventType eventType,
                              final RealmStorageConfiguredEnv storedOn) {
-        final var reader = metadataThesaurusService.getReader(MtdThesaurusDefTechnical.class, fileEntity);
-        return reader.height().value().isPresent()
-               && reader.width().value().isPresent();
+        final var imageReader = metadataThesaurusService.getReader(MtdThesaurusDefTechnicalImage.class, fileEntity);
+        return imageReader.imageAspectFormat().value().isEmpty()
+               && imageReader.height().value().isPresent()
+               && imageReader.width().value().isPresent();
     }
 
     public enum PageOrientation {
@@ -78,24 +80,42 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
     public void handle(final FileEntity fileEntity,
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) {
-        final var reader = metadataThesaurusService.getReader(MtdThesaurusDefTechnical.class, fileEntity);
-        final var writer = metadataThesaurusService.getWriter(this, fileEntity, MtdThesaurusDefTechnical.class);
+        final var reader = metadataThesaurusService.getReader(MtdThesaurusDefTechnicalImage.class, fileEntity);
+        final var imageWriter = metadataThesaurusService.getWriter(this, fileEntity,
+                MtdThesaurusDefTechnicalImage.class);
 
         final var height = reader.height().value().map(Float::parseFloat).orElseThrow();
         final var width = reader.width().value().map(Float::parseFloat).orElseThrow();
 
-        // TODO manage ffprobe results sampleAspectRatio() + displayAspectRatio() on layers
+        if (height < 1 || width < 1) {
+            return;
+        }
 
-        final var dar = width / height;
-        writer.set(round(dar * 1000.0) / 1000.0).aspectRatio();
+        if (reader.displayAspectRatio().value().isEmpty()) {
+            final var fraction = getReducedFraction(Math.round(width), Math.round(height));
+            imageWriter.set(fraction.getNumerator() + ":" + fraction.getDenominator()).displayAspectRatio();
+        }
 
+        if (reader.sampleAspectRatio().value().isEmpty()) {
+            imageWriter.set("1:1").sampleAspectRatio();
+        }
+
+        imageWriter.set(aspectRatio(width, height)).aspectRatio();
+        imageWriter.set(getPageOrientation(width, height)).imageAspectFormat();
+    }
+
+    static double aspectRatio(final float width, final float height) {
+        return round(width / height * 1000.0) / 1000.0;
+    }
+
+    static PageOrientation getPageOrientation(final float width, final float height) {
         final var aspect = Float.compare(width, height);
         if (aspect == 0) {
-            writer.set(SQUARE).imageAspectFormat();
+            return SQUARE;
         } else if (aspect > 0) {
-            writer.set(LANDSCAPE).imageAspectFormat();
+            return LANDSCAPE;
         } else {
-            writer.set(PORTRAIT).imageAspectFormat();
+            return PORTRAIT;
         }
     }
 

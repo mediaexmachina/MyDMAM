@@ -17,19 +17,23 @@
 package media.mexm.mydmam.activity.component;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
+import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.aspectRatio;
+import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.getPageOrientation;
 import static org.apache.commons.io.FileUtils.write;
 import static tv.hd3g.processlauncher.cmdline.Parameters.bulk;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
@@ -44,11 +48,17 @@ import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.component.ExternalExecCapabilities;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefChapter;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalAudio;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalContainer;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalMXF;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalStream;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalTransportStream;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalVideo;
+import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefXMP;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MetadataThesaurusService;
@@ -63,6 +73,7 @@ import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 @Component
 public class FFprobeInfoActivity implements ActivityHandler { // TODO test
 
+    private static final String FFPROBE = "ffprobe";
     private static final String AUDIO_SLASH = "audio/";
     private static final String VIDEO_SLASH = "video/";
     @Autowired
@@ -84,7 +95,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
     public boolean isEnabled() {
         if (passingPlaybookNames == null) {
             externalExecCapabilities.addPlaybook(
-                    "ffprobe",
+                    FFPROBE,
                     "run",
                     bulk("-version"),
                     evaluator -> {
@@ -98,8 +109,8 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                         return true;
                     });
 
-            externalExecCapabilities.tearDown("ffprobe");
-            passingPlaybookNames = externalExecCapabilities.getPassingPlaybookNames("ffprobe");
+            externalExecCapabilities.tearDown(FFPROBE);
+            passingPlaybookNames = externalExecCapabilities.getPassingPlaybookNames(FFPROBE);
         }
         return passingPlaybookNames.contains("run");
     }
@@ -111,13 +122,29 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
 
     @Override
     public String getMetadataOriginName() {
-        return "ffprobe";
+        return FFPROBE;
     }
 
     @Override
     public ActivityLimitPolicy getLimitPolicy() {
         return FILE_INFORMATION;
     }
+
+    private static final Map<String, String> WELL_KNOWN_CODECS_NAMES = Map.ofEntries(
+            Map.entry("dvvideo", "DV"),
+            Map.entry("dvcp", "DV/DVCPro"),
+            Map.entry("dv5p", "DVCPro 50"),
+            Map.entry("avc1", "h264"),
+            Map.entry("mpeg2video", "MPEG2"),
+            Map.entry("mx5p", "MPEG2/4:2:2"),
+            Map.entry("wmv3", "WMV9"),
+            Map.entry("wmav2", "WMA9"),
+            Map.entry("apch", "Apple ProRes 422 HQ"),
+            Map.entry("apcn", "Apple ProRes 422"),
+            Map.entry("apcs", "Apple ProRes 422 LT"),
+            Map.entry("apco", "Apple ProRes 422 Proxy"),
+            Map.entry("ap4h", "Apple ProRes 4444"),
+            Map.entry("mp2", "MPEG/L2"));
 
     private static final Set<String> VIDEO_MIME_TYPES = Set.of(
             "application/gxf",
@@ -205,7 +232,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) throws Exception {
         final var assetFile = storedOn.getLocalInternalFile(fileEntity);
-        final var probeMedia = new ProbeMedia("ffprobe", maxExecTimeScheduler);
+        final var probeMedia = new ProbeMedia(FFPROBE, maxExecTimeScheduler);
         probeMedia.setExecutableFinder(executableFinder);
         probeMedia.setWorkingDirectory(assetFile.getParentFile());
         final var ffprobeJAXB = probeMedia.process(assetFile.getName()).getResult();
@@ -214,33 +241,18 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
 
         final var writer = metadataThesaurusService.getWriter(
                 this, fileEntity, MtdThesaurusDefTechnical.class);
-        final var audioWriter = metadataThesaurusService.getWriter(
-                this, fileEntity, MtdThesaurusDefTechnicalAudio.class);
-        final var streamWriter = metadataThesaurusService.getWriter(
-                this, fileEntity, MtdThesaurusDefTechnicalStream.class);
-        final var videoWriter = metadataThesaurusService.getWriter(
-                this, fileEntity, MtdThesaurusDefTechnicalVideo.class);
+        final var imageWriter = metadataThesaurusService.getWriter(
+                this, fileEntity, MtdThesaurusDefTechnicalImage.class);
+        final var dublinCoreWriter = metadataThesaurusService.getWriter(this, fileEntity,
+                MtdThesaurusDefDublinCore.class);
 
-        writer.set(ffprobeJAXB.getTimecode(false)).timecode();
-        writer.set(ffprobeJAXB.getDuration()).duration();
         setMediaSummary(ffprobeJAXB, writer);
+        setChapters(fileEntity, ffprobeJAXB);
 
-        final var programIdByMediaStreamIndex = new HashMap<Integer, Integer>();
-        ffprobeJAXB.getPrograms().forEach(program -> {
-            // XXX
-            program.programId();
+        final var programIdByMediaStreamIndex = getPrograms(fileEntity, ffprobeJAXB);
 
-            program.programNum();
-            program.pcrPid();
-            program.pmtPid();
-
-            getTagByName(program.tags(), "service_name");
-            getTagByName(program.tags(), "service_provider");
-
-            program.streams().forEach(mediaStream -> {
-                programIdByMediaStreamIndex.put(mediaStream.index(), program.programId());
-            });
-        });
+        final var mxfWriter = metadataThesaurusService.getWriter(
+                this, fileEntity, MtdThesaurusDefTechnicalMXF.class);
 
         ffprobeJAXB.getStreams().forEach(mediaStream -> {
             if ("tmcd".equals(mediaStream.codecTagString())) {
@@ -253,14 +265,21 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             final var layer = mediaStream.index();
             final var codecType = Objects.requireNonNull(mediaStream.codecType(), "No codec type, invalid FFprobe XML");
 
+            final var streamWriter = metadataThesaurusService.getWriter(
+                    this, fileEntity, MtdThesaurusDefTechnicalStream.class);
             streamWriter.set(layer, codecType).type();
             streamWriter.set(layer, mediaStream.timeBase()).timeBase();
             streamWriter.set(layer, mediaStream.id()).referenceId();
             streamWriter.set(layer, programIdByMediaStreamIndex.get(mediaStream.index())).programId();
-            streamWriter.set(layer, mediaStream.codecName()).codec();
-            streamWriter.set(layer, mediaStream.codecLongName()).codecName();
             streamWriter.set(layer, mediaStream.bitRate()).bitrate();
             streamWriter.set(layer, mediaStream.profile()).profile();
+            streamWriter.set(layer, mediaStream.startTime()).startTime();
+            streamWriter.set(layer, mediaStream.codecName()).codec();
+
+            final var codecLongName = WELL_KNOWN_CODECS_NAMES.getOrDefault(
+                    mediaStream.codecName(),
+                    mediaStream.codecLongName());
+            streamWriter.set(layer, codecLongName).codecName();
 
             final var level = mediaStream.level();
             if (level > 0) {
@@ -268,6 +287,8 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             }
 
             if (codecType.equals("audio")) {
+                final var audioWriter = metadataThesaurusService.getWriter(
+                        this, fileEntity, MtdThesaurusDefTechnicalAudio.class);
                 audioWriter.set(layer, mediaStream.channelLayout()).channelLayout();
                 audioWriter.set(layer, mediaStream.channels()).channelsCount();
                 audioWriter.set(layer, mediaStream.sampleRate()).sampleRate();
@@ -275,21 +296,29 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             }
 
             if (codecType.equals("video")) {
-                writer.set(layer, mediaStream.width()).width();
-                writer.set(layer, mediaStream.height()).height();
+                final var width = mediaStream.width();
+                final var height = mediaStream.height();
 
+                imageWriter.set(layer, width).width();
+                imageWriter.set(layer, height).height();
+
+                final var videoWriter = metadataThesaurusService.getWriter(
+                        this, fileEntity, MtdThesaurusDefTechnicalVideo.class);
                 videoWriter.set(layer, mediaStream.fieldOrder()).fieldOrder();
                 videoWriter.set(layer, mediaStream.rFrameRate()).frameRate();
                 videoWriter.set(layer, mediaStream.avgFrameRate()).averageFrameRate();
-            }
 
-            writer.set(layer, mediaStream.pixFmt()).pixelformat();
-            writer.set(layer, removeUnknown(mediaStream.colorSpace())).colorspace();
-            writer.set(layer, removeUnknown(mediaStream.colorRange())).colorrange();
-            writer.set(layer, removeUnknown(mediaStream.colorPrimaries())).colorprimaries();
-            writer.set(layer, removeUnknown(mediaStream.colorTransfer())).colortransfer();
-            writer.set(layer, mediaStream.sampleAspectRatio()).sampleAspectRatio();
-            writer.set(layer, mediaStream.displayAspectRatio()).displayAspectRatio();
+                imageWriter.set(layer, mediaStream.pixFmt()).pixelformat();
+                imageWriter.set(layer, removeUnknown(mediaStream.colorSpace())).colorspace();
+                imageWriter.set(layer, removeUnknown(mediaStream.colorRange())).colorrange();
+                imageWriter.set(layer, removeUnknown(mediaStream.colorPrimaries())).colorprimaries();
+                imageWriter.set(layer, removeUnknown(mediaStream.colorTransfer())).colortransfer();
+
+                imageWriter.set(layer, mediaStream.sampleAspectRatio()).sampleAspectRatio();
+                imageWriter.set(layer, mediaStream.displayAspectRatio()).displayAspectRatio();
+                imageWriter.set(aspectRatio(width, height)).aspectRatio();
+                imageWriter.set(getPageOrientation(width, height)).imageAspectFormat();
+            }
 
             Optional.ofNullable(mediaStream.disposition())
                     .ifPresentOrElse(
@@ -304,62 +333,49 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                                     false)
                                     .isSecondary());
 
-            // XXX mediaStream.tags()
-            // MXF <tag key="track_name" value="Track 4"/> + file_package_umid + file_package_name
+            mxfWriter.set(layer, getTagByName(mediaStream.tags(), "track_name")).trackName();
+            mxfWriter.set(layer, getTagByName(mediaStream.tags(), "file_package_umid")).filePackageUMID();
+            mxfWriter.set(layer, getTagByName(mediaStream.tags(), "file_package_name")).filePackageName();
+            dublinCoreWriter.set(layer, getTagByName(mediaStream.tags(), "language")).language();
         });
 
-        // TODO
         ffprobeJAXB.getFormat().ifPresent(format -> {
-            // XXX
+            final var layer = -1;
 
-            format.bitRate();
-            format.formatLongName();
-            format.formatName();
-            format.startTime();
-            //
+            final var containerWriter = metadataThesaurusService.getWriter(
+                    this, fileEntity, MtdThesaurusDefTechnicalContainer.class);
+            containerWriter.set(ffprobeJAXB.getTimecode(false)).timecode();
+            containerWriter.set(ffprobeJAXB.getDuration()).duration();
+            containerWriter.set(format.bitRate()).bitrate();
+            containerWriter.set(format.formatName()).format();
+            containerWriter.set(format.formatLongName()).formatName();
+            containerWriter.set(format.startTime()).startTime();
 
-            /*
-             * MXF
-              XXX format.tags();
-            final var xmpWriter = metadataThesaurusService.getWriter(this, fileEntity, MtdThesaurusDefXMP.class);
-            xmpWriter.set(xpdf.getInfo(pdfInfo, "CreationDate")
-                .map(Instant::parse)
-                .map(Instant::getEpochSecond))
-                .createDate();
-            xmpWriter.set(xpdf.getInfo(pdfInfo, "ModDate")
-                .map(Instant::parse)
-                .map(Instant::getEpochSecond))
-                .modifyDate();
-            xmpWriter.set(xpdf.getInfo(pdfInfo, "Creator"))
-                .creatorTool();
-            xmpWriter.set(xpdf.getInfo(pdfInfo, "MetadataDate"))
-                .metadataDate();
-            
-             *
-            <tag key="operational_pattern_ul" value="060e2b34.04010101.0d010201.01010900"/>
-            <tag key="uid" value="fd05544c-f01e-11e8-8466-1831bf24284f"/>
-            <tag key="generation_uid" value="fd05544d-f01e-11e8-b238-1831bf24284f"/>
+            final var xmpWriter = metadataThesaurusService.getWriter(
+                    this, fileEntity, MtdThesaurusDefXMP.class);
 
-            <tag key="company_name" value="Adobe Systems Incorporated"/>
-            <tag key="product_name" value="Adobe Media Encoder"/>
-            <tag key="product_version_num" value="5.0.15.0.1"/>
-            <tag key="product_version" value="13.0.1"/>
-            <tag key="application_platform" value="win32"/>
-            <tag key="product_uid" value="0c3919fe-46e8-11e5-a151-feff819cdc9f"/>
+            final var oModificationDate = getTagByName(format.tags(), "modification_date")
+                    .map(Instant::parse)
+                    .map(Instant::getEpochSecond);
+            final var oCreationDate = getTagByName(format.tags(), "creation_time")
+                    .map(Instant::parse)
+                    .map(Instant::getEpochSecond);
 
-            <tag key="toolkit_version_num" value="5.0.15.0.1"/>
-            <tag key="modification_date" value="2018-11-24T19:27:31.944000Z"/>
-            <tag key="material_package_umid" value="0x060A2B340101010501010D1213AABA676DE82C04468405A54BA51831BF24284F"/>
-            <tag key="timecode" value="09:59:30:00"/>
-             * */
+            xmpWriter.set(oModificationDate).modifyDate();
+            xmpWriter.set(oCreationDate).createDate();
+            dublinCoreWriter.set(oModificationDate.or(() -> oCreationDate)).date();
 
-        });
+            final var creatorTool = new StringBuilder();
+            getTagByName(format.tags(), "product_name").ifPresent(creatorTool::append);
+            getTagByName(format.tags(), "product_version").ifPresent(v -> creatorTool.append(" v" + v));
+            getTagByName(format.tags(), "company_name").ifPresent(cn -> creatorTool.append(" (" + cn + ")"));
+            xmpWriter.set(creatorTool.toString().trim()).creatorTool();
 
-        ffprobeJAXB.getChapters().forEach(chapter -> {
-            // XXX
-            chapter.startTime();
-            chapter.endTime();
-            getTagByName(chapter.tags(), "title");
+            mxfWriter.set(layer, getTagByName(format.tags(), "operational_pattern_ul")).operationalPatternUL();
+            mxfWriter.set(layer, getTagByName(format.tags(), "uid")).uid();
+            mxfWriter.set(layer, getTagByName(format.tags(), "generation_uid")).generationUID();
+            mxfWriter.set(layer, getTagByName(format.tags(), "material_package_umid")).materialPackageUMID();
+            dublinCoreWriter.set(layer, getTagByName(format.tags(), "language")).language();
         });
 
         final var validVideoStreams = filterValidVideoStreams(ffprobeJAXB).toList();
@@ -367,10 +383,47 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         final var haveVideo = validVideoStreams.isEmpty() == false;
         final var haveAudio = ffprobeJAXB.getAudioStreams().count() > 0l;
 
-        final var dublinCoreWriter = metadataThesaurusService.getWriter(this, fileEntity,
-                MtdThesaurusDefDublinCore.class);
         patchInvalidAVMimeTypes(dublinCoreWriter, currentMimeType, haveVideo, haveAudio);
+    }
 
+    Map<Integer, Integer> getPrograms(final FileEntity fileEntity,
+                                      final FFprobeJAXB ffprobeJAXB) {
+        final var result = new HashMap<Integer, Integer>();
+        final var programs = ffprobeJAXB.getPrograms();
+        if (programs.isEmpty() == false) {
+            return Map.of();
+        }
+        final var tsWriter = metadataThesaurusService.getWriter(
+                this, fileEntity, MtdThesaurusDefTechnicalTransportStream.class);
+
+        programs.forEach(program -> {
+            final var layer = program.programId();
+            tsWriter.set(layer, program.programNum()).programNum();
+            tsWriter.set(layer, program.pcrPid()).pcrPid();
+            tsWriter.set(layer, program.pmtPid()).pmtPid();
+            tsWriter.set(layer, getTagByName(program.tags(), "service_name")).serviceName();
+            tsWriter.set(layer, getTagByName(program.tags(), "service_provider")).serviceProvider();
+            program.streams().forEach(mediaStream -> result.put(
+                    mediaStream.index(),
+                    program.programId()));
+        });
+        return unmodifiableMap(result);
+    }
+
+    void setChapters(final FileEntity fileEntity, final FFprobeJAXB ffprobeJAXB) {
+        final var chapters = ffprobeJAXB.getChapters();
+        if (chapters.isEmpty()) {
+            return;
+        }
+        final var chapterWriter = metadataThesaurusService.getWriter(
+                this, fileEntity, MtdThesaurusDefChapter.class);
+
+        for (var pos = 0; pos < chapters.size(); pos++) {
+            final var chapter = chapters.get(pos);
+            chapterWriter.set(pos + 1, getTagByName(chapter.tags(), "title")).title();
+            chapterWriter.set(pos + 1, Math.round(chapter.startTime() * 1000)).startTime();
+            chapterWriter.set(pos + 1, Math.round(chapter.endTime() * 1000)).endTime();
+        }
     }
 
     static Optional<String> removeUnknown(final String value) {
@@ -445,42 +498,9 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         }
     }
 
-    // XXX
-    private static Properties translated_codecs_names;
-
-    static {
-        translated_codecs_names = new Properties();
-        translated_codecs_names.setProperty("dvvideo", "DV");
-        translated_codecs_names.setProperty("dvcp", "DV/DVCPro");
-        translated_codecs_names.setProperty("dv5p", "DVCPro 50");
-        translated_codecs_names.setProperty("avc1", "h264");
-        translated_codecs_names.setProperty("mpeg2video", "MPEG2");
-        translated_codecs_names.setProperty("mx5p", "MPEG2/4:2:2");
-        translated_codecs_names.setProperty("mpeg", "MPEG");
-        translated_codecs_names.setProperty("wmv3", "WMV9");
-        translated_codecs_names.setProperty("apch", "Apple ProRes 422 HQ");
-        translated_codecs_names.setProperty("apcn", "Apple ProRes 422");
-        translated_codecs_names.setProperty("apcs", "Apple ProRes 422 LT");
-        translated_codecs_names.setProperty("apco", "Apple ProRes 422 Proxy");
-        translated_codecs_names.setProperty("ap4h", "Apple ProRes 4444");
-
-        translated_codecs_names.setProperty("mp2", "MPEG/L2");
-        translated_codecs_names.setProperty("mp3", "MP3");
-        translated_codecs_names.setProperty("wmav2", "WMA9");
-        translated_codecs_names.setProperty("aac", "AAC");
-        translated_codecs_names.setProperty("mp4a", "AAC");
-        translated_codecs_names.setProperty("eac3", "EAC3");
-        translated_codecs_names.setProperty("ec-3", "EAC3");
-        translated_codecs_names.setProperty("pcm_s16le", "PCM 16b");
-        translated_codecs_names.setProperty("pcm_s16le_planar", "PCM 16b");
-        translated_codecs_names.setProperty("pcm_s16be", "PCM 16b/BE");
-        translated_codecs_names.setProperty("pcm_s24le", "PCM 24b");
-        translated_codecs_names.setProperty("pcm_s24be", "PCM 24b/BE");
-        translated_codecs_names.setProperty("pcm_f32le", "PCM 32b float");
-        translated_codecs_names.setProperty("pcm_f32be", "PCM 32b float/BE");
-    }
-
     /*
+
+    //TODO MasterAsPreview
 
     public List<String> getMimeFileListCanUsedInMasterAsPreview() {
         final var al = new ArrayList<String>();

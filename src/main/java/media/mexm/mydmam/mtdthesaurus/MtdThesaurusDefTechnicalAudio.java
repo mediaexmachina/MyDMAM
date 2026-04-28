@@ -16,7 +16,7 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical.audio")
+@MetadataThesaurusClassifier(value = "technical:audio")
 public interface MtdThesaurusDefTechnicalAudio {
 
     MetadataThesaurusEntry channelLayout();
