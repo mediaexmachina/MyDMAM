@@ -173,6 +173,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             "audio/mpeg",
             "audio/ogg",
             "audio/vorbis",
+            "audio/webm",
             "audio/quicktime",
             "application/mxf",
             "audio/x-ms-wmv",
@@ -214,8 +215,6 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             VIDEO_MIME_TYPES.stream(),
             AUDIO_MIME_TYPES.stream())
             .collect(toUnmodifiableSet());
-
-    // TODO manage raster images
 
     @Override
     public boolean canHandle(final FileEntity fileEntity,
@@ -498,54 +497,95 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         }
     }
 
+    private static final Set<String> MASTER_AS_PREVIEW_MIME_TYPES = Set.of(
+            "audio/mpeg",
+            "audio/mp4",
+            "video/mp4",
+            "audio/quicktime",
+            "video/quicktime",
+            "video/webm",
+            "audio/webm",
+            "audio/x-wav",
+            "audio/ogg",
+            "audio/vorbis",
+            "audio/3gpp",
+            "audio/amr",
+            "audio/amr-wb",
+            "audio/amr-wb+",
+            "audio/speex",
+            "audio/g719",
+            "audio/g722",
+            "audio/g7221",
+            "audio/g723",
+            "audio/g726-16",
+            "audio/g726-24",
+            "audio/g726-32",
+            "audio/g726-40",
+            "audio/g728",
+            "audio/g729",
+            "audio/g7291",
+            "audio/g729d",
+            "audio/g729e",
+            "audio/gsm");
+
+    boolean isCanUsedInMasterAsPreview(final String mimeType, final FFprobeJAXB ffprobeJAXB) {
+        final var oVideoStream = ffprobeJAXB.getFirstVideoStream();
+        final var oAudioStream = ffprobeJAXB.getAudioStreams().findFirst();
+
+        // TODO
+
+        if (oVideoStream.isPresent()) {
+            final var videoStream = oVideoStream.get();
+
+        }
+
+        if (oAudioStream.isPresent()) {
+            final var audioStream = oAudioStream.get();
+
+            audioStream.sampleRate();
+            audioStream.codecName();
+
+            if (audioStream.channels() > 6) {
+                return false;
+            }
+
+        }
+
+        return false;
+    }
+
     /*
 
     //TODO MasterAsPreview
 
-    public List<String> getMimeFileListCanUsedInMasterAsPreview() {
-        final var al = new ArrayList<String>();
-        al.add("audio/mpeg");
-        al.add("audio/mp4");
-        al.add("audio/quicktime");
-        al.add("video/quicktime");
-        al.add("video/mp4");
-        return al;
-    }
+    MP3
+    AAC (all flavors)
+    Vorbis
+    
+    G.729
+    AMR-NB
+    AMR-WB (G.722.2)
+    Speex
+    iSAC
+    iLBC
+    G.722.1 (all variants)
+    G.719
 
 
-    public boolean isCanUsedInMasterAsPreview(Container container) {
-        if (mime_list_master_as_preview == null) {
-            mime_list_master_as_preview = getMimeFileListCanUsedInMasterAsPreview().toArray(new String[0]);
-        }
-        if (container.getSummary().equalsMimetype(mime_list_master_as_preview)) {
-            if (video_webbrowser_validation == null) {
-                video_webbrowser_validation = new ValidatorCenter();
                 video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].sample_rate", Comparator.EQUALS, 48000, 44100, 32000);
-                video_webbrowser_validation.and();
                 video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].codec_name", Comparator.EQUALS, "aac");
-                video_webbrowser_validation.and();
                 video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].channels", Comparator.EQUALS, 1, 2);
-                video_webbrowser_validation.and();
                 video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].bit_rate", Comparator.EQUALS_OR_SMALLER_THAN, 384000);
-                video_webbrowser_validation.and();
+                ***
                 video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'video')].codec_name", Comparator.EQUALS, "h264");
-                video_webbrowser_validation.and();
                 video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'video')].width", Comparator.EQUALS_OR_SMALLER_THAN, 1920);
-                video_webbrowser_validation.and();
                 video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'video')].height", Comparator.EQUALS_OR_SMALLER_THAN, 1080);
-                video_webbrowser_validation.and();
                 video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'video')].level", Comparator.EQUALS_OR_SMALLER_THAN, 42);
-                video_webbrowser_validation.and();
                 video_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'video')].bit_rate", Comparator.EQUALS_OR_SMALLER_THAN, 4000000);
-            }
-            if (audio_webbrowser_validation == null) {
-                audio_webbrowser_validation = new ValidatorCenter();
+    
                 audio_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].codec_name", Comparator.EQUALS, "aac", "mp3");
-                audio_webbrowser_validation.and();
                 audio_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].channels", Comparator.EQUALS, 1, 2);
-                audio_webbrowser_validation.and();
                 audio_webbrowser_validation.addRule(FFprobe.class, "$.streams[?(@.codec_type == 'audio')].bit_rate", Comparator.EQUALS_OR_SMALLER_THAN, 384000);
-            }
 
             if (video_webbrowser_validation.validate(container)) {
                 Loggers.Transcode_Metadata_Validation.debug("Master as preview (video) ok for " + container.getOrigin().toString());
@@ -554,8 +594,5 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                 Loggers.Transcode_Metadata_Validation.debug("Master as preview (audio) ok for " + container.getOrigin().toString());
                 return true;
             }
-        }
-        return false;
-    }
     */
 }

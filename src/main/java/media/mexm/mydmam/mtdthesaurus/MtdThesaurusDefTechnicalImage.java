@@ -35,6 +35,9 @@ public interface MtdThesaurusDefTechnicalImage {
 
     MetadataThesaurusEntry orientation();
 
+    /**
+     * 1.777
+     */
     MetadataThesaurusEntry aspectRatio();
 
     /**
