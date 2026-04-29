@@ -37,11 +37,11 @@ class MetadataThesaurusEntryTest {
 
     @Test
     void testMetadataThesaurusEntry() {
-        assertThat(new MetadataThesaurusEntry(classifier, parent, key))
-                .isEqualTo(new MetadataThesaurusEntry(classifier, parent + "." + key, empty()));
+        assertThat(new MetadataThesaurusEntryImpl(classifier, parent, key))
+                .isEqualTo(new MetadataThesaurusEntryImpl(classifier, parent + "." + key, empty()));
 
-        assertThat(new MetadataThesaurusEntry(classifier, "", key))
-                .isEqualTo(new MetadataThesaurusEntry(classifier, key, empty()));
+        assertThat(new MetadataThesaurusEntryImpl(classifier, "", key))
+                .isEqualTo(new MetadataThesaurusEntryImpl(classifier, key, empty()));
 
     }
 

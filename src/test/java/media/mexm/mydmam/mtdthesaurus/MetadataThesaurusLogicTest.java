@@ -62,7 +62,7 @@ class MetadataThesaurusLogicTest {
     @Test
     void testMakeInstance() {
         final var width = mtl.makeInstance(TestThesaurus.class).width();
-        assertThat(width).isNotNull().isEqualTo(new MetadataThesaurusEntry("classifier", "width", empty()));
+        assertThat(width).isNotNull().isEqualTo(new MetadataThesaurusEntryImpl("classifier", "width", empty()));
     }
 
     @MetadataThesaurusClassifier(value = "classifier-bis")
@@ -101,10 +101,10 @@ class MetadataThesaurusLogicTest {
     void testMakeInstance_sameClassifier() {
         mtl.makeInstance(TestThesaurus.class);
         final var width2 = mtl.makeInstance(TestThesaurusSameClassifier.class).width();
-        assertThat(width2).isNotNull().isEqualTo(new MetadataThesaurusEntry("classifier", "width", empty()));
+        assertThat(width2).isNotNull().isEqualTo(new MetadataThesaurusEntryImpl("classifier", "width", empty()));
 
         final var width = mtl.makeInstance(TestThesaurus.class).width();
-        assertThat(width).isNotNull().isEqualTo(new MetadataThesaurusEntry("classifier", "width", empty()));
+        assertThat(width).isNotNull().isEqualTo(new MetadataThesaurusEntryImpl("classifier", "width", empty()));
     }
 
     @MetadataThesaurusClassifier(value = "classifier")
@@ -189,7 +189,8 @@ class MetadataThesaurusLogicTest {
 
         mtl.makeInstance(TestThesaurusParent.class);
 
-        assertThat(width).isNotNull().isEqualTo(new MetadataThesaurusEntry("classifier-bis", "parent.width", empty()));
+        assertThat(width).isNotNull().isEqualTo(new MetadataThesaurusEntryImpl("classifier-bis", "parent.width",
+                empty()));
     }
 
     @MetadataThesaurusClassifier(value = "classifier.ddd")

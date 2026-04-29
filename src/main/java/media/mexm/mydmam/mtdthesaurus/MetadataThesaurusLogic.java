@@ -18,52 +18,59 @@ package media.mexm.mydmam.mtdthesaurus;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
 import static java.util.Collections.unmodifiableMap;
-import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.extractClassifier;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toUnmodifiableMap;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryIOProvider.emptyProvider;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Function;
+
+import media.mexm.mydmam.entity.FileEntity;
 
 /**
  * Thread safe
  */
 public class MetadataThesaurusLogic implements MetadataThesaurusDefaultRegister {
     private static final String TO_STRING = "toString";
-
     private static final String EQUALS = "equals";
-
     private static final String HASH_CODE = "hashCode";
 
-    static final String ANNOTATION_CLASSIFIER = MetadataThesaurusClassifier.class.getSimpleName();
-
     private final ClassLoader classLoader;
-    private final Map<Class<?>, Object> instanceByClassName;
-    private final Map<Object, MetadataThesaurusInstanceDefinition> definitions;
+    private final Map<Class<?>, Object> instanceByClassName; // TODO check if needed this
 
-    public MetadataThesaurusLogic() {
+    private final Map<Class<?>, MetadataThesaurusInstanceDefinition> definitions;
+    private final MetadataThesaurusEntryIOProvider provider;
+
+    // TODO use with provider
+    public MetadataThesaurusLogic(final MetadataThesaurusEntryIOProvider provider) {
         classLoader = getClass().getClassLoader();
         instanceByClassName = new ConcurrentHashMap<>();
         definitions = new ConcurrentHashMap<>();
+        this.provider = requireNonNull(provider);
+    }
+
+    public MetadataThesaurusLogic() {
+        this(emptyProvider());
     }
 
     /**
-     * @return MetadataThesaurusEntry by methods by className
+     * @return key name by methods by className
      */
-    public Map<String, Map<String, MetadataThesaurusEntry>> getImplements() {
-        final var result = new HashMap<String, Map<String, MetadataThesaurusEntry>>();
+    public Map<String, Map<String, String>> getImplements() {
+        // TODO FIX !!
+        final var result = new HashMap<String, Map<String, String>>();
 
         instanceByClassName.entrySet().forEach(instances -> {
-            final var entriesMap = new LinkedHashMap<String, MetadataThesaurusEntry>();
+            final var entriesMap = new LinkedHashMap<String, String>();
             definitions.get(instances.getValue())
                     .getEntries()
-                    .forEach((m, entry) -> entriesMap.put(m.getName(), entry));
+                    .forEach((m, keyName) -> entriesMap.put(m.getName(), keyName));
 
             result.put(instances.getKey().getSimpleName(), unmodifiableMap(entriesMap));
-
         });
 
         return unmodifiableMap(result);
@@ -107,6 +114,7 @@ public class MetadataThesaurusLogic implements MetadataThesaurusDefaultRegister 
 
     @Override
     @SuppressWarnings("unchecked")
+    @Deprecated
     public <T> T makeInstance(final Class<T> fromClass) {
         return (T) instanceByClassName.computeIfAbsent(fromClass,
                 c -> {
@@ -123,18 +131,17 @@ public class MetadataThesaurusLogic implements MetadataThesaurusDefaultRegister 
                                 if (method.getName().equals(TO_STRING)) {
                                     return definition.getClassifier();
                                 }
-                                return definition.getEntryByMethod(method);
+                                return null; // definition.getEntryByMethod(method);
                             });
-                    definitions.put(instance, new MetadataThesaurusInstanceDefinition(c));
+                    // TODO keep this... for getImplements
+                    definitions.put(fromClass, new MetadataThesaurusInstanceDefinition(c));
                     return instance;
                 });
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T injectInstanceReadEntities(final Function<MetadataThesaurusEntry, Optional<String>> valueProvider,
-                                            final Class<T> fromClass) {
-        final var definition = new MetadataThesaurusInstanceDefinition(fromClass, valueProvider::apply);
-
+    public <T> T injectInstanceWithIO(final FileEntity fileEntity,
+                                      final Class<T> fromClass) {
         return (T) newProxyInstance(
                 classLoader,
                 new Class[] { fromClass },
@@ -146,35 +153,80 @@ public class MetadataThesaurusLogic implements MetadataThesaurusDefaultRegister 
                     } else if (method.getName().equals(TO_STRING)) {
                         throw new UnsupportedOperationException("toString is not avaliable from this proxy");
                     }
-                    return definition.getEntryByMethod(method);
+
+                    final var definition = definitions.computeIfAbsent(fromClass,
+                            MetadataThesaurusInstanceDefinition::new);
+
+                    final var classifier = definition.getClassifier();
+                    final var key = definition.getKeyNameByMethod(method);
+
+                    return (MetadataThesaurusEntry) newProxyInstance(
+                            classLoader,
+                            new Class[] { MetadataThesaurusEntry.class },
+                            (proxy, subMethod, args) -> onProxyCall(fileEntity, classifier, key, subMethod, args));
                 });
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> T injectInstanceWriteEntities(final Consumer<MetadataThesaurusEntry> updateEntry,
-                                             final Class<T> fromClass) {
-        final var annotationClassifier = extractClassifier(fromClass);
+    Object onProxyCall(final FileEntity fileEntity,
+                       final String classifier,
+                       final String key,
+                       final Method method,
+                       final Object[] args) {
+        final var methodName = method.getName();
 
-        return (T) newProxyInstance(
-                classLoader,
-                new Class[] { fromClass },
-                (_, method, _) -> {
-                    if (method.getName().equals(HASH_CODE)) {
-                        throw new UnsupportedOperationException("hashCode is not avaliable from this proxy");
-                    } else if (method.getName().equals(EQUALS)) {
-                        throw new UnsupportedOperationException("equals is not avaliable from this proxy");
-                    } else if (method.getName().equals(TO_STRING)) {
-                        throw new UnsupportedOperationException("toString is not avaliable from this proxy");
-                    }
+        if (methodName.equals(HASH_CODE)) {
+            throw new UnsupportedOperationException("hashCode is not avaliable from this proxy");
+        } else if (methodName.equals(EQUALS)) {
+            throw new UnsupportedOperationException("equals is not avaliable from this proxy");
+        } else if (methodName.equals(TO_STRING)) {
+            return classifier + "." + key;
+        } else if (methodName.equals("classifier")) {
+            return classifier;
+        } else if (methodName.equals("key")) {
+            return key;
+        } else if (methodName.equals("set")) {
+            if (args.length == 2) {
+                provider.setValueToDatabase(
+                        fileEntity,
+                        classifier,
+                        key,
+                        (int) args[0],
+                        String.valueOf(args[1]));// TODO better to string
+            } else if (args.length == 1) {
+                provider.setValueToDatabase(
+                        fileEntity,
+                        classifier,
+                        key,
+                        0,
+                        String.valueOf(args[0]));// TODO better to string
+            }
+        } else if (methodName.equals("get")) {
+            if (args.length == 0) {
+                return provider.getValueFromDatabase(fileEntity, classifier, key, 0);
+            } else if (args.length == 1) {
+                return provider.getValueFromDatabase(fileEntity, classifier, key, (int) args[0]);
+            }
 
-                    updateEntry.accept(
-                            new MetadataThesaurusEntry(
-                                    annotationClassifier.value(),
-                                    annotationClassifier.parent(),
-                                    nameFormatter(method.getName())));
+        } else if (methodName.equals("getAsInt")) {
+            if (args.length == 1) {
+                return provider.getValueFromDatabase(fileEntity, classifier, key, 0)
+                        .map(Integer::valueOf)
+                        .orElse((int) args[0]);
+            } else if (args.length == 2) {
+                return provider.getValueFromDatabase(fileEntity, classifier, key, (int) args[0])
+                        .map(Integer::valueOf)
+                        .orElse((int) args[1]);
+            }
+        } else if (methodName.equals("getAll")) {
+            return provider.getValueLayerFromDatabase(fileEntity, classifier, key);
+        } else if (methodName.equals("getAllInt")) {
+            return provider.getValueLayerFromDatabase(fileEntity, classifier, key)
+                    .entrySet()
+                    .stream()
+                    .collect(toUnmodifiableMap(Entry::getKey, e -> Integer.valueOf(e.getValue())));
+        }
 
-                    return null;
-                });
+        throw new IllegalCallerException("Can't manage MetadataThesaurusEntry " + method);
     }
 
 }

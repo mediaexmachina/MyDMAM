@@ -43,6 +43,7 @@ import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifier;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryImpl;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
@@ -209,16 +210,16 @@ class FlatMetadataThesaurusServiceTest {
     @Test
     void testGetValue_empty() {
         assertThat(metadataThesaurusService.getValue(fileEntity,
-                new MetadataThesaurusEntry("classifier", "data", empty()))).isEmpty();
+                new MetadataThesaurusEntryImpl("classifier", "data", empty()))).isEmpty();
         assertThat(metadataThesaurusService.getValue(fileEntity, layer,
-                new MetadataThesaurusEntry("classifier", "data", empty()))).isEmpty();
+                new MetadataThesaurusEntryImpl("classifier", "data", empty()))).isEmpty();
     }
 
     @Test
     void testGetValue_withData() {
         metadataThesaurusService.addResponse(MtdThesaurusDef.class, value).data();
         assertThat(metadataThesaurusService.getValue(fileEntity,
-                new MetadataThesaurusEntry("classifier", "data", empty()))).contains(value);
+                new MetadataThesaurusEntryImpl("classifier", "data", empty()))).contains(value);
         metadataThesaurusService.endChecks(fileEntity);
     }
 
@@ -226,7 +227,7 @@ class FlatMetadataThesaurusServiceTest {
     void testGetValue_withDataWithLayer() {
         metadataThesaurusService.addResponse(MtdThesaurusDef.class, layer, value).data();
         assertThat(metadataThesaurusService.getValue(fileEntity, layer,
-                new MetadataThesaurusEntry("classifier", "data", empty()))).contains(value);
+                new MetadataThesaurusEntryImpl("classifier", "data", empty()))).contains(value);
         metadataThesaurusService.endChecks(fileEntity);
     }
 

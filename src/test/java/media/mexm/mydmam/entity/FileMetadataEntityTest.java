@@ -37,6 +37,7 @@ import org.mockito.Mock;
 
 import media.mexm.mydmam.dto.KeyValueMetadataResponse;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryImpl;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
@@ -69,7 +70,7 @@ class FileMetadataEntityTest {
     void init() {
         when(file.getRealm()).thenReturn(realm);
         when(file.getHashPath()).thenReturn(hashPath);
-        entry = new MetadataThesaurusEntry(classifier, key, empty());
+        entry = new MetadataThesaurusEntryImpl(classifier, key, empty());
         fm = new FileMetadataEntity(file, origin, entry, layer, value);
     }
 

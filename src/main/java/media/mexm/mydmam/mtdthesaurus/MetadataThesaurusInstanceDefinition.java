@@ -19,8 +19,6 @@ package media.mexm.mydmam.mtdthesaurus;
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.util.function.Predicate.not;
-import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryValueToInjectProvider.emptyProvider;
-import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.ANNOTATION_CLASSIFIER;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.nameFormatter;
 
 import java.lang.reflect.Method;
@@ -33,19 +31,12 @@ import java.util.stream.Stream;
 import lombok.Getter;
 
 class MetadataThesaurusInstanceDefinition {
+    static final String ANNOTATION_CLASSIFIER = MetadataThesaurusClassifier.class.getSimpleName();
 
     private final String instanceName;
-    private final String parentKey;
-    @Getter
-    private final Map<Method, MetadataThesaurusEntry> entries;
+    private final Map<Method, String> entries;
     @Getter
     private final String classifier;
-
-    private final MetadataThesaurusEntryValueToInjectProvider provider;
-
-    MetadataThesaurusInstanceDefinition(final Class<?> instanceClass) {
-        this(instanceClass, emptyProvider());
-    }
 
     static MetadataThesaurusClassifier extractClassifier(final Class<?> instanceClass) {
         final var annotationClassifier = Optional.ofNullable(instanceClass.getAnnotation(
@@ -65,15 +56,12 @@ class MetadataThesaurusInstanceDefinition {
         return annotationClassifier;
     }
 
-    MetadataThesaurusInstanceDefinition(final Class<?> instanceClass,
-                                        final MetadataThesaurusEntryValueToInjectProvider provider) {
-        this.provider = provider;
+    MetadataThesaurusInstanceDefinition(final Class<?> instanceClass) {
         instanceName = instanceClass.getName();
         final var annotationClassifier = extractClassifier(instanceClass);
         classifier = annotationClassifier.value();
-        parentKey = Optional.ofNullable(annotationClassifier.parent()).orElse("");
 
-        final var currentEntries = new LinkedHashMap<Method, MetadataThesaurusEntry>();
+        final var currentEntries = new LinkedHashMap<Method, String>();
 
         final var methodList = Stream.of(instanceClass.getMethods())
                 .sorted((l, r) -> l.getName().compareTo(r.getName()))
@@ -91,12 +79,12 @@ class MetadataThesaurusInstanceDefinition {
                                                + ", it containt non-public methods: " + notPublic);
         }
 
-        methodList.forEach(m -> currentEntries.put(m, methodToEntry(m)));
-
+        // TODO clean up this:
+        methodList.forEach(m -> currentEntries.put(m, methodToKeyName(m)));
         entries = Collections.unmodifiableMap(currentEntries);
     }
 
-    private MetadataThesaurusEntry methodToEntry(final Method method) {
+    private String methodToKeyName(final Method method) {
         final var name = method.getName();
         if (method.getParameterCount() > 0) {
             throw new IllegalArgumentException(
@@ -112,15 +100,13 @@ class MetadataThesaurusInstanceDefinition {
                                                + " (on " + instanceName + "." + name
                                                + ")");
         }
-
-        return new MetadataThesaurusEntry(classifier, parentKey, nameFormatter(name));
+        return nameFormatter(name);
     }
 
-    MetadataThesaurusEntry getEntryByMethod(final Method method) {
+    String getKeyNameByMethod(final Method method) {
         if (entries.containsKey(method) == false) {
             throw new IllegalArgumentException("Can't use " + instanceName + "." + method + ", it's non-accessible.");
         }
-        final var entry = entries.get(method);
-        return entry.copyWithValue(provider.getValueFromMetadataThesaurusEntry(entry));
+        return entries.get(method);
     }
 }

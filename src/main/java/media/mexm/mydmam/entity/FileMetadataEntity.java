@@ -102,7 +102,7 @@ public class FileMetadataEntity {
 
     public FileMetadataEntity(@NotNull final FileEntity file,
                               @NotNull final String origin,
-                              @NotNull final MetadataThesaurusEntry entry,
+                              @Deprecated @NotNull final MetadataThesaurusEntry entry,
                               @NotNull final Integer layer,
                               @NotNull final String value) {
         if (value.length() > MAX_VALUE_LENGTH) {

@@ -16,30 +16,29 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-import static java.util.Objects.requireNonNull;
-import static java.util.Optional.empty;
-
+import java.util.Map;
 import java.util.Optional;
 
-public record MetadataThesaurusEntry(String classifier, String key, Optional<String> value) {
+public interface MetadataThesaurusEntry {
 
-    public MetadataThesaurusEntry {
-        requireNonNull(classifier, "\"classifier\" can't to be null");
-        requireNonNull(key, "\"key\" can't to be null");
-        requireNonNull(value, "\"value\" can't to be null");
-    }
+    String classifier();
 
-    public MetadataThesaurusEntry(final String classifier, final String parent, final String key) {
-        requireNonNull(parent, "\"parent\" can't to be null");
-        this(classifier, parent.isEmpty() ? key : parent + "." + key, empty());
-    }
+    String key();
 
-    MetadataThesaurusEntry copyWithValue(final Optional<String> value) {
-        return new MetadataThesaurusEntry(classifier, key, value);
-    }
+    void set(Object value);
 
-    public int intValue(final int defaultValue) {
-        return value.map(Integer::parseInt).orElse(defaultValue);
-    }
+    void set(int layer, Object value);
+
+    Optional<String> get();
+
+    int getAsInt(int defaultValue);
+
+    int getAsInt(int layer, int defaultValue);
+
+    Optional<String> get(int layer);
+
+    Map<Integer, String> getAll();
+
+    Map<Integer, Integer> getAllInt();
 
 }

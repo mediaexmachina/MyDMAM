@@ -43,6 +43,7 @@ import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.FileMetadataEntity;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifier;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryImpl;
 import media.mexm.mydmam.repository.FileMetadataDao;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -127,7 +128,7 @@ class MetadataThesaurusServiceTest {
 
     @Test
     void testGetValue() {
-        final var result = mts.getValue(fileEntity, new MetadataThesaurusEntry("classifier", "key", empty()));
+        final var result = mts.getValue(fileEntity, new MetadataThesaurusEntryImpl("classifier", "key", empty()));
         assertThat(result).contains(value);
         verify(fileMetadataDao, times(1))
                 .getMetadataValue(fileEntity, 0, "classifier", "key");
@@ -135,7 +136,8 @@ class MetadataThesaurusServiceTest {
 
     @Test
     void testGetValue_layer() {
-        final var result = mts.getValue(fileEntity, layer, new MetadataThesaurusEntry("classifier", "key", empty()));
+        final var result = mts.getValue(fileEntity, layer, new MetadataThesaurusEntryImpl("classifier", "key",
+                empty()));
         assertThat(result).contains(value);
         verify(fileMetadataDao, times(1))
                 .getMetadataValue(fileEntity, layer, "classifier", "key");

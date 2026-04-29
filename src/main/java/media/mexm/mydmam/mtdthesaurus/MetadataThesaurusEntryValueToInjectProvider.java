@@ -19,11 +19,10 @@ package media.mexm.mydmam.mtdthesaurus;
 import java.util.Optional;
 
 @FunctionalInterface
+@Deprecated
 interface MetadataThesaurusEntryValueToInjectProvider {
 
+    @Deprecated
     Optional<String> getValueFromMetadataThesaurusEntry(MetadataThesaurusEntry entry);
 
-    static MetadataThesaurusEntryValueToInjectProvider emptyProvider() {
-        return _ -> Optional.empty();
-    }
 }

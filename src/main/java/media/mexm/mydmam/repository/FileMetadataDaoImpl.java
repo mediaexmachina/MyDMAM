@@ -20,6 +20,7 @@ import static jakarta.transaction.Transactional.TxType.REQUIRES_NEW;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -129,4 +130,25 @@ public class FileMetadataDaoImpl implements FileMetadataDao {
                 .findFirst();
     }
 
+    @Override
+    @Transactional(REQUIRES_NEW)
+    public Map<Integer, String> getMetadataLayersValues(final FileEntity fileEntity,
+                                                        final String classifier,
+                                                        final String key) {
+        return entityManager.createQuery("""
+                SELECT fm
+                FROM FileMetadataEntity fm
+                WHERE
+                    fm.file = :fileEntity
+                    AND fm.classifier = :classifier
+                    AND fm.key = :key
+                """, FileMetadataEntity.class)
+                .setParameter("fileEntity", fileEntity)
+                .setParameter("classifier", classifier)
+                .setParameter("key", key)
+                .getResultStream()
+                .collect(toUnmodifiableMap(
+                        FileMetadataEntity::getLayer,
+                        FileMetadataEntity::getValue));
+    }
 }

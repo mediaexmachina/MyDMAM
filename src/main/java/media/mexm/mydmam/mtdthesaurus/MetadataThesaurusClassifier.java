@@ -34,6 +34,6 @@ public @interface MetadataThesaurusClassifier {
      */
     public String value();
 
-    public String parent() default "";
+    public String parent() default ""; // TODO remove parent
 
 }

@@ -33,4 +33,7 @@ public interface FileMetadataDao {
     void addUpdateEntries(FileEntity file, Collection<FileMetadataEntity> items);
 
     Optional<String> getMetadataValue(FileEntity fileEntity, int layer, String classifier, String key);
+
+    Map<Integer, String> getMetadataLayersValues(FileEntity fileEntity, String classifier, String key);
+
 }

@@ -99,6 +99,20 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
         }
 
         @Override
+        public Map<Integer, String> getMetadataLayersValues(final FileEntity fileEntity, final String classifier, final String key) {
+            relativeTofiles.add(fileEntity);
+            final var responseValueKey = new ResponseValueKey(-99, classifier, key);
+            entitiesReaded.add(responseValueKey);
+
+            final var response = responseMap.get(responseValueKey);
+            if (response == null) {
+                return Map.of();
+            } else {
+                return Map.of(-99, response);
+            }
+        }
+
+        @Override
         public Map<String, Set<FileMetadataEntity>> getFileMetadatasByFileIds(final Collection<Integer> fileIds,
                                                                               final String realm) {
             throw new UnsupportedOperationException();
