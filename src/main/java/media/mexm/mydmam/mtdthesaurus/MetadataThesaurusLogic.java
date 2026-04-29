@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +62,7 @@ public class MetadataThesaurusLogic { // TODO test
         final var methodList = Stream.of(instanceClass.getMethods()).toList();
         checkInterfaceClass(instanceClass, methodList);
 
-        return methodList.stream().collect(Collectors.toUnmodifiableMap(m -> m, Method::getReturnType));
+        return methodList.stream().collect(toUnmodifiableMap(m -> m, Method::getReturnType));
     }
 
     public record MtdRegisterMethodDefinition(String methodName, String keyName) {
@@ -138,7 +137,7 @@ public class MetadataThesaurusLogic { // TODO test
                 classLoader,
                 new Class[] { MetadataThesaurusRegister.class },
                 (_, method, args) -> {
-                    if (args.length > 0) {
+                    if (args != null && args.length > 0) {
                         throw new UnsupportedOperationException(method.getName() + " is not avaliable from this proxy");
                     } else if (method.getName().equals(HASH_CODE)) {
                         throw new UnsupportedOperationException("hashCode is not avaliable from this proxy");
@@ -228,7 +227,7 @@ public class MetadataThesaurusLogic { // TODO test
             yield null;
         }
         case "get" -> {
-            if (args.length == 0) {
+            if (args == null) {
                 yield provider.getValueFromDatabase(classifier, key, 0);
             } else if (args.length == 1) {
                 yield provider.getValueFromDatabase(classifier, key, (int) args[0]);

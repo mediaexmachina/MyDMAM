@@ -99,7 +99,7 @@ public class FileMetadataEntity {
         // ONLY SET FOR HIBERNATE
     }
 
-    public FileMetadataEntity(@NotNull final FileEntity file,
+    public FileMetadataEntity(@NotNull final FileEntity fileEntity,
                               @NotNull final String origin,
                               @NotNull final String classifier,
                               @NotNull final String key,
@@ -110,7 +110,7 @@ public class FileMetadataEntity {
                                                + value.length() + ") instead of " + MAX_VALUE_LENGTH + ".");
         }
         createDate = new Timestamp(currentTimeMillis());
-        this.file = file;
+        file = fileEntity;
         this.origin = origin;
         this.classifier = classifier;
         this.key = key;

@@ -19,15 +19,14 @@ package media.mexm.mydmam.service;
 import static java.util.Optional.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -41,9 +40,6 @@ import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.FileMetadataEntity;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifier;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryImpl;
 import media.mexm.mydmam.repository.FileMetadataDao;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -58,7 +54,7 @@ class MetadataThesaurusServiceTest {
     @Mock
     FileEntity fileEntity;
     @Mock
-    ActivityHandler activityHandler;
+    ActivityHandler handler;
 
     @Captor
     ArgumentCaptor<FileMetadataEntity> fileMetadataEntityCaptor;
@@ -72,141 +68,94 @@ class MetadataThesaurusServiceTest {
     @Fake
     String realm;
 
-    @MetadataThesaurusClassifier("classifier")
-    public interface TechDef {
-        MetadataThesaurusEntry key();
-
-        MetadataThesaurusEntry emptyResult();
-    }
-
     MetadataThesaurusServiceImpl mts;
+
+    String classifier = "dc";
+    String key = "format";
 
     @BeforeEach
     void init() {
-        when(fileMetadataDao.getMetadataValue(
-                eq(fileEntity),
-                anyInt(),
-                eq("classifier"),
-                eq("key"))).thenReturn(Optional.ofNullable(value));
-        when(fileMetadataDao.getMetadataValue(
-                eq(fileEntity),
-                anyInt(),
-                eq("classifier"),
-                eq("empty-result"))).thenReturn(empty());
-        when(activityHandler.getMetadataOriginName()).thenReturn(origin);
+        when(handler.getMetadataOriginName()).thenReturn(origin);
         when(auditTrail.getAuditTrailByRealm(realm)).thenReturn(empty());
         when(fileEntity.getRealm()).thenReturn(realm);
+        when(fileMetadataDao.getMetadataValue(fileEntity, layer, classifier, key))
+                .thenReturn(Optional.ofNullable(value));
+        when(fileMetadataDao.getMetadataValue(fileEntity, 0, classifier, key))
+                .thenReturn(Optional.ofNullable(value));
+        when(fileMetadataDao.getMetadataLayersValues(fileEntity, classifier, key))
+                .thenReturn(Map.of(layer, value));
 
         mts = new MetadataThesaurusServiceImpl(fileMetadataDao, auditTrail);
     }
 
     @Test
-    void testGetReader() {
-        final var reader = mts.getReader(TechDef.class, fileEntity);
-        assertNotNull(reader);
-        assertThat(reader.key().value()).contains(value);
-        assertThat(reader.emptyResult().value()).isEmpty();
+    void testGetThesaurus() {
+        final var thesaurus = mts.getThesaurus(handler, fileEntity);
+        assertNotNull(thesaurus);
 
+        assertThat(thesaurus.dublinCore().format().get(layer)).contains(value);
         verify(fileMetadataDao, times(1))
-                .getMetadataValue(fileEntity, 0, "classifier", "key");
+                .getMetadataValue(fileEntity, layer, classifier, key);
+
+        assertThat(thesaurus.dublinCore().format().getAll()).hasSize(1).containsEntry(layer, value);
         verify(fileMetadataDao, times(1))
-                .getMetadataValue(fileEntity, 0, "classifier", "empty-result");
-    }
+                .getMetadataLayersValues(fileEntity, classifier, key);
 
-    @Test
-    void testGetReader_withLayer() {
-        final var reader = mts.getReader(TechDef.class, fileEntity, layer);
-        assertNotNull(reader);
-        assertThat(reader.key().value()).contains(value);
-        assertThat(reader.emptyResult().value()).isEmpty();
-
+        thesaurus.dublinCore().format().set(layer, value);
         verify(fileMetadataDao, times(1))
-                .getMetadataValue(fileEntity, layer, "classifier", "key");
-        verify(fileMetadataDao, times(1))
-                .getMetadataValue(fileEntity, layer, "classifier", "empty-result");
-    }
+                .addUpdateEntry(eq(fileEntity), fileMetadataEntityCaptor.capture());
 
-    @Test
-    void testGetValue() {
-        final var result = mts.getValue(fileEntity, new MetadataThesaurusEntryImpl("classifier", "key", empty()));
-        assertThat(result).contains(value);
-        verify(fileMetadataDao, times(1))
-                .getMetadataValue(fileEntity, 0, "classifier", "key");
-    }
+        final var added = fileMetadataEntityCaptor.getValue();
+        assertThat(added.getOrigin()).isEqualTo(origin);
+        assertThat(added.getClassifier()).isEqualTo(classifier);
+        assertThat(added.getKey()).isEqualTo(key);
+        assertThat(added.getLayer()).isEqualTo(layer);
+        assertThat(added.getValue()).isEqualTo(value);
+        assertThat(added.getFile()).isEqualTo(fileEntity);
 
-    @Test
-    void testGetValue_layer() {
-        final var result = mts.getValue(fileEntity, layer, new MetadataThesaurusEntryImpl("classifier", "key",
-                empty()));
-        assertThat(result).contains(value);
-        verify(fileMetadataDao, times(1))
-                .getMetadataValue(fileEntity, layer, "classifier", "key");
-    }
-
-    @Test
-    void testGetWriter() {
-        final var writer = mts.getWriter(activityHandler, fileEntity, TechDef.class);
-        assertNotNull(writer);
-        assertNull(writer.set(layer, value).key());
-
-        verify(activityHandler, times(1)).getMetadataOriginName();
-        verify(fileMetadataDao, times(1)).addUpdateEntry(eq(fileEntity), fileMetadataEntityCaptor.capture());
-
-        final var entity = fileMetadataEntityCaptor.getValue();
-        assertThat(entity.getFile()).isEqualTo(fileEntity);
-        assertThat(entity.getOrigin()).isEqualTo(origin);
-        assertThat(entity.getClassifier()).isEqualTo("classifier");
-        assertThat(entity.getLayer()).isEqualTo(layer);
-        assertThat(entity.getKey()).isEqualTo("key");
-        assertThat(entity.getValue()).isEqualTo(value);
-
+        verify(auditTrail, times(1)).getAuditTrailByRealm(realm);
         verify(fileEntity, atLeastOnce()).getRealm();
         verify(fileEntity, atLeast(0)).getHashPath();
+        verify(handler, times(1)).getMetadataOriginName();
+    }
+
+    @Test
+    void testSetMimeType() {
+        mts.setMimeType(handler, fileEntity, value);
+
+        verify(fileMetadataDao, times(1))
+                .addUpdateEntry(eq(fileEntity), fileMetadataEntityCaptor.capture());
+
+        final var added = fileMetadataEntityCaptor.getValue();
+        assertThat(added.getOrigin()).isEqualTo(origin);
+        assertThat(added.getClassifier()).isEqualTo(classifier);
+        assertThat(added.getKey()).isEqualTo(key);
+        assertThat(added.getLayer()).isZero();
+        assertThat(added.getValue()).isEqualTo(value);
+        assertThat(added.getFile()).isEqualTo(fileEntity);
+
         verify(auditTrail, times(1)).getAuditTrailByRealm(realm);
-    }
-
-    @Test
-    void testGetWriter_empty() {
-        final var writer = mts.getWriter(activityHandler, fileEntity, TechDef.class);
-        assertNotNull(writer);
-        assertNull(writer.set(layer, empty()).key());
-
-        verify(activityHandler, times(1)).getMetadataOriginName();
-    }
-
-    @Test
-    void testGetWriter_noLayer() {
-        final var writer = mts.getWriter(activityHandler, fileEntity, TechDef.class);
-        assertNotNull(writer);
-        assertNull(writer.set(value).key());
-
-        verify(activityHandler, times(1)).getMetadataOriginName();
-        verify(fileMetadataDao, times(1)).addUpdateEntry(eq(fileEntity), fileMetadataEntityCaptor.capture());
-
-        final var entity = fileMetadataEntityCaptor.getValue();
-        assertThat(entity.getFile()).isEqualTo(fileEntity);
-        assertThat(entity.getOrigin()).isEqualTo(origin);
-        assertThat(entity.getClassifier()).isEqualTo("classifier");
-        assertThat(entity.getLayer()).isZero();
-        assertThat(entity.getKey()).isEqualTo("key");
-        assertThat(entity.getValue()).isEqualTo(value);
-
         verify(fileEntity, atLeastOnce()).getRealm();
         verify(fileEntity, atLeast(0)).getHashPath();
-        verify(auditTrail, times(1)).getAuditTrailByRealm(realm);
+        verify(handler, times(1)).getMetadataOriginName();
+    }
+
+    @Test
+    void testGetReadOnlyThesaurus() {
+        final var thesaurus = mts.getReadOnlyThesaurus(fileEntity);
+        assertNotNull(thesaurus);
+
+        assertThat(thesaurus.dublinCore().format().get(layer)).contains(value);
+        verify(fileMetadataDao, times(1))
+                .getMetadataValue(fileEntity, layer, classifier, key);
     }
 
     @Test
     void testGetMimeType() {
-        when(fileMetadataDao.getMetadataValue(
-                fileEntity,
-                0,
-                "dc",
-                "format")).thenReturn(Optional.ofNullable(value));
-
         assertThat(mts.getMimeType(fileEntity)).contains(value);
+
         verify(fileMetadataDao, times(1))
-                .getMetadataValue(fileEntity, 0, "dc", "format");
+                .getMetadataValue(fileEntity, 0, classifier, key);
     }
 
 }
