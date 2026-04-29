@@ -44,6 +44,4 @@ public interface MetadataThesaurusRegister {
 
     MtdThesaurusDefXMP xmp();
 
-    // TODO add sync with Classifier interfaces ? -> 1
-
 }

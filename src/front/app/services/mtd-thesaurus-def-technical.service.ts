@@ -13,31 +13,7 @@ export class MtdThesaurusDefTechnical {
 
     public readonly classifier = "technical";
 
-    public aspectRatio(): MetadataThesaurusEntry {
-        return { key: "aspect-ratio", classifier: this.classifier };
-    }
-
-    public colorspace(): MetadataThesaurusEntry {
-        return { key: "colorspace", classifier: this.classifier };
-    }
-
-    public height(): MetadataThesaurusEntry {
-        return { key: "height", classifier: this.classifier };
-    }
-
-    public imageAspectFormat(): MetadataThesaurusEntry {
-        return { key: "image-aspect-format", classifier: this.classifier };
-    }
-
-    public orientation(): MetadataThesaurusEntry {
-        return { key: "orientation", classifier: this.classifier };
-    }
-
     public type(): MetadataThesaurusEntry {
         return { key: "type", classifier: this.classifier };
-    }
-
-    public width(): MetadataThesaurusEntry {
-        return { key: "width", classifier: this.classifier };
     }
 }

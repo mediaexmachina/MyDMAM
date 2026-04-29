@@ -28,7 +28,6 @@ import static org.apache.commons.io.FileUtils.write;
 import static tv.hd3g.processlauncher.cmdline.Parameters.bulk;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,13 +49,7 @@ import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefChapter;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalAudio;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalContainer;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalMXF;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalStream;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalTransportStream;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalVideo;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefXMP;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MetadataThesaurusService;
@@ -237,25 +230,18 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         saveFFprobeXMLFile(fileEntity, storedOn, ffprobeJAXB);
 
         final var thesaurus = metadataThesaurusService.getThesaurus(this, fileEntity);
-        var technical = thesaurus.technical();
-        var technicalAudio = thesaurus.technicalAudio();
-        var technicalContainer = thesaurus.technicalContainer();
-        var technicalImage = thesaurus.technicalImage();
-        var technicalMXF = thesaurus.technicalMXF();
-        var technicalStream = thesaurus.technicalStream();
-        var technicalTransportStream = thesaurus.technicalTransportStream();
-        var technicalVideo = thesaurus.technicalVideo();
-        var chapter = thesaurus.chapter();
-        var xmp = thesaurus.xmp();
-        var dublinCore = thesaurus.dublinCore();
+        final var technical = thesaurus.technical();
+        final var technicalImage = thesaurus.technicalImage();
+        final var technicalMXF = thesaurus.technicalMXF();
+        final var technicalTransportStream = thesaurus.technicalTransportStream();
+        final var chapter = thesaurus.chapter();
+        final var xmp = thesaurus.xmp();
+        final var dublinCore = thesaurus.dublinCore();
 
         setMediaSummary(ffprobeJAXB, technical);
         setChapters(fileEntity, ffprobeJAXB, chapter);
 
         final var programIdByMediaStreamIndex = getPrograms(ffprobeJAXB, technicalTransportStream);
-
-        final var mxfWriter = metadataThesaurusService.getWriter(
-                this, fileEntity, MtdThesaurusDefTechnicalMXF.class);
 
         ffprobeJAXB.getStreams().forEach(mediaStream -> {
             if ("tmcd".equals(mediaStream.codecTagString())) {
@@ -268,117 +254,103 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             final var layer = mediaStream.index();
             final var codecType = Objects.requireNonNull(mediaStream.codecType(), "No codec type, invalid FFprobe XML");
 
-            final var streamWriter = metadataThesaurusService.getWriter(
-                    this, fileEntity, MtdThesaurusDefTechnicalStream.class);
-            streamWriter.set(layer, codecType).type();
-            streamWriter.set(layer, mediaStream.timeBase()).timeBase();
-            streamWriter.set(layer, mediaStream.id()).referenceId();
-            streamWriter.set(layer, programIdByMediaStreamIndex.get(mediaStream.index())).programId();
-            streamWriter.set(layer, mediaStream.bitRate()).bitrate();
-            streamWriter.set(layer, mediaStream.profile()).profile();
-            streamWriter.set(layer, mediaStream.startTime()).startTime();
-            streamWriter.set(layer, mediaStream.codecName()).codec();
+            final var technicalStream = thesaurus.technicalStream();
+            technicalStream.type().set(layer, codecType);
+            technicalStream.timeBase().set(layer, mediaStream.timeBase());
+            technicalStream.referenceId().set(layer, mediaStream.id());
+            technicalStream.programId().set(layer, programIdByMediaStreamIndex.get(mediaStream.index()));
+            technicalStream.bitrate().set(layer, mediaStream.bitRate());
+            technicalStream.profile().set(layer, mediaStream.profile());
+            technicalStream.startTime().set(layer, mediaStream.startTime());
+            technicalStream.codec().set(layer, mediaStream.codecName());
 
             final var codecLongName = WELL_KNOWN_CODECS_NAMES.getOrDefault(
                     mediaStream.codecName(),
                     mediaStream.codecLongName());
-            streamWriter.set(layer, codecLongName).codecName();
+            technicalStream.codecName().set(layer, codecLongName);
 
             final var level = mediaStream.level();
             if (level > 0) {
-                streamWriter.set(layer, mediaStream.level()).level();
+                technicalStream.level().set(layer, mediaStream.level());
             }
 
             if (codecType.equals("audio")) {
-                final var audioWriter = metadataThesaurusService.getWriter(
-                        this, fileEntity, MtdThesaurusDefTechnicalAudio.class);
-                audioWriter.set(layer, mediaStream.channelLayout()).channelLayout();
-                audioWriter.set(layer, mediaStream.channels()).channelsCount();
-                audioWriter.set(layer, mediaStream.sampleRate()).sampleRate();
-                audioWriter.set(layer, mediaStream.sampleFmt()).sampleFormat();
+                final var technicalAudio = thesaurus.technicalAudio();
+                technicalAudio.channelLayout().set(layer, mediaStream.channelLayout());
+                technicalAudio.channelsCount().set(layer, mediaStream.channels());
+                technicalAudio.sampleRate().set(layer, mediaStream.sampleRate());
+                technicalAudio.sampleFormat().set(layer, mediaStream.sampleFmt());
             }
 
             if (codecType.equals("video")) {
                 final var width = mediaStream.width();
                 final var height = mediaStream.height();
 
-                imageWriter.set(layer, width).width();
-                imageWriter.set(layer, height).height();
+                technicalImage.width().set(layer, width);
+                technicalImage.height().set(layer, height);
 
-                final var videoWriter = metadataThesaurusService.getWriter(
-                        this, fileEntity, MtdThesaurusDefTechnicalVideo.class);
-                videoWriter.set(layer, mediaStream.fieldOrder()).fieldOrder();
-                videoWriter.set(layer, mediaStream.rFrameRate()).frameRate();
-                videoWriter.set(layer, mediaStream.avgFrameRate()).averageFrameRate();
+                technicalImage.pixelformat().set(layer, mediaStream.pixFmt());
+                technicalImage.colorspace().set(layer, removeUnknown(mediaStream.colorSpace()));
+                technicalImage.colorrange().set(layer, removeUnknown(mediaStream.colorRange()));
+                technicalImage.colorprimaries().set(layer, removeUnknown(mediaStream.colorPrimaries()));
+                technicalImage.colortransfer().set(layer, removeUnknown(mediaStream.colorTransfer()));
 
-                imageWriter.set(layer, mediaStream.pixFmt()).pixelformat();
-                imageWriter.set(layer, removeUnknown(mediaStream.colorSpace())).colorspace();
-                imageWriter.set(layer, removeUnknown(mediaStream.colorRange())).colorrange();
-                imageWriter.set(layer, removeUnknown(mediaStream.colorPrimaries())).colorprimaries();
-                imageWriter.set(layer, removeUnknown(mediaStream.colorTransfer())).colortransfer();
+                technicalImage.sampleAspectRatio().set(layer, mediaStream.sampleAspectRatio());
+                technicalImage.displayAspectRatio().set(layer, mediaStream.displayAspectRatio());
+                technicalImage.aspectRatio().set(aspectRatio(width, height));
+                technicalImage.imageAspectFormat().set(getPageOrientation(width, height));
 
-                imageWriter.set(layer, mediaStream.sampleAspectRatio()).sampleAspectRatio();
-                imageWriter.set(layer, mediaStream.displayAspectRatio()).displayAspectRatio();
-                imageWriter.set(aspectRatio(width, height)).aspectRatio();
-                imageWriter.set(getPageOrientation(width, height)).imageAspectFormat();
+                final var technicalVideo = thesaurus.technicalVideo();
+                technicalVideo.fieldOrder().set(layer, mediaStream.fieldOrder());
+                technicalVideo.frameRate().set(layer, mediaStream.rFrameRate());
+                technicalVideo.averageFrameRate().set(layer, mediaStream.avgFrameRate());
             }
 
             Optional.ofNullable(mediaStream.disposition())
                     .ifPresentOrElse(
-                            disposition -> streamWriter.set(
-                                    layer,
-                                    disposition.attachedPic()
-                                           || disposition.stillImage()
-                                           || disposition.timedThumbnails())
-                                    .isSecondary(),
-                            () -> streamWriter.set(
-                                    layer,
-                                    false)
-                                    .isSecondary());
+                            disposition -> technicalStream.isSecondary()
+                                    .set(layer,
+                                            disposition.attachedPic()
+                                                || disposition.stillImage()
+                                                || disposition.timedThumbnails()),
+                            () -> technicalStream.isSecondary()
+                                    .set(layer, false));
 
-            mxfWriter.set(layer, getTagByName(mediaStream.tags(), "track_name")).trackName();
-            mxfWriter.set(layer, getTagByName(mediaStream.tags(), "file_package_umid")).filePackageUMID();
-            mxfWriter.set(layer, getTagByName(mediaStream.tags(), "file_package_name")).filePackageName();
-            dublinCoreWriter.set(layer, getTagByName(mediaStream.tags(), "language")).language();
+            technicalMXF.trackName().set(layer, getTagByName(mediaStream.tags(), "track_name"));
+            technicalMXF.filePackageUMID().set(layer, getTagByName(mediaStream.tags(), "file_package_umid"));
+            technicalMXF.filePackageName().set(layer, getTagByName(mediaStream.tags(), "file_package_name"));
+            dublinCore.language().set(layer, getTagByName(mediaStream.tags(), "language"));
         });
 
         ffprobeJAXB.getFormat().ifPresent(format -> {
             final var layer = -1;
 
-            final var containerWriter = metadataThesaurusService.getWriter(
-                    this, fileEntity, MtdThesaurusDefTechnicalContainer.class);
-            containerWriter.set(ffprobeJAXB.getTimecode(false)).timecode();
-            containerWriter.set(ffprobeJAXB.getDuration()).duration();
-            containerWriter.set(format.bitRate()).bitrate();
-            containerWriter.set(format.formatName()).format();
-            containerWriter.set(format.formatLongName()).formatName();
-            containerWriter.set(format.startTime()).startTime();
+            final var technicalContainer = thesaurus.technicalContainer();
+            technicalContainer.timecode().set(ffprobeJAXB.getTimecode(false));
+            technicalContainer.duration().set(ffprobeJAXB.getDuration());
+            technicalContainer.bitrate().set(format.bitRate());
+            technicalContainer.format().set(format.formatName());
+            technicalContainer.formatName().set(format.formatLongName());
+            technicalContainer.startTime().set(format.startTime());
 
-            final var xmpWriter = metadataThesaurusService.getWriter(
-                    this, fileEntity, MtdThesaurusDefXMP.class);
+            final var oModificationDate = getTagByName(format.tags(), "modification_date");
+            final var oCreationDate = getTagByName(format.tags(), "creation_time");
 
-            final var oModificationDate = getTagByName(format.tags(), "modification_date")
-                    .map(Instant::parse)
-                    .map(Instant::getEpochSecond);
-            final var oCreationDate = getTagByName(format.tags(), "creation_time")
-                    .map(Instant::parse)
-                    .map(Instant::getEpochSecond);
-
-            xmpWriter.set(oModificationDate).modifyDate();
-            xmpWriter.set(oCreationDate).createDate();
-            dublinCoreWriter.set(oModificationDate.or(() -> oCreationDate)).date();
+            xmp.modifyDate().setDateISO8601(oModificationDate);
+            xmp.createDate().setDateISO8601(oCreationDate);
+            dublinCore.date().setDateISO8601(oModificationDate.or(() -> oCreationDate));
 
             final var creatorTool = new StringBuilder();
             getTagByName(format.tags(), "product_name").ifPresent(creatorTool::append);
             getTagByName(format.tags(), "product_version").ifPresent(v -> creatorTool.append(" v" + v));
             getTagByName(format.tags(), "company_name").ifPresent(cn -> creatorTool.append(" (" + cn + ")"));
-            xmpWriter.set(creatorTool.toString().trim()).creatorTool();
+            xmp.creatorTool().set(creatorTool.toString().trim());
 
-            mxfWriter.set(layer, getTagByName(format.tags(), "operational_pattern_ul")).operationalPatternUL();
-            mxfWriter.set(layer, getTagByName(format.tags(), "uid")).uid();
-            mxfWriter.set(layer, getTagByName(format.tags(), "generation_uid")).generationUID();
-            mxfWriter.set(layer, getTagByName(format.tags(), "material_package_umid")).materialPackageUMID();
-            dublinCoreWriter.set(layer, getTagByName(format.tags(), "language")).language();
+            technicalMXF.operationalPatternUL().set(layer, getTagByName(format.tags(), "operational_pattern_ul"));
+            technicalMXF.uid().set(layer, getTagByName(format.tags(), "uid"));
+            technicalMXF.generationUID().set(layer, getTagByName(format.tags(), "generation_uid"));
+            technicalMXF.materialPackageUMID().set(layer, getTagByName(format.tags(), "material_package_umid"));
+            dublinCore.language().set(layer, getTagByName(format.tags(), "language"));
         });
 
         final var validVideoStreams = filterValidVideoStreams(ffprobeJAXB).toList();
@@ -386,11 +358,11 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         final var haveVideo = validVideoStreams.isEmpty() == false;
         final var haveAudio = ffprobeJAXB.getAudioStreams().count() > 0l;
 
-        patchInvalidAVMimeTypes(dublinCoreWriter, currentMimeType, haveVideo, haveAudio);
+        patchInvalidAVMimeTypes(dublinCore, currentMimeType, haveVideo, haveAudio);
     }
 
     static Map<Integer, Integer> getPrograms(final FFprobeJAXB ffprobeJAXB,
-                                             MtdThesaurusDefTechnicalTransportStream tsWriter) {
+                                             final MtdThesaurusDefTechnicalTransportStream tsWriter) {
         final var result = new HashMap<Integer, Integer>();
         final var programs = ffprobeJAXB.getPrograms();
         if (programs.isEmpty() == false) {
@@ -411,7 +383,9 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         return unmodifiableMap(result);
     }
 
-    void setChapters(final FileEntity fileEntity, final FFprobeJAXB ffprobeJAXB, MtdThesaurusDefChapter chapterMtd) {
+    void setChapters(final FileEntity fileEntity,
+                     final FFprobeJAXB ffprobeJAXB,
+                     final MtdThesaurusDefChapter chapterMtd) {
         final var chapters = ffprobeJAXB.getChapters();
         if (chapters.isEmpty()) {
             return;
@@ -454,14 +428,14 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         }
     }
 
-    static void patchInvalidAVMimeTypes(final MetadataThesaurusDefinitionWriter<MtdThesaurusDefDublinCore> writer,
+    static void patchInvalidAVMimeTypes(final MtdThesaurusDefDublinCore dublinCore,
                                         final String currentMimeType,
                                         final boolean haveVideo,
                                         final boolean haveAudio) {
         if (currentMimeType.startsWith(VIDEO_SLASH) && haveVideo == false && haveAudio) {
-            writer.set(currentMimeType.replace(VIDEO_SLASH, AUDIO_SLASH)).format();
+            dublinCore.format().set(currentMimeType.replace(VIDEO_SLASH, AUDIO_SLASH));
         } else if (currentMimeType.startsWith(AUDIO_SLASH) && haveVideo == true) {
-            writer.set(currentMimeType.replace(AUDIO_SLASH, VIDEO_SLASH)).format();
+            dublinCore.format().set(currentMimeType.replace(AUDIO_SLASH, VIDEO_SLASH));
         }
     }
 

@@ -19,11 +19,14 @@ package media.mexm.mydmam.mtdthesaurus;
 import static java.lang.reflect.Proxy.newProxyInstance;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.checkInterfaceClass;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -32,9 +35,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Thread safe
  */
+@Slf4j
 public class MetadataThesaurusLogic { // TODO test
     private static final String TO_STRING = "toString";
     private static final String EQUALS = "equals";
@@ -92,12 +98,6 @@ public class MetadataThesaurusLogic { // TODO test
                 })
                 .sorted((l, r) -> l.className.compareTo(r.className))
                 .toList();
-    }
-
-    // TODO who need this ???
-    @Override
-    public String toString() {
-        throw new UnsupportedOperationException("toString is not avaliable from Logic");
     }
 
     public static String nameFormatter(final String name) {
@@ -181,6 +181,7 @@ public class MetadataThesaurusLogic { // TODO test
                 });
     }
 
+    @SuppressWarnings("unchecked")
     Object onProxyCall(final MetadataThesaurusEntryIOProvider provider,
                        final String classifier,
                        final String key,
@@ -205,6 +206,24 @@ public class MetadataThesaurusLogic { // TODO test
                         key,
                         0,
                         v));
+            }
+            yield null;
+        }
+        case "setDateISO8601" -> {
+            if (args.length == 2) {
+                setDateISO8601((Optional<String>) args[1])
+                        .ifPresent(v -> provider.setValueToDatabase(
+                                classifier,
+                                key,
+                                (int) args[0],
+                                v));
+            } else if (args.length == 1) {
+                setDateISO8601((Optional<String>) args[0])
+                        .ifPresent(v -> provider.setValueToDatabase(
+                                classifier,
+                                key,
+                                0,
+                                v));
             }
             yield null;
         }
@@ -235,6 +254,25 @@ public class MetadataThesaurusLogic { // TODO test
                 .collect(toUnmodifiableMap(Entry::getKey, e -> Integer.valueOf(e.getValue())));
         default -> throw new IllegalCallerException("Can't manage MetadataThesaurusEntry " + method);
         };
+    }
+
+    Optional<String> setDateISO8601(final Optional<String> oValue) {
+        requireNonNull(oValue);
+        if (oValue.isEmpty()) {
+            return empty();
+        }
+
+        try {
+            return oValue
+                    .map(String::trim)
+                    .filter(not(String::isEmpty))
+                    .map(Instant::parse)
+                    .map(Instant::getEpochSecond)
+                    .map(String::valueOf);
+        } catch (final DateTimeParseException e) {
+            log.warn("Can't parse date: \"{}\"", oValue.orElse(""));
+            return empty();
+        }
     }
 
     Optional<String> set(final Object value) {

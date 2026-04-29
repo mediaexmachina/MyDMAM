@@ -27,7 +27,6 @@ import static org.apache.commons.io.FileUtils.forceDelete;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -228,12 +227,8 @@ public class PDFHandler implements ActivityHandler {
 
     void extractXMPMtds(final MetadataThesaurusRegister thesaurus, final Map<String, String> pdfInfo) {
         final var xmpWriter = thesaurus.xmp();
-        xmpWriter.createDate().set(xpdf.getInfo(pdfInfo, "CreationDate")
-                .map(Instant::parse)
-                .map(Instant::getEpochSecond));
-        xmpWriter.modifyDate().set(xpdf.getInfo(pdfInfo, "ModDate")
-                .map(Instant::parse)
-                .map(Instant::getEpochSecond));
+        xmpWriter.createDate().setDateISO8601(xpdf.getInfo(pdfInfo, "CreationDate"));
+        xmpWriter.modifyDate().setDateISO8601(xpdf.getInfo(pdfInfo, "ModDate"));
         xmpWriter.creatorTool().set(xpdf.getInfo(pdfInfo, "Creator"));
         xmpWriter.metadataDate().set(xpdf.getInfo(pdfInfo, "MetadataDate"));
     }

@@ -19,6 +19,9 @@ package media.mexm.mydmam.mtdthesaurus;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * @see MetadataThesaurusLogic#onProxyCall for usage
+ */
 public interface MetadataThesaurusEntry {
 
     String classifier();
@@ -29,9 +32,17 @@ public interface MetadataThesaurusEntry {
 
     void set(int layer, Object value);
 
-    Optional<String> get();
+    /**
+     * such as '2011-12-03T10:15:30Z'
+     */
+    void setDateISO8601(Optional<String> oValue);
 
-    // TODO contains + contains(int layer)
+    /**
+     * such as '2011-12-03T10:15:30Z'
+     */
+    void setDateISO8601(int layer, Optional<String> oValue);
+
+    Optional<String> get();
 
     int getAsInt(int defaultValue);
 
@@ -43,7 +54,4 @@ public interface MetadataThesaurusEntry {
 
     Map<Integer, Integer> getAllInt();
 
-    // TODO setDate (String -> Instant) -> 2
-    // TODO get as float -> 2
-    // TODO add conditional set (with value predicate) -> 1
 }
