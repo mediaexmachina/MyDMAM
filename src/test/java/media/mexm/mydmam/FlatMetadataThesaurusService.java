@@ -16,258 +16,158 @@
  */
 package media.mexm.mydmam;
 
-import static java.util.Collections.synchronizedSet;
-import static java.util.Objects.requireNonNull;
-import static java.util.Optional.empty;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.AssertionFailureBuilder.assertionFailure;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import media.mexm.mydmam.activity.ActivityHandler;
-import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.entity.FileMetadataEntity;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryIOProvider;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
-import media.mexm.mydmam.repository.FileMetadataDao;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusRegister;
 import media.mexm.mydmam.service.MetadataThesaurusService;
-import media.mexm.mydmam.service.MetadataThesaurusServiceImpl;
 
 @Service
 @Primary
 public class FlatMetadataThesaurusService implements MetadataThesaurusService {
 
-    private final MetadataThesaurusServiceImpl backend;
-    private final FlatFileMetadataDao flatFileMetadataDao;
-    private final ConcurrentHashMap<ResponseValueKey, String> responseMap;
-    private final Set<FileEntity> relativeTofiles;
-    private final Set<FileMetadataEntity> entitiesAdded;
-    private final Set<ResponseValueKey> entitiesReaded;
     private final MetadataThesaurusLogic logic;
+    private final Set<FileEntity> usedFileEntities;
+    private final Set<ActivityHandler> usedActivityHandler;
+    private final IOProvider inOutProvider;
+    private final IOProvider outProvider;
+    private final IOProvider testProvider;
+    private final Set<ThesaurusDbEntry> savedForTest;
+    private final Set<ThesaurusDbEntry> addedDuringTest;
 
-    private final ConcurrentHashMap<Class<?>, MetadataThesaurusDefinitionWriter<?>> writersByClasses;
+    private String actualMimeType;
 
     public FlatMetadataThesaurusService() {
-        relativeTofiles = synchronizedSet(new HashSet<>());
-        entitiesAdded = synchronizedSet(new HashSet<>());
-        responseMap = new ConcurrentHashMap<>();
-        entitiesReaded = synchronizedSet(new HashSet<>());
-
-        flatFileMetadataDao = new FlatFileMetadataDao();
-
-        final var auditTrail = mock(AuditTrail.class);
-        when(auditTrail.getAuditTrailByRealm(anyString())).thenReturn(empty());
-        backend = new MetadataThesaurusServiceImpl(flatFileMetadataDao, auditTrail);
         logic = new MetadataThesaurusLogic();
-        writersByClasses = new ConcurrentHashMap<>();
-    }
-
-    record ResponseValueKey(int layer, String classifier, String key) {
-    }
-
-    private class FlatFileMetadataDao implements FileMetadataDao {
-
-        @Override
-        public void addUpdateEntry(final FileEntity file, final FileMetadataEntity item) {
-            relativeTofiles.add(file);
-            entitiesAdded.add(item);
-        }
-
-        @Override
-        public Optional<String> getMetadataValue(final FileEntity fileEntity,
-                                                 final int layer,
-                                                 final String classifier,
-                                                 final String key) {
-            relativeTofiles.add(fileEntity);
-            final var responseValueKey = new ResponseValueKey(layer, classifier, key);
-            entitiesReaded.add(responseValueKey);
-            return Optional.ofNullable(responseMap.get(responseValueKey));
-        }
-
-        @Override
-        public Map<Integer, String> getMetadataLayersValues(final FileEntity fileEntity, final String classifier, final String key) {
-            relativeTofiles.add(fileEntity);
-            final var responseValueKey = new ResponseValueKey(-99, classifier, key);
-            entitiesReaded.add(responseValueKey);
-
-            final var response = responseMap.get(responseValueKey);
-            if (response == null) {
-                return Map.of();
-            } else {
-                return Map.of(-99, response);
-            }
-        }
-
-        @Override
-        public Map<String, Set<FileMetadataEntity>> getFileMetadatasByFileIds(final Collection<Integer> fileIds,
-                                                                              final String realm) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void addUpdateEntries(final FileEntity file, final Collection<FileMetadataEntity> items) {
-            relativeTofiles.add(file);
-            entitiesAdded.addAll(items);
-        }
-
-    }
-
-    public void endChecks(final FileEntity... files) {
-        if (entitiesAdded.isEmpty() == false) {
-            assertionFailure()
-                    .message("Some (" + entitiesAdded.size() + ") entrie(s) are not checks")
-                    .reason("Not checks: " + entitiesAdded)
-                    .buildAndThrow();
-        }
-
-        if (relativeTofiles.isEmpty() == false) {
-            assertThat(relativeTofiles)
-                    .withFailMessage("Not expected entities added to file(s): %s", relativeTofiles)
-                    .containsExactly(files);
-        }
-
-        final var entriesExpectedToRead = responseMap.keySet();
-        assertThat(entitiesReaded).containsAll(entriesExpectedToRead);
-
-        relativeTofiles.clear();
-        responseMap.clear();
-        entitiesReaded.clear();
-    }
-
-    public <T> T checkIfAdded(final Class<T> fromClass,
-                              final int layer,
-                              final Object rawValue) {
-        requireNonNull(rawValue);
-        if (rawValue instanceof Optional<?>) {
-            throw new IllegalArgumentException("Can't check optionals");
-        }
-        final var value = String.valueOf(rawValue);
-
-        return logic.injectInstanceWriteEntities(
-                entry -> {
-                    final var classifier = entry.classifier();
-                    final var key = entry.key();
-
-                    final var allForThat = entitiesAdded.stream()
-                            .filter(entity -> classifier.equals(entity.getClassifier()))
-                            .filter(entity -> key.equals(entity.getKey()))
-                            .filter(entity -> layer == entity.getLayer())
-                            .toList();
-
-                    if (allForThat.isEmpty()) {
-                        assertionFailure()
-                                .message("Can't found value.")
-                                .reason("For: classifier=" + classifier + ", key=" + key + ", layer=" + layer)
-                                .buildAndThrow();
-                    } else if (allForThat.size() > 1) {
-                        assertionFailure()
-                                .message("Too more than one value added.")
-                                .reason("Found: " + allForThat)
-                                .buildAndThrow();
-                    } else if (value.equals(allForThat.get(0).getValue()) == false) {
-                        assertionFailure()
-                                .message("Not expected value, want=" + value + ", have=" + allForThat.get(0).getValue())
-                                .reason("For: classifier=" + classifier + ", key=" + key + ", layer=" + layer)
-                                .buildAndThrow();
-                    }
-
-                    entitiesAdded.remove(allForThat.get(0));
-                }, fromClass);
-    }
-
-    public <T> T checkIfAdded(final Class<T> fromClass,
-                              final Object rawValue) {
-        return checkIfAdded(fromClass, 0, rawValue);
-    }
-
-    public <T> T addResponse(final Class<T> fromClass,
-                             final int layer,
-                             final Object rawValue) {
-        requireNonNull(rawValue);
-
-        return logic.injectInstanceWriteEntities(
-                entry -> {
-                    final var rvk = new ResponseValueKey(layer, entry.classifier(), entry.key());
-                    if (rawValue instanceof final Optional<?> o) {
-                        if (o.isEmpty()) {
-                            responseMap.remove(rvk);
-                        } else {
-                            responseMap.put(rvk, String.valueOf(o.get()));
-                        }
-                    } else {
-                        responseMap.put(rvk, String.valueOf(rawValue));
-                    }
-                }, fromClass);
-    }
-
-    /**
-     * With layer = 0
-     */
-    public <T> T addResponse(final Class<T> fromClass,
-                             final Object rawValue) {
-        return addResponse(fromClass, 0, rawValue);
-    }
-
-    public FlatMetadataThesaurusService setMimeType(final String value) {
-        addResponse(MtdThesaurusDefDublinCore.class, value).format();
-        return this;
+        usedFileEntities = new HashSet<>();
+        usedActivityHandler = new HashSet<>();
+        savedForTest = new HashSet<>();
+        addedDuringTest = new HashSet<>();
+        actualMimeType = null;
+        inOutProvider = new IOProvider(true, savedForTest, addedDuringTest);
+        outProvider = new IOProvider(false, savedForTest, addedDuringTest);
+        testProvider = new IOProvider(true, addedDuringTest, savedForTest);
     }
 
     public void reset() {
-        relativeTofiles.clear();
-        entitiesAdded.clear();
-        responseMap.clear();
-        entitiesReaded.clear();
-        writersByClasses.clear();
+        usedFileEntities.clear();
+        usedActivityHandler.clear();
+        savedForTest.clear();
+        addedDuringTest.clear();
+        actualMimeType = null;
+    }
+
+    public FlatMetadataThesaurusService check(final FileEntity fileEntity) {
+        assertThat(usedFileEntities.remove(fileEntity))
+                .withFailMessage("Can't found to fileEntity: %s", fileEntity)
+                .isTrue();
+        return this;
+    }
+
+    public FlatMetadataThesaurusService check(final ActivityHandler activityHandler) {
+        assertThat(usedActivityHandler.remove(activityHandler))
+                .withFailMessage("Can't found to activityHandler: %s", activityHandler)
+                .isTrue();
+        return this;
+    }
+
+    public void check() {
+        assertThat(usedFileEntities)
+                .withFailMessage("Not empty usedFileEntities: %s", usedFileEntities)
+                .isEmpty();
+        assertThat(usedActivityHandler)
+                .withFailMessage("Not empty usedActivityHandler: %s", usedActivityHandler)
+                .isEmpty();
+        assertThat(addedDuringTest)
+                .withFailMessage("Not empty addedDuringTest (please check added): %s", addedDuringTest)
+                .isEmpty();
+    }
+
+    private record ThesaurusDbEntry(String classifier, String key, int layer, String value) {
+    }
+
+    private static class IOProvider implements MetadataThesaurusEntryIOProvider {
+
+        private final boolean canWrite;
+        private final Set<ThesaurusDbEntry> readFrom;
+        private final Set<ThesaurusDbEntry> writeTo;
+
+        IOProvider(final boolean canWrite, final Set<ThesaurusDbEntry> readFrom, final Set<ThesaurusDbEntry> writeTo) {
+            this.canWrite = canWrite;
+            this.readFrom = readFrom;
+            this.writeTo = writeTo;
+        }
+
+        @Override
+        public Optional<String> getValueFromDatabase(final String classifier, final String key, final int layer) {
+            final var oItem = readFrom.stream()
+                    .filter(entry -> entry.classifier.equals(classifier))
+                    .filter(entry -> entry.key.equals(key))
+                    .filter(entry -> entry.layer == layer)
+                    .findFirst();
+            oItem.ifPresent(readFrom::remove);
+            return oItem.map(ThesaurusDbEntry::value);
+        }
+
+        @Override
+        public Map<Integer, String> getValueLayerFromDatabase(final String classifier, final String key) {
+            final var items = readFrom.stream()
+                    .filter(entry -> entry.classifier.equals(classifier))
+                    .filter(entry -> entry.key.equals(key))
+                    .toList();
+            items.forEach(readFrom::remove);
+            return items.stream().collect(toUnmodifiableMap(ThesaurusDbEntry::layer, ThesaurusDbEntry::value));
+        }
+
+        @Override
+        public void setValueToDatabase(final String classifier, final String key, final int layer, final String value) {
+            if (canWrite == false) {
+                throw new UnsupportedOperationException("Can't write with this Provider/Logic");
+            }
+            writeTo.add(new ThesaurusDbEntry(classifier, key, layer, value));
+        }
     }
 
     @Override
-    public <T> T getReader(final Class<T> fromClass, final FileEntity fileEntity, final int layer) {
-        relativeTofiles.add(fileEntity);
-        return backend.getReader(fromClass, fileEntity, layer);
+    public MetadataThesaurusRegister getThesaurus(final ActivityHandler handler, final FileEntity fileEntity) {
+        usedFileEntities.add(fileEntity);
+        usedActivityHandler.add(handler);
+        return logic.makeRegister(inOutProvider);
     }
 
     @Override
-    public Optional<String> getValue(final FileEntity fileEntity,
-                                     final int layer,
-                                     final MetadataThesaurusEntry metadataThesaurusEntry) {
-        relativeTofiles.add(fileEntity);
-        return backend.getValue(fileEntity, layer, metadataThesaurusEntry);
+    public MetadataThesaurusRegister getReadOnlyThesaurus(final FileEntity fileEntity) {
+        usedFileEntities.add(fileEntity);
+        return logic.makeRegister(outProvider);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> MetadataThesaurusDefinitionWriter<T> getWriter(final ActivityHandler handler,
-                                                              final FileEntity fileEntity,
-                                                              final Class<T> fromClass) {
-        relativeTofiles.add(fileEntity);
-        return (MetadataThesaurusDefinitionWriter<T>) writersByClasses.computeIfAbsent(fromClass,
-                c -> backend.getWriter(handler, fileEntity, c));
+    public MetadataThesaurusRegister getTestThesaurus() {
+        return logic.makeRegister(testProvider);
     }
 
     @Override
     public Optional<String> getMimeType(final FileEntity fileEntity) {
-        relativeTofiles.add(fileEntity);
-        return backend.getMimeType(fileEntity);
+        usedFileEntities.add(fileEntity);
+        return Optional.ofNullable(actualMimeType);
     }
 
     @Override
-    public <T> T makeInstance(final Class<T> fromClass) {
-        return backend.makeInstance(fromClass);
+    public void setMimeType(final ActivityHandler handler, final FileEntity fileEntity, final String mimeType) {
+        usedFileEntities.add(fileEntity);
+        usedActivityHandler.add(handler);
+        actualMimeType = mimeType;
     }
 
 }

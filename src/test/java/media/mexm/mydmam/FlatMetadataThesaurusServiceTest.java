@@ -16,34 +16,24 @@
  */
 package media.mexm.mydmam;
 
-import static java.util.Optional.empty;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE;
-
-import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.opentest4j.AssertionFailedError;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifier;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryImpl;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
@@ -83,181 +73,68 @@ class FlatMetadataThesaurusServiceTest {
         verify(fileEntity, atLeast(0)).getHashPath();
     }
 
-    @MetadataThesaurusClassifier(value = "classifier")
-    public interface MtdThesaurusDef {
-        MetadataThesaurusEntry data();
-    }
-
     @Test
-    void testEndChecks() {
-        metadataThesaurusService.endChecks(fileEntity);
-
-        metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class).set(value).data();
-        assertThrows(AssertionFailedError.class, () -> metadataThesaurusService.endChecks(fileEntity));
+    void testReset() {
+        metadataThesaurusService.getMimeType(fileEntity);
+        assertThrows(AssertionError.class, () -> metadataThesaurusService.check());
         metadataThesaurusService.reset();
-
-        metadataThesaurusService.getReader(MtdThesaurusDef.class, fileEntity).data();
-        metadataThesaurusService.reset();
-
-        metadataThesaurusService.addResponse(MtdThesaurusDef.class, value).data();
-        assertThrows(AssertionError.class, () -> metadataThesaurusService.endChecks(fileEntity));
-
-        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
+        metadataThesaurusService.check();
     }
 
     @Test
-    void testCheckIfAdded() {
-        metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class).set(value).data();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, value).data();
-        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
-        metadataThesaurusService.endChecks(fileEntity);
+    void testCheckFileEntity() {
+        metadataThesaurusService.check();
+        assertThrows(AssertionError.class, () -> metadataThesaurusService.check(fileEntity));
+        metadataThesaurusService.getMimeType(fileEntity);
+        metadataThesaurusService.check(fileEntity).check();
     }
 
     @Test
-    void testCheckIfAdded_withLayer() {
-        metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class).set(layer, value).data();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, layer, value).data();
-        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
-        metadataThesaurusService.endChecks(fileEntity);
+    void testCheckActivityHandler() {
+        metadataThesaurusService.check();
+        assertThrows(AssertionError.class, () -> metadataThesaurusService.check(activityHandler));
+        metadataThesaurusService.getThesaurus(activityHandler, fileEntity);
+        metadataThesaurusService.check(activityHandler).check(fileEntity).check();
     }
 
     @Test
-    void testCheckIfAdded_badLayer() {
-        metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class).set(value).data();
-        final var added = metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, layer, value);
-        assertThrows(AssertionFailedError.class, added::data);
-        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
+    void testGetThesaurus() {
+        final var t = metadataThesaurusService.getThesaurus(activityHandler, fileEntity);
+        t.dublinCore().format().set(value);
+        assertThat(metadataThesaurusService.getTestThesaurus().dublinCore().format().get()).contains(value);
+        metadataThesaurusService.check(activityHandler).check(fileEntity).check();
     }
 
     @Test
-    void testCheckIfAdded_notFound() {
-        final var added = metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, value);
-        assertThrows(AssertionFailedError.class, added::data);
-        metadataThesaurusService.endChecks(fileEntity);
+    void testGetReadOnlyThesaurus() {
+        metadataThesaurusService.getTestThesaurus().dublinCore().format().set(value);
+        final var t = metadataThesaurusService.getReadOnlyThesaurus(fileEntity);
+        final var format = t.dublinCore().format();
+        assertThat(format.get()).contains(value);
+        assertThrows(UnsupportedOperationException.class, () -> format.set(value));
     }
 
     @Test
-    void testCheckIfAdded_moreThanOneValue() {
-        final var writer = metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class);
-        writer.set(value).data();
-        writer.set(badValue).data();
+    void testGetValueLayerThesaurus() {
+        final var t = metadataThesaurusService.getThesaurus(activityHandler, fileEntity);
+        t.dublinCore().format().set(0, value);
+        t.dublinCore().format().set(1, badValue);
+        t.dublinCore().format().set(2, mimeType);
 
-        final var added = metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, value);
-        assertThrows(AssertionFailedError.class, added::data);
-        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
+        assertThat(metadataThesaurusService.getTestThesaurus().dublinCore().format().getAll())
+                .hasSize(3)
+                .containsEntry(0, value)
+                .containsEntry(1, badValue)
+                .containsEntry(2, mimeType);
+        metadataThesaurusService.check(activityHandler).check(fileEntity).check();
     }
 
     @Test
-    void testCheckIfAdded_badValue() {
-        metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class).set(value).data();
-        final var added = metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, badValue);
-        assertThrows(AssertionFailedError.class, added::data);
-        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
-    }
-
-    @Test
-    void testAddResponse() {
-        metadataThesaurusService.addResponse(MtdThesaurusDef.class, value).data();
-        assertThat(metadataThesaurusService.getReader(MtdThesaurusDef.class, fileEntity).data().value())
-                .contains(value);
-        metadataThesaurusService.endChecks(fileEntity);
-    }
-
-    @Test
-    void testAddResponse_optional() {
-        metadataThesaurusService.addResponse(MtdThesaurusDef.class, Optional.ofNullable(value)).data();
-        assertThat(metadataThesaurusService.getReader(MtdThesaurusDef.class, fileEntity).data().value())
-                .contains(value);
-        metadataThesaurusService.endChecks(fileEntity);
-    }
-
-    @Test
-    void testAddResponse_empty() {
-        metadataThesaurusService.addResponse(MtdThesaurusDef.class, value).data();
-        metadataThesaurusService.addResponse(MtdThesaurusDef.class, empty()).data();
-        assertThat(metadataThesaurusService.getReader(MtdThesaurusDef.class, fileEntity).data().value()).isEmpty();
-    }
-
-    @Test
-    void testSetMimeType() {
-        metadataThesaurusService.setMimeType(mimeType);
-        assertThat(metadataThesaurusService.getMimeType(fileEntity)).contains(mimeType);
-        metadataThesaurusService.endChecks(fileEntity);
-    }
-
-    @Test
-    void testGetMimeType() {
+    void testGetSetMimeType() {
         assertThat(metadataThesaurusService.getMimeType(fileEntity)).isEmpty();
-    }
-
-    @Test
-    void testGetReader() {
-        assertThat(metadataThesaurusService.getReader(MtdThesaurusDef.class, fileEntity).data().value())
-                .isEmpty();
-        assertThat(metadataThesaurusService.getReader(MtdThesaurusDef.class, fileEntity, layer).data().value())
-                .isEmpty();
-
-        metadataThesaurusService.addResponse(MtdThesaurusDef.class, value).data();
-        assertThat(metadataThesaurusService.getReader(MtdThesaurusDef.class, fileEntity).data().value())
-                .contains(value);
-
-        metadataThesaurusService.addResponse(MtdThesaurusDef.class, layer, value).data();
-        assertThat(metadataThesaurusService.getReader(MtdThesaurusDef.class, fileEntity, layer).data().value())
-                .contains(value);
-        metadataThesaurusService.endChecks(fileEntity);
-    }
-
-    @Test
-    void testGetValue_empty() {
-        assertThat(metadataThesaurusService.getValue(fileEntity,
-                new MetadataThesaurusEntryImpl("classifier", "data", empty()))).isEmpty();
-        assertThat(metadataThesaurusService.getValue(fileEntity, layer,
-                new MetadataThesaurusEntryImpl("classifier", "data", empty()))).isEmpty();
-    }
-
-    @Test
-    void testGetValue_withData() {
-        metadataThesaurusService.addResponse(MtdThesaurusDef.class, value).data();
-        assertThat(metadataThesaurusService.getValue(fileEntity,
-                new MetadataThesaurusEntryImpl("classifier", "data", empty()))).contains(value);
-        metadataThesaurusService.endChecks(fileEntity);
-    }
-
-    @Test
-    void testGetValue_withDataWithLayer() {
-        metadataThesaurusService.addResponse(MtdThesaurusDef.class, layer, value).data();
-        assertThat(metadataThesaurusService.getValue(fileEntity, layer,
-                new MetadataThesaurusEntryImpl("classifier", "data", empty()))).contains(value);
-        metadataThesaurusService.endChecks(fileEntity);
-    }
-
-    @Test
-    void testGetWriter() {
-        final var w = metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class);
-        assertNotNull(w);
-        assertNull(w.set(value).data());
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, value).data();
-        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
-        metadataThesaurusService.endChecks(fileEntity);
-    }
-
-    @Test
-    void testGetWriter_withLayer() {
-        final var w = metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class);
-        assertNotNull(w);
-        assertNull(w.set(layer, value).data());
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDef.class, layer, value).data();
-        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
-        metadataThesaurusService.endChecks(fileEntity);
-    }
-
-    @Test
-    void testGetWriter_empty() {
-        final var w = metadataThesaurusService.getWriter(activityHandler, fileEntity, MtdThesaurusDef.class);
-        assertNotNull(w);
-        w.set(value);
-        verify(activityHandler, atLeastOnce()).getMetadataOriginName();
-        metadataThesaurusService.endChecks(fileEntity);
+        metadataThesaurusService.setMimeType(activityHandler, fileEntity, mimeType);
+        assertThat(metadataThesaurusService.getMimeType(fileEntity)).contains(mimeType);
+        metadataThesaurusService.check(activityHandler).check(fileEntity).check();
     }
 
 }
