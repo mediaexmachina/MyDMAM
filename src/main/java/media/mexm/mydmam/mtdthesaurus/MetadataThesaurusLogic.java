@@ -249,7 +249,7 @@ public class MetadataThesaurusLogic { // TODO test
         };
     }
 
-    Optional<String> setDateISO8601(final Optional<String> oValue) {
+    static Optional<String> setDateISO8601(final Optional<String> oValue) {
         requireNonNull(oValue);
         if (oValue.isEmpty()) {
             return empty();
@@ -268,7 +268,7 @@ public class MetadataThesaurusLogic { // TODO test
         }
     }
 
-    Optional<String> set(final Object value) {
+    static Optional<String> set(final Object value) {
         if (value == null) {
             return empty();
         } else if (value instanceof final String s) {

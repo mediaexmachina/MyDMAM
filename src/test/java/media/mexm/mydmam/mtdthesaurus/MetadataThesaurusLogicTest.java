@@ -21,6 +21,7 @@ import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.EQUALS;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.HASH_CODE;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.TO_STRING;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.nameFormatter;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.setDateISO8601;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -218,6 +219,8 @@ class MetadataThesaurusLogicTest {
 
     @Test
     void testSetDateISO8601() {
+
+        assertThat(setDateISO8601(Optional.ofNullable(now)));
 
     }
 
