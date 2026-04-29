@@ -47,13 +47,11 @@ import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.component.ExternalExecCapabilities;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefChapter;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalAudio;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalContainer;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalMXF;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalStream;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalTransportStream;
@@ -238,17 +236,23 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
 
         saveFFprobeXMLFile(fileEntity, storedOn, ffprobeJAXB);
 
-        final var writer = metadataThesaurusService.getWriter(
-                this, fileEntity, MtdThesaurusDefTechnical.class);
-        final var imageWriter = metadataThesaurusService.getWriter(
-                this, fileEntity, MtdThesaurusDefTechnicalImage.class);
-        final var dublinCoreWriter = metadataThesaurusService.getWriter(this, fileEntity,
-                MtdThesaurusDefDublinCore.class);
+        final var thesaurus = metadataThesaurusService.getThesaurus(this, fileEntity);
+        var technical = thesaurus.technical();
+        var technicalAudio = thesaurus.technicalAudio();
+        var technicalContainer = thesaurus.technicalContainer();
+        var technicalImage = thesaurus.technicalImage();
+        var technicalMXF = thesaurus.technicalMXF();
+        var technicalStream = thesaurus.technicalStream();
+        var technicalTransportStream = thesaurus.technicalTransportStream();
+        var technicalVideo = thesaurus.technicalVideo();
+        var chapter = thesaurus.chapter();
+        var xmp = thesaurus.xmp();
+        var dublinCore = thesaurus.dublinCore();
 
-        setMediaSummary(ffprobeJAXB, writer);
-        setChapters(fileEntity, ffprobeJAXB);
+        setMediaSummary(ffprobeJAXB, technical);
+        setChapters(fileEntity, ffprobeJAXB, chapter);
 
-        final var programIdByMediaStreamIndex = getPrograms(fileEntity, ffprobeJAXB);
+        final var programIdByMediaStreamIndex = getPrograms(ffprobeJAXB, technicalTransportStream);
 
         final var mxfWriter = metadataThesaurusService.getWriter(
                 this, fileEntity, MtdThesaurusDefTechnicalMXF.class);
@@ -385,23 +389,21 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         patchInvalidAVMimeTypes(dublinCoreWriter, currentMimeType, haveVideo, haveAudio);
     }
 
-    Map<Integer, Integer> getPrograms(final FileEntity fileEntity,
-                                      final FFprobeJAXB ffprobeJAXB) {
+    static Map<Integer, Integer> getPrograms(final FFprobeJAXB ffprobeJAXB,
+                                             MtdThesaurusDefTechnicalTransportStream tsWriter) {
         final var result = new HashMap<Integer, Integer>();
         final var programs = ffprobeJAXB.getPrograms();
         if (programs.isEmpty() == false) {
             return Map.of();
         }
-        final var tsWriter = metadataThesaurusService.getWriter(
-                this, fileEntity, MtdThesaurusDefTechnicalTransportStream.class);
 
         programs.forEach(program -> {
             final var layer = program.programId();
-            tsWriter.set(layer, program.programNum()).programNum();
-            tsWriter.set(layer, program.pcrPid()).pcrPid();
-            tsWriter.set(layer, program.pmtPid()).pmtPid();
-            tsWriter.set(layer, getTagByName(program.tags(), "service_name")).serviceName();
-            tsWriter.set(layer, getTagByName(program.tags(), "service_provider")).serviceProvider();
+            tsWriter.programNum().set(layer, program.programNum());
+            tsWriter.pcrPid().set(layer, program.pcrPid());
+            tsWriter.pmtPid().set(layer, program.pmtPid());
+            tsWriter.serviceName().set(layer, getTagByName(program.tags(), "service_name"));
+            tsWriter.serviceProvider().set(layer, getTagByName(program.tags(), "service_provider"));
             program.streams().forEach(mediaStream -> result.put(
                     mediaStream.index(),
                     program.programId()));
@@ -409,19 +411,17 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         return unmodifiableMap(result);
     }
 
-    void setChapters(final FileEntity fileEntity, final FFprobeJAXB ffprobeJAXB) {
+    void setChapters(final FileEntity fileEntity, final FFprobeJAXB ffprobeJAXB, MtdThesaurusDefChapter chapterMtd) {
         final var chapters = ffprobeJAXB.getChapters();
         if (chapters.isEmpty()) {
             return;
         }
-        final var chapterWriter = metadataThesaurusService.getWriter(
-                this, fileEntity, MtdThesaurusDefChapter.class);
 
         for (var pos = 0; pos < chapters.size(); pos++) {
             final var chapter = chapters.get(pos);
-            chapterWriter.set(pos + 1, getTagByName(chapter.tags(), "title")).title();
-            chapterWriter.set(pos + 1, Math.round(chapter.startTime() * 1000)).startTime();
-            chapterWriter.set(pos + 1, Math.round(chapter.endTime() * 1000)).endTime();
+            chapterMtd.title().set(pos + 1, getTagByName(chapter.tags(), "title"));
+            chapterMtd.startTime().set(pos + 1, Math.round(chapter.startTime() * 1000));
+            chapterMtd.endTime().set(pos + 1, Math.round(chapter.endTime() * 1000));
         }
     }
 
@@ -483,16 +483,16 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
     }
 
     static void setMediaSummary(final FFprobeJAXB ffprobeJAXB,
-                                final MetadataThesaurusDefinitionWriter<MtdThesaurusDefTechnical> writer) {
+                                final MtdThesaurusDefTechnical writer) {
         final var mediaSummary = ffprobeJAXB.getMediaSummary();
         if (mediaSummary.format().isEmpty() == false) {
-            writer.set(-1, mediaSummary.format()).type();
+            writer.type().set(-1, mediaSummary.format());
         }
         final var mediaSummaryStreams = mediaSummary.streams();
         for (var pos = 0; pos < mediaSummaryStreams.size(); pos++) {
             final var mediaSummaryForStream = mediaSummaryStreams.get(pos);
             if (mediaSummaryForStream.isEmpty() == false) {
-                writer.set(pos, mediaSummaryForStream).type();
+                writer.type().set(pos, mediaSummaryForStream);
             }
         }
     }

@@ -31,6 +31,8 @@ public interface MetadataThesaurusEntry {
 
     Optional<String> get();
 
+    // TODO contains + contains(int layer)
+
     int getAsInt(int defaultValue);
 
     int getAsInt(int layer, int defaultValue);
@@ -41,4 +43,7 @@ public interface MetadataThesaurusEntry {
 
     Map<Integer, Integer> getAllInt();
 
+    // TODO setDate (String -> Instant) -> 2
+    // TODO get as float -> 2
+    // TODO add conditional set (with value predicate) -> 1
 }

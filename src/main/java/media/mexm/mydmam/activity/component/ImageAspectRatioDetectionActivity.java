@@ -34,7 +34,6 @@ import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.dto.StorageStateClass;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MetadataThesaurusService;
 
@@ -64,10 +63,10 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
     public boolean canHandle(final FileEntity fileEntity,
                              final ActivityEventType eventType,
                              final RealmStorageConfiguredEnv storedOn) {
-        final var imageReader = metadataThesaurusService.getReader(MtdThesaurusDefTechnicalImage.class, fileEntity);
-        return imageReader.imageAspectFormat().value().isEmpty()
-               && imageReader.height().value().isPresent()
-               && imageReader.width().value().isPresent();
+        final var imageReader = metadataThesaurusService.getThesaurus(this, fileEntity).technicalImage();
+        return imageReader.imageAspectFormat().get().isEmpty()
+               && imageReader.height().get().isPresent()
+               && imageReader.width().get().isPresent();
     }
 
     public enum PageOrientation {
@@ -80,28 +79,27 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
     public void handle(final FileEntity fileEntity,
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) {
-        final var reader = metadataThesaurusService.getReader(MtdThesaurusDefTechnicalImage.class, fileEntity);
-        final var imageWriter = metadataThesaurusService.getWriter(this, fileEntity,
-                MtdThesaurusDefTechnicalImage.class);
+        final var thesaurus = metadataThesaurusService.getThesaurus(this, fileEntity);
+        final var technicalImage = thesaurus.technicalImage();
 
-        final var height = reader.height().value().map(Float::parseFloat).orElseThrow();
-        final var width = reader.width().value().map(Float::parseFloat).orElseThrow();
+        final var height = technicalImage.height().get().map(Float::parseFloat).orElseThrow();
+        final var width = technicalImage.width().get().map(Float::parseFloat).orElseThrow();
 
         if (height < 1 || width < 1) {
             return;
         }
 
-        if (reader.displayAspectRatio().value().isEmpty()) {
+        if (technicalImage.displayAspectRatio().get().isEmpty()) {
             final var fraction = getReducedFraction(Math.round(width), Math.round(height));
-            imageWriter.set(fraction.getNumerator() + ":" + fraction.getDenominator()).displayAspectRatio();
+            technicalImage.displayAspectRatio().set(fraction.getNumerator() + ":" + fraction.getDenominator());
         }
 
-        if (reader.sampleAspectRatio().value().isEmpty()) {
-            imageWriter.set("1:1").sampleAspectRatio();
+        if (technicalImage.sampleAspectRatio().get().isEmpty()) {
+            technicalImage.sampleAspectRatio().set("1:1");
         }
 
-        imageWriter.set(aspectRatio(width, height)).aspectRatio();
-        imageWriter.set(getPageOrientation(width, height)).imageAspectFormat();
+        technicalImage.aspectRatio().set(aspectRatio(width, height));
+        technicalImage.imageAspectFormat().set(getPageOrientation(width, height));
     }
 
     static double aspectRatio(final float width, final float height) {

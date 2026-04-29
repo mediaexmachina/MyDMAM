@@ -38,7 +38,6 @@ public class MetadataThesaurusToAngularClasses {
 
     public MetadataThesaurusToAngularClasses() {
         logic = new MetadataThesaurusLogic();
-        logic.defaultRegister();
     }
 
     public void make(final File angularProjectDestination) throws IOException {
@@ -66,9 +65,8 @@ public class MetadataThesaurusToAngularClasses {
         final var angularServiceDirectory = new File(angularProjectDestination, "services");
         forceMkdir(angularServiceDirectory);
 
-        for (final var implement : logic.getImplements().entrySet()) {
-            final var className = implement.getKey();
-            final var classContent = implement.getValue();
+        for (final var implement : logic.getImplementsFromRegister()) {
+            final var className = implement.className();
 
             final var content = new ArrayList<>(header);
             content.add("import { Injectable } from '@angular/core'");
@@ -83,19 +81,14 @@ public class MetadataThesaurusToAngularClasses {
             content.add("export class " + className + " {");
             content.add("");
 
-            final var classifier = classContent.values()
-                    .stream()
-                    .map(MetadataThesaurusEntry::classifier)
-                    .findFirst()
-                    .orElseThrow();
-            content.add("    public readonly classifier = \"" + classifier + "\";");
+            content.add("    public readonly classifier = \"" + implement.classifier() + "\";");
 
-            for (final var methodEntry : classContent.entrySet()) {
-                final var methodName = methodEntry.getKey();
-                final var methodResult = methodEntry.getValue();
+            for (final var methodEntry : implement.methods()) {
+                final var methodName = methodEntry.methodName();
+                final var keyName = methodEntry.keyName();
                 content.add("");
                 content.add("    public " + methodName + "(): " + dtoClassName + " {");
-                content.add("        return { key: \"" + methodResult.key() + "\", classifier: this.classifier };");
+                content.add("        return { key: \"" + keyName + "\", classifier: this.classifier };");
                 content.add("    }");
             }
 

@@ -48,7 +48,6 @@ import org.springframework.stereotype.Component;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefPDF;
 import media.mexm.mydmam.tools.ExternalExecCapabilityEvaluator;
 import tv.hd3g.processlauncher.CapturedStdOutErrTextRetention;
@@ -240,7 +239,7 @@ public class XPDF implements InternalService {
     }
 
     public void extractPermissions(final Map<String, String> pdfInfo,
-                                   final MetadataThesaurusDefinitionWriter<MtdThesaurusDefPDF> pdfWriter) {
+                                   final MtdThesaurusDefPDF pdfWriter) {
         getInfo(pdfInfo, "Permissions")
                 .filter(not(String::isBlank))
                 .map(p -> Stream.of(StringUtils.split(p.toLowerCase()))
@@ -263,15 +262,15 @@ public class XPDF implements InternalService {
                         })
                         .collect(toUnmodifiableMap(Entry::getKey, Entry::getValue)))
                 .ifPresentOrElse(permission -> {
-                    pdfWriter.set(Optional.ofNullable(permission.get("print"))).permissionPrint();
-                    pdfWriter.set(Optional.ofNullable(permission.get("copy"))).permissionCopy();
-                    pdfWriter.set(Optional.ofNullable(permission.get("change"))).permissionChange();
-                    pdfWriter.set(Optional.ofNullable(permission.get("addnotes"))).permissionAddNotes();
+                    pdfWriter.permissionPrint().set(Optional.ofNullable(permission.get("print")));
+                    pdfWriter.permissionCopy().set(Optional.ofNullable(permission.get("copy")));
+                    pdfWriter.permissionChange().set(Optional.ofNullable(permission.get("change")));
+                    pdfWriter.permissionAddNotes().set(Optional.ofNullable(permission.get("addnotes")));
                 }, () -> {
-                    pdfWriter.set("true").permissionPrint();
-                    pdfWriter.set("true").permissionCopy();
-                    pdfWriter.set("true").permissionChange();
-                    pdfWriter.set("true").permissionAddNotes();
+                    pdfWriter.permissionPrint().set("true");
+                    pdfWriter.permissionCopy().set("true");
+                    pdfWriter.permissionChange().set("true");
+                    pdfWriter.permissionAddNotes().set("true");
                 });
     }
 

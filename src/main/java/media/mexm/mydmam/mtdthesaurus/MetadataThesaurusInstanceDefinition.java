@@ -18,14 +18,16 @@ package media.mexm.mydmam.mtdthesaurus;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.lang.reflect.Modifier.isPublic;
+import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.nameFormatter;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import lombok.Getter;
@@ -61,12 +63,17 @@ class MetadataThesaurusInstanceDefinition {
         final var annotationClassifier = extractClassifier(instanceClass);
         classifier = annotationClassifier.value();
 
-        final var currentEntries = new LinkedHashMap<Method, String>();
-
         final var methodList = Stream.of(instanceClass.getMethods())
                 .sorted((l, r) -> l.getName().compareTo(r.getName()))
                 .toList();
 
+        checkInterfaceClass(instanceClass, methodList);
+
+        entries = methodList.stream()
+                .collect(toUnmodifiableMap(identity(), this::methodToKeyName));
+    }
+
+    static void checkInterfaceClass(final Class<?> instanceClass, final List<Method> methodList) {
         final var notAbstract = methodList.stream().filter(not(m -> isAbstract(m.getModifiers()))).toList();
         if (notAbstract.isEmpty() == false) {
             throw new IllegalArgumentException("Can't use " + instanceClass
@@ -78,10 +85,6 @@ class MetadataThesaurusInstanceDefinition {
             throw new IllegalArgumentException("Can't use " + instanceClass
                                                + ", it containt non-public methods: " + notPublic);
         }
-
-        // TODO clean up this:
-        methodList.forEach(m -> currentEntries.put(m, methodToKeyName(m)));
-        entries = Collections.unmodifiableMap(currentEntries);
     }
 
     private String methodToKeyName(final Method method) {
@@ -101,6 +104,10 @@ class MetadataThesaurusInstanceDefinition {
                                                + ")");
         }
         return nameFormatter(name);
+    }
+
+    Set<Method> getAllMethods() {
+        return entries.keySet();
     }
 
     String getKeyNameByMethod(final Method method) {

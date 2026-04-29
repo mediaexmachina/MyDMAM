@@ -19,43 +19,12 @@ package media.mexm.mydmam.mtdthesaurus;
 import java.util.Map;
 import java.util.Optional;
 
-import media.mexm.mydmam.entity.FileEntity;
-
 public interface MetadataThesaurusEntryIOProvider {
 
-    Optional<String> getValueFromDatabase(FileEntity fileEntity, String classifier, String key, int layer);
+    Optional<String> getValueFromDatabase(String classifier, String key, int layer);
 
-    Map<Integer, String> getValueLayerFromDatabase(FileEntity fileEntity, String classifier, String key);
+    Map<Integer, String> getValueLayerFromDatabase(String classifier, String key);
 
-    void setValueToDatabase(FileEntity fileEntity, String classifier, String key, int layer, String value);
-
-    static MetadataThesaurusEntryIOProvider emptyProvider() {// TODO test
-        return new MetadataThesaurusEntryIOProvider() {
-
-            @Override
-            public void setValueToDatabase(final FileEntity fileEntity,
-                                           final String classifier,
-                                           final String key,
-                                           final int layer,
-                                           final String value) {
-                throw new UnsupportedOperationException("Data I/O is disabled");
-            }
-
-            @Override
-            public Map<Integer, String> getValueLayerFromDatabase(final FileEntity fileEntity,
-                                                                  final String classifier,
-                                                                  final String key) {
-                throw new UnsupportedOperationException("Data I/O is disabled");
-            }
-
-            @Override
-            public Optional<String> getValueFromDatabase(final FileEntity fileEntity,
-                                                         final String classifier,
-                                                         final String key,
-                                                         final int layer) {
-                throw new UnsupportedOperationException("Data I/O is disabled");
-            }
-        };
-    }
+    void setValueToDatabase(String classifier, String key, int layer, String value);
 
 }

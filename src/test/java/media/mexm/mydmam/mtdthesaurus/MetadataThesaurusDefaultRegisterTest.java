@@ -29,7 +29,7 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ExtendWith(MockToolsExtendsJunit.class)
 class MetadataThesaurusDefaultRegisterTest {
 
-    class Impl implements MetadataThesaurusDefaultRegister {
+    class Impl implements MetadataThesaurusRegister {
 
         Set<Class<?>> called = new HashSet<>();
 

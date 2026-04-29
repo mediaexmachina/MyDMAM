@@ -16,10 +16,12 @@
  */
 package media.mexm.mydmam.service;
 
+import static java.util.Optional.empty;
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE_METADATA_ENTRY;
 import static media.mexm.mydmam.service.MediaAssetService.MEDIA_ASSET_AUDIT_ISSUER;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +33,9 @@ import media.mexm.mydmam.audittrail.AuditTrailBatchInsertObject;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.entity.FileMetadataEntity;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryIOProvider;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusRegister;
 import media.mexm.mydmam.repository.FileMetadataDao;
 
 @Service
@@ -52,66 +53,62 @@ public class MetadataThesaurusServiceImpl implements MetadataThesaurusService {
         logic = new MetadataThesaurusLogic();
     }
 
-    @Override
-    public <T> T getReader(final Class<T> fromClass, final FileEntity fileEntity, final int layer) {
-        return logic.injectInstanceReadEntities(
-                metadataThesaurusEntry -> getValue(fileEntity, layer, metadataThesaurusEntry),
-                fromClass);
-    }
+    record IOProvider(FileMetadataDao fileMetadataDao,
+                      Optional<String> origin,
+                      FileEntity fileEntity,
+                      AuditTrail auditTrail) implements MetadataThesaurusEntryIOProvider {
 
-    @Override
-    public Optional<String> getValue(final FileEntity fileEntity,
-                                     final int layer,
-                                     final MetadataThesaurusEntry metadataThesaurusEntry) {
-        return fileMetadataDao.getMetadataValue(
-                fileEntity,
-                layer,
-                metadataThesaurusEntry.classifier(),
-                metadataThesaurusEntry.key());
-    }
+        @Override
+        public Optional<String> getValueFromDatabase(final String classifier, final String key, final int layer) {
+            return fileMetadataDao.getMetadataValue(fileEntity, layer, classifier, key);
+        }
 
-    @Override
-    public <T> MetadataThesaurusDefinitionWriter<T> getWriter(final ActivityHandler handler,
-                                                              final FileEntity fileEntity,
-                                                              final Class<T> fromClass) {
-        final var origin = handler.getMetadataOriginName();
-        final var def = new MetadataThesaurusDefinitionWriter<T>();
-        final var instance = logic.injectInstanceWriteEntities(entry -> {
-            final var writed = def.getAndRemoveCurrentValue();
-            if (writed.isEmpty()) {
-                return;
-            }
-            final var dbEntry = new FileMetadataEntity(
+        @Override
+        public Map<Integer, String> getValueLayerFromDatabase(final String classifier, final String key) {
+            return fileMetadataDao.getMetadataLayersValues(fileEntity, classifier, key);
+        }
+
+        @Override
+        public void setValueToDatabase(final String classifier, final String key, final int layer, final String value) {
+            final var insert = new FileMetadataEntity(
                     fileEntity,
-                    origin,
-                    entry,
-                    writed.get().layer(),
-                    writed.get().value());
+                    origin.orElseThrow(() -> new IllegalAccessError("Can't use this provider to write datas")),
+                    classifier,
+                    key,
+                    layer,
+                    value);
 
-            log.debug("Save FileMetadata {}", dbEntry);
-            fileMetadataDao.addUpdateEntry(fileEntity, dbEntry);
-            updateAuditTrail(fileEntity, dbEntry);
-        }, fromClass);
-        def.setInstance(instance);
-        return def;
+            fileMetadataDao.addUpdateEntry(fileEntity, insert);
+            auditTrail.getAuditTrailByRealm(fileEntity.getRealm())
+                    .ifPresent(realmAuditTrail -> realmAuditTrail.asyncPersist(MEDIA_ASSET_AUDIT_ISSUER,
+                            "extracted-file-metadatas",
+                            new AuditTrailBatchInsertObject(FILE_METADATA_ENTRY, fileEntity.getHashPath(),
+                                    List.of(insert.getAuditTrailPayload()))));
+        }
+
     }
 
-    private void updateAuditTrail(final FileEntity fileEntity, final FileMetadataEntity insert) {
-        auditTrail.getAuditTrailByRealm(fileEntity.getRealm())
-                .ifPresent(realmAuditTrail -> realmAuditTrail.asyncPersist(MEDIA_ASSET_AUDIT_ISSUER,
-                        "extracted-file-metadatas",
-                        new AuditTrailBatchInsertObject(FILE_METADATA_ENTRY, fileEntity.getHashPath(),
-                                List.of(insert.getAuditTrailPayload()))));
+    @Override
+    public MetadataThesaurusRegister getThesaurus(final ActivityHandler handler, final FileEntity fileEntity) {
+        return logic.makeRegister(new IOProvider(
+                fileMetadataDao,
+                Optional.ofNullable(handler.getMetadataOriginName()),
+                fileEntity,
+                auditTrail));
+    }
+
+    @Override
+    public MetadataThesaurusRegister getReadOnlyThesaurus(final FileEntity fileEntity) {
+        return logic.makeRegister(new IOProvider(fileMetadataDao, empty(), fileEntity, auditTrail));
     }
 
     @Override
     public Optional<String> getMimeType(final FileEntity fileEntity) {
-        return getReader(MtdThesaurusDefDublinCore.class, fileEntity, 0).format().value();
+        return getReadOnlyThesaurus(fileEntity).dublinCore().format().get();
     }
 
     @Override
-    public <T> T makeInstance(final Class<T> fromClass) {
-        return logic.makeInstance(fromClass);
+    public void setMimeType(final ActivityHandler handler, final FileEntity fileEntity, final String mimeType) {
+        getThesaurus(handler, fileEntity).dublinCore().format().set(mimeType);
     }
-
 }

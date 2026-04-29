@@ -38,7 +38,6 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import media.mexm.mydmam.dto.KeyValueMetadataResponse;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
 
 @Entity
 @Table(name = FileMetadataEntity.TABLE_NAME,
@@ -102,7 +101,8 @@ public class FileMetadataEntity {
 
     public FileMetadataEntity(@NotNull final FileEntity file,
                               @NotNull final String origin,
-                              @Deprecated @NotNull final MetadataThesaurusEntry entry,
+                              @NotNull final String classifier,
+                              @NotNull final String key,
                               @NotNull final Integer layer,
                               @NotNull final String value) {
         if (value.length() > MAX_VALUE_LENGTH) {
@@ -112,9 +112,9 @@ public class FileMetadataEntity {
         createDate = new Timestamp(currentTimeMillis());
         this.file = file;
         this.origin = origin;
-        classifier = entry.classifier();
+        this.classifier = classifier;
+        this.key = key;
         this.layer = layer;
-        key = entry.key();
         this.value = value;
 
         final var crc = new CRC32();

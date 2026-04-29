@@ -23,7 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Don't forget to add Interfaces references to MetadataThesaurusDefaultRegister!
+ * Don't forget to add Interfaces references to MetadataThesaurusRegister!
  */
 @Retention(RUNTIME)
 @Target(TYPE)
@@ -33,7 +33,5 @@ public @interface MetadataThesaurusClassifier {
      * @return Classifier key
      */
     public String value();
-
-    public String parent() default ""; // TODO remove parent
 
 }

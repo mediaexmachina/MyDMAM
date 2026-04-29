@@ -20,37 +20,16 @@ import java.util.Optional;
 
 import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusRegister;
 
 public interface MetadataThesaurusService {
 
-    <T> T getReader(Class<T> fromClass, FileEntity fileEntity, int layer);
-
-    /**
-     * With layer = 0
-     */
-    default <T> T getReader(final Class<T> fromClass, final FileEntity fileEntity) {
-        return getReader(fromClass, fileEntity, 0);
-    }
-
-    Optional<String> getValue(FileEntity fileEntity,
-                              int layer,
-                              MetadataThesaurusEntry metadataThesaurusEntry);
-
-    /**
-     * With layer = 0
-     */
-    default Optional<String> getValue(final FileEntity fileEntity,
-                                      final MetadataThesaurusEntry metadataThesaurusEntry) {
-        return getValue(fileEntity, 0, metadataThesaurusEntry);
-    }
-
-    <T> MetadataThesaurusDefinitionWriter<T> getWriter(ActivityHandler handler,
-                                                       FileEntity fileEntity,
-                                                       Class<T> fromClass);
-
     Optional<String> getMimeType(FileEntity fileEntity);
 
-    <T> T makeInstance(final Class<T> fromClass);
+    void setMimeType(ActivityHandler handler, FileEntity fileEntity, String mimeType);
+
+    MetadataThesaurusRegister getThesaurus(ActivityHandler handler, FileEntity fileEntity);
+
+    MetadataThesaurusRegister getReadOnlyThesaurus(FileEntity fileEntity);
+
 }

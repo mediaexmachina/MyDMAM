@@ -29,7 +29,6 @@ import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MetadataThesaurusService;
 
@@ -57,24 +56,21 @@ public class MimeTypeActivity implements ActivityHandler {
     }
 
     @Override
-    public void handle(final FileEntity file,
+    public void handle(final FileEntity fileEntity,
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) throws Exception {
-        final var internalFile = storedOn.getLocalInternalFile(file);
+        final var internalFile = storedOn.getLocalInternalFile(fileEntity);
         log.debug("Get mime type from {}", internalFile);
         final var mimeType = mimeTypeDetector.getMimeType(internalFile);
         log.debug("Founded mime type: {}", mimeType);
 
-        metadataThesaurusService.getWriter(this, file, MtdThesaurusDefDublinCore.class)
-                .set(mimeType)
-                .format();
-
+        metadataThesaurusService.setMimeType(this, fileEntity, mimeType);
         auditTrail.asyncPersistForRealm(
-                file.getRealm(),
+                fileEntity.getRealm(),
                 "mime-type",
                 "direct-extracted-from-file",
                 FILE_MIME_TYPE,
-                file.getHashPath(),
+                fileEntity.getHashPath(),
                 mimeType);
     }
 

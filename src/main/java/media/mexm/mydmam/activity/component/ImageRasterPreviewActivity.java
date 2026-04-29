@@ -27,8 +27,6 @@ import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.repository.FileMetadataDao;
 import media.mexm.mydmam.service.MediaAssetService;
@@ -60,10 +58,10 @@ public class ImageRasterPreviewActivity implements ActivityHandler {
         return BASE_PREVIEW;
     }
 
-    private boolean hasResolution(final FileEntity file) {
-        final var def = metadataThesaurusService.getReader(MtdThesaurusDefTechnicalImage.class, file, 0);
-        return def.width().intValue(-1) > 0
-               && def.height().intValue(-1) > 0;
+    private boolean hasResolution(final FileEntity fileEntity) {
+        final var technicalImage = metadataThesaurusService.getThesaurus(this, fileEntity).technicalImage();
+        return technicalImage.width().getAsInt(-1) > 0
+               && technicalImage.height().getAsInt(-1) > 0;
     }
 
     @Override
@@ -80,18 +78,17 @@ public class ImageRasterPreviewActivity implements ActivityHandler {
     }
 
     @Override
-    public void handle(final FileEntity file,
+    public void handle(final FileEntity fileEntity,
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) throws Exception {
-        final var assetFile = storedOn.getLocalInternalFile(file);
-        final var isImageTypeAlpha = metadataThesaurusService.getReader(MtdThesaurusDefTechnical.class, file, 0)
-                .type()
-                .value()
+        final var assetFile = storedOn.getLocalInternalFile(fileEntity);
+        final var isImageTypeAlpha = metadataThesaurusService.getThesaurus(this, fileEntity).technical().type()
+                .get()
                 .orElse("")
                 .toLowerCase()
                 .contains("alpha");
 
-        mediaRenderedFilesUtilsService.makeImageThumbnails(file, storedOn, assetFile, isImageTypeAlpha, 0);
+        mediaRenderedFilesUtilsService.makeImageThumbnails(fileEntity, storedOn, assetFile, isImageTypeAlpha, 0);
     }
 
 }

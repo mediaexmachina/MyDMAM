@@ -31,7 +31,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -45,10 +44,8 @@ import media.mexm.mydmam.component.XPDF.PageInfo;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.XPDFConf;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.entity.FileMetadataEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusRegister;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefPDF;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefXMP;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.repository.FileMetadataDao;
 import media.mexm.mydmam.service.MediaAssetService;
@@ -120,20 +117,23 @@ public class PDFHandler implements ActivityHandler {
                 .map(XPDFConf::maxPageCount)
                 .orElse(100_000);
 
-        final var pdfWriter = metadataThesaurusService.getWriter(this, fileEntity, MtdThesaurusDefPDF.class);
-        pdfWriter.set(pageCount).pageCount();
-        pdfWriter.set(xpdf.getInfo(pdfInfo, "Encrypted").filter(not("no"::equals))).encrypted();
-        pdfWriter.set(xpdf.getInfo(pdfInfo, "PDF version")).pdfVersion();
-        pdfWriter.set(xpdf.getInfo(pdfInfo, "Form")).form();
-        pdfWriter.set(xpdf.getInfo(pdfInfo, "Optimized").map(NOT_NO)).optimized();
-        pdfWriter.set(xpdf.getInfo(pdfInfo, "JavaScript").map(NOT_NO)).javascript();
-        pdfWriter.set(xpdf.getInfo(pdfInfo, "Tagged").map(NOT_NO)).tagged();
-        pdfWriter.set(xpdf.getInfo(pdfInfo, "Producer")).producer();
-        pdfWriter.set(xpdf.getInfo(pdfInfo, "Keywords")).keywords();
+        final var thesaurus = metadataThesaurusService.getThesaurus(this, fileEntity);
 
-        extractDCMtds(fileEntity, pdfInfo);
-        extractXMPMtds(fileEntity, pdfInfo);
+        final var pdfWriter = thesaurus.pdf();
+        pdfWriter.pageCount().set(pageCount);
+        pdfWriter.encrypted().set(xpdf.getInfo(pdfInfo, "Encrypted").filter(not("no"::equals)));
+        pdfWriter.pdfVersion().set(xpdf.getInfo(pdfInfo, "PDF version"));
+        pdfWriter.form().set(xpdf.getInfo(pdfInfo, "Form"));
+        pdfWriter.optimized().set(xpdf.getInfo(pdfInfo, "Optimized").map(NOT_NO));
+        pdfWriter.javascript().set(xpdf.getInfo(pdfInfo, "JavaScript").map(NOT_NO));
+        pdfWriter.tagged().set(xpdf.getInfo(pdfInfo, "Tagged").map(NOT_NO));
+        pdfWriter.producer().set(xpdf.getInfo(pdfInfo, "Producer"));
+        pdfWriter.keywords().set(xpdf.getInfo(pdfInfo, "Keywords"));
+
+        extractDCMtds(thesaurus, pdfInfo);
+        extractXMPMtds(thesaurus, pdfInfo);
         xpdf.extractPermissions(pdfInfo, pdfWriter);
+
         final var pagesFormats = xpdf.extractPagesFormats(pdfInfo, maxPageCount);
 
         if (maxPageCount >= pageCount
@@ -147,19 +147,12 @@ public class PDFHandler implements ActivityHandler {
                 .allMatch(pf -> Integer.compare(pf.rotated(), first.rotated()) == 0
                                 && Float.compare(pf.w(), first.w()) == 0
                                 && Float.compare(pf.h(), first.h()) == 0);
-        pdfWriter.set(samePages).samePagesFormat();
+        pdfWriter.samePagesFormat().set(samePages);
 
-        final var defPdf = metadataThesaurusService.makeInstance(MtdThesaurusDefPDF.class);
         if (samePages) {
-            fileMetadataDao.addUpdateEntries(
-                    fileEntity,
-                    makePageEntities(fileEntity, defPdf, first, 0).toList());
+            makePageEntities(pdfWriter, first, 0);
         } else {
-            fileMetadataDao.addUpdateEntries(
-                    fileEntity,
-                    pagesFormats.stream()
-                            .flatMap(pageInfo -> makePageEntities(fileEntity, defPdf, pageInfo, -1))
-                            .toList());
+            pagesFormats.forEach(pageInfo -> makePageEntities(pdfWriter, pageInfo, -1));
         }
 
         if (storedOn.getActivityLimitPolicy()
@@ -233,55 +226,32 @@ public class PDFHandler implements ActivityHandler {
         mediaAssetService.declareTextExtractedFile(fileEntity, pdfText, FULL_TEXT_PDF);
     }
 
-    void extractXMPMtds(final FileEntity fileEntity, final Map<String, String> pdfInfo) {
-        final var xmpWriter = metadataThesaurusService.getWriter(this, fileEntity, MtdThesaurusDefXMP.class);
-        xmpWriter.set(xpdf.getInfo(pdfInfo, "CreationDate")
+    void extractXMPMtds(final MetadataThesaurusRegister thesaurus, final Map<String, String> pdfInfo) {
+        final var xmpWriter = thesaurus.xmp();
+        xmpWriter.createDate().set(xpdf.getInfo(pdfInfo, "CreationDate")
                 .map(Instant::parse)
-                .map(Instant::getEpochSecond))
-                .createDate();
-        xmpWriter.set(xpdf.getInfo(pdfInfo, "ModDate")
+                .map(Instant::getEpochSecond));
+        xmpWriter.modifyDate().set(xpdf.getInfo(pdfInfo, "ModDate")
                 .map(Instant::parse)
-                .map(Instant::getEpochSecond))
-                .modifyDate();
-        xmpWriter.set(xpdf.getInfo(pdfInfo, "Creator"))
-                .creatorTool();
-        xmpWriter.set(xpdf.getInfo(pdfInfo, "MetadataDate"))
-                .metadataDate();
+                .map(Instant::getEpochSecond));
+        xmpWriter.creatorTool().set(xpdf.getInfo(pdfInfo, "Creator"));
+        xmpWriter.metadataDate().set(xpdf.getInfo(pdfInfo, "MetadataDate"));
     }
 
-    void extractDCMtds(final FileEntity fileEntity, final Map<String, String> pdfInfo) {
-        final var dcWriter = metadataThesaurusService.getWriter(this, fileEntity, MtdThesaurusDefDublinCore.class);
-        dcWriter.set(xpdf.getInfo(pdfInfo, "Title")).title();
-        dcWriter.set(xpdf.getInfo(pdfInfo, "Subject")).description();
-        dcWriter.set(xpdf.getInfo(pdfInfo, "Author")).creator();
+    void extractDCMtds(final MetadataThesaurusRegister thesaurus, final Map<String, String> pdfInfo) {
+        final var dcWriter = thesaurus.dublinCore();
+        dcWriter.title().set(xpdf.getInfo(pdfInfo, "Title"));
+        dcWriter.description().set(xpdf.getInfo(pdfInfo, "Subject"));
+        dcWriter.creator().set(xpdf.getInfo(pdfInfo, "Author"));
     }
 
-    Stream<FileMetadataEntity> makePageEntities(final FileEntity fileEntity,
-                                                final MtdThesaurusDefPDF defPdf,
-                                                final PageInfo pageInfo,
-                                                final int forcePage) {
+    void makePageEntities(final MtdThesaurusDefPDF defPdf,
+                          final PageInfo pageInfo,
+                          final int forcePage) {
         final var page = forcePage > -1 ? forcePage : pageInfo.page();
-        final var origin = getMetadataOriginName();
-
-        return Stream.of(
-                new FileMetadataEntity(
-                        fileEntity,
-                        origin,
-                        defPdf.pageRotated(),
-                        page,
-                        String.valueOf(pageInfo.rotated())),
-                new FileMetadataEntity(
-                        fileEntity,
-                        origin,
-                        defPdf.pageWidthMm(),
-                        page,
-                        pageInfo.getWMm()),
-                new FileMetadataEntity(
-                        fileEntity,
-                        origin,
-                        defPdf.pageHeightMm(),
-                        page,
-                        pageInfo.getHMm()));
+        defPdf.pageRotated().set(page, pageInfo.rotated());
+        defPdf.pageWidthMm().set(page, pageInfo.getWMm());
+        defPdf.pageHeightMm().set(page, pageInfo.getHMm());
     }
 
 }

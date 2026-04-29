@@ -28,9 +28,6 @@ import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.ActivityLimitPolicy;
 import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MetadataThesaurusService;
@@ -74,11 +71,11 @@ public class ImageInfoExtractionActivity implements ActivityHandler {
     }
 
     @Override
-    public void handle(final FileEntity file,
+    public void handle(final FileEntity fileEntity,
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) throws Exception {
-        final var assetFile = storedOn.getLocalInternalFile(file);
-        final var workingFile = storedOn.makeWorkingFile("identify.json", file);
+        final var assetFile = storedOn.getLocalInternalFile(fileEntity);
+        final var workingFile = storedOn.makeWorkingFile("identify.json", fileEntity);
 
         final var jsonNode = imageMagick.extractIdentifyJsonFile(
                 assetFile,
@@ -96,25 +93,22 @@ public class ImageInfoExtractionActivity implements ActivityHandler {
                     storedOn.getActivityLimitPolicy());
         } else {
             mediaAssetService.declareRenderedStaticFile(
-                    file, workingFile, "identify.json", true, 0, "image-format");
+                    fileEntity, workingFile, "identify.json", true, 0, "image-format");
         }
 
-        metadataThesaurusService.getWriter(this, file, MtdThesaurusDefDublinCore.class)
-                .set(jsonNode.read("$.image.mimeType", String.class))
-                .format();
+        final var thesaurus = metadataThesaurusService.getThesaurus(this, fileEntity);
+        thesaurus.dublinCore().format().set(jsonNode.read("$.image.mimeType", String.class));
 
-        final var imageWriter = metadataThesaurusService.getWriter(this, file, MtdThesaurusDefTechnicalImage.class);
-        imageWriter.set(jsonNode.read("$.image.geometry.width", Integer.class)).width();
-        imageWriter.set(jsonNode.read("$.image.geometry.height", Integer.class)).height();
+        final var technicalImage = thesaurus.technicalImage();
+        technicalImage.width().set(jsonNode.read("$.image.geometry.width", Integer.class));
+        technicalImage.height().set(jsonNode.read("$.image.geometry.height", Integer.class));
 
         final var orientation = jsonNode.read("$.image.orientation", String.class).orElse("undefined");
         if (orientation.equalsIgnoreCase("undefined") == false) {
-            imageWriter.set(orientation).orientation();
+            technicalImage.orientation().set(orientation);
         }
-        imageWriter.set(jsonNode.read("$.image.colorspace", String.class)).colorspace();
-
-        final var techWriter = metadataThesaurusService.getWriter(this, file, MtdThesaurusDefTechnical.class);
-        techWriter.set(jsonNode.read("$.image.type", String.class).map(String::toLowerCase)).type();
+        technicalImage.colorspace().set(jsonNode.read("$.image.colorspace", String.class));
+        thesaurus.technical().type().set(jsonNode.read("$.image.type", String.class).map(String::toLowerCase));
     }
 
 }
