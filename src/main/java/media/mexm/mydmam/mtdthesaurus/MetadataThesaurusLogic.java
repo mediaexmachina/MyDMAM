@@ -41,9 +41,9 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class MetadataThesaurusLogic { // TODO test
-    private static final String TO_STRING = "toString";
-    private static final String EQUALS = "equals";
-    private static final String HASH_CODE = "hashCode";
+    static final String TO_STRING = "toString";
+    static final String EQUALS = "equals";
+    static final String HASH_CODE = "hashCode";
 
     private final ClassLoader classLoader;
 
@@ -53,16 +53,15 @@ public class MetadataThesaurusLogic { // TODO test
     public MetadataThesaurusLogic() {
         classLoader = getClass().getClassLoader();
         definitions = new ConcurrentHashMap<>();
-        registerDefinitions = getMetadataThesaurusRegisterDefinitions();
-    }
 
-    static Map<Method, Class<?>> getMetadataThesaurusRegisterDefinitions() {
         final var instanceClass = MetadataThesaurusRegister.class;
-
         final var methodList = Stream.of(instanceClass.getMethods()).toList();
         checkInterfaceClass(instanceClass, methodList);
+        registerDefinitions = methodList.stream().collect(toUnmodifiableMap(m -> m, Method::getReturnType));
+    }
 
-        return methodList.stream().collect(toUnmodifiableMap(m -> m, Method::getReturnType));
+    Map<Method, Class<?>> getRegisterDefinitions() {
+        return registerDefinitions;
     }
 
     public record MtdRegisterMethodDefinition(String methodName, String keyName) {
@@ -137,56 +136,51 @@ public class MetadataThesaurusLogic { // TODO test
                 classLoader,
                 new Class[] { MetadataThesaurusRegister.class },
                 (_, method, args) -> {
-                    if (args != null && args.length > 0) {
-                        throw new UnsupportedOperationException(method.getName() + " is not avaliable from this proxy");
-                    } else if (method.getName().equals(HASH_CODE)) {
-                        throw new UnsupportedOperationException("hashCode is not avaliable from this proxy");
-                    } else if (method.getName().equals(TO_STRING)) {
-                        throw new UnsupportedOperationException("toString is not avaliable from this proxy");
-                    }
-
+                    checkMethodNotHaveArgs(method, args);
+                    checkMethodNotHashCode(method);
+                    checkMethodNotEquals(method);
+                    checkMethodNotToString(method);
                     return injectInstanceWithIO(provider, registerDefinitions.get(method));
                 });
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T injectInstanceWithIO(final MetadataThesaurusEntryIOProvider provider,
-                                      final Class<T> fromClass) {
+    <T> T injectInstanceWithIO(final MetadataThesaurusEntryIOProvider provider,
+                               final Class<T> fromClass) {
         requireNonNull(provider, "\"provider\" can't to be null");
         requireNonNull(fromClass, "\"fromClass\" can't to be null");
 
         return (T) newProxyInstance(
                 classLoader,
                 new Class[] { fromClass },
-                (_, method, _) -> {
-                    if (method.getName().equals(HASH_CODE)) {
-                        throw new UnsupportedOperationException("hashCode is not avaliable from this proxy");
-                    } else if (method.getName().equals(EQUALS)) {
-                        throw new UnsupportedOperationException("equals is not avaliable from this proxy");
-                    } else if (method.getName().equals(TO_STRING)) {
-                        throw new UnsupportedOperationException("toString is not avaliable from this proxy");
-                    }
+                (_, method, mArgs) -> {
+                    checkMethodNotHaveArgs(method, mArgs);
+                    checkMethodNotHashCode(method);
+                    checkMethodNotEquals(method);
+                    checkMethodNotToString(method);
 
                     final var definition = definitions.computeIfAbsent(fromClass,
                             MetadataThesaurusInstanceDefinition::new);
-
                     final var classifier = definition.getClassifier();
                     final var key = definition.getKeyNameByMethod(method);
 
                     return (MetadataThesaurusEntry) newProxyInstance(
                             classLoader,
                             new Class[] { MetadataThesaurusEntry.class },
-                            (_, subMethod, args) -> onProxyCall(provider, classifier, key, subMethod, args));
+                            (_, subMethod, args) -> onEntryCall(provider, classifier, key, subMethod.getName(), args));
                 });
     }
 
+    /**
+     * @see MetadataThesaurusEntry
+     */
     @SuppressWarnings("unchecked")
-    Object onProxyCall(final MetadataThesaurusEntryIOProvider provider,
+    Object onEntryCall(final MetadataThesaurusEntryIOProvider provider,
                        final String classifier,
                        final String key,
-                       final Method method,
+                       final String methodName,
                        final Object[] args) {
-        return switch (method.getName()) {
+        return switch (methodName) {
         case HASH_CODE -> throw new UnsupportedOperationException("hashCode is not avaliable from this proxy");
         case EQUALS -> throw new UnsupportedOperationException("equals is not avaliable from this proxy");
         case TO_STRING -> classifier + "." + key;
@@ -232,7 +226,7 @@ public class MetadataThesaurusLogic { // TODO test
             } else if (args.length == 1) {
                 yield provider.getValueFromDatabase(classifier, key, (int) args[0]);
             }
-            throw new IllegalCallerException("Can't manage MetadataThesaurusEntry " + method);
+            throw new IllegalCallerException("Can't manage MetadataThesaurusEntry " + methodName);
         }
         case "getAsInt" -> {
             if (args.length == 1) {
@@ -244,14 +238,14 @@ public class MetadataThesaurusLogic { // TODO test
                         .map(Integer::valueOf)
                         .orElse((int) args[1]);
             }
-            throw new IllegalCallerException("Can't manage MetadataThesaurusEntry " + method);
+            throw new IllegalCallerException("Can't manage MetadataThesaurusEntry " + methodName);
         }
         case "getAll" -> provider.getValueLayerFromDatabase(classifier, key);
         case "getAllInt" -> provider.getValueLayerFromDatabase(classifier, key)
                 .entrySet()
                 .stream()
                 .collect(toUnmodifiableMap(Entry::getKey, e -> Integer.valueOf(e.getValue())));
-        default -> throw new IllegalCallerException("Can't manage MetadataThesaurusEntry " + method);
+        default -> throw new IllegalCallerException("Can't manage MetadataThesaurusEntry " + methodName);
         };
     }
 
@@ -266,7 +260,7 @@ public class MetadataThesaurusLogic { // TODO test
                     .map(String::trim)
                     .filter(not(String::isEmpty))
                     .map(Instant::parse)
-                    .map(Instant::getEpochSecond)
+                    .map(Instant::toEpochMilli)
                     .map(String::valueOf);
         } catch (final DateTimeParseException e) {
             log.warn("Can't parse date: \"{}\"", oValue.orElse(""));
@@ -292,6 +286,30 @@ public class MetadataThesaurusLogic { // TODO test
             }
         } else {
             return set(String.valueOf(value));
+        }
+    }
+
+    static void checkMethodNotHaveArgs(final Method method, final Object[] args) {
+        if (args != null && args.length > 0) {
+            throw new UnsupportedOperationException(method.getName() + " is not avaliable from this proxy");
+        }
+    }
+
+    static void checkMethodNotHashCode(final Method method) {
+        if (method.getName().equals(HASH_CODE)) {
+            throw new UnsupportedOperationException("hashCode is not avaliable from this proxy");
+        }
+    }
+
+    static void checkMethodNotToString(final Method method) {
+        if (method.getName().equals(TO_STRING)) {
+            throw new UnsupportedOperationException("toString is not avaliable from this proxy");
+        }
+    }
+
+    static void checkMethodNotEquals(final Method method) {
+        if (method.getName().equals(EQUALS)) {
+            throw new UnsupportedOperationException("equals is not avaliable from this proxy");
         }
     }
 

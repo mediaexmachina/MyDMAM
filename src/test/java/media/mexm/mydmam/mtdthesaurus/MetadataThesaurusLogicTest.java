@@ -16,23 +16,84 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-import static java.util.Optional.empty;
+import static java.time.Instant.now;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.EQUALS;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.HASH_CODE;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.TO_STRING;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.nameFormatter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.MtdRegisterDefinition;
+import tv.hd3g.commons.testtools.Fake;
+import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
+
+@ExtendWith(MockToolsExtendsJunit.class)
 class MetadataThesaurusLogicTest {
+
+    @Mock
+    MetadataThesaurusEntryIOProvider provider;
+
+    String classifier = "dc";
+    String key = "format";
+    String now;
+    long nowUnixtime;
+
+    @Fake
+    String value;
+    @Fake(min = 1, max = 1000)
+    int layer;
+
+    @Fake
+    int defaultInt;
+    @Fake
+    int regularInt;
 
     MetadataThesaurusLogic mtl;
 
     @BeforeEach
     void init() {
         mtl = new MetadataThesaurusLogic();
+
+        final var nowDate = now();
+        now = nowDate.toString();
+        nowUnixtime = nowDate.toEpochMilli();
+    }
+
+    @Test
+    void testGetRegisterDefinitions() {
+        final var result = mtl.getRegisterDefinitions();
+        assertThat(result).isNotEmpty();
+
+        assertThat(result.entrySet().stream()
+                .filter(f -> f.getKey().getName().equals("dublinCore"))
+                .findFirst()
+                .map(Entry::getValue)
+                .map(Class::getName))
+                        .contains(MtdThesaurusDefDublinCore.class.getName());
+    }
+
+    @Test
+    void testGetImplementsFromRegister() {
+        final var result = mtl.getImplementsFromRegister();
+        assertThat(result).isNotEmpty();
+        final var allMethods = result.stream().map(MtdRegisterDefinition::methods).flatMap(List::stream).toList();
+        assertThat(allMethods).isNotEmpty();
     }
 
     @Test
@@ -53,168 +114,136 @@ class MetadataThesaurusLogicTest {
         assertEquals("name-aname", nameFormatter("nameAname"));
     }
 
-    @MetadataThesaurusClassifier(value = "classifier")
-    public interface TestThesaurus {
-        MetadataThesaurusEntry width();
+    @Test
+    void testMakeRegister() {
+        final var register = mtl.makeRegister(provider);
+        assertNotNull(register);
 
+        assertThrows(UnsupportedOperationException.class, register::hashCode);
+        assertThrows(UnsupportedOperationException.class, () -> register.equals(register));
+        assertThrows(UnsupportedOperationException.class, register::toString);
+
+        assertNotNull(register.dublinCore());
     }
 
     @Test
-    void testMakeInstance() {
-        final var width = mtl.makeInstance(TestThesaurus.class).width();
-        assertThat(width).isNotNull().isEqualTo(new MetadataThesaurusEntryImpl("classifier", "width", empty()));
+    void testInjectInstanceWithIO() {
+        final var def = mtl.injectInstanceWithIO(provider, MtdThesaurusDefDublinCore.class);
+        assertNotNull(def);
+
+        assertThrows(UnsupportedOperationException.class, def::hashCode);
+        assertThrows(UnsupportedOperationException.class, () -> def.equals(def));
+        assertThrows(UnsupportedOperationException.class, def::toString);
+
+        assertNotNull(def.format());
     }
 
-    @MetadataThesaurusClassifier(value = "classifier-bis")
-    public interface TestThesaurusBis {
-        MetadataThesaurusEntry height();
-    }
-
+    @SuppressWarnings("unchecked")
     @Test
-    void testMakeInstance_hashCodeEquals() {
-        final var e0 = mtl.makeInstance(TestThesaurus.class);
-        final var e1 = mtl.makeInstance(TestThesaurus.class);
-        assertEquals(e0, e1);
-        assertEquals(e0.hashCode(), e1.hashCode());
+    void testOnEntryCall() {
+        assertThrows(UnsupportedOperationException.class,
+                () -> mtl.onEntryCall(provider, classifier, key, EQUALS, null));
+        assertThrows(UnsupportedOperationException.class,
+                () -> mtl.onEntryCall(provider, classifier, key, HASH_CODE, null));
+        assertThat(mtl.onEntryCall(provider, classifier, key, TO_STRING, null))
+                .isEqualTo(classifier + "." + key);
+        assertThat(mtl.onEntryCall(provider, classifier, key, "classifier", null))
+                .isEqualTo(classifier);
+        assertThat(mtl.onEntryCall(provider, classifier, key, "key", null))
+                .isEqualTo(key);
 
-        final var e2 = mtl.makeInstance(TestThesaurusBis.class);
-        assertNotEquals(e0, e2);
-        assertNotEquals(e0.hashCode(), e2.hashCode());
+        mtl.onEntryCall(provider, classifier, key, "set", args(value));
+        verify(provider, times(1)).setValueToDatabase(classifier, key, 0, value);
+
+        mtl.onEntryCall(provider, classifier, key, "set", args(layer, value));
+        verify(provider, times(1)).setValueToDatabase(classifier, key, layer, value);
+
+        mtl.onEntryCall(provider, classifier, key, "setDateISO8601", args(Optional.ofNullable(now)));
+        verify(provider, times(1)).setValueToDatabase(classifier, key, 0, String.valueOf(nowUnixtime));
+
+        mtl.onEntryCall(provider, classifier, key, "setDateISO8601", args(layer, Optional.ofNullable(now)));
+        verify(provider, times(1)).setValueToDatabase(classifier, key, layer, String.valueOf(nowUnixtime));
+
+        when(provider.getValueFromDatabase(classifier, key, 0)).thenReturn(Optional.ofNullable(value));
+        var result = (Optional<String>) mtl.onEntryCall(provider, classifier, key, "get", args());
+        assertThat(result).contains(value);
+        verify(provider, times(1)).getValueFromDatabase(classifier, key, 0);
+
+        when(provider.getValueFromDatabase(classifier, key, layer)).thenReturn(Optional.ofNullable(value));
+        result = (Optional<String>) mtl.onEntryCall(provider, classifier, key, "get", args(layer));
+        assertThat(result).contains(value);
+        verify(provider, times(1)).getValueFromDatabase(classifier, key, layer);
+
+        key = key + "-int";
+        when(provider.getValueFromDatabase(classifier, key, 0))
+                .thenReturn(Optional.ofNullable(String.valueOf(regularInt)));
+        var resultInt = (int) mtl.onEntryCall(provider, classifier, key, "getAsInt", args(defaultInt));
+        assertThat(resultInt).isEqualTo(regularInt);
+        verify(provider, times(1)).getValueFromDatabase(classifier, key, 0);
+
+        when(provider.getValueFromDatabase(classifier, key, layer))
+                .thenReturn(Optional.ofNullable(String.valueOf(regularInt)));
+        resultInt = (int) mtl.onEntryCall(provider, classifier, key, "getAsInt", args(layer, defaultInt));
+        assertThat(resultInt).isEqualTo(regularInt);
+        verify(provider, times(1)).getValueFromDatabase(classifier, key, layer);
+
+        key = key + "NOPE";
+        resultInt = (int) mtl.onEntryCall(provider, classifier, key, "getAsInt", args(defaultInt));
+        assertThat(resultInt).isEqualTo(defaultInt);
+        verify(provider, times(1)).getValueFromDatabase(classifier, key, 0);
+
+        resultInt = (int) mtl.onEntryCall(provider, classifier, key, "getAsInt", args(layer, defaultInt));
+        assertThat(resultInt).isEqualTo(defaultInt);
+        verify(provider, times(1)).getValueFromDatabase(classifier, key, layer);
+
+        when(provider.getValueLayerFromDatabase(classifier, key)).thenReturn(Map.of(layer, value));
+        final var resultMapString = (Map<Integer, String>) mtl.onEntryCall(provider, classifier, key, "getAll", args());
+        assertThat(resultMapString).isEqualTo(Map.of(layer, value));
+        verify(provider, times(1)).getValueLayerFromDatabase(classifier, key);
+
+        when(provider.getValueLayerFromDatabase(classifier, key)).thenReturn(Map.of(layer, String.valueOf(regularInt)));
+        final var resultMapInt = (Map<Integer, Integer>) mtl
+                .onEntryCall(provider, classifier, key, "getAllInt", args());
+        assertThat(resultMapInt).isEqualTo(Map.of(layer, regularInt));
+        verify(provider, times(2)).getValueLayerFromDatabase(classifier, key);
+
     }
 
-    @MetadataThesaurusClassifier(value = "")
-    public interface TestInvalidThesaurusNoClassifier {
-        MetadataThesaurusEntry width();
-    }
-
-    @Test
-    void testMakeInstance_noClassifier() {
-        assertThrows(IllegalArgumentException.class, () -> mtl.makeInstance(TestInvalidThesaurusNoClassifier.class));
-    }
-
-    @MetadataThesaurusClassifier(value = "classifier")
-    public interface TestThesaurusSameClassifier {
-        MetadataThesaurusEntry width();
-    }
-
-    @Test
-    void testMakeInstance_sameClassifier() {
-        mtl.makeInstance(TestThesaurus.class);
-        final var width2 = mtl.makeInstance(TestThesaurusSameClassifier.class).width();
-        assertThat(width2).isNotNull().isEqualTo(new MetadataThesaurusEntryImpl("classifier", "width", empty()));
-
-        final var width = mtl.makeInstance(TestThesaurus.class).width();
-        assertThat(width).isNotNull().isEqualTo(new MetadataThesaurusEntryImpl("classifier", "width", empty()));
-    }
-
-    @MetadataThesaurusClassifier(value = "classifier")
-    public interface TestThesaurusWithDefault {
-
-        default MetadataThesaurusEntry isDefault() {
-            throw new UnsupportedOperationException();
-        }
-
-    }
-
-    @Test
-    void testMakeInstance_withDefault() {
-        assertThrows(IllegalArgumentException.class, () -> mtl.makeInstance(TestThesaurusWithDefault.class));
-    }
-
-    @MetadataThesaurusClassifier(value = "classifier")
-    public interface TestThesaurusWithStatic {
-
-        static MetadataThesaurusEntry isStatic() {
-            throw new UnsupportedOperationException();
-        }
-
-    }
-
-    @Test
-    void testMakeInstance_withStatic() {
-        assertThrows(IllegalArgumentException.class, () -> mtl.makeInstance(TestThesaurusWithStatic.class));
-    }
-
-    @MetadataThesaurusClassifier("classifier")
-    public class TestInvalidThesaurusNotInterface {
-        public MetadataThesaurusEntry width() {
+    static Object[] args(final Object... args) {
+        if (args == null || args.length == 0) {
             return null;
         }
+        return args;
     }
 
     @Test
-    void testMakeInstance_notInterface() {
-        assertThrows(IllegalArgumentException.class, () -> mtl.makeInstance(TestInvalidThesaurusNotInterface.class));
-    }
+    void testSetDateISO8601() {
 
-    @MetadataThesaurusClassifier(value = "classifier")
-    public interface TestInvalidThesaurusWithParams {
-        MetadataThesaurusEntry width(int value);
     }
 
     @Test
-    void testMakeInstance_withParams() {
-        assertThrows(IllegalArgumentException.class, () -> mtl.makeInstance(TestInvalidThesaurusWithParams.class));
-    }
+    void testSet() {
 
-    @MetadataThesaurusClassifier(value = "classifier")
-    public interface TestInvalidThesaurusBadReturnType {
-        String width();
     }
 
     @Test
-    void testMakeInstance_badReturnType() {
-        assertThrows(IllegalArgumentException.class, () -> mtl.makeInstance(TestInvalidThesaurusBadReturnType.class));
-    }
+    void testCheckMethodNotHaveArgs() {
 
-    public interface TestInvalidThesaurusNoAnnotation {
-        String width();
     }
 
     @Test
-    void testMakeInstance_noAnnotation() {
-        assertThrows(IllegalArgumentException.class, () -> mtl.makeInstance(TestInvalidThesaurusNoAnnotation.class));
-    }
+    void testCheckMethodNotHashCode() {
 
-    @MetadataThesaurusClassifier(value = "classifier-bis", parent = "parent")
-    public interface TestThesaurusParent {
-        MetadataThesaurusEntry width();
-
-        MetadataThesaurusEntry anotherValue();
     }
 
     @Test
-    void testMakeInstance_parent() {
-        final var width = mtl.makeInstance(TestThesaurusParent.class).width();
+    void testCheckMethodNotToString() {
 
-        mtl.makeInstance(TestThesaurusParent.class);
-
-        assertThat(width).isNotNull().isEqualTo(new MetadataThesaurusEntryImpl("classifier-bis", "parent.width",
-                empty()));
-    }
-
-    @MetadataThesaurusClassifier(value = "classifier.ddd")
-    public interface TestInvalidThesaurusClassifierDot {
-        MetadataThesaurusEntry width();
     }
 
     @Test
-    void testMakeInstance_classifierDot() {
-        assertThrows(IllegalArgumentException.class, () -> mtl.makeInstance(TestInvalidThesaurusClassifierDot.class));
-    }
+    void testCheckMethodNotEquals() {
 
-    @Test
-    void testToString() {
-        mtl.makeInstance(TestThesaurus.class);
-        mtl.makeInstance(TestThesaurusParent.class);
-        assertThat(mtl.toString()).isNotBlank();
-    }
-
-    @Test
-    void testGetImplements() {
-        mtl.makeInstance(TestThesaurus.class);
-        mtl.makeInstance(TestThesaurusParent.class);
-        assertThat(mtl.getImplements()).isNotEmpty();
     }
 
 }

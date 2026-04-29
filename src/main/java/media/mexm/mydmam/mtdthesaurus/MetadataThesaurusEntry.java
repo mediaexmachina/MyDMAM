@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * @see MetadataThesaurusLogic#onProxyCall for usage
+ * @see MetadataThesaurusLogic#onEntryCall for usage
  */
 public interface MetadataThesaurusEntry {
 
