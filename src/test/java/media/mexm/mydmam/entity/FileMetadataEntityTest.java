@@ -17,7 +17,6 @@
 package media.mexm.mydmam.entity;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Optional.empty;
 import static media.mexm.mydmam.entity.FileMetadataEntity.MAX_VALUE_LENGTH;
 import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,8 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
 import media.mexm.mydmam.dto.KeyValueMetadataResponse;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryImpl;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 
@@ -62,26 +59,23 @@ class FileMetadataEntityTest {
     @Fake
     String hashPath;
 
-    MetadataThesaurusEntry entry;
-
     FileMetadataEntity fm;
 
     @BeforeEach
     void init() {
         when(file.getRealm()).thenReturn(realm);
         when(file.getHashPath()).thenReturn(hashPath);
-        entry = new MetadataThesaurusEntryImpl(classifier, key, empty());
-        fm = new FileMetadataEntity(file, origin, entry, layer, value);
+        fm = new FileMetadataEntity(file, origin, classifier, key, layer, value);
     }
 
     @Test
     void testTooBigValue() {
         value = repeat("+", MAX_VALUE_LENGTH);
-        new FileMetadataEntity(file, origin, entry, layer, value);
+        new FileMetadataEntity(file, origin, classifier, key, layer, value);
 
         value += "!";
         assertThrows(IllegalArgumentException.class,
-                () -> new FileMetadataEntity(file, origin, entry, layer, value));
+                () -> new FileMetadataEntity(file, origin, classifier, key, layer, value));
     }
 
     @Test

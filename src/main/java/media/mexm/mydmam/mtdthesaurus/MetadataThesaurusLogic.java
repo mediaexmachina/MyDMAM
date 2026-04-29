@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  * Thread safe
  */
 @Slf4j
-public class MetadataThesaurusLogic { // TODO test
+public class MetadataThesaurusLogic {
     static final String TO_STRING = "toString";
     static final String EQUALS = "equals";
     static final String HASH_CODE = "hashCode";

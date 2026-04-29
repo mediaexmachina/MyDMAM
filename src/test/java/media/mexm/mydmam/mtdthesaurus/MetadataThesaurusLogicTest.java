@@ -17,19 +17,28 @@
 package media.mexm.mydmam.mtdthesaurus;
 
 import static java.time.Instant.now;
+import static java.util.Optional.empty;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.EQUALS;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.HASH_CODE;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.TO_STRING;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.checkMethodNotEquals;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.checkMethodNotHashCode;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.checkMethodNotHaveArgs;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.checkMethodNotToString;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.nameFormatter;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.set;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.setDateISO8601;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -49,12 +58,16 @@ class MetadataThesaurusLogicTest {
 
     @Mock
     MetadataThesaurusEntryIOProvider provider;
+    @Mock
+    Method method;
 
     String classifier = "dc";
     String key = "format";
     String now;
     long nowUnixtime;
 
+    @Fake
+    String methodName;
     @Fake
     String value;
     @Fake(min = 1, max = 1000)
@@ -69,6 +82,8 @@ class MetadataThesaurusLogicTest {
 
     @BeforeEach
     void init() {
+        when(method.getName()).thenReturn(methodName);
+
         mtl = new MetadataThesaurusLogic();
 
         final var nowDate = now();
@@ -219,34 +234,58 @@ class MetadataThesaurusLogicTest {
 
     @Test
     void testSetDateISO8601() {
-
-        assertThat(setDateISO8601(Optional.ofNullable(now)));
-
+        assertThat(setDateISO8601(Optional.ofNullable(now))).contains(String.valueOf(nowUnixtime));
+        assertThat(setDateISO8601(Optional.ofNullable(value))).isEmpty();
+        assertThat(setDateISO8601(empty())).isEmpty();
     }
 
     @Test
     void testSet() {
+        assertThat(set(value)).contains(value);
+        assertThat(set(null)).isEmpty();
+        assertThat(set(" ")).isEmpty();
+        assertThat(set(Duration.ofMillis(nowUnixtime))).contains(String.valueOf(nowUnixtime));
+        assertThat(set(regularInt)).contains(String.valueOf(regularInt));
 
+        assertThat(set(Optional.ofNullable(value))).contains(value);
+        assertThat(set(empty())).isEmpty();
+        assertThat(set(Optional.ofNullable(" "))).isEmpty();
+        assertThat(set(Optional.ofNullable(Duration.ofMillis(nowUnixtime)))).contains(String.valueOf(nowUnixtime));
+        assertThat(set(Optional.ofNullable(regularInt))).contains(String.valueOf(regularInt));
     }
 
     @Test
     void testCheckMethodNotHaveArgs() {
+        checkMethodNotHaveArgs(method, null);
+        checkMethodNotHaveArgs(method, new Object[] {});
 
+        final var arg = new Object[] { value };
+        assertThrows(UnsupportedOperationException.class, () -> checkMethodNotHaveArgs(method, arg));
+        verify(method, atLeastOnce()).getName();
     }
 
     @Test
     void testCheckMethodNotHashCode() {
-
+        checkMethodNotHashCode(method);
+        when(method.getName()).thenReturn(HASH_CODE);
+        assertThrows(UnsupportedOperationException.class, () -> checkMethodNotHashCode(method));
+        verify(method, atLeastOnce()).getName();
     }
 
     @Test
     void testCheckMethodNotToString() {
-
+        checkMethodNotToString(method);
+        when(method.getName()).thenReturn(TO_STRING);
+        assertThrows(UnsupportedOperationException.class, () -> checkMethodNotToString(method));
+        verify(method, atLeastOnce()).getName();
     }
 
     @Test
     void testCheckMethodNotEquals() {
-
+        checkMethodNotEquals(method);
+        when(method.getName()).thenReturn(EQUALS);
+        assertThrows(UnsupportedOperationException.class, () -> checkMethodNotEquals(method));
+        verify(method, atLeastOnce()).getName();
     }
 
 }

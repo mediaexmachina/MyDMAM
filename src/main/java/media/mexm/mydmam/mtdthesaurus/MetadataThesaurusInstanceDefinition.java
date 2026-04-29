@@ -17,7 +17,7 @@
 package media.mexm.mydmam.mtdthesaurus;
 
 import static java.lang.reflect.Modifier.isAbstract;
-import static java.lang.reflect.Modifier.isPublic;
+import static java.lang.reflect.Modifier.isInterface;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
@@ -74,16 +74,14 @@ class MetadataThesaurusInstanceDefinition {
     }
 
     static void checkInterfaceClass(final Class<?> instanceClass, final List<Method> methodList) {
+        if (isInterface(instanceClass.getModifiers()) == false) {
+            throw new IllegalArgumentException("Can't use " + instanceClass + ", it's not an interface");
+        }
+
         final var notAbstract = methodList.stream().filter(not(m -> isAbstract(m.getModifiers()))).toList();
         if (notAbstract.isEmpty() == false) {
             throw new IllegalArgumentException("Can't use " + instanceClass
                                                + ", it containt non-abstract methods: " + notAbstract);
-        }
-
-        final var notPublic = methodList.stream().filter(not(m -> isPublic(m.getModifiers()))).toList();
-        if (notPublic.isEmpty() == false) {
-            throw new IllegalArgumentException("Can't use " + instanceClass
-                                               + ", it containt non-public methods: " + notPublic);
         }
     }
 
