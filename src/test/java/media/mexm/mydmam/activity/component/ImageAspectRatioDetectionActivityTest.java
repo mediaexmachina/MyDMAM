@@ -17,17 +17,23 @@
 package media.mexm.mydmam.activity.component;
 
 import static java.lang.Math.round;
+import static java.util.function.Predicate.not;
+import static java.util.stream.Stream.iterate;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
+import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.computeDisplayAspectRatio;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.LANDSCAPE;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.PORTRAIT;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.SQUARE;
+import static net.datafaker.Faker.instance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.verify;
-import static org.mockito.internal.verification.VerificationModeFactory.atLeastOnce;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE;
+
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +47,6 @@ import org.springframework.test.context.ActiveProfiles;
 import media.mexm.mydmam.FlatMetadataThesaurusService;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -74,7 +79,7 @@ class ImageAspectRatioDetectionActivityTest {
 
     @AfterEach
     void ends() {
-        metadataThesaurusService.endChecks(fileEntity);
+        metadataThesaurusService.check();
     }
 
     @Test
@@ -95,63 +100,97 @@ class ImageAspectRatioDetectionActivityTest {
     @Test
     void testCanHandle_noSet() {
         assertFalse(iarda.canHandle(fileEntity, eventType, storedOn));
+        metadataThesaurusService.check(iarda).check(fileEntity);
     }
 
     @Test
     void testCanHandle_onlyHeight() {
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).height();
+        metadataThesaurusService.getTestThesaurus().technicalImage().height().set(high);
         assertFalse(iarda.canHandle(fileEntity, eventType, storedOn));
+        metadataThesaurusService.check(iarda).check(fileEntity);
     }
 
     @Test
     void testCanHandle() {
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).height();
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).width();
+        metadataThesaurusService.getTestThesaurus().technicalImage().height().set(high);
+        metadataThesaurusService.getTestThesaurus().technicalImage().width().set(high);
         assertTrue(iarda.canHandle(fileEntity, eventType, storedOn));
+        metadataThesaurusService.check(iarda).check(fileEntity);
     }
 
     @Test
     void testHandle_SQUARE() {
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).width();
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).height();
+        metadataThesaurusService.getTestThesaurus().technicalImage().height().set(high);
+        metadataThesaurusService.getTestThesaurus().technicalImage().width().set(high);
 
         iarda.handle(fileEntity, eventType, storedOn);
 
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, 1f).aspectRatio();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, SQUARE).imageAspectFormat();
-
-        verify(fileEntity, atLeastOnce()).getRealm();
-        verify(fileEntity, atLeastOnce()).getHashPath();
+        metadataThesaurusService.getAssertThesaurus().technicalImage().aspectRatio().set(1f);
+        metadataThesaurusService.getAssertThesaurus().technicalImage().imageAspectFormat().set(SQUARE);
+        metadataThesaurusService.getAssertThesaurus().technicalImage().displayAspectRatio().set("1:1");
+        metadataThesaurusService.getAssertThesaurus().technicalImage().sampleAspectRatio().set("1:1");
+        metadataThesaurusService.check(iarda).check(fileEntity);
     }
 
     @Test
     void testHandle_LANDSCAPE() {
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).width();
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, low).height();
+        metadataThesaurusService.getTestThesaurus().technicalImage().height().set(low);
+        metadataThesaurusService.getTestThesaurus().technicalImage().width().set(high);
 
         iarda.handle(fileEntity, eventType, storedOn);
 
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class,
-                round(high * 1000.0 / low) / 1000.0).aspectRatio();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, LANDSCAPE).imageAspectFormat();
+        metadataThesaurusService.getAssertThesaurus().technicalImage().aspectRatio()
+                .set(round(high * 1000.0 / low) / 1000.0);
+        metadataThesaurusService.getAssertThesaurus().technicalImage().imageAspectFormat().set(LANDSCAPE);
+        metadataThesaurusService.getAssertThesaurus().technicalImage().displayAspectRatio()
+                .set(computeDisplayAspectRatio(high, low));
+        metadataThesaurusService.getAssertThesaurus().technicalImage().sampleAspectRatio().set("1:1");
 
-        verify(fileEntity, atLeastOnce()).getRealm();
-        verify(fileEntity, atLeastOnce()).getHashPath();
+        metadataThesaurusService.check(iarda).check(fileEntity);
     }
 
     @Test
     void testHandle_PORTRAIT() {
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, low).width();
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, high).height();
+        metadataThesaurusService.getTestThesaurus().technicalImage().height().set(high);
+        metadataThesaurusService.getTestThesaurus().technicalImage().width().set(low);
 
         iarda.handle(fileEntity, eventType, storedOn);
 
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class,
-                round(low * 1000.0 / high) / 1000.0).aspectRatio();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, PORTRAIT).imageAspectFormat();
-
-        verify(fileEntity, atLeastOnce()).getRealm();
-        verify(fileEntity, atLeastOnce()).getHashPath();
+        metadataThesaurusService.getAssertThesaurus().technicalImage().aspectRatio()
+                .set(round(low * 1000.0 / high) / 1000.0);
+        metadataThesaurusService.getAssertThesaurus().technicalImage().imageAspectFormat().set(PORTRAIT);
+        metadataThesaurusService.getAssertThesaurus().technicalImage().displayAspectRatio()
+                .set(computeDisplayAspectRatio(low, high));
+        metadataThesaurusService.getAssertThesaurus().technicalImage().sampleAspectRatio().set("1:1");
+        metadataThesaurusService.check(iarda).check(fileEntity);
     }
 
+    @Test
+    void testComputeDisplayAspectRatio() {
+        assertThat(computeDisplayAspectRatio(10, 20)).isEqualTo("1:2");
+        final var w = primeGenerate();
+        final var h = primeGenerate();
+        assertThat(computeDisplayAspectRatio(w, h)).isEqualTo(w + ":" + h);
+    }
+
+    /**
+     * https://stackoverflow.com/questions/20435289/prime-number-generator-logic
+     */
+    public static int primeGenerate() {
+        final var series = instance().random().nextInt(100, 1000);
+        final Set<Integer> set = new TreeSet<>();
+        return iterate(1, i -> ++i)
+                .filter(i -> i % 2 != 0)
+                .filter(i -> {
+                    set.add(i);
+                    return 0 == set.stream()
+                            .filter(p -> p != 1)
+                            .filter(not(p -> Objects.equals(p, i)))
+                            .filter(p -> i % p == 0)
+                            .count();
+                })
+                .skip(series)
+                .findFirst()
+                .orElseThrow();
+    }
 }

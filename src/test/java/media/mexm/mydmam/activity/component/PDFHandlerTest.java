@@ -19,6 +19,7 @@ package media.mexm.mydmam.activity.component;
 import static java.io.File.createTempFile;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.FULL_PREVIEW;
+import static media.mexm.mydmam.component.XPDF.ptsToMm;
 import static media.mexm.mydmam.service.MediaAssetService.FULL_TEXT_PDF;
 import static org.apache.commons.io.FileUtils.touch;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,12 +40,10 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -54,8 +53,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -71,13 +68,9 @@ import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.configuration.XPDFConf;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.entity.FileMetadataEntity;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusRegister;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefPDF;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefXMP;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
-import media.mexm.mydmam.repository.FileMetadataDao;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MediaRenderedFilesUtilsService;
 import net.datafaker.Faker;
@@ -97,8 +90,6 @@ class PDFHandlerTest {
     MediaAssetService mediaAssetService;
     @MockitoBean
     MediaRenderedFilesUtilsService mediaRenderedFilesUtilsService;
-    @MockitoBean
-    FileMetadataDao fileMetadataDao;
 
     @Mock
     ActivityEventType eventType;
@@ -138,12 +129,11 @@ class PDFHandlerTest {
 
     @AfterEach
     void ends() {
-        metadataThesaurusService.endChecks(fileEntity);
+        metadataThesaurusService.check();
         verifyNoMoreInteractions(
                 xpdf,
                 mediaAssetService,
-                mediaRenderedFilesUtilsService,
-                fileMetadataDao);
+                mediaRenderedFilesUtilsService);
     }
 
     @Test
@@ -167,7 +157,7 @@ class PDFHandlerTest {
 
     @Test
     void testCanHandle() {
-        metadataThesaurusService.setMimeType("null/null");
+        metadataThesaurusService.setMimeType(pdf, fileEntity, "null/null");
 
         assertFalse(pdf.canHandle(fileEntity, eventType, storedOn));
 
@@ -177,12 +167,12 @@ class PDFHandlerTest {
         when(storedOn.haveWorkingDir()).thenReturn(true);
         assertFalse(pdf.canHandle(fileEntity, eventType, storedOn));
 
-        metadataThesaurusService.setMimeType("application/pdf");
+        metadataThesaurusService.setMimeType(pdf, fileEntity, "application/pdf");
         assertTrue(pdf.canHandle(fileEntity, eventType, storedOn));
 
         verify(storedOn, atLeastOnce()).isDAS();
         verify(storedOn, atLeastOnce()).haveWorkingDir();
-        metadataThesaurusService.endChecks(fileEntity);
+        metadataThesaurusService.check(pdf).check(fileEntity);
     }
 
     @Test
@@ -245,9 +235,6 @@ class PDFHandlerTest {
         @Fake
         boolean exists;
 
-        @Captor
-        ArgumentCaptor<Collection<FileMetadataEntity>> itemsCaptor;
-
         String optimized = Faker.instance().random().nextBoolean() ? "yes" : "no";
         String javascript = Faker.instance().random().nextBoolean() ? "yes" : "no";
         String tagged = Faker.instance().random().nextBoolean() ? "yes" : "no";
@@ -257,7 +244,7 @@ class PDFHandlerTest {
         String permissionAddNotes = Faker.instance().random().nextBoolean() ? "yes" : "no";
 
         List<PageInfo> pagesFormats;
-        MetadataThesaurusDefinitionWriter<MtdThesaurusDefPDF> pdfWriter;
+        MetadataThesaurusRegister assertThesaurus;
         MtdThesaurusDefPDF mtdThesaurusDefPDF;
 
         File workingDirectory;
@@ -269,8 +256,8 @@ class PDFHandlerTest {
 
         @BeforeEach
         void init() throws IOException {
-            pdfWriter = metadataThesaurusService.getWriter(pdf, fileEntity, MtdThesaurusDefPDF.class);
-            mtdThesaurusDefPDF = metadataThesaurusService.makeInstance(MtdThesaurusDefPDF.class);
+            assertThesaurus = metadataThesaurusService.getAssertThesaurus();
+
             workingDirectory = new File(FileUtils.getTempDirectory(), "temp-mydmam");
             pdfExportDir = new File(workingDirectory, "pdftoppm-" + id);
             pdfText = new File(workingDirectory, "pdftotxt-" + id + ".txt");
@@ -335,25 +322,31 @@ class PDFHandlerTest {
         }
 
         void checkIfAddedMtd(final boolean samePages) {
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, pageCount).pageCount();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, encrypted).encrypted();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, pdfVersion).pdfVersion();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, form).form();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, optimized == "yes").optimized();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, javascript == "yes").javascript();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, tagged == "yes").tagged();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, producer).producer();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, keywords).keywords();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, samePages).samePagesFormat();
+            assertThesaurus.pdf().pageCount().set(pageCount);
+            assertThesaurus.pdf().encrypted().set(encrypted);
+            assertThesaurus.pdf().pdfVersion().set(pdfVersion);
+            assertThesaurus.pdf().form().set(form);
+            assertThesaurus.pdf().optimized().set(optimized == "yes");
+            assertThesaurus.pdf().javascript().set(javascript == "yes");
+            assertThesaurus.pdf().tagged().set(tagged == "yes");
+            assertThesaurus.pdf().producer().set(producer);
+            assertThesaurus.pdf().keywords().set(keywords);
+            assertThesaurus.pdf().samePagesFormat().set(samePages);
 
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefXMP.class, createDate).createDate();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefXMP.class, modifyDate).modifyDate();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefXMP.class, creator).creatorTool();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefXMP.class, metadataDate).metadataDate();
+            if (samePages) {
+                assertThesaurus.pdf().pageRotated().set(pageInfoRotated);
+                assertThesaurus.pdf().pageWidthMm().set(ptsToMm(pageInfoW));
+                assertThesaurus.pdf().pageHeightMm().set(ptsToMm(pageInfoH));
+            }
 
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefDublinCore.class, title).title();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefDublinCore.class, subject).description();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefDublinCore.class, author).creator();
+            assertThesaurus.xmp().createDate().set(createDate * 1000);
+            assertThesaurus.xmp().modifyDate().set(modifyDate * 1000);
+            assertThesaurus.xmp().creatorTool().set(creator);
+            assertThesaurus.xmp().metadataDate().set(metadataDate);
+
+            assertThesaurus.dublinCore().title().set(title);
+            assertThesaurus.dublinCore().description().set(subject);
+            assertThesaurus.dublinCore().creator().set(author);
 
             verify(xpdf, atLeastOnce()).getInfo(eq(pdfInfo), anyString());
             verify(xpdf, times(1)).extractPagesFormats(pdfInfo, maxPageCount);
@@ -380,61 +373,15 @@ class PDFHandlerTest {
 
             checkIfAddedMtd(samePages);
 
-            verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
+            verify(xpdf, times(1)).extractPermissions(eq(pdfInfo), any());
 
-            verify(fileMetadataDao, times(1)).addUpdateEntries(eq(fileEntity), itemsCaptor.capture());
-            final var items = itemsCaptor.getValue();
-
-            assertThat(items).hasSize(samePages ? 3 : 3 * pageCount);
-            assertThat(items).map(FileMetadataEntity::getFile).containsOnly(fileEntity);
-            assertThat(items).map(FileMetadataEntity::getOrigin).containsOnly("xpdf");
-
-            if (samePages) {
-                assertThat(items).map(FileMetadataEntity::getLayer).containsOnly(0);
-            } else {
-                final var layerList = IntStream.range(1, pageCount + 1)
-                        .mapToObj(i -> i)
-                        .flatMap(i -> Stream.of(i, i, i))
-                        .toList();
-                assertThat(items).map(FileMetadataEntity::getLayer).isEqualTo(layerList);
-            }
-
-            assertThat(items).map(FileMetadataEntity::getClassifier).containsOnly("pdf");
-
-            final var rotatedAssert = assertThat(items.stream()
-                    .filter(f -> f.getKey().equals(mtdThesaurusDefPDF.pageRotated().key())))
-                            .map(FileMetadataEntity::getValue);
-            if (samePages) {
-                rotatedAssert.containsOnly(
-                        String.valueOf(pagesFormats.get(0).rotated()));
-            } else {
-                rotatedAssert.containsOnly(
-                        String.valueOf(pagesFormats.get(0).rotated()),
-                        String.valueOf(pagesFormats.get(1).rotated()));
-            }
-
-            final var pageWidthAssert = assertThat(items.stream()
-                    .filter(f -> f.getKey().equals(mtdThesaurusDefPDF.pageWidthMm().key())))
-                            .map(FileMetadataEntity::getValue);
-            if (samePages) {
-                pageWidthAssert.containsOnly(
-                        String.valueOf(pagesFormats.get(0).getWMm()));
-            } else {
-                pageWidthAssert.containsOnly(
-                        String.valueOf(pagesFormats.get(0).getWMm()),
-                        String.valueOf(pagesFormats.get(1).getWMm()));
-            }
-
-            final var pageHeightAssert = assertThat(items.stream()
-                    .filter(f -> f.getKey().equals(mtdThesaurusDefPDF.pageHeightMm().key())))
-                            .map(FileMetadataEntity::getValue);
-            if (samePages) {
-                pageHeightAssert.containsOnly(
-                        String.valueOf(pagesFormats.get(0).getHMm()));
-            } else {
-                pageHeightAssert.containsOnly(
-                        String.valueOf(pagesFormats.get(0).getHMm()),
-                        String.valueOf(pagesFormats.get(1).getHMm()));
+            if (samePages == false) {
+                final var defPdf = assertThesaurus.pdf();
+                pagesFormats.forEach(pageInfo -> {
+                    defPdf.pageRotated().set(pageInfo.page(), pageInfo.rotated());
+                    defPdf.pageWidthMm().set(pageInfo.page(), pageInfo.getWMm());
+                    defPdf.pageHeightMm().set(pageInfo.page(), pageInfo.getHMm());
+                });
             }
 
             verify(storedOn, atLeastOnce()).haveRenderedDir();
@@ -442,6 +389,7 @@ class PDFHandlerTest {
             verify(storedOn, atLeastOnce()).realmName();
             verify(storedOn, atLeastOnce()).storageName();
             verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
+            metadataThesaurusService.check(pdf).check(fileEntity);
             reset(fileEntity);
         }
 
@@ -451,13 +399,13 @@ class PDFHandlerTest {
 
             checkIfAddedMtd(true);
 
-            verify(fileMetadataDao, times(1)).addUpdateEntries(eq(fileEntity), any());
             verify(storedOn, atLeastOnce()).haveRenderedDir();
             verify(storedOn, atLeastOnce()).haveWorkingDir();
             verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
-            verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
+            verify(xpdf, times(1)).extractPermissions(eq(pdfInfo), any());
             verify(xpdf, times(1)).isEnabledPdfToPpm();
             verify(xpdf, times(1)).isEnabledPdfToText();
+            metadataThesaurusService.check(pdf).check(fileEntity);
             reset(fileEntity);
         }
 
@@ -476,16 +424,16 @@ class PDFHandlerTest {
 
             checkIfAddedMtd(true);
 
-            verify(fileMetadataDao, times(1)).addUpdateEntries(eq(fileEntity), any());
             verify(storedOn, atLeastOnce()).haveRenderedDir();
             verify(storedOn, atLeastOnce()).haveWorkingDir();
             verify(storedOn, atLeastOnce()).realm();
             verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             verify(realmConf, atLeastOnce()).workingDirectory();
-            verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
+            verify(xpdf, times(1)).extractPermissions(eq(pdfInfo), any());
             verify(xpdf, times(1)).isEnabledPdfToPpm();
             verify(xpdf, times(1)).isEnabledPdfToText();
             verify(xpdf, times(1)).pdfToPPM(assetFile, pdfExportDir, pageCount);
+            metadataThesaurusService.check(pdf).check(fileEntity);
             reset(fileEntity);
         }
 
@@ -506,13 +454,12 @@ class PDFHandlerTest {
 
             checkIfAddedMtd(true);
 
-            verify(fileMetadataDao, times(1)).addUpdateEntries(eq(fileEntity), any());
             verify(storedOn, atLeastOnce()).haveRenderedDir();
             verify(storedOn, atLeastOnce()).haveWorkingDir();
             verify(storedOn, atLeastOnce()).realm();
             verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             verify(realmConf, atLeastOnce()).workingDirectory();
-            verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
+            verify(xpdf, times(1)).extractPermissions(eq(pdfInfo), any());
             verify(xpdf, times(1)).isEnabledPdfToPpm();
             verify(xpdf, times(1)).isEnabledPdfToText();
             verify(xpdf, times(1)).pdfToPPM(assetFile, pdfExportDir, pageCount);
@@ -520,6 +467,7 @@ class PDFHandlerTest {
                     .makeImageThumbnails(fileEntity, storedOn, exportedImage1, false, 0);
             verify(mediaRenderedFilesUtilsService, times(1))
                     .makeImageThumbnails(fileEntity, storedOn, exportedImage2, false, 2);
+            metadataThesaurusService.check(pdf).check(fileEntity);
             reset(fileEntity);
 
             assertThat(exportedImage1).doesNotExist();
@@ -535,11 +483,11 @@ class PDFHandlerTest {
 
             checkIfAddedMtd(true);
 
-            verify(fileMetadataDao, times(1)).addUpdateEntries(eq(fileEntity), any());
             verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             verify(storedOn, atLeastOnce()).realmName();
             verify(storedOn, atLeastOnce()).storageName();
-            verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
+            verify(xpdf, times(1)).extractPermissions(eq(pdfInfo), any());
+            metadataThesaurusService.check(pdf).check(fileEntity);
             reset(fileEntity);
         }
 
@@ -556,13 +504,12 @@ class PDFHandlerTest {
 
             checkIfAddedMtd(true);
 
-            verify(fileMetadataDao, times(1)).addUpdateEntries(eq(fileEntity), any());
             verify(storedOn, atLeastOnce()).haveRenderedDir();
             verify(storedOn, atLeastOnce()).haveWorkingDir();
             verify(storedOn, atLeastOnce()).realm();
             verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             verify(realmConf, atLeastOnce()).workingDirectory();
-            verify(xpdf, times(1)).extractPermissions(pdfInfo, pdfWriter);
+            verify(xpdf, times(1)).extractPermissions(eq(pdfInfo), any());
             verify(xpdf, times(1)).isEnabledPdfToPpm();
             verify(xpdf, times(1)).isEnabledPdfToText();
             verify(xpdf, times(1)).pdfToText(assetFile, pdfText, pageCount);
@@ -571,6 +518,7 @@ class PDFHandlerTest {
                 verify(mediaAssetService, times(1)).declareTextExtractedFile(fileEntity, pdfText, FULL_TEXT_PDF);
             }
 
+            metadataThesaurusService.check(pdf).check(fileEntity);
             reset(fileEntity);
         }
 

@@ -18,6 +18,7 @@ package media.mexm.mydmam.activity.component;
 
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.TYPE_EXTRACTION;
 import static media.mexm.mydmam.audittrail.AuditTrailObjectType.FILE_MIME_TYPE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,6 +30,8 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 
 import java.io.File;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -43,7 +46,6 @@ import media.mexm.mydmam.component.AuditTrail;
 import media.mexm.mydmam.component.MimeTypeDetector;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -81,6 +83,16 @@ class MimeTypeActivityTest {
 
     File internalFile;
 
+    @BeforeEach
+    void init() {
+        metadataThesaurusService.reset();
+    }
+
+    @AfterEach
+    void ends() {
+        metadataThesaurusService.check();
+    }
+
     @Test
     void testGetLimitPolicy() {
         assertEquals(TYPE_EXTRACTION, mta.getLimitPolicy());
@@ -112,8 +124,9 @@ class MimeTypeActivityTest {
         verify(mimeTypeDetector, times(1)).getMimeType(internalFile);
         verify(storedOn, atLeastOnce()).getLocalInternalFile(fileEntity);
 
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefDublinCore.class, mimeType).format();
-        metadataThesaurusService.endChecks(fileEntity);
+        assertThat(metadataThesaurusService.getMimeType(fileEntity)).contains(mimeType);
+
+        metadataThesaurusService.check(mta).check(fileEntity);
 
         verify(fileEntity, atLeastOnce()).getRealm();
         verify(fileEntity, atLeastOnce()).getHashPath();

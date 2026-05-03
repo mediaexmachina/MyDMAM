@@ -62,9 +62,6 @@ import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.configuration.RealmConf;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.tools.JsonPathHelper;
@@ -82,7 +79,7 @@ class ImageInfoExtractionActivityTest {
     @MockitoBean
     MediaAssetService mediaAssetService;
     @Mock
-    FileEntity file;
+    FileEntity fileEntity;
     @Mock
     ActivityEventType eventType;
     @Mock
@@ -98,11 +95,13 @@ class ImageInfoExtractionActivityTest {
     @BeforeEach
     void init() {
         when(imageMagick.getManagedRasterMimeTypes()).thenReturn(Set.of(mimeType));
+        metadataThesaurusService.reset();
     }
 
     @AfterEach
     void ends() {
         verifyNoMoreInteractions(imageMagick, mediaAssetService);
+        metadataThesaurusService.check();
     }
 
     @Test
@@ -129,28 +128,28 @@ class ImageInfoExtractionActivityTest {
         when(storedOn.haveWorkingDir()).thenReturn(false);
         when(storedOn.haveRenderedDir()).thenReturn(false);
 
-        metadataThesaurusService.setMimeType("nope/nope");
+        metadataThesaurusService.setMimeType(iiea, fileEntity, "nope/nope");
 
-        assertFalse(iiea.canHandle(file, eventType, storedOn));
+        assertFalse(iiea.canHandle(fileEntity, eventType, storedOn));
 
         when(storedOn.isDAS()).thenReturn(true);
-        assertFalse(iiea.canHandle(file, eventType, storedOn));
+        assertFalse(iiea.canHandle(fileEntity, eventType, storedOn));
 
         when(storedOn.haveWorkingDir()).thenReturn(true);
-        assertFalse(iiea.canHandle(file, eventType, storedOn));
+        assertFalse(iiea.canHandle(fileEntity, eventType, storedOn));
 
         when(storedOn.haveRenderedDir()).thenReturn(true);
-        assertFalse(iiea.canHandle(file, eventType, storedOn));
+        assertFalse(iiea.canHandle(fileEntity, eventType, storedOn));
 
-        metadataThesaurusService.setMimeType(mimeType);
+        metadataThesaurusService.setMimeType(iiea, fileEntity, mimeType);
 
-        assertTrue(iiea.canHandle(file, eventType, storedOn));
+        assertTrue(iiea.canHandle(fileEntity, eventType, storedOn));
 
         verify(storedOn, atLeastOnce()).isDAS();
         verify(storedOn, atLeastOnce()).haveWorkingDir();
         verify(storedOn, atLeastOnce()).haveRenderedDir();
 
-        metadataThesaurusService.endChecks(file);
+        metadataThesaurusService.check(iiea).check(fileEntity);
 
         verify(imageMagick, atLeastOnce()).getManagedRasterMimeTypes();
     }
@@ -162,8 +161,6 @@ class ImageInfoExtractionActivityTest {
         PathIndexingStorage storage;
         @Mock
         RealmConf realm;
-        @Mock
-        FileEntity file;
         @Mock
         JsonPathHelper jsonNode;
 
@@ -196,12 +193,12 @@ class ImageInfoExtractionActivityTest {
 
             when(storedOn.storage()).thenReturn(storage);
             when(storedOn.realm()).thenReturn(realm);
-            when(storedOn.makeWorkingFile(any(), eq(file))).thenReturn(workingFile);
-            when(storedOn.getLocalInternalFile(file)).thenReturn(assetFile);
+            when(storedOn.makeWorkingFile(any(), eq(fileEntity))).thenReturn(workingFile);
+            when(storedOn.getLocalInternalFile(fileEntity)).thenReturn(assetFile);
             when(storedOn.getActivityLimitPolicy()).thenReturn(BASE_PREVIEW);
 
             when(realm.makeWorkingFile(any())).thenReturn(workingFile);
-            when(file.getId()).thenReturn(fileId);
+            when(fileEntity.getId()).thenReturn(fileId);
             when(imageMagick.extractIdentifyJsonFile(assetFile, workingFile))
                     .thenReturn(jsonNode);
 
@@ -219,39 +216,38 @@ class ImageInfoExtractionActivityTest {
                     .thenReturn(Optional.ofNullable(orientation));
             when(jsonNode.read("$.image.type", String.class))
                     .thenReturn(Optional.ofNullable(imageType));
-
-            metadataThesaurusService.reset();
         }
 
         @AfterEach
         void ends() {
-            metadataThesaurusService.endChecks(file);
             deleteQuietly(assetFile);
             deleteQuietly(workingFile);
         }
 
         @Test
         void testHandle() throws Exception {
-            iiea.handle(file, eventType, storedOn);
+            iiea.handle(fileEntity, eventType, storedOn);
 
-            verify(storedOn, times(1)).makeWorkingFile("identify.json", file);
-            verify(storedOn, atLeastOnce()).getLocalInternalFile(file);
+            verify(storedOn, times(1)).makeWorkingFile("identify.json", fileEntity);
+            verify(storedOn, atLeastOnce()).getLocalInternalFile(fileEntity);
             verify(storedOn, atLeastOnce()).getActivityLimitPolicy();
             verify(imageMagick, times(1)).extractIdentifyJsonFile(assetFile, workingFile);
             verify(mediaAssetService, times(1))
-                    .declareRenderedStaticFile(file, workingFile, "identify.json", true, 0, "image-format");
+                    .declareRenderedStaticFile(fileEntity, workingFile, "identify.json", true, 0, "image-format");
             verify(jsonNode, atLeastOnce()).read(anyString(), eq(String.class));
             verify(jsonNode, atLeastOnce()).read(anyString(), eq(Integer.class));
 
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefDublinCore.class, imageMimeType).format();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, width).width();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, height).height();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, orientation).orientation();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnicalImage.class, colorspace).colorspace();
-            metadataThesaurusService.checkIfAdded(MtdThesaurusDefTechnical.class, imageType.toLowerCase()).type();
+            final var assertThesaurus = metadataThesaurusService.getAssertThesaurus();
 
-            verify(file, atLeastOnce()).getRealm();
-            verify(file, atLeastOnce()).getHashPath();
+            final var technicalImage = assertThesaurus.technicalImage();
+            technicalImage.width().set(width);
+            technicalImage.height().set(height);
+            technicalImage.orientation().set(orientation);
+            technicalImage.colorspace().set(colorspace);
+            assertThesaurus.technical().type().set(imageType.toLowerCase());
+
+            metadataThesaurusService.assertMimeTypeEquals(imageMimeType);
+            metadataThesaurusService.check(iiea).check(fileEntity);
         }
 
         @Test
@@ -259,10 +255,10 @@ class ImageInfoExtractionActivityTest {
             when(jsonNode.read("$.version", String.class)).thenReturn(empty());
 
             assertThrows(IllegalArgumentException.class,
-                    () -> iiea.handle(file, eventType, storedOn));
+                    () -> iiea.handle(fileEntity, eventType, storedOn));
 
-            verify(storedOn, times(1)).makeWorkingFile("identify.json", file);
-            verify(storedOn, atLeastOnce()).getLocalInternalFile(file);
+            verify(storedOn, times(1)).makeWorkingFile("identify.json", fileEntity);
+            verify(storedOn, atLeastOnce()).getLocalInternalFile(fileEntity);
             verify(imageMagick, times(1)).extractIdentifyJsonFile(assetFile, workingFile);
             assertThat(workingFile).exists();
             verify(jsonNode, atLeastOnce()).read(anyString(), eq(String.class));

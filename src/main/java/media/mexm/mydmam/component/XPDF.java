@@ -183,9 +183,10 @@ public class XPDF implements InternalService {
             return ptsToMm(h);
         }
 
-        private static String ptsToMm(final float pts) {
-            return String.valueOf(round(pts / (72.0f / 25.4f) * 10.0) / 10.0);
-        }
+    }
+
+    public static String ptsToMm(final float pts) {
+        return String.valueOf(round(pts / (72.0f / 25.4f) * 10.0) / 10.0);
     }
 
     public List<PageInfo> extractPagesFormats(final Map<String, String> pdfInfo, final Integer maxPageCount) {

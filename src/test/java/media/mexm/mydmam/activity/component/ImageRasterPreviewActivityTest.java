@@ -48,8 +48,6 @@ import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.component.ImageMagick;
 import media.mexm.mydmam.configuration.PathIndexingStorage;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalImage;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MediaRenderedFilesUtilsService;
@@ -69,7 +67,7 @@ class ImageRasterPreviewActivityTest {
     MediaRenderedFilesUtilsService mediaRenderedFilesUtilsService;
 
     @Mock
-    FileEntity file;
+    FileEntity fileEntity;
     @Mock
     ActivityEventType eventType;
     @Mock
@@ -97,7 +95,7 @@ class ImageRasterPreviewActivityTest {
 
     @AfterEach
     void ends() {
-        metadataThesaurusService.endChecks(file);
+        metadataThesaurusService.check();
         verifyNoMoreInteractions(imageMagick, mediaAssetService, mediaRenderedFilesUtilsService);
     }
 
@@ -120,32 +118,34 @@ class ImageRasterPreviewActivityTest {
         when(storedOn.haveWorkingDir()).thenReturn(false);
         when(storedOn.haveRenderedDir()).thenReturn(false);
 
-        metadataThesaurusService.setMimeType("nope/nope");
+        metadataThesaurusService.setMimeType(irpa, fileEntity, "nope/nope");
 
-        assertFalse(irpa.canHandle(file, eventType, storedOn));
+        assertFalse(irpa.canHandle(fileEntity, eventType, storedOn));
 
         when(storedOn.isDAS()).thenReturn(true);
-        assertFalse(irpa.canHandle(file, eventType, storedOn));
+        assertFalse(irpa.canHandle(fileEntity, eventType, storedOn));
 
         when(storedOn.haveWorkingDir()).thenReturn(true);
-        assertFalse(irpa.canHandle(file, eventType, storedOn));
+        assertFalse(irpa.canHandle(fileEntity, eventType, storedOn));
 
         when(storedOn.haveRenderedDir()).thenReturn(true);
-        assertFalse(irpa.canHandle(file, eventType, storedOn));
+        assertFalse(irpa.canHandle(fileEntity, eventType, storedOn));
 
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, 1).width();
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnicalImage.class, 1).height();
+        metadataThesaurusService.getTestThesaurus().technicalImage().width().set(1);
+        metadataThesaurusService.getTestThesaurus().technicalImage().height().set(1);
 
-        assertFalse(irpa.canHandle(file, eventType, storedOn));
+        assertFalse(irpa.canHandle(fileEntity, eventType, storedOn));
 
-        metadataThesaurusService.setMimeType(mimeType);
+        metadataThesaurusService.setMimeType(irpa, fileEntity, mimeType);
 
-        assertTrue(irpa.canHandle(file, eventType, storedOn));
+        assertTrue(irpa.canHandle(fileEntity, eventType, storedOn));
 
         verify(storedOn, atLeastOnce()).isDAS();
         verify(storedOn, atLeastOnce()).haveWorkingDir();
         verify(storedOn, atLeastOnce()).haveRenderedDir();
         verify(imageMagick, atLeastOnce()).getManagedRasterMimeTypes();
+
+        metadataThesaurusService.check(fileEntity).check(irpa);
     }
 
     @ParameterizedTest
@@ -156,15 +156,17 @@ class ImageRasterPreviewActivityTest {
             typeClassifer = typeClassifer + "Alpha";
         }
 
-        when(storedOn.getLocalInternalFile(file)).thenReturn(assetFile);
+        when(storedOn.getLocalInternalFile(fileEntity)).thenReturn(assetFile);
 
-        metadataThesaurusService.addResponse(MtdThesaurusDefTechnical.class, typeClassifer).type();
+        metadataThesaurusService.getTestThesaurus().technical().type().set(typeClassifer);
 
-        irpa.handle(file, eventType, storedOn);
+        irpa.handle(fileEntity, eventType, storedOn);
 
         verify(mediaRenderedFilesUtilsService, times(1))
-                .makeImageThumbnails(file, storedOn, assetFile, isImageTypeAlpha, 0);
-        verify(storedOn, atLeastOnce()).getLocalInternalFile(file);
+                .makeImageThumbnails(fileEntity, storedOn, assetFile, isImageTypeAlpha, 0);
+        verify(storedOn, atLeastOnce()).getLocalInternalFile(fileEntity);
+
+        metadataThesaurusService.check(fileEntity).check(irpa);
     }
 
 }

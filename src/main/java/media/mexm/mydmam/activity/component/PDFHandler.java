@@ -46,7 +46,6 @@ import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusRegister;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefPDF;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
-import media.mexm.mydmam.repository.FileMetadataDao;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MediaRenderedFilesUtilsService;
 import media.mexm.mydmam.service.MetadataThesaurusService;
@@ -67,8 +66,6 @@ public class PDFHandler implements ActivityHandler {
     MediaRenderedFilesUtilsService mediaRenderedFilesUtilsService;
     @Autowired
     MetadataThesaurusService metadataThesaurusService;
-    @Autowired
-    FileMetadataDao fileMetadataDao;
 
     @Override
     public ActivityLimitPolicy getLimitPolicy() {

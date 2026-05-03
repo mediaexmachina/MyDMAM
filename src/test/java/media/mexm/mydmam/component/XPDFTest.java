@@ -64,8 +64,7 @@ import media.mexm.mydmam.configuration.ExternalToolsConf;
 import media.mexm.mydmam.configuration.MyDMAMConfigurationProperties;
 import media.mexm.mydmam.configuration.XPDFConf;
 import media.mexm.mydmam.entity.FileEntity;
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusDefinitionWriter;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefPDF;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusRegister;
 import media.mexm.mydmam.tools.ExternalExecCapabilityEvaluator;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -114,8 +113,8 @@ class XPDFTest {
     @Fake
     int page;
 
-    MetadataThesaurusDefinitionWriter<MtdThesaurusDefPDF> writer;
     FlatMetadataThesaurusService metadataThesaurusService;
+    MetadataThesaurusRegister assertThesaurus;
     XPDF xpdf;
 
     @BeforeAll
@@ -130,8 +129,9 @@ class XPDFTest {
         xpdf = new XPDF(executableFinder, maxExecTimeScheduler, configuration, externalExecCapabilities);
 
         metadataThesaurusService = new FlatMetadataThesaurusService();
+        assertThesaurus = metadataThesaurusService.getAssertThesaurus();
+
         when(handler.getMetadataOriginName()).thenReturn("");
-        writer = metadataThesaurusService.getWriter(handler, fileEntity, MtdThesaurusDefPDF.class);
         reset(handler);
 
         when(configuration.tools()).thenReturn(tools);
@@ -147,7 +147,7 @@ class XPDFTest {
 
     @AfterEach
     void ends() {
-        metadataThesaurusService.endChecks(fileEntity);
+        metadataThesaurusService.check();
         reset(fileEntity);
     }
 
@@ -335,22 +335,25 @@ class XPDFTest {
                 "pdf version", "1",
                 "permissions", perms.toString());
 
-        xpdf.extractPermissions(pdfInfo, writer);
+        xpdf.extractPermissions(pdfInfo, metadataThesaurusService.getThesaurus(handler, fileEntity).pdf());
 
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, print).permissionPrint();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, copy).permissionCopy();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, change).permissionChange();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, addNotes).permissionAddNotes();
+        assertThesaurus.pdf().permissionPrint().set(print);
+        assertThesaurus.pdf().permissionCopy().set(copy);
+        assertThesaurus.pdf().permissionChange().set(change);
+        assertThesaurus.pdf().permissionAddNotes().set(addNotes);
+        metadataThesaurusService.check(fileEntity).check(handler);
     }
 
     @Test
     void testExtractPermissions_empty() {
-        xpdf.extractPermissions(Map.of("pdf version", "1"), writer);
+        xpdf.extractPermissions(Map.of("pdf version", "1"),
+                metadataThesaurusService.getThesaurus(handler, fileEntity).pdf());
 
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, true).permissionPrint();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, true).permissionCopy();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, true).permissionChange();
-        metadataThesaurusService.checkIfAdded(MtdThesaurusDefPDF.class, true).permissionAddNotes();
+        assertThesaurus.pdf().permissionPrint().set(true);
+        assertThesaurus.pdf().permissionCopy().set(true);
+        assertThesaurus.pdf().permissionChange().set(true);
+        assertThesaurus.pdf().permissionAddNotes().set(true);
+        metadataThesaurusService.check(fileEntity).check(handler);
     }
 
     @Test

@@ -96,9 +96,10 @@ public class ImageInfoExtractionActivity implements ActivityHandler {
                     fileEntity, workingFile, "identify.json", true, 0, "image-format");
         }
 
-        final var thesaurus = metadataThesaurusService.getThesaurus(this, fileEntity);
-        thesaurus.dublinCore().format().set(jsonNode.read("$.image.mimeType", String.class));
+        jsonNode.read("$.image.mimeType", String.class)
+                .ifPresent(mimeType -> metadataThesaurusService.setMimeType(this, fileEntity, mimeType));
 
+        final var thesaurus = metadataThesaurusService.getThesaurus(this, fileEntity);
         final var technicalImage = thesaurus.technicalImage();
         technicalImage.width().set(jsonNode.read("$.image.geometry.width", Integer.class));
         technicalImage.height().set(jsonNode.read("$.image.geometry.height", Integer.class));

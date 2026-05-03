@@ -75,6 +75,11 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
         LANDSCAPE;
     }
 
+    public static String computeDisplayAspectRatio(final int width, final int height) {
+        final var fraction = getReducedFraction(width, height);
+        return fraction.getNumerator() + ":" + fraction.getDenominator();
+    }
+
     @Override
     public void handle(final FileEntity fileEntity,
                        final ActivityEventType eventType,
@@ -90,8 +95,7 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
         }
 
         if (technicalImage.displayAspectRatio().get().isEmpty()) {
-            final var fraction = getReducedFraction(Math.round(width), Math.round(height));
-            technicalImage.displayAspectRatio().set(fraction.getNumerator() + ":" + fraction.getDenominator());
+            technicalImage.displayAspectRatio().set(computeDisplayAspectRatio(Math.round(width), Math.round(height)));
         }
 
         if (technicalImage.sampleAspectRatio().get().isEmpty()) {

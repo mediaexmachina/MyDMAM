@@ -153,6 +153,9 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
         return logic.makeRegister(outProvider);
     }
 
+    /**
+     * To inject readed values, and to get writed values.
+     */
     public MetadataThesaurusRegister getTestThesaurus() {
         return logic.makeRegister(testProvider);
     }
@@ -163,11 +166,63 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
         return Optional.ofNullable(actualMimeType);
     }
 
+    public void assertMimeTypeEquals(final String value) {// TODO test
+        assertThat(actualMimeType).isEqualTo(value);
+    }
+
     @Override
     public void setMimeType(final ActivityHandler handler, final FileEntity fileEntity, final String mimeType) {
         usedFileEntities.add(fileEntity);
         usedActivityHandler.add(handler);
         actualMimeType = mimeType;
+    }
+
+    /**
+     * To check writed values.
+     */
+    public MetadataThesaurusRegister getAssertThesaurus() {// TODO test
+        return logic.makeRegister(new MetadataThesaurusEntryIOProvider() {
+
+            @Override
+            public void setValueToDatabase(final String classifier,
+                                           final String key,
+                                           final int layer,
+                                           final String value) {
+                final var oItem = addedDuringTest.stream()
+                        .filter(entry -> entry.classifier.equals(classifier))
+                        .filter(entry -> entry.key.equals(key))
+                        .filter(entry -> entry.layer == layer)
+                        .findFirst();
+
+                assertThat(oItem)
+                        .withFailMessage("Can't found: %s.%s[%s]. Only %s value(s) are set", classifier, key, layer,
+                                addedDuringTest.size())
+                        .isNotEmpty();
+                oItem.ifPresent(addedDuringTest::remove);
+
+                final var addedValue = oItem.map(ThesaurusDbEntry::value).orElseThrow();
+                assertThat(value)
+                        .withFailMessage("Expected \"%s\", set \"%s\", for: %s.%s[%s]",
+                                value, addedValue, classifier, key, layer)
+                        .isEqualTo(addedValue);
+            }
+
+            @Override
+            public Map<Integer, String> getValueLayerFromDatabase(final String classifier, final String key) {
+                throw new UnsupportedOperationException("Can't check multiple values");
+            }
+
+            @Override
+            public Optional<String> getValueFromDatabase(final String classifier, final String key, final int layer) {
+                final var oItem = addedDuringTest.stream()
+                        .filter(entry -> entry.classifier.equals(classifier))
+                        .filter(entry -> entry.key.equals(key))
+                        .filter(entry -> entry.layer == layer)
+                        .findFirst();
+                oItem.ifPresent(addedDuringTest::remove);
+                return oItem.map(ThesaurusDbEntry::value);
+            }
+        });
     }
 
 }
