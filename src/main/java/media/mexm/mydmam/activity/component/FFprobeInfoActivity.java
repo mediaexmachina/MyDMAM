@@ -78,7 +78,10 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
     @Autowired
     ExecutableFinder executableFinder;
 
+    @Deprecated
     private Set<String> passingPlaybookNames;
+
+    // TODO create an FFprobe component to separate logics
 
     // TODO display and download from front, like identify "ffprobe-base" >> "ffprobe.xml"
 
@@ -239,7 +242,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         final var dublinCore = thesaurus.dublinCore();
 
         setMediaSummary(ffprobeJAXB, technical);
-        setChapters(fileEntity, ffprobeJAXB, chapter);
+        setChapters(ffprobeJAXB, chapter);
 
         final var programIdByMediaStreamIndex = getPrograms(ffprobeJAXB, technicalTransportStream);
 
@@ -383,9 +386,8 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         return unmodifiableMap(result);
     }
 
-    void setChapters(final FileEntity fileEntity,
-                     final FFprobeJAXB ffprobeJAXB,
-                     final MtdThesaurusDefChapter chapterMtd) {
+    static void setChapters(final FFprobeJAXB ffprobeJAXB,
+                            final MtdThesaurusDefChapter chapterMtd) {
         final var chapters = ffprobeJAXB.getChapters();
         if (chapters.isEmpty()) {
             return;
@@ -428,7 +430,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         }
     }
 
-    static void patchInvalidAVMimeTypes(final MtdThesaurusDefDublinCore dublinCore,
+    static void patchInvalidAVMimeTypes(final MtdThesaurusDefDublinCore dublinCore, // TODO not dublinCore
                                         final String currentMimeType,
                                         final boolean haveVideo,
                                         final boolean haveAudio) {
