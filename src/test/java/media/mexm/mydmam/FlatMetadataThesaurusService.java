@@ -166,7 +166,7 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
         return Optional.ofNullable(actualMimeType);
     }
 
-    public void assertMimeTypeEquals(final String value) {// TODO test
+    public void assertMimeTypeEquals(final String value) {
         assertThat(actualMimeType).isEqualTo(value);
     }
 
@@ -180,7 +180,7 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
     /**
      * To check writed values.
      */
-    public MetadataThesaurusRegister getAssertThesaurus() {// TODO test
+    public MetadataThesaurusRegister getAssertThesaurus() {
         return logic.makeRegister(new MetadataThesaurusEntryIOProvider() {
 
             @Override

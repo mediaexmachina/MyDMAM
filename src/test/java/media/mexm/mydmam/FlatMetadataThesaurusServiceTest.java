@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.opentest4j.AssertionFailedError;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -106,6 +107,24 @@ class FlatMetadataThesaurusServiceTest {
     }
 
     @Test
+    void testGetAssertThesaurus() {
+        final var assertThesaurusFormat = metadataThesaurusService.getAssertThesaurus().dublinCore().format();
+
+        metadataThesaurusService.getThesaurus(activityHandler, fileEntity).dublinCore().format().set(value);
+
+        assertThesaurusFormat.set(value);
+
+        assertThrows(AssertionError.class, () -> assertThesaurusFormat.set(badValue));
+        assertThrows(UnsupportedOperationException.class, assertThesaurusFormat::getAll);
+        assertThrows(UnsupportedOperationException.class, assertThesaurusFormat::getAllInt);
+        metadataThesaurusService.check(activityHandler).check(fileEntity).check();
+
+        metadataThesaurusService.getThesaurus(activityHandler, fileEntity).dublinCore().format().set(value);
+        assertThat(assertThesaurusFormat.get()).contains(value);
+        metadataThesaurusService.check(activityHandler).check(fileEntity).check();
+    }
+
+    @Test
     void testGetReadOnlyThesaurus() {
         metadataThesaurusService.getTestThesaurus().dublinCore().format().set(value);
         final var t = metadataThesaurusService.getReadOnlyThesaurus(fileEntity);
@@ -134,7 +153,14 @@ class FlatMetadataThesaurusServiceTest {
         assertThat(metadataThesaurusService.getMimeType(fileEntity)).isEmpty();
         metadataThesaurusService.setMimeType(activityHandler, fileEntity, mimeType);
         assertThat(metadataThesaurusService.getMimeType(fileEntity)).contains(mimeType);
+        metadataThesaurusService.assertMimeTypeEquals(mimeType);
         metadataThesaurusService.check(activityHandler).check(fileEntity).check();
     }
 
+    @Test
+    void testAssertMimeTypeEquals_nope() {
+        metadataThesaurusService.setMimeType(activityHandler, fileEntity, mimeType);
+        metadataThesaurusService.assertMimeTypeEquals(mimeType);
+        assertThrows(AssertionFailedError.class, () -> metadataThesaurusService.assertMimeTypeEquals(badValue));
+    }
 }
