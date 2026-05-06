@@ -48,6 +48,8 @@ class StartupTest {
     @MockitoBean
     FFmpegExecCapabilities ffmpegExecCapabilities;
     @MockitoBean
+    FFprobeSupplier ffprobeSupplier;
+    @MockitoBean
     DbPollers dbPollers;
 
     @Autowired
