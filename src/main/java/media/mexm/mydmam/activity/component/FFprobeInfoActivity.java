@@ -19,13 +19,14 @@ package media.mexm.mydmam.activity.component;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.empty;
-import static java.util.stream.Collectors.toUnmodifiableSet;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.aspectRatio;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.getPageOrientation;
+import static media.mexm.mydmam.component.FFprobeSupplier.ALL_MIME_TYPES;
+import static media.mexm.mydmam.component.FFprobeSupplier.FFPROBE;
+import static media.mexm.mydmam.component.FFprobeSupplier.WELL_KNOWN_CODECS_NAMES;
 import static org.apache.commons.io.FileUtils.write;
-import static tv.hd3g.processlauncher.cmdline.Parameters.bulk;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -34,7 +35,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,27 +44,23 @@ import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.activity.ActivityHandler;
 import media.mexm.mydmam.activity.ActivityLimitPolicy;
-import media.mexm.mydmam.component.ExternalExecCapabilities;
+import media.mexm.mydmam.component.FFprobeSupplier;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefChapter;
-import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefDublinCore;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnical;
 import media.mexm.mydmam.mtdthesaurus.MtdThesaurusDefTechnicalTransportStream;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MetadataThesaurusService;
-import tv.hd3g.fflauncher.recipes.ProbeMedia;
 import tv.hd3g.ffprobejaxb.FFprobeJAXB;
 import tv.hd3g.ffprobejaxb.FFprobeReference;
 import tv.hd3g.ffprobejaxb.data.FFProbeKeyValue;
 import tv.hd3g.ffprobejaxb.data.FFProbeStream;
-import tv.hd3g.processlauncher.cmdline.ExecutableFinder;
 
 @Slf4j
 @Component
 public class FFprobeInfoActivity implements ActivityHandler { // TODO test
 
-    private static final String FFPROBE = "ffprobe";
     private static final String AUDIO_SLASH = "audio/";
     private static final String VIDEO_SLASH = "video/";
     @Autowired
@@ -72,41 +68,13 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
     @Autowired
     MetadataThesaurusService metadataThesaurusService;
     @Autowired
-    ExternalExecCapabilities externalExecCapabilities;
-    @Autowired
-    ScheduledExecutorService maxExecTimeScheduler;
-    @Autowired
-    ExecutableFinder executableFinder;
-
-    @Deprecated
-    private Set<String> passingPlaybookNames;
-
-    // TODO create an FFprobe component to separate logics
+    FFprobeSupplier ffprobeSupplier;
 
     // TODO display and download from front, like identify "ffprobe-base" >> "ffprobe.xml"
 
     @Override
     public boolean isEnabled() {
-        if (passingPlaybookNames == null) {
-            externalExecCapabilities.addPlaybook(
-                    FFPROBE,
-                    "run",
-                    bulk("-version"),
-                    evaluator -> {
-                        if (evaluator.haveReturnCode(0) == false
-                            || evaluator.haveStringInStdOutErr("ffprobe version") == false) {
-                            log.error("Can't run ffprobe: {}", evaluator.captured().getStdouterr(false, "|"));
-                            return false;
-                        }
-                        log.info("Detect ffprobe {}", evaluator.captured().getStdouterrLines(false).findFirst()
-                                .orElseThrow());
-                        return true;
-                    });
-
-            externalExecCapabilities.tearDown(FFPROBE);
-            passingPlaybookNames = externalExecCapabilities.getPassingPlaybookNames(FFPROBE);
-        }
-        return passingPlaybookNames.contains("run");
+        return ffprobeSupplier.isEnabled();
     }
 
     @Override
@@ -124,92 +92,6 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         return FILE_INFORMATION;
     }
 
-    private static final Map<String, String> WELL_KNOWN_CODECS_NAMES = Map.ofEntries(
-            Map.entry("dvvideo", "DV"),
-            Map.entry("dvcp", "DV/DVCPro"),
-            Map.entry("dv5p", "DVCPro 50"),
-            Map.entry("avc1", "h264"),
-            Map.entry("mpeg2video", "MPEG2"),
-            Map.entry("mx5p", "MPEG2/4:2:2"),
-            Map.entry("wmv3", "WMV9"),
-            Map.entry("wmav2", "WMA9"),
-            Map.entry("apch", "Apple ProRes 422 HQ"),
-            Map.entry("apcn", "Apple ProRes 422"),
-            Map.entry("apcs", "Apple ProRes 422 LT"),
-            Map.entry("apco", "Apple ProRes 422 Proxy"),
-            Map.entry("ap4h", "Apple ProRes 4444"),
-            Map.entry("mp2", "MPEG/L2"));
-
-    private static final Set<String> VIDEO_MIME_TYPES = Set.of(
-            "application/gxf",
-            "application/lxf",
-            "application/mxf",
-            "video/mp2t",
-            "video/mp4",
-            "video/mpeg",
-            "video/quicktime",
-            "video/x-dv",
-            "video/vc1",
-            "video/ogg",
-            "video/webm",
-            "video/x-matroska",
-            "video/mp2p",
-            "video/h264",
-            "video/x-flv",
-            "video/3gpp",
-            "video/x-ms-wmv",
-            "video/msvideo");
-
-    private static final Set<String> AUDIO_MIME_TYPES = Set.of(
-            "audio/x-wav",
-            "audio/ac3",
-            "audio/mp4",
-            "audio/mpeg",
-            "audio/ogg",
-            "audio/vorbis",
-            "audio/webm",
-            "audio/quicktime",
-            "application/mxf",
-            "audio/x-ms-wmv",
-            "audio/x-ms-wma",
-            "audio/x-hx-aac-adts",
-            "audio/3gpp",
-            "audio/amr",
-            "audio/amr-wb",
-            "audio/amr-wb+",
-            "audio/eac3",
-            "audio/speex",
-            "audio/g719",
-            "audio/g722",
-            "audio/g7221",
-            "audio/g723",
-            "audio/g726-16",
-            "audio/g726-24",
-            "audio/g726-32",
-            "audio/g726-40",
-            "audio/g728",
-            "audio/g729",
-            "audio/g7291",
-            "audio/g729d",
-            "audio/g729e",
-            "audio/gsm",
-            "audio/vnd.dolby.heaac.1",
-            "audio/vnd.dolby.heaac.2",
-            "audio/vnd.dolby.mlp",
-            "audio/vnd.dolby.mps",
-            "audio/vnd.dolby.pl2",
-            "audio/vnd.dolby.pl2x",
-            "audio/vnd.dolby.pl2z",
-            "audio/vnd.dolby.pulse.1",
-            "audio/vnd.dra",
-            "audio/vnd.dts",
-            "audio/vnd.dts.hd");
-
-    private static final Set<String> ALL_MIME_TYPES = Stream.concat(
-            VIDEO_MIME_TYPES.stream(),
-            AUDIO_MIME_TYPES.stream())
-            .collect(toUnmodifiableSet());
-
     @Override
     public boolean canHandle(final FileEntity fileEntity,
                              final ActivityEventType eventType,
@@ -225,11 +107,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                        final ActivityEventType eventType,
                        final RealmStorageConfiguredEnv storedOn) throws Exception {
         final var assetFile = storedOn.getLocalInternalFile(fileEntity);
-        final var probeMedia = new ProbeMedia(FFPROBE, maxExecTimeScheduler);
-        probeMedia.setExecutableFinder(executableFinder);
-        probeMedia.setWorkingDirectory(assetFile.getParentFile());
-        final var ffprobeJAXB = probeMedia.process(assetFile.getName()).getResult();
-
+        final var ffprobeJAXB = ffprobeSupplier.processSimpleContainerAnalysis(assetFile).getResult();
         saveFFprobeXMLFile(fileEntity, storedOn, ffprobeJAXB);
 
         final var thesaurus = metadataThesaurusService.getThesaurus(this, fileEntity);
@@ -361,7 +239,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         final var haveVideo = validVideoStreams.isEmpty() == false;
         final var haveAudio = ffprobeJAXB.getAudioStreams().count() > 0l;
 
-        patchInvalidAVMimeTypes(dublinCore, currentMimeType, haveVideo, haveAudio);
+        patchInvalidAVMimeTypes(fileEntity, currentMimeType, haveVideo, haveAudio);
     }
 
     static Map<Integer, Integer> getPrograms(final FFprobeJAXB ffprobeJAXB,
@@ -430,14 +308,14 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         }
     }
 
-    static void patchInvalidAVMimeTypes(final MtdThesaurusDefDublinCore dublinCore, // TODO not dublinCore
-                                        final String currentMimeType,
-                                        final boolean haveVideo,
-                                        final boolean haveAudio) {
+    void patchInvalidAVMimeTypes(final FileEntity fileEntity,
+                                 final String currentMimeType,
+                                 final boolean haveVideo,
+                                 final boolean haveAudio) {
         if (currentMimeType.startsWith(VIDEO_SLASH) && haveVideo == false && haveAudio) {
-            dublinCore.format().set(currentMimeType.replace(VIDEO_SLASH, AUDIO_SLASH));
+            metadataThesaurusService.setMimeType(this, fileEntity, currentMimeType.replace(VIDEO_SLASH, AUDIO_SLASH));
         } else if (currentMimeType.startsWith(AUDIO_SLASH) && haveVideo == true) {
-            dublinCore.format().set(currentMimeType.replace(AUDIO_SLASH, VIDEO_SLASH));
+            metadataThesaurusService.setMimeType(this, fileEntity, currentMimeType.replace(AUDIO_SLASH, VIDEO_SLASH));
         }
     }
 

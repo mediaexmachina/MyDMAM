@@ -16,6 +16,8 @@
  */
 package media.mexm.mydmam.configuration;
 
+import java.time.Duration;
+
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
@@ -25,6 +27,7 @@ import jakarta.validation.constraints.NotNull;
 @Validated
 public record ExternalToolsConf(@DefaultValue @Valid @NotNull MagickConf magick,
                                 @DefaultValue @Valid @NotNull XPDFConf xpdf,
+                                @DefaultValue("60s") Duration ffprobeSimpleContainerAnalysisMaxExecTime,
                                 String execCapabilitiesTempDir) {
 
 }

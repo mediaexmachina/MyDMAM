@@ -51,116 +51,116 @@ import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 @ActiveProfiles({ "Default" })
 class MimeTypeDetectorTest {
 
-	@MockitoBean
-	MimeUtil2 magicMimeUtil;
-	@MockitoBean
-	MimeUtil2 extensionMimeUtil;
+    @MockitoBean
+    MimeUtil2 magicMimeUtil;
+    @MockitoBean
+    MimeUtil2 extensionMimeUtil;
 
-	@Captor
-	ArgumentCaptor<File> fileCaptor;
+    @Captor
+    ArgumentCaptor<File> fileCaptor;
 
-	@Fake
-	String baseFilename;
-	@Fake
-	String extension;
-	@Fake
-	String mimeCodeType;
-	@Fake
-	String otherMimeCodeType;
-	@Mock
-	MimeType mimeType;
-	@Mock
-	MimeType otherMimeType;
+    @Fake
+    String baseFilename;
+    @Fake
+    String extension;
+    @Fake
+    String mimeCodeType;
+    @Fake
+    String otherMimeCodeType;
+    @Mock
+    MimeType mimeType;
+    @Mock
+    MimeType otherMimeType;
 
-	@Autowired
-	MimeTypeDetector mtd;
+    @Autowired
+    MimeTypeDetector mtd;
 
-	File source;
+    File source;
 
-	@BeforeEach
-	void init() {
-		source = new File(baseFilename + "." + extension);
-		when(mimeType.toString()).thenReturn(mimeCodeType);
-		when(otherMimeType.toString()).thenReturn(otherMimeCodeType);
-	}
+    @BeforeEach
+    void init() {
+        source = new File(baseFilename + "." + extension);
+        when(mimeType.toString()).thenReturn(mimeCodeType);
+        when(otherMimeType.toString()).thenReturn(otherMimeCodeType);
+    }
 
-	@Test
-	void testGetMimeTypeString() {
-		final var filename = baseFilename + "." + extension;
-		when(extensionMimeUtil.getMimeTypes(any(File.class))).thenReturn(List.of(mimeType));
-		when(mimeType.getSpecificity()).thenReturn(1);
+    @Test
+    void testGetMimeTypeString() {
+        final var filename = baseFilename + "." + extension;
+        when(extensionMimeUtil.getMimeTypes(any(File.class))).thenReturn(List.of(mimeType));
+        when(mimeType.getSpecificity()).thenReturn(1);
 
-		assertEquals(mimeCodeType, mtd.getMimeType(filename));
+        assertEquals(mimeCodeType.toLowerCase(), mtd.getMimeType(filename));
 
-		verify(extensionMimeUtil, times(1)).getMimeTypes(fileCaptor.capture());
-		assertThat(fileCaptor.getValue().getPath()).endsWith("." + extension);
-		verify(mimeType, atLeast(1)).getSpecificity();
-	}
+        verify(extensionMimeUtil, times(1)).getMimeTypes(fileCaptor.capture());
+        assertThat(fileCaptor.getValue().getPath()).endsWith("." + extension);
+        verify(mimeType, atLeast(1)).getSpecificity();
+    }
 
-	@Test
-	void testGetMimeTypeFile_doubleDetection() {
-		when(magicMimeUtil.getMimeTypes(source)).thenReturn(List.of(mimeType));
-		when(extensionMimeUtil.getMimeTypes(source)).thenReturn(List.of(mimeType));
+    @Test
+    void testGetMimeTypeFile_doubleDetection() {
+        when(magicMimeUtil.getMimeTypes(source)).thenReturn(List.of(mimeType));
+        when(extensionMimeUtil.getMimeTypes(source)).thenReturn(List.of(mimeType));
 
-		assertEquals(mimeCodeType, mtd.getMimeType(source));
+        assertEquals(mimeCodeType, mtd.getMimeType(source));
 
-		verify(magicMimeUtil, times(1)).getMimeTypes(source);
-		verify(extensionMimeUtil, times(1)).getMimeTypes(source);
-	}
+        verify(magicMimeUtil, times(1)).getMimeTypes(source);
+        verify(extensionMimeUtil, times(1)).getMimeTypes(source);
+    }
 
-	@Test
-	void testGetMimeTypeFile_magicDetection() {
-		when(magicMimeUtil.getMimeTypes(source)).thenReturn(List.of(mimeType));
-		when(extensionMimeUtil.getMimeTypes(source)).thenReturn(List.of());
+    @Test
+    void testGetMimeTypeFile_magicDetection() {
+        when(magicMimeUtil.getMimeTypes(source)).thenReturn(List.of(mimeType));
+        when(extensionMimeUtil.getMimeTypes(source)).thenReturn(List.of());
 
-		assertEquals(mimeCodeType, mtd.getMimeType(source));
+        assertEquals(mimeCodeType.toLowerCase(), mtd.getMimeType(source));
 
-		verify(magicMimeUtil, times(1)).getMimeTypes(source);
-		verify(extensionMimeUtil, times(1)).getMimeTypes(source);
-	}
+        verify(magicMimeUtil, times(1)).getMimeTypes(source);
+        verify(extensionMimeUtil, times(1)).getMimeTypes(source);
+    }
 
-	@Test
-	void testGetMimeTypeFile_extensionDetection() {
-		when(magicMimeUtil.getMimeTypes(source)).thenReturn(List.of());
-		when(extensionMimeUtil.getMimeTypes(source)).thenReturn(List.of(mimeType));
+    @Test
+    void testGetMimeTypeFile_extensionDetection() {
+        when(magicMimeUtil.getMimeTypes(source)).thenReturn(List.of());
+        when(extensionMimeUtil.getMimeTypes(source)).thenReturn(List.of(mimeType));
 
-		assertEquals(mimeCodeType, mtd.getMimeType(source));
+        assertEquals(mimeCodeType.toLowerCase(), mtd.getMimeType(source));
 
-		verify(magicMimeUtil, times(1)).getMimeTypes(source);
-		verify(extensionMimeUtil, times(1)).getMimeTypes(source);
-	}
+        verify(magicMimeUtil, times(1)).getMimeTypes(source);
+        verify(extensionMimeUtil, times(1)).getMimeTypes(source);
+    }
 
-	@Test
-	void testGetMimeTypeFile_nothing() {
-		when(magicMimeUtil.getMimeTypes(source)).thenReturn(List.of());
-		when(extensionMimeUtil.getMimeTypes(source)).thenReturn(List.of());
+    @Test
+    void testGetMimeTypeFile_nothing() {
+        when(magicMimeUtil.getMimeTypes(source)).thenReturn(List.of());
+        when(extensionMimeUtil.getMimeTypes(source)).thenReturn(List.of());
 
-		assertEquals(DEFAULT_MIME_TYPE, mtd.getMimeType(source));
+        assertEquals(DEFAULT_MIME_TYPE, mtd.getMimeType(source));
 
-		verify(magicMimeUtil, times(1)).getMimeTypes(source);
-		verify(extensionMimeUtil, times(1)).getMimeTypes(source);
-	}
+        verify(magicMimeUtil, times(1)).getMimeTypes(source);
+        verify(extensionMimeUtil, times(1)).getMimeTypes(source);
+    }
 
-	@Test
-	void testGetMimeTypeFile_compare() {
-		when(magicMimeUtil.getMimeTypes(source)).thenReturn(List.of(mimeType));
-		when(extensionMimeUtil.getMimeTypes(source)).thenReturn(List.of(otherMimeType));
-		when(mimeType.compareTo(otherMimeType)).thenReturn(-1);
-		when(otherMimeType.compareTo(mimeType)).thenReturn(1);
+    @Test
+    void testGetMimeTypeFile_compare() {
+        when(magicMimeUtil.getMimeTypes(source)).thenReturn(List.of(mimeType));
+        when(extensionMimeUtil.getMimeTypes(source)).thenReturn(List.of(otherMimeType));
+        when(mimeType.compareTo(otherMimeType)).thenReturn(-1);
+        when(otherMimeType.compareTo(mimeType)).thenReturn(1);
 
-		assertEquals(mimeCodeType, mtd.getMimeType(source));
+        assertEquals(mimeCodeType.toLowerCase(), mtd.getMimeType(source));
 
-		verify(magicMimeUtil, times(1)).getMimeTypes(source);
-		verify(extensionMimeUtil, times(1)).getMimeTypes(source);
-	}
+        verify(magicMimeUtil, times(1)).getMimeTypes(source);
+        verify(extensionMimeUtil, times(1)).getMimeTypes(source);
+    }
 
-	@Test
-	void testCastList() {
-		final var list = List.of(mimeType, otherMimeType);
-		assertThat(castList(list)).isEqualTo(list);
+    @Test
+    void testCastList() {
+        final var list = List.of(mimeType, otherMimeType);
+        assertThat(castList(list)).isEqualTo(list);
 
-		when(mimeType.toString()).thenReturn(DEFAULT_MIME_TYPE);
-		assertThat(castList(list)).isEqualTo(List.of(otherMimeType));
-	}
+        when(mimeType.toString()).thenReturn(DEFAULT_MIME_TYPE);
+        assertThat(castList(list)).isEqualTo(List.of(otherMimeType));
+    }
 
 }
