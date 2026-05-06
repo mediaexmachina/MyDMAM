@@ -70,7 +70,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
     @Autowired
     FFprobeSupplier ffprobeSupplier;
 
-    // TODO check display and download from front
+    // TODO display all layers of informations, like technical::type
 
     @Override
     public boolean isEnabled() {

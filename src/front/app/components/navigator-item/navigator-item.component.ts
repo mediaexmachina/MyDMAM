@@ -185,6 +185,8 @@ export class NavigatorItemComponent {
                 if (text == null) {
                     message.set(`No data from ${rendered.name}`);
                 } else {
+                    //TODO add https://www.npmjs.com/package/xml-formatter
+                    
                     const options: FormatOptions = {
                         indent: 2,
                         linkUrls: false,
