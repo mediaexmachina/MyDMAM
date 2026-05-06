@@ -57,11 +57,11 @@ export class NavigatorItemComponent {
     }
 
     readonly downloadOnlyRenderedPreviewType = new Set([
-        "image-format"
+        "image-format", "ffprobe-base"
     ]);
 
     readonly displayOnlyRenderedPreviewType = new Set([
-        "image-format"
+        "image-format", "ffprobe-base"
     ]);
 
     readonly fileHashPath = computed(() => {
