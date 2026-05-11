@@ -101,7 +101,7 @@
                     @let url = assetService.makeAssetRenderedFileDownloadURL(this.fileHashPath(), selected.name, 0);
                     <h4>{{ selected.name }} <a [href]="url" class="small">Download</a></h4>
                     <div class="remarks">{{ getMessageFromRenderedSelected() }}</div>
-                    <pre [innerHtml]="getJsonContentFromRenderedSelected()" class="json-container"></pre>
+                    <div [innerHtml]="getJsonContentFromRenderedSelected()"></div>
                     <a [href]="url" class="small">Download {{ selected.name }}</a>                             
                 </div>
             }

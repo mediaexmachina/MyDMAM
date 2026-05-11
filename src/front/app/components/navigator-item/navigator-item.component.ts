@@ -16,8 +16,9 @@
  */
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { prettyPrintJson, FormatOptions } from 'pretty-print-json';
-import sax, { SAXOptions } from 'sax';
+import sax, { SAXOptions, Tag } from 'sax';
 import xmlFormat, { XMLFormatterOptions } from 'xml-formatter';
+import he from 'he';
 import { FileResponse } from '../../dto/file-response.interface';
 import { AssetService } from '../../services/asset.service';
 import { AssetResponseIndex } from '../../dto/asset-response-index.interface';
@@ -195,7 +196,7 @@ export class NavigatorItemComponent {
                         trailingCommas: false
                     };
                     message.set("");
-                    content.set(prettyPrintJson.toHtml(JSON.parse(data), options));
+                    content.set(`<pre class="json-container">${prettyPrintJson.toHtml(JSON.parse(data), options)}</pre>`);
                 } else if (rendered.name.endsWith(".xml")) {
                     const options:SAXOptions = {
                         lowercase: false,
@@ -206,54 +207,76 @@ export class NavigatorItemComponent {
                         noscript: false,
                     };
                     const xmlFormatOptions:XMLFormatterOptions = {
-                        indentation: '  ',
+                        indentation: '\xa0\xa0',
                         lineSeparator: '\n',
                         throwOnFailure: true,
+                        collapseContent: true
                     }
 
                     const parser = sax.parser(true, options);
                     const payload: string[] = [];
 
-                    const left = "&lt;";
-                    const right = "&gt;";
+                    const makeTag = function(tagClass:string, rowTagContent:string) {
+                        const lines = rowTagContent.split("\n");
+                        const content = lines.map(line => he.encode(line)).join("<br />");
+                        payload.push(`<span class="${tagClass}">${content}</span>`);
+                    };
 
+                    let isSelfClosing = false;
                     parser.onprocessinginstruction = function (node) {
-                        payload.push(`<span class="json-mark">${left}?${node.name} ${node.body}${right}</span>`);
-                    }
-                    parser.ontext = function (t: string) {
-                        const clean = t.replaceAll("\n", "<br />").replaceAll("\t", "    ");
-                        payload.push(`<span class="json-string">${clean}</span>`);
+                        makeTag("xml-header", "<?");
+                        makeTag("xml-tag", `${node.name}`);
+                        makeTag("xml-attr-value", ` ${node.body}`);
+                        makeTag("xml-header", "?>");
                     }
                     parser.ondoctype = function (doctype: string) {
-                        payload.push(`<span class="json-mark">${doctype}</span>`);
+                        makeTag("xml-header", doctype);
                     }
-                    parser.onopentag = function (tag) {
-                        //tag.isSelfClosing
-                        payload.push(`<span class="json-key">${left}${tag.name}${right}</span>`);
+                    parser.ontext = function (t: string) {
+                        makeTag("xml-text", t);
+                    }
+                    parser.onopentag = function (tag:Tag) {
+                        makeTag("xml-tag", `<${tag.name}`);
+                        Object.entries(tag.attributes).forEach(entry => {
+                            makeTag("xml-attr-key", ` ${entry[0]}`);
+                            makeTag("", "=");
+                            const tagValue:any = entry[1];
+                            makeTag("xml-attr-value", `"${tagValue["value"]}"`);
+                        });
+
+                        if (tag.isSelfClosing) {
+                            isSelfClosing = true;
+                            makeTag("xml-tag", " />");
+                        } else {
+                            makeTag("xml-tag", ">");
+                        }
                     }
                     parser.onclosetag = function (tagName) {
-                        payload.push(`<span class="json-key">${left}${tagName}/${right}</span>`);
+                        if (isSelfClosing) {
+                            isSelfClosing = false;
+                            return;
+                        }
+                        makeTag("xml-tag", `</${tagName}>`);
                     }
-                    /*
-                         onerror(e: Error): void;
-                         onsgmldeclaration(sgmlDecl: string): void;
-                         onopentagstart(tag: Tag | QualifiedTag): void;
-                         onattribute(attr: { name: string; value: string }): void;
-                         oncomment(comment: string): void;
-                         onopencdata(): void;
-                         oncdata(cdata: string): void;
-                         onclosecdata(): void;
-                         onopennamespace(ns: { prefix: string; uri: string }): void;
-                         onclosenamespace(ns: { prefix: string; uri: string }): void;
-                         onend(): void;
-                         onready(): void;
-                         onscript(script: string): void; 
-                    */
+                    parser.oncomment = function (comment: string) {
+                        makeTag("xml-comment", `<!-- $comment} -->`);
+                    }
+                    parser.onscript = function (script: string) {
+                        makeTag("xml-script", `${'script'}`);
+                    }
+                    parser.onopencdata = function () {
+                        makeTag("xml-cdata-tag", "<![CDATA[");
+                    }
+                    parser.oncdata = function (cdata: string) {
+                        makeTag("xml-cdata-content", cdata);
+                    }
+                    parser.onclosecdata = function () {
+                        makeTag("xml-cdata-tag", "]]>");
+                    }
 
                     parser.write(xmlFormat(String(data), xmlFormatOptions)).close();
                     message.set("");
-                    // console.log(xmlFormat(, options));
-                    content.set(payload.join());
+                    content.set(`<pre class="json-container xml-container">${payload.join("")}</pre>`);
                 }
             });
     }

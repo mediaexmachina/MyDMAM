@@ -23,6 +23,10 @@ body {
     user-select: none;
 }
 
+pre {
+    user-select: text;
+}
+
 select, input, button {
     font-family: "Red Hat Text";
 }
@@ -68,4 +72,50 @@ ul li:hover:nth-child(odd) {
  */
 .json-container {
     background-color: #00000000 !important;
+}
+
+.xml-container {
+    white-space: unset;
+}
+
+.json-container span.xml-header {
+    color: red;
+    background-color: yellow;
+}
+
+.json-container span.xml-tag {
+    color: blue;
+    font-weight: normal;
+}
+
+.json-container span.xml-attr-key {
+    color: red;
+    font-weight: normal;
+}
+
+.json-container span.xml-attr-value {
+    color: rgb(89, 0, 255);
+}
+
+.json-container span.xml-text {
+    font-weight: normal;
+}
+
+.json-container span.xml-comment {
+    font-weight: normal;
+    color: darkgray;
+}
+
+.json-container span.xml-cdata-content {
+    font-weight: normal;
+    color: rgb(0, 104, 138);
+}
+
+.json-container span.xml-cdata-tag {
+    color: rgb(0, 81, 108);
+}
+
+.json-container span.xml-script {
+    color: red;
+    font-weight: normal;
 }

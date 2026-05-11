@@ -39,10 +39,6 @@ div.remarks {
     user-select: text;
 }
 
-pre {
-    user-select: text;
-}
-
 img.hero {
     padding: 0.3em;
     border: 0.3em solid rgba(20, 20, 20, 0.1);
