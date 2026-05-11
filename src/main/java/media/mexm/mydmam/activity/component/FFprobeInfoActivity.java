@@ -334,6 +334,8 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                 });
     }
 
+    // TODO correct if video is attached pict...
+
     static void setMediaSummary(final FFprobeJAXB ffprobeJAXB,
                                 final MtdThesaurusDefTechnical writer) {
         final var mediaSummary = ffprobeJAXB.getMediaSummary();
