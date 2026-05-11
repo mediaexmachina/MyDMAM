@@ -14,11 +14,10 @@
  * Copyright (C) Media ex Machina 2025
  *
  */
-import { Injectable, Signal, computed, inject } from '@angular/core';
-import { Observable, Subject, catchError, firstValueFrom, retry } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { Observable, Subject,  firstValueFrom, retry } from 'rxjs';
 import { HttpClient, HttpErrorResponse, HttpResponse, HttpParams } from '@angular/common/http';
 import { APIResponse } from '../interfaces/api-response.interface';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 @Injectable({
     providedIn: 'root'
@@ -28,7 +27,7 @@ export class BackendAPIService {
     private readonly httpClient = inject(HttpClient);
     private readonly API_BASE_PATH = "/api/v1";
     public readonly BASE_URL = `${window.location.protocol}//${window.location.host}${this.API_BASE_PATH}`;
-    private readonly TIMEOUT = 1000;
+    public readonly TIMEOUT = 1000;
 
     private onRequestError(httpError: HttpErrorResponse) {
         console.error('Managed error', httpError.status, httpError.error, this.getAPIEndPointURL(httpError.url));

@@ -15,12 +15,14 @@
  * 
  */
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { prettyPrintJson, FormatOptions } from 'pretty-print-json';
+import sax, { SAXOptions } from 'sax';
+import xmlFormat, { XMLFormatterOptions } from 'xml-formatter';
 import { FileResponse } from '../../dto/file-response.interface';
 import { AssetService } from '../../services/asset.service';
 import { AssetResponseIndex } from '../../dto/asset-response-index.interface';
 import { FirstUpperCasePipe } from '../../pipes/first-upper-case-pipe';
 import { KeyValueMetadataResponse } from '../../dto/key-value-metadata-response.interface';
-import { prettyPrintJson, FormatOptions } from 'pretty-print-json';
 import { RenderedFileResponse } from '../../dto/rendered-file-response.interface';
 import { MtdThesaurusDefPDF } from '../../services/mtd-thesaurus-def-pdf.service';
 import { PaginationComponent } from '../toolkit/pagination.component';
@@ -37,6 +39,10 @@ export class NavigatorItemComponent {
     readonly mtdThesaurusDefPDF = inject(MtdThesaurusDefPDF);
     readonly fileResponse = input.required<FileResponse>();
     readonly selectedPage = signal(0);
+
+    readonly getJsonContentFromRenderedSelected = signal("");
+    readonly getMessageFromRenderedSelected = signal("");
+    readonly renderedDisplaySelected = signal<RenderedFileResponse|null>(null);
 
     skipCountPageNavigation = 0;
 
@@ -121,10 +127,6 @@ export class NavigatorItemComponent {
         return renderedList.filter(r => this.displayOnlyRenderedPreviewType.has(r.previewType));
     });
 
-    readonly getJsonContentFromRenderedSelected = signal("");
-    readonly getMessageFromRenderedSelected = signal("");
-    readonly renderedDisplaySelected = signal<RenderedFileResponse|null>(null);
-
     onClickPagination(pageNavigateButton:any):void {
         this.selectedPage.set((pageNavigateButton["skip"] || 0) + 1);
         this.skipCountPageNavigation = pageNavigateButton["skip"] || 0;
@@ -182,20 +184,76 @@ export class NavigatorItemComponent {
         message.set("Loading...");
         content.set("");
 
-        this.assetService.getAssetRenderedFileString(this.fileHashPath(), rendered.name, 0)
-            .then(text => {
-                if (text == null) {
+        this.assetService.getAssetRenderedTextFile(this.fileHashPath(), rendered.name, 0)
+            .then(data => {
+                if (data == null) {
                     message.set(`No data from ${rendered.name}`);
-                } else {
-                    //TODO add https://www.npmjs.com/package/xml-formatter
-                    
+                } else if (rendered.name.endsWith(".json")) {
                     const options: FormatOptions = {
                         indent: 2,
                         linkUrls: false,
                         trailingCommas: false
                     };
                     message.set("");
-                    content.set(prettyPrintJson.toHtml(text, options));
+                    content.set(prettyPrintJson.toHtml(JSON.parse(data), options));
+                } else if (rendered.name.endsWith(".xml")) {
+                    const options:SAXOptions = {
+                        lowercase: false,
+                        normalize: false,
+                        position: false,
+                        xmlns: true,
+                        trim: false,
+                        noscript: false,
+                    };
+                    const xmlFormatOptions:XMLFormatterOptions = {
+                        indentation: '  ',
+                        lineSeparator: '\n',
+                        throwOnFailure: true,
+                    }
+
+                    const parser = sax.parser(true, options);
+                    const payload: string[] = [];
+
+                    const left = "&lt;";
+                    const right = "&gt;";
+
+                    parser.onprocessinginstruction = function (node) {
+                        payload.push(`<span class="json-mark">${left}?${node.name} ${node.body}${right}</span>`);
+                    }
+                    parser.ontext = function (t: string) {
+                        const clean = t.replaceAll("\n", "<br />").replaceAll("\t", "    ");
+                        payload.push(`<span class="json-string">${clean}</span>`);
+                    }
+                    parser.ondoctype = function (doctype: string) {
+                        payload.push(`<span class="json-mark">${doctype}</span>`);
+                    }
+                    parser.onopentag = function (tag) {
+                        //tag.isSelfClosing
+                        payload.push(`<span class="json-key">${left}${tag.name}${right}</span>`);
+                    }
+                    parser.onclosetag = function (tagName) {
+                        payload.push(`<span class="json-key">${left}${tagName}/${right}</span>`);
+                    }
+                    /*
+                         onerror(e: Error): void;
+                         onsgmldeclaration(sgmlDecl: string): void;
+                         onopentagstart(tag: Tag | QualifiedTag): void;
+                         onattribute(attr: { name: string; value: string }): void;
+                         oncomment(comment: string): void;
+                         onopencdata(): void;
+                         oncdata(cdata: string): void;
+                         onclosecdata(): void;
+                         onopennamespace(ns: { prefix: string; uri: string }): void;
+                         onclosenamespace(ns: { prefix: string; uri: string }): void;
+                         onend(): void;
+                         onready(): void;
+                         onscript(script: string): void; 
+                    */
+
+                    parser.write(xmlFormat(String(data), xmlFormatOptions)).close();
+                    message.set("");
+                    // console.log(xmlFormat(, options));
+                    content.set(payload.join());
                 }
             });
     }

@@ -14,7 +14,8 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-import { Injectable, Signal, inject, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { Observable, Subject,  firstValueFrom, retry } from 'rxjs';
 
 import { BackendAPIService } from './backend-api.service';
 import { LocalStorageService } from './local-storage.service';
@@ -22,6 +23,7 @@ import { ResetActivitiesRequest } from '../dto/reset-activities-request.interfac
 import { AssetResponse } from '../dto/asset-response.interface';
 import { MtdThesaurusDefDublinCore } from './mtd-thesaurus-def-dublin-core.service';
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { HttpClient, HttpErrorResponse, HttpParams, HttpResponse } from '@angular/common/http';
 
 @Injectable({
     providedIn: 'root',
@@ -31,6 +33,7 @@ export class AssetService {
     private readonly localStorageService = inject(LocalStorageService);
     private readonly backendAPIService = inject(BackendAPIService);
     private readonly mtdThesaurusDefDublinCore = inject(MtdThesaurusDefDublinCore);
+    private readonly httpClient = inject(HttpClient);
 
     public async resetActivities(hashPaths: Array<string>, recursive: boolean): Promise<null> {
         const request: ResetActivitiesRequest = {
@@ -79,9 +82,49 @@ export class AssetService {
         return `${this.makeAssetRenderedFileURL(hashPath, name, index)}&download=1`;
     }
 
-    public async getAssetRenderedFileString(hashPath: string, name: string, index: 0): Promise<string|null> {
+    public async getAssetRenderedTextFile(hashPath: string, name: string, index: 0): Promise<string|null> {
         const url = this.makeAssetRenderedFileBaseURL(hashPath, name, index);
-        return this.backendAPIService.requestAsyncAPI<string>("GET", url);
+        return this.requestTextAsset(url);
+    }
+
+    /**
+     * @param data only for POST and PUT
+     */
+    public async requestTextAsset(path: string): Promise<string|null> {
+        let url: string = `${this.backendAPIService.BASE_URL}/${path}`;
+        if (path.startsWith("/")) {
+            url = `${this.backendAPIService.BASE_URL}${path}`;
+        }
+
+        const result$ = new Subject<string|null>;
+        this.httpClient.get(url, {
+            headers: {
+                "accept": "*/*",
+            },
+            timeout: this.backendAPIService.TIMEOUT,
+            observe: 'response',
+            mode: 'same-origin',
+            cache: 'force-cache',
+            credentials: 'same-origin',
+            redirect: 'follow',
+            responseType: 'text'
+        })
+        .pipe(retry(0))
+        .subscribe({
+            next: (response: HttpResponse<string>) => {
+                result$.next(response.body);
+                result$.complete();
+                result$.unsubscribe();
+            },
+            error: (httpError: HttpErrorResponse) => {
+                console.error(httpError);
+                result$.next(null);
+                result$.complete();
+                result$.unsubscribe();
+            }
+        });
+
+        return await firstValueFrom(result$.asObservable());
     }
 
 }
