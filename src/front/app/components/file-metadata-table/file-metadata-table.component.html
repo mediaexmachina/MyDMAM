@@ -1,0 +1,38 @@
+<!--
+    This file is part of MyDMAM.
+    
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+    
+    Copyright (C) Media ex Machina 2026
+    
+-->
+
+<ul style="user-select: text;">
+@for (classifier of classifiers(); track classifier.track) {
+    <li class="header">
+        <span class="col-key-name"></span>
+        <span class="col-key-name classifier">{{ classifier.name | firstUpperCase }}</span>
+    </li>
+
+    @for (key of classifier.keys; track key.track) {
+        <li>
+            <span class="col-key-name">{{ key.name | firstUpperCase }}</span>
+            <span class="value-index-columns">
+                <div class="value-flex">
+                    @for (index of classifier.indexes; track $index) {
+                        <span class="value-index" [innerHTML]="getValueByIndex(index, key.valueByIndex) | nl2br"></span>
+                    }
+                </div>
+            </span>
+        </li>
+    }
+}
+</ul>

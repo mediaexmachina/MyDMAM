@@ -27,10 +27,11 @@ import { KeyValueMetadataResponse } from '../../dto/key-value-metadata-response.
 import { RenderedFileResponse } from '../../dto/rendered-file-response.interface';
 import { MtdThesaurusDefPDF } from '../../services/mtd-thesaurus-def-pdf.service';
 import { PaginationComponent } from '../toolkit/pagination.component';
+import { FileMetadataTableComponent } from '../file-metadata-table/file-metadata-table.component';
 
 @Component({
     selector: 'app-navigator-item',
-    imports: [FirstUpperCasePipe, PaginationComponent],
+    imports: [FirstUpperCasePipe, PaginationComponent, FileMetadataTableComponent],
     templateUrl: './navigator-item.component.html',
     styleUrl: './navigator-item.component.css',
 })
@@ -162,13 +163,6 @@ export class NavigatorItemComponent {
         return {
             label: pageNavigateButton["page"],
         };
-    }
-
-    getClassifiers(assetResponseIndex: AssetResponseIndex): Array<string> {
-        const allClassifiers = assetResponseIndex.fileMetadatas.map(f => f.classifier);
-        const classifiersNames = new Set(allClassifiers);
-        classifiersNames.delete("file-format");
-        return [...classifiersNames].sort();
     }
 
     getKeyValueByClassifierName(classifierName:string, assetResponseIndex: AssetResponseIndex): Array<KeyValueMetadataResponse> {
