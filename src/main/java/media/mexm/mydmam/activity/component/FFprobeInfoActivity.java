@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -240,6 +241,8 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         patchInvalidAVMimeTypes(fileEntity, currentMimeType, haveVideo, haveAudio);
     }
 
+    // TODO Add on technical:* mediaStream.index() + mediaStream.id()
+
     static Map<Integer, Integer> getPrograms(final FFprobeJAXB ffprobeJAXB,
                                              final MtdThesaurusDefTechnicalTransportStream tsWriter) {
         final var result = new HashMap<Integer, Integer>();
@@ -317,7 +320,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         }
     }
 
-    static Stream<FFProbeStream> filterValidVideoStreams(final FFprobeReference ffprobe) {
+    static Stream<FFProbeStream> filterValidVideoStreams(final FFprobeReference ffprobe) {// TODO ot ffprobe lib...
         return ffprobe.getVideoStreams()
                 .filter(s -> s.width() > 0 && s.height() > 0)
                 .filter(s -> {
@@ -334,21 +337,22 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                 });
     }
 
-    // TODO correct if video is attached pict...
+    // TODO MediaSummary: correct if video is attached pict...
+    // TODO MediaSummary: don't display audio bitrate if pcm
+    // TODO MediaSummary: pcm_s24le "s32" ?!
+    // TODO MediaSummary: remove file size
+    // TODO MediaSummary: 44100 Hz >> 44.1 kHz
+    // TODO MediaSummary: display default only if a stream (real, not TC/attached pict) is not default
 
     static void setMediaSummary(final FFprobeJAXB ffprobeJAXB,
                                 final MtdThesaurusDefTechnical writer) {
         final var mediaSummary = ffprobeJAXB.getMediaSummary();
-        if (mediaSummary.format().isEmpty() == false) {
-            writer.type().set(-1, mediaSummary.format());
-        }
-        final var mediaSummaryStreams = mediaSummary.streams();
-        for (var pos = 0; pos < mediaSummaryStreams.size(); pos++) {
-            final var mediaSummaryForStream = mediaSummaryStreams.get(pos);
-            if (mediaSummaryForStream.isEmpty() == false) {
-                writer.type().set(pos, mediaSummaryForStream);
-            }
-        }
+        final var mediaSummaryStr = Stream.concat(
+                Optional.ofNullable(mediaSummary.format()).stream(),
+                mediaSummary.streams().stream())
+                .collect(Collectors.joining("\n"));
+
+        writer.type().set(mediaSummaryStr);
     }
 
     private static final Set<String> MASTER_AS_PREVIEW_MIME_TYPES = Set.of(

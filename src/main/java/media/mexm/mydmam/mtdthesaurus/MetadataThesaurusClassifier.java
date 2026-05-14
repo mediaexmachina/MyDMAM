@@ -35,3 +35,5 @@ public @interface MetadataThesaurusClassifier {
     public String value();
 
 }
+
+// TODO add @ for MetadataThesaurus: Type={id, date, boolean}, unit, sort + kind of Classifier sort on MetadataThesaurusRegister} + long name on Classifier+Entry
