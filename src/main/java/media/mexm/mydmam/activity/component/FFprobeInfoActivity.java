@@ -19,6 +19,7 @@ package media.mexm.mydmam.activity.component;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.empty;
+import static java.util.stream.Collectors.joining;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.aspectRatio;
@@ -54,9 +55,7 @@ import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MetadataThesaurusService;
 import tv.hd3g.ffprobejaxb.FFprobeJAXB;
-import tv.hd3g.ffprobejaxb.FFprobeReference;
 import tv.hd3g.ffprobejaxb.data.FFProbeKeyValue;
-import tv.hd3g.ffprobejaxb.data.FFProbeStream;
 
 @Slf4j
 @Component
@@ -113,6 +112,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         final var technical = thesaurus.technical();
         final var technicalImage = thesaurus.technicalImage();
         final var technicalMXF = thesaurus.technicalMXF();
+        final var technicalStream = thesaurus.technicalStream();
         final var technicalTransportStream = thesaurus.technicalTransportStream();
         final var chapter = thesaurus.chapter();
         final var xmp = thesaurus.xmp();
@@ -124,25 +124,39 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
         final var programIdByMediaStreamIndex = getPrograms(ffprobeJAXB, technicalTransportStream);
 
         ffprobeJAXB.getStreams().forEach(mediaStream -> {
+            /**
+             * Quicktime timecode track
+             */
             if ("tmcd".equals(mediaStream.codecTagString())) {
-                /**
-                 * Quicktime timecode track
-                 */
                 return;
             }
 
             final var layer = mediaStream.index();
             final var codecType = Objects.requireNonNull(mediaStream.codecType(), "No codec type, invalid FFprobe XML");
 
-            final var technicalStream = thesaurus.technicalStream();
-            technicalStream.type().set(layer, codecType);
-            technicalStream.timeBase().set(layer, mediaStream.timeBase());
+            if (mediaStream.isSecondary() == false) {
+                technicalStream.type().set(layer, codecType);
+                technicalStream.timeBase().set(layer, mediaStream.timeBase());
+                technicalStream.startTime().set(layer, mediaStream.startTime());
+                technicalStream.disposition()
+                        .set(layer, mediaStream.disposition().resumeDispositions().collect(joining(", ")));
+            } else {
+                final var disposition = mediaStream.disposition();
+                if (disposition.attachedPic()) {
+                    technicalStream.type().set(layer, "attached-pic");
+                } else if (disposition.stillImage()) {
+                    technicalStream.type().set(layer, "still-image");
+                } else if (disposition.timedThumbnails()) {
+                    technicalStream.type().set(layer, "timed-thumbnails");
+                }
+            }
+
             technicalStream.referenceId().set(layer, mediaStream.id());
             technicalStream.programId().set(layer, programIdByMediaStreamIndex.get(mediaStream.index()));
             technicalStream.bitrate().set(layer, mediaStream.bitRate());
             technicalStream.profile().set(layer, mediaStream.profile());
-            technicalStream.startTime().set(layer, mediaStream.startTime());
             technicalStream.codec().set(layer, mediaStream.codecName());
+            technicalStream.isSecondary().set(layer, mediaStream.isSecondary());
 
             final var codecLongName = WELL_KNOWN_CODECS_NAMES.getOrDefault(
                     mediaStream.codecName(),
@@ -150,16 +164,17 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             technicalStream.codecName().set(layer, codecLongName);
 
             final var level = mediaStream.level();
-            if (level > 0) {
+            if (level > 0 && mediaStream.isSecondary() == false) {
                 technicalStream.level().set(layer, mediaStream.level());
             }
 
-            if (codecType.equals("audio")) {
+            if (codecType.equals("audio") && mediaStream.isSecondary() == false) {
                 final var technicalAudio = thesaurus.technicalAudio();
                 technicalAudio.channelLayout().set(layer, mediaStream.channelLayout());
                 technicalAudio.channelsCount().set(layer, mediaStream.channels());
                 technicalAudio.sampleRate().set(layer, mediaStream.sampleRate());
                 technicalAudio.sampleFormat().set(layer, mediaStream.sampleFmt());
+                technicalAudio.referenceId().set(layer, mediaStream.id());
             }
 
             if (codecType.equals("video")) {
@@ -169,6 +184,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                 technicalImage.width().set(layer, width);
                 technicalImage.height().set(layer, height);
 
+                technicalImage.referenceId().set(layer, mediaStream.id());
                 technicalImage.pixelformat().set(layer, mediaStream.pixFmt());
                 technicalImage.colorspace().set(layer, removeUnknown(mediaStream.colorSpace()));
                 technicalImage.colorrange().set(layer, removeUnknown(mediaStream.colorRange()));
@@ -177,29 +193,24 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
 
                 technicalImage.sampleAspectRatio().set(layer, mediaStream.sampleAspectRatio());
                 technicalImage.displayAspectRatio().set(layer, mediaStream.displayAspectRatio());
-                technicalImage.aspectRatio().set(aspectRatio(width, height));
-                technicalImage.imageAspectFormat().set(getPageOrientation(width, height));
+                technicalImage.aspectRatio().set(layer, aspectRatio(width, height));
+                technicalImage.imageAspectFormat().set(layer, getPageOrientation(width, height));
 
-                final var technicalVideo = thesaurus.technicalVideo();
-                technicalVideo.fieldOrder().set(layer, mediaStream.fieldOrder());
-                technicalVideo.frameRate().set(layer, mediaStream.rFrameRate());
-                technicalVideo.averageFrameRate().set(layer, mediaStream.avgFrameRate());
+                if (mediaStream.isSecondary() == false) {
+                    final var technicalVideo = thesaurus.technicalVideo();
+                    technicalVideo.fieldOrder().set(layer, mediaStream.fieldOrder());
+                    technicalVideo.frameRate().set(layer, mediaStream.rFrameRate());
+                    technicalVideo.averageFrameRate().set(layer, mediaStream.avgFrameRate());
+                    technicalVideo.referenceId().set(layer, mediaStream.id());
+                }
             }
 
-            Optional.ofNullable(mediaStream.disposition())
-                    .ifPresentOrElse(
-                            disposition -> technicalStream.isSecondary()
-                                    .set(layer,
-                                            disposition.attachedPic()
-                                                || disposition.stillImage()
-                                                || disposition.timedThumbnails()),
-                            () -> technicalStream.isSecondary()
-                                    .set(layer, false));
-
-            technicalMXF.trackName().set(layer, getTagByName(mediaStream.tags(), "track_name"));
-            technicalMXF.filePackageUMID().set(layer, getTagByName(mediaStream.tags(), "file_package_umid"));
-            technicalMXF.filePackageName().set(layer, getTagByName(mediaStream.tags(), "file_package_name"));
-            dublinCore.language().set(layer, getTagByName(mediaStream.tags(), "language"));
+            if (mediaStream.isSecondary() == false) {
+                technicalMXF.trackName().set(layer, getTagByName(mediaStream.tags(), "track_name"));
+                technicalMXF.filePackageUMID().set(layer, getTagByName(mediaStream.tags(), "file_package_umid"));
+                technicalMXF.filePackageName().set(layer, getTagByName(mediaStream.tags(), "file_package_name"));
+                dublinCore.language().set(layer, getTagByName(mediaStream.tags(), "language"));
+            }
         });
 
         ffprobeJAXB.getFormat().ifPresent(format -> {
@@ -233,15 +244,13 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             dublinCore.language().set(layer, getTagByName(format.tags(), "language"));
         });
 
-        final var validVideoStreams = filterValidVideoStreams(ffprobeJAXB).toList();
+        final var validVideoStreams = ffprobeJAXB.getVideoStreams().toList();
         final var currentMimeType = metadataThesaurusService.getMimeType(fileEntity).orElseThrow();
         final var haveVideo = validVideoStreams.isEmpty() == false;
         final var haveAudio = ffprobeJAXB.getAudioStreams().count() > 0l;
 
         patchInvalidAVMimeTypes(fileEntity, currentMimeType, haveVideo, haveAudio);
     }
-
-    // TODO Add on technical:* mediaStream.index() + mediaStream.id()
 
     static Map<Integer, Integer> getPrograms(final FFprobeJAXB ffprobeJAXB,
                                              final MtdThesaurusDefTechnicalTransportStream tsWriter) {
@@ -319,30 +328,6 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             metadataThesaurusService.setMimeType(this, fileEntity, currentMimeType.replace(AUDIO_SLASH, VIDEO_SLASH));
         }
     }
-
-    static Stream<FFProbeStream> filterValidVideoStreams(final FFprobeReference ffprobe) {// TODO ot ffprobe lib...
-        return ffprobe.getVideoStreams()
-                .filter(s -> s.width() > 0 && s.height() > 0)
-                .filter(s -> {
-                    if (s.disposition() != null) {
-                        if (s.disposition().attachedPic()
-                            || s.disposition().timedThumbnails()) {
-                            return false;
-                        }
-                        if (s.disposition().forced()) {
-                            return true;
-                        }
-                    }
-                    return true;
-                });
-    }
-
-    // TODO MediaSummary: correct if video is attached pict...
-    // TODO MediaSummary: don't display audio bitrate if pcm
-    // TODO MediaSummary: pcm_s24le "s32" ?!
-    // TODO MediaSummary: remove file size
-    // TODO MediaSummary: 44100 Hz >> 44.1 kHz
-    // TODO MediaSummary: display default only if a stream (real, not TC/attached pict) is not default
 
     static void setMediaSummary(final FFprobeJAXB ffprobeJAXB,
                                 final MtdThesaurusDefTechnical writer) {

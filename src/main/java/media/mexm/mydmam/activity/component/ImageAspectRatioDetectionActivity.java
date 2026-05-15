@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.activity.component;
 
+import static java.lang.Float.parseFloat;
 import static java.lang.Math.round;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.PageOrientation.LANDSCAPE;
@@ -24,6 +25,7 @@ import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActi
 import static org.apache.commons.lang3.math.Fraction.getReducedFraction;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -80,6 +82,10 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
         return fraction.getNumerator() + ":" + fraction.getDenominator();
     }
 
+    private static Stream<Integer> union(final Set<Integer> l, final Set<Integer> r) {
+        return l.stream().filter(r::contains);
+    }
+
     @Override
     public void handle(final FileEntity fileEntity,
                        final ActivityEventType eventType,
@@ -87,23 +93,31 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
         final var thesaurus = metadataThesaurusService.getThesaurus(this, fileEntity);
         final var technicalImage = thesaurus.technicalImage();
 
-        final var height = technicalImage.height().get().map(Float::parseFloat).orElseThrow();
-        final var width = technicalImage.width().get().map(Float::parseFloat).orElseThrow();
+        final var heightbyLayer = technicalImage.height().getAll();
+        final var widthbyLayer = technicalImage.height().getAll();
 
-        if (height < 1 || width < 1) {
-            return;
-        }
+        union(heightbyLayer.keySet(), widthbyLayer.keySet())
+                .forEach(layer -> {
+                    final var height = parseFloat(heightbyLayer.get(layer));
+                    final var width = parseFloat(widthbyLayer.get(layer));
 
-        if (technicalImage.displayAspectRatio().get().isEmpty()) {
-            technicalImage.displayAspectRatio().set(computeDisplayAspectRatio(Math.round(width), Math.round(height)));
-        }
+                    if (height < 1 || width < 1) {
+                        return;
+                    }
 
-        if (technicalImage.sampleAspectRatio().get().isEmpty()) {
-            technicalImage.sampleAspectRatio().set("1:1");
-        }
+                    if (technicalImage.displayAspectRatio().get(layer).isEmpty()) {
+                        technicalImage.displayAspectRatio().set(layer, computeDisplayAspectRatio(
+                                Math.round(width),
+                                Math.round(height)));
+                    }
 
-        technicalImage.aspectRatio().set(aspectRatio(width, height));
-        technicalImage.imageAspectFormat().set(getPageOrientation(width, height));
+                    if (technicalImage.sampleAspectRatio().get(layer).isEmpty()) {
+                        technicalImage.sampleAspectRatio().set(layer, "1:1");
+                    }
+
+                    technicalImage.aspectRatio().set(layer, aspectRatio(width, height));
+                    technicalImage.imageAspectFormat().set(layer, getPageOrientation(width, height));
+                });
     }
 
     static double aspectRatio(final float width, final float height) {

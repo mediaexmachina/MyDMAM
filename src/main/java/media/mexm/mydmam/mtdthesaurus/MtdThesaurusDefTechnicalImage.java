@@ -55,4 +55,6 @@ public interface MtdThesaurusDefTechnicalImage {
      */
     MetadataThesaurusEntry imageAspectFormat();
 
+    MetadataThesaurusEntry referenceId();
+
 }

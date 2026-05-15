@@ -41,4 +41,6 @@ public interface MtdThesaurusDefTechnicalStream {
 
     MetadataThesaurusEntry startTime();
 
+    MetadataThesaurusEntry disposition();
+
 }

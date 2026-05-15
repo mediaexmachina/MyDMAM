@@ -25,4 +25,6 @@ public interface MtdThesaurusDefTechnicalVideo {
 
     MetadataThesaurusEntry averageFrameRate();
 
+    MetadataThesaurusEntry referenceId();
+
 }
