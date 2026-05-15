@@ -168,8 +168,6 @@ export class NavigatorItemComponent {
     getKeyValueByClassifierName(classifierName:string, assetResponseIndex: AssetResponseIndex): Array<KeyValueMetadataResponse> {
         return assetResponseIndex.fileMetadatas.filter(f => f.classifier == classifierName);
     }
-
-    // TODO display all layers of informations, like technical::type
     
     onClickSelectRenderedDisplay(e: Event, rendered: RenderedFileResponse) {
         e.preventDefault();

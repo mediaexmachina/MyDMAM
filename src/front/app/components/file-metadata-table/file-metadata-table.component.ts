@@ -37,7 +37,9 @@ export class FileMetadataTableComponent {
 
     getValueByIndex(index: number, valueByIndex: Array<FileMetadataValue>): string {
         const value = valueByIndex.filter(vi => vi.index == index).map(vi => vi.value).at(0) || "";
-
+        if (value == "" || value.startsWith("0x")) {
+            return value;
+        }
         const valueNumber = Number(value);
         if (Number.isNaN(valueNumber) == false) {
             return this.numberFormat.format(valueNumber);
