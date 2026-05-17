@@ -239,22 +239,6 @@ public class MetadataThesaurusToAngularClasses {
 
         }
 
-        /*for (final var value : MetadataThesaurusEntryType.values()) {
-            final var name = value.name();
-            rawJson = rawJson.replace("\"" + name + "\"",
-                    MetadataThesaurusEntryType.class.getSimpleName() + "." + name);
-        }
-        for (final var value : MetadataThesaurusEntryNumericalUnit.values()) {
-            final var name = value.name();
-            rawJson = rawJson.replace("\"" + name + "\"",
-                    MetadataThesaurusEntryNumericalUnit.class.getSimpleName() + "." + name);
-        }
-        for (final var value : MetadataThesaurusClassifierKind.values()) {
-            final var name = value.name();
-            rawJson = rawJson.replace("\"" + name + "\"",
-                    MetadataThesaurusClassifierKind.class.getSimpleName() + "." + name);
-        }*/
-
         return rawJson;
     }
 

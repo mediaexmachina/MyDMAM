@@ -55,6 +55,7 @@ import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
 import media.mexm.mydmam.service.MediaAssetService;
 import media.mexm.mydmam.service.MetadataThesaurusService;
 import tv.hd3g.ffprobejaxb.FFprobeJAXB;
+import tv.hd3g.ffprobejaxb.data.FFProbeFormat;
 import tv.hd3g.ffprobejaxb.data.FFProbeKeyValue;
 
 @Slf4j
@@ -130,6 +131,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             if ("tmcd".equals(mediaStream.codecTagString())) {
                 return;
             }
+            final var isMXF = ffprobeJAXB.getFormat().map(FFProbeFormat::formatName).orElse("").equalsIgnoreCase("mxf");
 
             final var layer = mediaStream.index();
             final var codecType = Objects.requireNonNull(mediaStream.codecType(), "No codec type, invalid FFprobe XML");
@@ -174,7 +176,11 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                 technicalAudio.channelsCount().set(layer, mediaStream.channels());
                 technicalAudio.sampleRate().set(layer, mediaStream.sampleRate());
                 technicalAudio.sampleFormat().set(layer, mediaStream.sampleFmt());
-                technicalAudio.referenceId().set(layer, mediaStream.id());
+                if (isMXF) {
+                    technicalAudio.referenceId().set(layer, mediaStream.index());
+                } else {
+                    technicalAudio.referenceId().set(layer, mediaStream.id());
+                }
             }
 
             if (codecType.equals("video")) {
@@ -184,7 +190,12 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                 technicalImage.width().set(layer, width);
                 technicalImage.height().set(layer, height);
 
-                technicalImage.referenceId().set(layer, mediaStream.id());
+                if (isMXF) {
+                    technicalImage.referenceId().set(layer, mediaStream.index());
+                } else {
+                    technicalImage.referenceId().set(layer, mediaStream.id());
+                }
+
                 technicalImage.pixelformat().set(layer, mediaStream.pixFmt());
                 technicalImage.colorspace().set(layer, removeUnknown(mediaStream.colorSpace()));
                 technicalImage.colorrange().set(layer, removeUnknown(mediaStream.colorRange()));
@@ -205,6 +216,9 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                 }
             }
 
+            if (isMXF) {
+                technicalMXF.trackIndex().set(layer, layer);
+            }
             if (mediaStream.isSecondary() == false) {
                 technicalMXF.trackName().set(layer, getTagByName(mediaStream.tags(), "track_name"));
                 technicalMXF.filePackageUMID().set(layer, getTagByName(mediaStream.tags(), "file_package_umid"));
@@ -237,6 +251,9 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             getTagByName(format.tags(), "company_name").ifPresent(cn -> creatorTool.append(" (" + cn + ")"));
             xmp.creatorTool().set(creatorTool.toString().trim());
 
+            if (format.formatName().equalsIgnoreCase("mxf")) {
+                technicalMXF.trackIndex().set(layer, "container");
+            }
             technicalMXF.operationalPatternUL().set(layer, getTagByName(format.tags(), "operational_pattern_ul"));
             technicalMXF.uid().set(layer, getTagByName(format.tags(), "uid"));
             technicalMXF.generationUID().set(layer, getTagByName(format.tags(), "generation_uid"));

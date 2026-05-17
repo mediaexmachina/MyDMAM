@@ -22,6 +22,10 @@ import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.IDENTIFI
 @MetadataThesaurusClassifier(value = "technical:mxf", longname = "MXF (technical)", kind = TECHNICAL_ATTRIBUTE)
 public interface MtdThesaurusDefTechnicalMXF {
 
+    @MetadataThesaurusSortIndexOrder(1)
+    @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
+    MetadataThesaurusEntry trackIndex();
+
     @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
     MetadataThesaurusEntry operationalPatternUL();
 

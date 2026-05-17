@@ -44,7 +44,4 @@ public @interface MetadataThesaurusClassifier {
 TODO add @
                                            |Front Displayed|
 MetadataThesaurusSortIndexOrder            |               |
-Classifier:
- - long name                               |               |
- - Classifier Kind                         |               |
  * */

@@ -39,10 +39,10 @@ public @interface MetadataThesaurusEntryAttribute {
 TODO add @
                                            |Front Displayed|
 Entry:
- - long name                               |               |
- - Type=Identifier                         |               |
- - Type=UnixTimeMsec                       |               |
- - Type=Boolean                            |               |
+ - long name                               |      x        |
+ - Type=Identifier                         |      x        |
+ - Type=UnixTimeMsec                       |      x        |
+ - Type=Boolean                            |      x        |
  - NumericalUnit                           |               |
  - MetadataThesaurusSortIndexOrder         |               |
 

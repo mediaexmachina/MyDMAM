@@ -21,6 +21,8 @@ export class MtdThesaurusDefTechnicalMXF extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
+            case "track-index":
+                return {"longName":"Track index","sortIndexOrder":1,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "file-package-name":
                 return {"longName":"File package name","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "file-package-umid":
@@ -42,6 +44,10 @@ export class MtdThesaurusDefTechnicalMXF extends MtdThesaurusDef {
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
         return {"longName":"MXF (technical)","sortIndexOrder":12,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
+    }
+
+    public trackIndex(): MetadataThesaurusEntry {
+        return { key: "track-index", classifier: this.classifier };
     }
 
     public filePackageName(): MetadataThesaurusEntry {
