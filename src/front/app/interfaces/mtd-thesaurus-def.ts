@@ -22,6 +22,6 @@ export abstract class MtdThesaurusDef {
 
     public abstract getEntrySignatureByKeyName(keyName:string): MtdThesaurusDefEntrySignature|null;
 
-    public abstract getClassifierSignature(): MtdThesaurusDefClassifierSignature|null;
+    public abstract getClassifierSignature(): MtdThesaurusDefClassifierSignature;
 
 }
