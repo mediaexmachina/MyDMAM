@@ -14,7 +14,7 @@
  * Copyright (C) Media ex Machina 2026
  * 
  */
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { AssetResponse } from '../../dto/asset-response.interface';
 import { FileMetadataClassifier } from './FileMetadataClassifier';
 import { FileMetadataKey } from './FileMetadataKey';
@@ -22,6 +22,7 @@ import { Utils } from '../../utils';
 import { FileMetadataValue } from './FileMetadataValue';
 import { Nl2brPipe } from '../../pipes/nl2br-pipe';
 import { FirstUpperCasePipe } from '../../pipes/first-upper-case-pipe';
+import { MtdThesaurusResolver } from '../../services/mtd-thesaurus-resolver.service';
 
 @Component({
     selector: 'app-file-metadata-table',
@@ -31,6 +32,7 @@ import { FirstUpperCasePipe } from '../../pipes/first-upper-case-pipe';
 })
 export class FileMetadataTableComponent {
 
+    readonly mtdThesaurusResolver = inject(MtdThesaurusResolver);
     readonly assetResponse = input.required<AssetResponse>();
     readonly classifiers = computed(this.getClassifiers.bind(this));
     readonly numberFormat = new window.Intl.NumberFormat();
@@ -77,8 +79,8 @@ export class FileMetadataTableComponent {
             .forEach(cN => classifiersNames.push(cN));
         Utils.distinct(classifiersNames);
 
-        return classifiersNames.map(classifiersName => {
-            const currentClassifierDbEntries = allDbEntries.filter(entry => entry.classifierName === classifiersName);
+        return classifiersNames.map(classifierName => {
+            const currentClassifierDbEntries = allDbEntries.filter(entry => entry.classifierName === classifierName);
             const indexes = Utils.distinct(currentClassifierDbEntries.map(entry => entry.index));
             const keys: Array<FileMetadataKey> = [];
             const keysForClassifier = Utils.distinct(currentClassifierDbEntries.map(entry => entry.key));
@@ -90,22 +92,24 @@ export class FileMetadataTableComponent {
                     valueByIndex.push({
                         index: entry.index,
                         value: entry.value,
-                        track: classifiersName + "." + key + "." + entry.index + "=" + entry.value
+                        track: classifierName + "." + key + "." + entry.index + "=" + entry.value
                     });
                 });
                 keys.push({
-                    classifierName: classifiersName,
+                    classifierName: classifierName,
                     name: key.replaceAll("-", " "),
+                    signature: this.mtdThesaurusResolver.getEntrySignatureByKeyName(classifierName, key),
                     valueByIndex: valueByIndex,
-                    track: classifiersName + "." + key
+                    track: classifierName + "." + key
                 });
             });
 
             return {
-                name: classifiersName.replaceAll(":", " • "),
+                name: classifierName.replaceAll(":", " • "),
+                signature: this.mtdThesaurusResolver.getClassifierSignature(classifierName),
                 indexes: indexes,
                 keys: keys,
-                track: classifiersName
+                track: classifierName
             };
         });
     }

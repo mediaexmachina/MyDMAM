@@ -1,3 +1,4 @@
+import { MtdThesaurusDefEntrySignature } from "../../dto/mtd-thesaurus-def-entry-signature.interface";
 import { FileMetadataValue } from "./FileMetadataValue";
 
 /*
@@ -19,6 +20,7 @@ import { FileMetadataValue } from "./FileMetadataValue";
 export interface FileMetadataKey {
     classifierName: string;
     name: string;
+    signature: MtdThesaurusDefEntrySignature|null;
     valueByIndex: Array<FileMetadataValue>;
     track: string;
 }

@@ -14,10 +14,12 @@
  * Copyright (C) Media ex Machina 2026
  * 
  */
+import { MtdThesaurusDefClassifierSignature } from "../../dto/mtd-thesaurus-def-classifier-signature.interface";
 import { FileMetadataKey } from "./FileMetadataKey";
 
 export interface FileMetadataClassifier {
     name: string;
+    signature: MtdThesaurusDefClassifierSignature|null;
     indexes: Array<number>;
     keys: Array<FileMetadataKey>;
     track: string;

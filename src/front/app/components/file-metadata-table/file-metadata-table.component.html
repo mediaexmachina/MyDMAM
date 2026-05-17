@@ -19,15 +19,28 @@
 @for (classifier of classifiers(); track classifier.track) {
     <li class="header">
         <span class="col-key-name"></span>
-        <span class="col-key-name classifier">{{ classifier.name | firstUpperCase }}</span>
+        <span class="col-key-name classifier">{{ classifier.signature?.longName || classifier.name | firstUpperCase }}</span>
     </li>
 
     @for (key of classifier.keys; track key.track) {
         <li>
-            <span class="col-key-name">{{ key.name | firstUpperCase }}</span>
+            <span class="col-key-name">{{ key.signature?.longName || key.name | firstUpperCase }}</span>
             <span class="value-index-columns">
                 <div class="value-flex">
                     @for (index of classifier.indexes; track $index) {
+                        <!--
+                        @switch (condition) {
+                            @case (caseA) {
+                                Case A.
+                            }
+                            @case (caseB)
+                            @case (caseC) {
+                                Case B or C.
+                            }
+                            @default {
+                                Default case.
+                            }
+                        }  -->
                         <span class="value-index" [innerHTML]="getValueByIndex(index, key.valueByIndex) | nl2br"></span>
                     }
                 </div>
