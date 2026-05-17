@@ -41,9 +41,13 @@ div.value-flex {
     display: flex;
 }
 
-span.value-index {
+.value-index {
     flex: 1;
     padding-right: 0.3rem;
+}
+
+.kind-header {
+    opacity: 0.5;
 }
 
 .classifier {
@@ -51,4 +55,11 @@ span.value-index {
     font-size: 110%;
     padding-top: 0.3rem;
     padding-bottom: 0.3rem;
+}
+
+.identifier-serial-id {
+    font-family: monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

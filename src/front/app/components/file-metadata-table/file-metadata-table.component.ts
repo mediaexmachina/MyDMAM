@@ -23,10 +23,11 @@ import { FileMetadataValue } from './FileMetadataValue';
 import { Nl2brPipe } from '../../pipes/nl2br-pipe';
 import { FirstUpperCasePipe } from '../../pipes/first-upper-case-pipe';
 import { MtdThesaurusResolver } from '../../services/mtd-thesaurus-resolver.service';
+import { SpanDateTimeComponent } from '../toolkit/span-date-time.component';
 
 @Component({
     selector: 'app-file-metadata-table',
-    imports: [Nl2brPipe, FirstUpperCasePipe],
+    imports: [Nl2brPipe, FirstUpperCasePipe, SpanDateTimeComponent],
     templateUrl: './file-metadata-table.component.html',
     styleUrl: './file-metadata-table.component.css',
 })
@@ -37,17 +38,41 @@ export class FileMetadataTableComponent {
     readonly classifiers = computed(this.getClassifiers.bind(this));
     readonly numberFormat = new window.Intl.NumberFormat();
 
-    getValueByIndex(index: number, valueByIndex: Array<FileMetadataValue>): string {
-        const value = valueByIndex.filter(vi => vi.index == index).map(vi => vi.value).at(0) || "";
+    getValueByIndex(index: number, key: FileMetadataKey): string {
+        const value = this.getRawValueByIndex(index, key);
+
         if (value == "" || value.startsWith("0x")) {
             return value;
         }
+
         const valueNumber = Number(value);
         if (Number.isNaN(valueNumber) == false) {
             return this.numberFormat.format(valueNumber);
         }
 
+        /*
+        let unit = "";
+        switch (key.signature?.unit) {
+            case "BITS_PER_SECONDS":
+                unit = " bps";
+                break;
+        }
+        */
+
         return value;
+    }
+
+    getRawValueByIndex(index: number, key: FileMetadataKey): string {
+        return key.valueByIndex.filter(vi => vi.index == index).map(vi => vi.value).at(0) || "";
+    }
+
+    getNumberValueByIndex(index: number, key: FileMetadataKey): number {
+        const value = this.getRawValueByIndex(index, key);
+        const valueNumber = Number(value);
+        if (value == "" || Number.isNaN(valueNumber)) {
+            return 0;
+        }
+        return valueNumber;
     }
 
     private getClassifiers(): Array<FileMetadataClassifier> {

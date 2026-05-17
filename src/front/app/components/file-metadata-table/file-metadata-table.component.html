@@ -18,8 +18,21 @@
 <ul style="user-select: text;">
 @for (classifier of classifiers(); track classifier.track) {
     <li class="header">
-        <span class="col-key-name"></span>
-        <span class="col-key-name classifier">{{ classifier.signature?.longName || classifier.name | firstUpperCase }}</span>
+        <span class="col-key-name kind-header">
+            @switch (classifier.signature?.kind) {
+                @case ("BIBLIOGRAPHIC_RECORD") {
+                    Bibliographic record
+                }
+                @case ("TECHNICAL_ATTRIBUTE") {
+                    Technical attribute
+                }
+                @default {
+                }
+            }
+        </span>
+        <span class="col-key-name classifier">
+            {{ classifier.signature?.longName || classifier.name | firstUpperCase }}
+        </span>
     </li>
 
     @for (key of classifier.keys; track key.track) {
@@ -28,20 +41,24 @@
             <span class="value-index-columns">
                 <div class="value-flex">
                     @for (index of classifier.indexes; track $index) {
-                        <!--
-                        @switch (condition) {
-                            @case (caseA) {
-                                Case A.
+                        @switch (key.signature?.type) {
+                            @case ("IDENTIFIER_OR_SERIAL_ID") {
+                                <span class="value-index identifier-serial-id">
+                                    {{ getRawValueByIndex(index, key) }}
+                                </span>
                             }
-                            @case (caseB)
-                            @case (caseC) {
-                                Case B or C.
+                            @case ("UNIX_TIME_MSEC") {
+                                <app-span-date-time [date]="getNumberValueByIndex(index, key)"></app-span-date-time>
+                            }
+                            @case ("BOOLEAN") {
+                                <span class="value-index" style="font-variant: small-caps; font-style: italic;">
+                                    {{ getRawValueByIndex(index, key) == "true" ? "Yes" : "No" }}
+                                </span>
                             }
                             @default {
-                                Default case.
+                                <span class="value-index" [innerHTML]="getValueByIndex(index, key) | nl2br"></span>
                             }
-                        }  -->
-                        <span class="value-index" [innerHTML]="getValueByIndex(index, key.valueByIndex) | nl2br"></span>
+                        }
                     }
                 </div>
             </span>
