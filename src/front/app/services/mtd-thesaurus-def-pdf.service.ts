@@ -18,55 +18,59 @@ export class MtdThesaurusDefPDF extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "encrypted":
-                return {"longName":"ENCRYPTED"};
-            case "form":
-                return {"longName":"FORM"};
-            case "javascript":
-                return {"longName":"JAVASCRIPT"};
-            case "keywords":
-                return {"longName":"KEYWORDS"};
-            case "optimized":
-                return {"longName":"OPTIMIZED"};
             case "page-count":
-                return {"longName":"PAGE-COUNT"};
-            case "page-height-mm":
-                return {"longName":"PAGE-HEIGHT-MM"};
-            case "page-rotated":
-                return {"longName":"PAGE-ROTATED"};
-            case "page-width-mm":
-                return {"longName":"PAGE-WIDTH-MM"};
+                return {"longName":"Page count","sortIndexOrder":1,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "encrypted":
+                return {"longName":"Encrypted","sortIndexOrder":2,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "pdf-version":
-                return {"longName":"PDF-VERSION"};
-            case "permission-add-notes":
-                return {"longName":"PERMISSION-ADD-NOTES"};
-            case "permission-change":
-                return {"longName":"PERMISSION-CHANGE"};
-            case "permission-copy":
-                return {"longName":"PERMISSION-COPY"};
-            case "permission-print":
-                return {"longName":"PERMISSION-PRINT"};
-            case "producer":
-                return {"longName":"PRODUCER"};
+                return {"longName":"Pdf version","sortIndexOrder":3,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "javascript":
+                return {"longName":"Javascript","sortIndexOrder":4,"type":"BOOLEAN","unit":"NO_UNIT"};
+            case "keywords":
+                return {"longName":"Keywords","sortIndexOrder":5,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "page-width-mm":
+                return {"longName":"Page width mm","sortIndexOrder":6,"type":"DISPLAYED_AS_IT","unit":"MILLIMETERS"};
+            case "page-height-mm":
+                return {"longName":"Page height mm","sortIndexOrder":7,"type":"DISPLAYED_AS_IT","unit":"MILLIMETERS"};
+            case "page-rotated":
+                return {"longName":"Page rotated","sortIndexOrder":8,"type":"DISPLAYED_AS_IT","unit":"DEGREES"};
             case "same-pages-format":
-                return {"longName":"SAME-PAGES-FORMAT"};
+                return {"longName":"Same pages format","sortIndexOrder":9,"type":"BOOLEAN","unit":"NO_UNIT"};
+            case "permission-print":
+                return {"longName":"Permission print","sortIndexOrder":10,"type":"BOOLEAN","unit":"NO_UNIT"};
+            case "permission-copy":
+                return {"longName":"Permission copy","sortIndexOrder":11,"type":"BOOLEAN","unit":"NO_UNIT"};
+            case "permission-change":
+                return {"longName":"Permission change","sortIndexOrder":12,"type":"BOOLEAN","unit":"NO_UNIT"};
+            case "permission-add-notes":
+                return {"longName":"Permission add notes","sortIndexOrder":13,"type":"BOOLEAN","unit":"NO_UNIT"};
+            case "form":
+                return {"longName":"Form","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "optimized":
+                return {"longName":"Optimized","sortIndexOrder":1000,"type":"BOOLEAN","unit":"NO_UNIT"};
+            case "producer":
+                return {"longName":"Producer","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "tagged":
-                return {"longName":"TAGGED"};
+                return {"longName":"Tagged","sortIndexOrder":1000,"type":"BOOLEAN","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"PDF"};
+        return {"longName":"PDF","sortIndexOrder":4,"kind":"TECHNICAL_ATTRIBUTE"};
+    }
+
+    public pageCount(): MetadataThesaurusEntry {
+        return { key: "page-count", classifier: this.classifier };
     }
 
     public encrypted(): MetadataThesaurusEntry {
         return { key: "encrypted", classifier: this.classifier };
     }
 
-    public form(): MetadataThesaurusEntry {
-        return { key: "form", classifier: this.classifier };
+    public pdfVersion(): MetadataThesaurusEntry {
+        return { key: "pdf-version", classifier: this.classifier };
     }
 
     public javascript(): MetadataThesaurusEntry {
@@ -77,12 +81,8 @@ export class MtdThesaurusDefPDF extends MtdThesaurusDef {
         return { key: "keywords", classifier: this.classifier };
     }
 
-    public optimized(): MetadataThesaurusEntry {
-        return { key: "optimized", classifier: this.classifier };
-    }
-
-    public pageCount(): MetadataThesaurusEntry {
-        return { key: "page-count", classifier: this.classifier };
+    public pageWidthMm(): MetadataThesaurusEntry {
+        return { key: "page-width-mm", classifier: this.classifier };
     }
 
     public pageHeightMm(): MetadataThesaurusEntry {
@@ -93,36 +93,36 @@ export class MtdThesaurusDefPDF extends MtdThesaurusDef {
         return { key: "page-rotated", classifier: this.classifier };
     }
 
-    public pageWidthMm(): MetadataThesaurusEntry {
-        return { key: "page-width-mm", classifier: this.classifier };
-    }
-
-    public pdfVersion(): MetadataThesaurusEntry {
-        return { key: "pdf-version", classifier: this.classifier };
-    }
-
-    public permissionAddNotes(): MetadataThesaurusEntry {
-        return { key: "permission-add-notes", classifier: this.classifier };
-    }
-
-    public permissionChange(): MetadataThesaurusEntry {
-        return { key: "permission-change", classifier: this.classifier };
-    }
-
-    public permissionCopy(): MetadataThesaurusEntry {
-        return { key: "permission-copy", classifier: this.classifier };
+    public samePagesFormat(): MetadataThesaurusEntry {
+        return { key: "same-pages-format", classifier: this.classifier };
     }
 
     public permissionPrint(): MetadataThesaurusEntry {
         return { key: "permission-print", classifier: this.classifier };
     }
 
-    public producer(): MetadataThesaurusEntry {
-        return { key: "producer", classifier: this.classifier };
+    public permissionCopy(): MetadataThesaurusEntry {
+        return { key: "permission-copy", classifier: this.classifier };
     }
 
-    public samePagesFormat(): MetadataThesaurusEntry {
-        return { key: "same-pages-format", classifier: this.classifier };
+    public permissionChange(): MetadataThesaurusEntry {
+        return { key: "permission-change", classifier: this.classifier };
+    }
+
+    public permissionAddNotes(): MetadataThesaurusEntry {
+        return { key: "permission-add-notes", classifier: this.classifier };
+    }
+
+    public form(): MetadataThesaurusEntry {
+        return { key: "form", classifier: this.classifier };
+    }
+
+    public optimized(): MetadataThesaurusEntry {
+        return { key: "optimized", classifier: this.classifier };
+    }
+
+    public producer(): MetadataThesaurusEntry {
+        return { key: "producer", classifier: this.classifier };
     }
 
     public tagged(): MetadataThesaurusEntry {

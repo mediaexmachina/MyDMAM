@@ -18,33 +18,33 @@ export class MtdThesaurusDefTechnicalContainer extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "bitrate":
-                return {"longName":"BITRATE"};
             case "duration":
-                return {"longName":"DURATION"};
-            case "format":
-                return {"longName":"FORMAT"};
-            case "format-name":
-                return {"longName":"FORMAT-NAME"};
-            case "start-time":
-                return {"longName":"START-TIME"};
+                return {"longName":"Duration","sortIndexOrder":1,"type":"DISPLAYED_AS_IT","unit":"MILLISECONDS"};
             case "timecode":
-                return {"longName":"TIMECODE"};
+                return {"longName":"Timecode","sortIndexOrder":2,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "format":
+                return {"longName":"Format","sortIndexOrder":3,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "format-name":
+                return {"longName":"Format name","sortIndexOrder":4,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "bitrate":
+                return {"longName":"Bitrate","sortIndexOrder":5,"type":"DISPLAYED_AS_IT","unit":"BITS_PER_SECONDS"};
+            case "start-time":
+                return {"longName":"Start time","sortIndexOrder":6,"type":"DISPLAYED_AS_IT","unit":"MILLISECONDS"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"TECHNICAL:CONTAINER"};
-    }
-
-    public bitrate(): MetadataThesaurusEntry {
-        return { key: "bitrate", classifier: this.classifier };
+        return {"longName":"Media container (technical)","sortIndexOrder":7,"kind":"TECHNICAL_ATTRIBUTE"};
     }
 
     public duration(): MetadataThesaurusEntry {
         return { key: "duration", classifier: this.classifier };
+    }
+
+    public timecode(): MetadataThesaurusEntry {
+        return { key: "timecode", classifier: this.classifier };
     }
 
     public format(): MetadataThesaurusEntry {
@@ -55,11 +55,11 @@ export class MtdThesaurusDefTechnicalContainer extends MtdThesaurusDef {
         return { key: "format-name", classifier: this.classifier };
     }
 
-    public startTime(): MetadataThesaurusEntry {
-        return { key: "start-time", classifier: this.classifier };
+    public bitrate(): MetadataThesaurusEntry {
+        return { key: "bitrate", classifier: this.classifier };
     }
 
-    public timecode(): MetadataThesaurusEntry {
-        return { key: "timecode", classifier: this.classifier };
+    public startTime(): MetadataThesaurusEntry {
+        return { key: "start-time", classifier: this.classifier };
     }
 }

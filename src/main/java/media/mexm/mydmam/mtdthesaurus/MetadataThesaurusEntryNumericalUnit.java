@@ -14,12 +14,18 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.dto;
+package media.mexm.mydmam.mtdthesaurus;
 
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind;
+public enum MetadataThesaurusEntryNumericalUnit {
 
-public record MtdThesaurusDefClassifierSignature(String longName,
-                                                 int sortIndexOrder,
-                                                 MetadataThesaurusClassifierKind kind) {
+    NO_UNIT,
+    MILLISECONDS,
+    MILLIMETERS,
+    DEGREES,
+    TRACKS,
+    HERTZ,
+    BITS_PER_SECONDS,
+    FRAMES_PER_SECONDS,
+    PIXELS;
 
 }

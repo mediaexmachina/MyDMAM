@@ -18,23 +18,27 @@ export class MtdThesaurusDefTechnicalAudio extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "channel-layout":
-                return {"longName":"CHANNEL-LAYOUT"};
-            case "channels-count":
-                return {"longName":"CHANNELS-COUNT"};
             case "reference-id":
-                return {"longName":"REFERENCE-ID"};
+                return {"longName":"Reference id","sortIndexOrder":0,"type":"IDENTIFIER_OR_SERIAL_ID","unit":"NO_UNIT"};
+            case "channel-layout":
+                return {"longName":"Channel layout","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "channels-count":
+                return {"longName":"Channels count","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"TRACKS"};
             case "sample-format":
-                return {"longName":"SAMPLE-FORMAT"};
+                return {"longName":"Sample format","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "sample-rate":
-                return {"longName":"SAMPLE-RATE"};
+                return {"longName":"Sample rate","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"HERTZ"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"TECHNICAL:AUDIO"};
+        return {"longName":"Audio (technical)","sortIndexOrder":11,"kind":"TECHNICAL_ATTRIBUTE"};
+    }
+
+    public referenceId(): MetadataThesaurusEntry {
+        return { key: "reference-id", classifier: this.classifier };
     }
 
     public channelLayout(): MetadataThesaurusEntry {
@@ -43,10 +47,6 @@ export class MtdThesaurusDefTechnicalAudio extends MtdThesaurusDef {
 
     public channelsCount(): MetadataThesaurusEntry {
         return { key: "channels-count", classifier: this.classifier };
-    }
-
-    public referenceId(): MetadataThesaurusEntry {
-        return { key: "reference-id", classifier: this.classifier };
     }
 
     public sampleFormat(): MetadataThesaurusEntry {

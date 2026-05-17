@@ -16,41 +16,70 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "pdf")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.DEGREES;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.MILLIMETERS;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.BOOLEAN;
+
+@MetadataThesaurusClassifier(value = "pdf", longname = "PDF", kind = TECHNICAL_ATTRIBUTE)
 public interface MtdThesaurusDefPDF {
 
+    @MetadataThesaurusSortIndexOrder(1)
     MetadataThesaurusEntry pageCount();
 
+    @MetadataThesaurusSortIndexOrder(2)
     MetadataThesaurusEntry encrypted();
 
+    @MetadataThesaurusSortIndexOrder(3)
     MetadataThesaurusEntry pdfVersion();
+
+    @MetadataThesaurusSortIndexOrder(4)
+    @MetadataThesaurusEntryAttribute(type = BOOLEAN)
+    MetadataThesaurusEntry javascript();
+
+    @MetadataThesaurusSortIndexOrder(5)
+    MetadataThesaurusEntry keywords();
+
+    @MetadataThesaurusSortIndexOrder(6)
+    @MetadataThesaurusEntryAttribute(unit = MILLIMETERS)
+    MetadataThesaurusEntry pageWidthMm();// TODO remove Mm
+
+    @MetadataThesaurusSortIndexOrder(7)
+    @MetadataThesaurusEntryAttribute(unit = MILLIMETERS)
+    MetadataThesaurusEntry pageHeightMm();// TODO remove Mm
+
+    @MetadataThesaurusSortIndexOrder(8)
+    @MetadataThesaurusEntryAttribute(unit = DEGREES)
+    MetadataThesaurusEntry pageRotated();
+
+    @MetadataThesaurusSortIndexOrder(9)
+    @MetadataThesaurusEntryAttribute(type = BOOLEAN)
+    MetadataThesaurusEntry samePagesFormat();
+
+    @MetadataThesaurusSortIndexOrder(10)
+    @MetadataThesaurusEntryAttribute(type = BOOLEAN)
+    MetadataThesaurusEntry permissionPrint();
+
+    @MetadataThesaurusSortIndexOrder(11)
+    @MetadataThesaurusEntryAttribute(type = BOOLEAN)
+    MetadataThesaurusEntry permissionCopy();
+
+    @MetadataThesaurusSortIndexOrder(12)
+    @MetadataThesaurusEntryAttribute(type = BOOLEAN)
+    MetadataThesaurusEntry permissionChange();
+
+    @MetadataThesaurusSortIndexOrder(13)
+    @MetadataThesaurusEntryAttribute(type = BOOLEAN)
+    MetadataThesaurusEntry permissionAddNotes();
 
     MetadataThesaurusEntry form();
 
+    @MetadataThesaurusEntryAttribute(type = BOOLEAN)
     MetadataThesaurusEntry optimized();
 
-    MetadataThesaurusEntry javascript();
-
+    @MetadataThesaurusEntryAttribute(type = BOOLEAN)
     MetadataThesaurusEntry tagged();
 
     MetadataThesaurusEntry producer();
-
-    MetadataThesaurusEntry keywords();
-
-    MetadataThesaurusEntry permissionPrint();
-
-    MetadataThesaurusEntry permissionCopy();
-
-    MetadataThesaurusEntry permissionChange();
-
-    MetadataThesaurusEntry permissionAddNotes();
-
-    MetadataThesaurusEntry pageWidthMm();
-
-    MetadataThesaurusEntry pageHeightMm();
-
-    MetadataThesaurusEntry pageRotated();
-
-    MetadataThesaurusEntry samePagesFormat();
 
 }

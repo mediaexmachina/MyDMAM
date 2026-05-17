@@ -18,41 +18,53 @@ export class MtdThesaurusDefTechnicalStream extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "bitrate":
-                return {"longName":"BITRATE"};
-            case "codec":
-                return {"longName":"CODEC"};
-            case "codec-name":
-                return {"longName":"CODEC-NAME"};
-            case "disposition":
-                return {"longName":"DISPOSITION"};
-            case "is-secondary":
-                return {"longName":"IS-SECONDARY"};
-            case "level":
-                return {"longName":"LEVEL"};
-            case "profile":
-                return {"longName":"PROFILE"};
-            case "program-id":
-                return {"longName":"PROGRAM-ID"};
             case "reference-id":
-                return {"longName":"REFERENCE-ID"};
-            case "start-time":
-                return {"longName":"START-TIME"};
-            case "time-base":
-                return {"longName":"TIME-BASE"};
+                return {"longName":"Reference id","sortIndexOrder":1,"type":"IDENTIFIER_OR_SERIAL_ID","unit":"NO_UNIT"};
+            case "program-id":
+                return {"longName":"Program id","sortIndexOrder":2,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "type":
-                return {"longName":"TYPE"};
+                return {"longName":"Type","sortIndexOrder":3,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "is-secondary":
+                return {"longName":"Is secondary","sortIndexOrder":4,"type":"BOOLEAN","unit":"NO_UNIT"};
+            case "codec":
+                return {"longName":"Codec","sortIndexOrder":5,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "codec-name":
+                return {"longName":"Codec name","sortIndexOrder":6,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "bitrate":
+                return {"longName":"Bitrate","sortIndexOrder":7,"type":"DISPLAYED_AS_IT","unit":"BITS_PER_SECONDS"};
+            case "level":
+                return {"longName":"Level","sortIndexOrder":8,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "profile":
+                return {"longName":"Profile","sortIndexOrder":9,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "time-base":
+                return {"longName":"Time base","sortIndexOrder":10,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "start-time":
+                return {"longName":"Start time","sortIndexOrder":11,"type":"DISPLAYED_AS_IT","unit":"MILLISECONDS"};
+            case "disposition":
+                return {"longName":"Disposition","sortIndexOrder":12,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"TECHNICAL:STREAM"};
+        return {"longName":"Stream from media container (technical)","sortIndexOrder":8,"kind":"TECHNICAL_ATTRIBUTE"};
     }
 
-    public bitrate(): MetadataThesaurusEntry {
-        return { key: "bitrate", classifier: this.classifier };
+    public referenceId(): MetadataThesaurusEntry {
+        return { key: "reference-id", classifier: this.classifier };
+    }
+
+    public programId(): MetadataThesaurusEntry {
+        return { key: "program-id", classifier: this.classifier };
+    }
+
+    public type(): MetadataThesaurusEntry {
+        return { key: "type", classifier: this.classifier };
+    }
+
+    public isSecondary(): MetadataThesaurusEntry {
+        return { key: "is-secondary", classifier: this.classifier };
     }
 
     public codec(): MetadataThesaurusEntry {
@@ -63,12 +75,8 @@ export class MtdThesaurusDefTechnicalStream extends MtdThesaurusDef {
         return { key: "codec-name", classifier: this.classifier };
     }
 
-    public disposition(): MetadataThesaurusEntry {
-        return { key: "disposition", classifier: this.classifier };
-    }
-
-    public isSecondary(): MetadataThesaurusEntry {
-        return { key: "is-secondary", classifier: this.classifier };
+    public bitrate(): MetadataThesaurusEntry {
+        return { key: "bitrate", classifier: this.classifier };
     }
 
     public level(): MetadataThesaurusEntry {
@@ -79,23 +87,15 @@ export class MtdThesaurusDefTechnicalStream extends MtdThesaurusDef {
         return { key: "profile", classifier: this.classifier };
     }
 
-    public programId(): MetadataThesaurusEntry {
-        return { key: "program-id", classifier: this.classifier };
-    }
-
-    public referenceId(): MetadataThesaurusEntry {
-        return { key: "reference-id", classifier: this.classifier };
+    public timeBase(): MetadataThesaurusEntry {
+        return { key: "time-base", classifier: this.classifier };
     }
 
     public startTime(): MetadataThesaurusEntry {
         return { key: "start-time", classifier: this.classifier };
     }
 
-    public timeBase(): MetadataThesaurusEntry {
-        return { key: "time-base", classifier: this.classifier };
-    }
-
-    public type(): MetadataThesaurusEntry {
-        return { key: "type", classifier: this.classifier };
+    public disposition(): MetadataThesaurusEntry {
+        return { key: "disposition", classifier: this.classifier };
     }
 }

@@ -16,19 +16,33 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical:container")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.BITS_PER_SECONDS;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.MILLISECONDS;
+
+@MetadataThesaurusClassifier(value = "technical:container", longname = "Media container (technical)",
+                             kind = TECHNICAL_ATTRIBUTE)
 public interface MtdThesaurusDefTechnicalContainer {
 
-    MetadataThesaurusEntry timecode();
-
+    @MetadataThesaurusSortIndexOrder(1)
+    @MetadataThesaurusEntryAttribute(unit = MILLISECONDS)
     MetadataThesaurusEntry duration();
 
-    MetadataThesaurusEntry bitrate();
+    @MetadataThesaurusSortIndexOrder(2)
+    MetadataThesaurusEntry timecode();
 
+    @MetadataThesaurusSortIndexOrder(3)
     MetadataThesaurusEntry format();
 
+    @MetadataThesaurusSortIndexOrder(4)
     MetadataThesaurusEntry formatName();
 
+    @MetadataThesaurusSortIndexOrder(5)
+    @MetadataThesaurusEntryAttribute(unit = BITS_PER_SECONDS)
+    MetadataThesaurusEntry bitrate();
+
+    @MetadataThesaurusSortIndexOrder(6)
+    @MetadataThesaurusEntryAttribute(unit = MILLISECONDS)
     MetadataThesaurusEntry startTime();
 
 }

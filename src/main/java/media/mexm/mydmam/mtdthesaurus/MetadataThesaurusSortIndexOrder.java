@@ -14,12 +14,20 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.dto;
+package media.mexm.mydmam.mtdthesaurus;
 
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public record MtdThesaurusDefClassifierSignature(String longName,
-                                                 int sortIndexOrder,
-                                                 MetadataThesaurusClassifierKind kind) {
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+@Retention(RUNTIME)
+@Target(METHOD)
+public @interface MetadataThesaurusSortIndexOrder {
+
+    public int value();
+
+    public static final int DEFAULT_VALUE = 1000;
 
 }

@@ -16,6 +16,12 @@
  */
 package media.mexm.mydmam.dto;
 
-public record MtdThesaurusDefEntrySignature(String longName) {
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType;
+
+public record MtdThesaurusDefEntrySignature(String longName,
+                                            int sortIndexOrder,
+                                            MetadataThesaurusEntryType type,
+                                            MetadataThesaurusEntryNumericalUnit unit) {
 
 }

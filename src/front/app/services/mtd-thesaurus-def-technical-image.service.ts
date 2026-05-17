@@ -18,39 +18,51 @@ export class MtdThesaurusDefTechnicalImage extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "aspect-ratio":
-                return {"longName":"ASPECT-RATIO"};
-            case "colorprimaries":
-                return {"longName":"COLORPRIMARIES"};
-            case "colorrange":
-                return {"longName":"COLORRANGE"};
-            case "colorspace":
-                return {"longName":"COLORSPACE"};
-            case "colortransfer":
-                return {"longName":"COLORTRANSFER"};
-            case "display-aspect-ratio":
-                return {"longName":"DISPLAY-ASPECT-RATIO"};
-            case "height":
-                return {"longName":"HEIGHT"};
-            case "image-aspect-format":
-                return {"longName":"IMAGE-ASPECT-FORMAT"};
-            case "orientation":
-                return {"longName":"ORIENTATION"};
-            case "pixelformat":
-                return {"longName":"PIXELFORMAT"};
             case "reference-id":
-                return {"longName":"REFERENCE-ID"};
-            case "sample-aspect-ratio":
-                return {"longName":"SAMPLE-ASPECT-RATIO"};
+                return {"longName":"Reference id","sortIndexOrder":1,"type":"IDENTIFIER_OR_SERIAL_ID","unit":"NO_UNIT"};
             case "width":
-                return {"longName":"WIDTH"};
+                return {"longName":"Width","sortIndexOrder":2,"type":"DISPLAYED_AS_IT","unit":"PIXELS"};
+            case "height":
+                return {"longName":"Height","sortIndexOrder":3,"type":"DISPLAYED_AS_IT","unit":"PIXELS"};
+            case "aspect-ratio":
+                return {"longName":"Aspect ratio","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "colorprimaries":
+                return {"longName":"Colorprimaries","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "colorrange":
+                return {"longName":"Colorrange","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "colorspace":
+                return {"longName":"Colorspace","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "colortransfer":
+                return {"longName":"Colortransfer","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "display-aspect-ratio":
+                return {"longName":"Display aspect ratio","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "image-aspect-format":
+                return {"longName":"Image aspect format","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "orientation":
+                return {"longName":"Orientation","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "pixelformat":
+                return {"longName":"Pixelformat","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+            case "sample-aspect-ratio":
+                return {"longName":"Sample aspect ratio","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"TECHNICAL:IMAGE"};
+        return {"longName":"Image (technical)","sortIndexOrder":9,"kind":"TECHNICAL_ATTRIBUTE"};
+    }
+
+    public referenceId(): MetadataThesaurusEntry {
+        return { key: "reference-id", classifier: this.classifier };
+    }
+
+    public width(): MetadataThesaurusEntry {
+        return { key: "width", classifier: this.classifier };
+    }
+
+    public height(): MetadataThesaurusEntry {
+        return { key: "height", classifier: this.classifier };
     }
 
     public aspectRatio(): MetadataThesaurusEntry {
@@ -77,10 +89,6 @@ export class MtdThesaurusDefTechnicalImage extends MtdThesaurusDef {
         return { key: "display-aspect-ratio", classifier: this.classifier };
     }
 
-    public height(): MetadataThesaurusEntry {
-        return { key: "height", classifier: this.classifier };
-    }
-
     public imageAspectFormat(): MetadataThesaurusEntry {
         return { key: "image-aspect-format", classifier: this.classifier };
     }
@@ -93,15 +101,7 @@ export class MtdThesaurusDefTechnicalImage extends MtdThesaurusDef {
         return { key: "pixelformat", classifier: this.classifier };
     }
 
-    public referenceId(): MetadataThesaurusEntry {
-        return { key: "reference-id", classifier: this.classifier };
-    }
-
     public sampleAspectRatio(): MetadataThesaurusEntry {
         return { key: "sample-aspect-ratio", classifier: this.classifier };
-    }
-
-    public width(): MetadataThesaurusEntry {
-        return { key: "width", classifier: this.classifier };
     }
 }

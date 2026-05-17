@@ -16,7 +16,10 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical:transportstream")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE;
+
+@MetadataThesaurusClassifier(value = "technical:transportstream", longname = "MPEG TS (technical)",
+                             kind = TECHNICAL_ATTRIBUTE)
 public interface MtdThesaurusDefTechnicalTransportStream {
 
     MetadataThesaurusEntry programNum();

@@ -19,22 +19,22 @@ export class MtdThesaurusDefTechnicalTransportStream extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "pcr-pid":
-                return {"longName":"PCR-PID"};
+                return {"longName":"Pcr pid","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "pmt-pid":
-                return {"longName":"PMT-PID"};
+                return {"longName":"Pmt pid","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "program-num":
-                return {"longName":"PROGRAM-NUM"};
+                return {"longName":"Program num","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "service-name":
-                return {"longName":"SERVICE-NAME"};
+                return {"longName":"Service name","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "service-provider":
-                return {"longName":"SERVICE-PROVIDER"};
+                return {"longName":"Service provider","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"TECHNICAL:TRANSPORTSTREAM"};
+        return {"longName":"MPEG TS (technical)","sortIndexOrder":13,"kind":"TECHNICAL_ATTRIBUTE"};
     }
 
     public pcrPid(): MetadataThesaurusEntry {

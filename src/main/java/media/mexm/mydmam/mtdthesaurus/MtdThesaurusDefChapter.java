@@ -16,13 +16,18 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "chapter")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.MILLISECONDS;
+
+@MetadataThesaurusClassifier(value = "chapter", longname = "Chapter", kind = BIBLIOGRAPHIC_RECORD)
 public interface MtdThesaurusDefChapter {
 
     MetadataThesaurusEntry title();
 
+    @MetadataThesaurusEntryAttribute(unit = MILLISECONDS)
     MetadataThesaurusEntry startTime();
 
+    @MetadataThesaurusEntryAttribute(unit = MILLISECONDS)
     MetadataThesaurusEntry endTime();
 
 }

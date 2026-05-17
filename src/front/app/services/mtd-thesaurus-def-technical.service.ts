@@ -19,14 +19,14 @@ export class MtdThesaurusDefTechnical extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "type":
-                return {"longName":"TYPE"};
+                return {"longName":"Type","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"TECHNICAL"};
+        return {"longName":"Technical","sortIndexOrder":5,"kind":"TECHNICAL_ATTRIBUTE"};
     }
 
     public type(): MetadataThesaurusEntry {

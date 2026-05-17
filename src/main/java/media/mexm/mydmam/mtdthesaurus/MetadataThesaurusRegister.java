@@ -18,30 +18,43 @@ package media.mexm.mydmam.mtdthesaurus;
 
 public interface MetadataThesaurusRegister {
 
-    MtdThesaurusDefTechnical technical();
-
-    MtdThesaurusDefChapter chapter();
-
-    MtdThesaurusDefTechnicalAudio technicalAudio();
-
-    MtdThesaurusDefTechnicalStream technicalStream();
-
-    MtdThesaurusDefTechnicalImage technicalImage();
-
-    MtdThesaurusDefTechnicalTransportStream technicalTransportStream();
-
-    MtdThesaurusDefTechnicalVideo technicalVideo();
-
-    MtdThesaurusDefTechnicalContainer technicalContainer();
-
-    MtdThesaurusDefTechnicalMXF technicalMXF();
-
-    MtdThesaurusDefPDF pdf();
-
-    MtdThesaurusDefDCMI dcmi();
-
+    @MetadataThesaurusSortIndexOrder(1)
     MtdThesaurusDefDublinCore dublinCore();
 
+    @MetadataThesaurusSortIndexOrder(2)
+    MtdThesaurusDefDCMI dcmi();
+
+    @MetadataThesaurusSortIndexOrder(3)
     MtdThesaurusDefXMP xmp();
+
+    @MetadataThesaurusSortIndexOrder(4)
+    MtdThesaurusDefPDF pdf();
+
+    @MetadataThesaurusSortIndexOrder(5)
+    MtdThesaurusDefTechnical technical();
+
+    @MetadataThesaurusSortIndexOrder(6)
+    MtdThesaurusDefChapter chapter();
+
+    @MetadataThesaurusSortIndexOrder(7)
+    MtdThesaurusDefTechnicalContainer technicalContainer();
+
+    @MetadataThesaurusSortIndexOrder(8)
+    MtdThesaurusDefTechnicalStream technicalStream();
+
+    @MetadataThesaurusSortIndexOrder(9)
+    MtdThesaurusDefTechnicalImage technicalImage();
+
+    @MetadataThesaurusSortIndexOrder(10)
+    MtdThesaurusDefTechnicalVideo technicalVideo();
+
+    @MetadataThesaurusSortIndexOrder(11)
+    MtdThesaurusDefTechnicalAudio technicalAudio();
+
+    @MetadataThesaurusSortIndexOrder(12)
+    MtdThesaurusDefTechnicalMXF technicalMXF();
+
+    @MetadataThesaurusSortIndexOrder(13)
+    MtdThesaurusDefTechnicalTransportStream technicalTransportStream();
 
 }

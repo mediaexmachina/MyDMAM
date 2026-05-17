@@ -16,12 +16,14 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
+import static java.lang.Integer.compare;
 import static java.lang.reflect.Proxy.newProxyInstance;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.checkInterfaceClass;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusSortIndexOrder.DEFAULT_VALUE;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -66,8 +68,22 @@ public class MetadataThesaurusLogic {
         return registerDefinitions;
     }
 
-    public record MtdRegisterMethodDefinition(String methodName, String keyName,
-                                              MtdThesaurusDefEntrySignature signature) {
+    public record MtdRegisterMethodDefinition(String methodName,
+                                              String keyName,
+                                              MtdThesaurusDefEntrySignature signature) implements
+                                             Comparable<MtdRegisterMethodDefinition> {
+
+        @Override
+        public int compareTo(final MtdRegisterMethodDefinition other) {
+            final var thisSortIndexOrder = signature.sortIndexOrder();
+            final var otherSortIndexOrder = other.signature.sortIndexOrder();
+
+            if (thisSortIndexOrder == otherSortIndexOrder) {
+                return methodName.compareTo(other.methodName);
+            }
+
+            return compare(thisSortIndexOrder, otherSortIndexOrder);
+        }
     }
 
     public record MtdRegisterDefinition(String className,
@@ -80,26 +96,28 @@ public class MetadataThesaurusLogic {
      * Sorted
      */
     public List<MtdRegisterDefinition> getImplementsFromRegister() {
-        return registerDefinitions.values()
+        return registerDefinitions.entrySet()
                 .stream()
-                .map(thesaurusDefinitionClass -> {
+                .map(entry -> {
+                    final var thesaurusDefinitionMethod = entry.getKey();
+                    final var sortIndexOrder = Optional.ofNullable(thesaurusDefinitionMethod.getAnnotation(
+                            MetadataThesaurusSortIndexOrder.class))
+                            .map(MetadataThesaurusSortIndexOrder::value)
+                            .orElse(DEFAULT_VALUE);
+
+                    final var thesaurusDefinitionClass = entry.getValue();
                     final var className = thesaurusDefinitionClass.getSimpleName();
                     final var instanceDef = new MetadataThesaurusInstanceDefinition(thesaurusDefinitionClass);
                     final var classifier = instanceDef.getClassifier();
 
-                    final var methodsDefs = instanceDef.getAllMethods()
-                            .stream()
-                            .map(method -> {
-                                final var methodName = method.getName();
-                                final var keyName = instanceDef.getKeyNameByMethod(method);
-                                return new MtdRegisterMethodDefinition(methodName, keyName,
-                                        new MtdThesaurusDefEntrySignature(keyName.toUpperCase()));// XXX
-                            })
-                            .sorted((l, r) -> l.methodName.compareTo(r.methodName))
-                            .toList();
-
-                    return new MtdRegisterDefinition(className, classifier, methodsDefs,
-                            new MtdThesaurusDefClassifierSignature(classifier.toUpperCase())); // XXX
+                    return new MtdRegisterDefinition(
+                            className,
+                            classifier,
+                            instanceDef.extractAllMethodDefinitions(),
+                            new MtdThesaurusDefClassifierSignature(
+                                    instanceDef.getLongName(),
+                                    sortIndexOrder,
+                                    instanceDef.getKind()));
                 })
                 .sorted((l, r) -> l.className.compareTo(r.className))
                 .toList();

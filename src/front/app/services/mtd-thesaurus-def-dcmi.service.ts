@@ -19,92 +19,92 @@ export class MtdThesaurusDefDCMI extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "abstract":
-                return {"longName":"ABSTRACT"};
+                return {"longName":"Abstract","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "access-rights":
-                return {"longName":"ACCESS-RIGHTS"};
+                return {"longName":"Access rights","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "accrual-method":
-                return {"longName":"ACCRUAL-METHOD"};
+                return {"longName":"Accrual method","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "accrual-periodicity":
-                return {"longName":"ACCRUAL-PERIODICITY"};
+                return {"longName":"Accrual periodicity","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "accrual-policy":
-                return {"longName":"ACCRUAL-POLICY"};
+                return {"longName":"Accrual policy","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "alternative":
-                return {"longName":"ALTERNATIVE"};
+                return {"longName":"Alternative","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "audience":
-                return {"longName":"AUDIENCE"};
+                return {"longName":"Audience","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "available":
-                return {"longName":"AVAILABLE"};
+                return {"longName":"Available","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "bibliographic-citation":
-                return {"longName":"BIBLIOGRAPHIC-CITATION"};
+                return {"longName":"Bibliographic citation","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "conforms-to":
-                return {"longName":"CONFORMS-TO"};
+                return {"longName":"Conforms to","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "created":
-                return {"longName":"CREATED"};
+                return {"longName":"Created","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "date-accepted":
-                return {"longName":"DATE-ACCEPTED"};
+                return {"longName":"Date accepted","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "date-copyrighted":
-                return {"longName":"DATE-COPYRIGHTED"};
+                return {"longName":"Date copyrighted","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "date-submitted":
-                return {"longName":"DATE-SUBMITTED"};
+                return {"longName":"Date submitted","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "education-level":
-                return {"longName":"EDUCATION-LEVEL"};
+                return {"longName":"Education level","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "extent":
-                return {"longName":"EXTENT"};
+                return {"longName":"Extent","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "has-format":
-                return {"longName":"HAS-FORMAT"};
+                return {"longName":"Has format","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "has-part":
-                return {"longName":"HAS-PART"};
+                return {"longName":"Has part","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "has-version":
-                return {"longName":"HAS-VERSION"};
+                return {"longName":"Has version","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "instructional-method":
-                return {"longName":"INSTRUCTIONAL-METHOD"};
+                return {"longName":"Instructional method","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "is-format-of":
-                return {"longName":"IS-FORMAT-OF"};
+                return {"longName":"Is format of","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "is-part-of":
-                return {"longName":"IS-PART-OF"};
+                return {"longName":"Is part of","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "is-referenced-by":
-                return {"longName":"IS-REFERENCED-BY"};
+                return {"longName":"Is referenced by","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "is-replaced-by":
-                return {"longName":"IS-REPLACED-BY"};
+                return {"longName":"Is replaced by","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "is-required-by":
-                return {"longName":"IS-REQUIRED-BY"};
+                return {"longName":"Is required by","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "is-version-of":
-                return {"longName":"IS-VERSION-OF"};
+                return {"longName":"Is version of","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "issued":
-                return {"longName":"ISSUED"};
+                return {"longName":"Issued","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "license":
-                return {"longName":"LICENSE"};
+                return {"longName":"License","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "mediator":
-                return {"longName":"MEDIATOR"};
+                return {"longName":"Mediator","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "medium":
-                return {"longName":"MEDIUM"};
+                return {"longName":"Medium","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "modified":
-                return {"longName":"MODIFIED"};
+                return {"longName":"Modified","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "provenance":
-                return {"longName":"PROVENANCE"};
+                return {"longName":"Provenance","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "references":
-                return {"longName":"REFERENCES"};
+                return {"longName":"References","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "replaces":
-                return {"longName":"REPLACES"};
+                return {"longName":"Replaces","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "requires":
-                return {"longName":"REQUIRES"};
+                return {"longName":"Requires","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "rights-holder":
-                return {"longName":"RIGHTS-HOLDER"};
+                return {"longName":"Rights holder","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "spatial":
-                return {"longName":"SPATIAL"};
+                return {"longName":"Spatial","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "table-of-contents":
-                return {"longName":"TABLE-OF-CONTENTS"};
+                return {"longName":"Table of contents","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "temporal":
-                return {"longName":"TEMPORAL"};
+                return {"longName":"Temporal","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "valid":
-                return {"longName":"VALID"};
+                return {"longName":"Valid","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"DC:MI"};
+        return {"longName":"Qualified Dublin Core","sortIndexOrder":2,"kind":"BIBLIOGRAPHIC_RECORD"};
     }
 
     public _abstract(): MetadataThesaurusEntry {

@@ -18,19 +18,24 @@ package media.mexm.mydmam.mtdthesaurus;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.lang.reflect.Modifier.isInterface;
+import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.NO_UNIT;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.DISPLAYED_AS_IT;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.nameFormatter;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusSortIndexOrder.DEFAULT_VALUE;
 
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import lombok.Getter;
+import media.mexm.mydmam.dto.MtdThesaurusDefEntrySignature;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.MtdRegisterMethodDefinition;
 
 class MetadataThesaurusInstanceDefinition {
     static final String ANNOTATION_CLASSIFIER = MetadataThesaurusClassifier.class.getSimpleName();
@@ -39,6 +44,10 @@ class MetadataThesaurusInstanceDefinition {
     private final Map<Method, String> entries;
     @Getter
     private final String classifier;
+    @Getter
+    private final String longName;
+    @Getter
+    private final MetadataThesaurusClassifierKind kind;
 
     static MetadataThesaurusClassifier extractClassifier(final Class<?> instanceClass) {
         final var annotationClassifier = Optional.ofNullable(instanceClass.getAnnotation(
@@ -61,7 +70,9 @@ class MetadataThesaurusInstanceDefinition {
     MetadataThesaurusInstanceDefinition(final Class<?> instanceClass) {
         instanceName = instanceClass.getName();
         final var annotationClassifier = extractClassifier(instanceClass);
-        classifier = annotationClassifier.value();
+        classifier = requireNonNull(annotationClassifier.value());
+        longName = requireNonNull(annotationClassifier.longname());
+        kind = requireNonNull(annotationClassifier.kind());
 
         final var methodList = Stream.of(instanceClass.getMethods())
                 .sorted((l, r) -> l.getName().compareTo(r.getName()))
@@ -104,8 +115,47 @@ class MetadataThesaurusInstanceDefinition {
         return nameFormatter(name);
     }
 
-    Set<Method> getAllMethods() {
-        return entries.keySet();
+    public static String prettifyMethodKeyName(final String keyName) {// TODO test
+        if (keyName.length() < 2) {
+            return keyName;
+        }
+        final var longName = keyName.replace("-", " ").trim();
+        return longName.substring(0, 1).toUpperCase() + longName.substring(1);
+    }
+
+    /**
+     * Sorted
+     */
+    List<MtdRegisterMethodDefinition> extractAllMethodDefinitions() { // TODO test
+        return entries.entrySet().stream()
+                .map(entry -> {
+                    final var method = entry.getKey();
+
+                    final var sortIndexOrder = Optional.ofNullable(method.getAnnotation(
+                            MetadataThesaurusSortIndexOrder.class))
+                            .map(MetadataThesaurusSortIndexOrder::value)
+                            .orElse(DEFAULT_VALUE);
+
+                    final var keyName = entry.getValue();
+                    final var oAttribute = Optional.ofNullable(method.getAnnotation(
+                            MetadataThesaurusEntryAttribute.class));
+                    final var longname = oAttribute.map(MetadataThesaurusEntryAttribute::longname)
+                            .filter(not(String::isBlank))
+                            .orElseGet(() -> prettifyMethodKeyName(keyName));
+                    final var type = oAttribute.map(MetadataThesaurusEntryAttribute::type).orElse(DISPLAYED_AS_IT);
+                    final var unit = oAttribute.map(MetadataThesaurusEntryAttribute::unit).orElse(NO_UNIT);
+
+                    return new MtdRegisterMethodDefinition(
+                            method.getName(),
+                            keyName,
+                            new MtdThesaurusDefEntrySignature(
+                                    longname,
+                                    sortIndexOrder,
+                                    type,
+                                    unit));
+                })
+                .sorted()
+                .toList();
     }
 
     String getKeyNameByMethod(final Method method) {

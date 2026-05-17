@@ -34,6 +34,17 @@ public @interface MetadataThesaurusClassifier {
      */
     public String value();
 
+    public String longname();
+
+    public MetadataThesaurusClassifierKind kind();
+
 }
 
-// TODO add @ for MetadataThesaurus: Type={id, date, boolean}, unit, sort + kind of Classifier sort on MetadataThesaurusRegister} + long name on Classifier+Entry
+/*
+TODO add @
+                                           |Front Displayed|
+MetadataThesaurusSortIndexOrder            |               |
+Classifier:
+ - long name                               |               |
+ - Classifier Kind                         |               |
+ * */

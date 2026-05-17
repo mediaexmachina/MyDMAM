@@ -19,20 +19,20 @@ export class MtdThesaurusDefTechnicalVideo extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "average-frame-rate":
-                return {"longName":"AVERAGE-FRAME-RATE"};
+                return {"longName":"Average frame rate","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"FRAMES_PER_SECONDS"};
             case "field-order":
-                return {"longName":"FIELD-ORDER"};
+                return {"longName":"Field order","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "frame-rate":
-                return {"longName":"FRAME-RATE"};
+                return {"longName":"Frame rate","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"FRAMES_PER_SECONDS"};
             case "reference-id":
-                return {"longName":"REFERENCE-ID"};
+                return {"longName":"Reference id","sortIndexOrder":1000,"type":"IDENTIFIER_OR_SERIAL_ID","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"TECHNICAL:VIDEO"};
+        return {"longName":"Video (technical)","sortIndexOrder":10,"kind":"TECHNICAL_ATTRIBUTE"};
     }
 
     public averageFrameRate(): MetadataThesaurusEntry {

@@ -16,15 +16,22 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical:video")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.FRAMES_PER_SECONDS;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID;
+
+@MetadataThesaurusClassifier(value = "technical:video", longname = "Video (technical)", kind = TECHNICAL_ATTRIBUTE)
 public interface MtdThesaurusDefTechnicalVideo {
 
     MetadataThesaurusEntry fieldOrder();
 
+    @MetadataThesaurusEntryAttribute(unit = FRAMES_PER_SECONDS)
     MetadataThesaurusEntry frameRate();
 
+    @MetadataThesaurusEntryAttribute(unit = FRAMES_PER_SECONDS)
     MetadataThesaurusEntry averageFrameRate();
 
+    @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
     MetadataThesaurusEntry referenceId();
 
 }

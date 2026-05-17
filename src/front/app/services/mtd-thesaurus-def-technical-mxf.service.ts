@@ -19,26 +19,26 @@ export class MtdThesaurusDefTechnicalMXF extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "file-package-name":
-                return {"longName":"FILE-PACKAGE-NAME"};
+                return {"longName":"File package name","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "file-package-umid":
-                return {"longName":"FILE-PACKAGE-UMID"};
+                return {"longName":"File package umid","sortIndexOrder":1000,"type":"IDENTIFIER_OR_SERIAL_ID","unit":"NO_UNIT"};
             case "generation-uid":
-                return {"longName":"GENERATION-UID"};
+                return {"longName":"Generation uid","sortIndexOrder":1000,"type":"IDENTIFIER_OR_SERIAL_ID","unit":"NO_UNIT"};
             case "material-package-umid":
-                return {"longName":"MATERIAL-PACKAGE-UMID"};
+                return {"longName":"Material package umid","sortIndexOrder":1000,"type":"IDENTIFIER_OR_SERIAL_ID","unit":"NO_UNIT"};
             case "operational-pattern-ul":
-                return {"longName":"OPERATIONAL-PATTERN-UL"};
+                return {"longName":"Operational pattern ul","sortIndexOrder":1000,"type":"IDENTIFIER_OR_SERIAL_ID","unit":"NO_UNIT"};
             case "track-name":
-                return {"longName":"TRACK-NAME"};
+                return {"longName":"Track name","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "uid":
-                return {"longName":"UID"};
+                return {"longName":"Uid","sortIndexOrder":1000,"type":"IDENTIFIER_OR_SERIAL_ID","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"TECHNICAL:MXF"};
+        return {"longName":"MXF (technical)","sortIndexOrder":12,"kind":"TECHNICAL_ATTRIBUTE"};
     }
 
     public filePackageName(): MetadataThesaurusEntry {

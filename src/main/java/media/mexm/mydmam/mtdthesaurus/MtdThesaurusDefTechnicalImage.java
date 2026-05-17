@@ -16,11 +16,23 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical:image")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.PIXELS;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID;
+
+@MetadataThesaurusClassifier(value = "technical:image", longname = "Image (technical)", kind = TECHNICAL_ATTRIBUTE)
 public interface MtdThesaurusDefTechnicalImage {
 
+    @MetadataThesaurusSortIndexOrder(1)
+    @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
+    MetadataThesaurusEntry referenceId();
+
+    @MetadataThesaurusSortIndexOrder(2)
+    @MetadataThesaurusEntryAttribute(unit = PIXELS)
     MetadataThesaurusEntry width();
 
+    @MetadataThesaurusSortIndexOrder(3)
+    @MetadataThesaurusEntryAttribute(unit = PIXELS)
     MetadataThesaurusEntry height();
 
     MetadataThesaurusEntry pixelformat();
@@ -54,7 +66,5 @@ public interface MtdThesaurusDefTechnicalImage {
      * @see ImageAspectRatioDetectionActivity.PageOrientation
      */
     MetadataThesaurusEntry imageAspectFormat();
-
-    MetadataThesaurusEntry referenceId();
 
 }

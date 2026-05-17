@@ -14,12 +14,9 @@
  * Copyright (C) Media ex Machina 2026
  *
  */
-package media.mexm.mydmam.dto;
+package media.mexm.mydmam.mtdthesaurus;
 
-import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind;
-
-public record MtdThesaurusDefClassifierSignature(String longName,
-                                                 int sortIndexOrder,
-                                                 MetadataThesaurusClassifierKind kind) {
-
+public enum MetadataThesaurusClassifierKind {
+    BIBLIOGRAPHIC_RECORD,
+    TECHNICAL_ATTRIBUTE;
 }

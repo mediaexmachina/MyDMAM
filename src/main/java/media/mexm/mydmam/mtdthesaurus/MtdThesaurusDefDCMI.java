@@ -16,7 +16,9 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "dc:mi")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD;
+
+@MetadataThesaurusClassifier(value = "dc:mi", longname = "Qualified Dublin Core", kind = BIBLIOGRAPHIC_RECORD)
 public interface MtdThesaurusDefDCMI {
 
     MetadataThesaurusEntry _abstract();// NOSONAR

@@ -16,7 +16,9 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE;
+
+@MetadataThesaurusClassifier(value = "technical", longname = "Technical", kind = TECHNICAL_ATTRIBUTE)
 public interface MtdThesaurusDefTechnical {
 
     MetadataThesaurusEntry type();

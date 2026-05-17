@@ -16,17 +16,26 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical:audio")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.HERTZ;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.TRACKS;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID;
+
+@MetadataThesaurusClassifier(value = "technical:audio", longname = "Audio (technical)", kind = TECHNICAL_ATTRIBUTE)
 public interface MtdThesaurusDefTechnicalAudio {
+
+    @MetadataThesaurusSortIndexOrder(0)
+    @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
+    MetadataThesaurusEntry referenceId();
 
     MetadataThesaurusEntry channelLayout();
 
+    @MetadataThesaurusEntryAttribute(unit = TRACKS)
     MetadataThesaurusEntry channelsCount();
 
+    @MetadataThesaurusEntryAttribute(unit = HERTZ)
     MetadataThesaurusEntry sampleRate();
 
     MetadataThesaurusEntry sampleFormat();
-
-    MetadataThesaurusEntry referenceId();
 
 }

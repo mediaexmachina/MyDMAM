@@ -19,42 +19,42 @@ export class MtdThesaurusDefDublinCore extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "contributor":
-                return {"longName":"CONTRIBUTOR"};
+                return {"longName":"Contributor","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "coverage":
-                return {"longName":"COVERAGE"};
+                return {"longName":"Coverage","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "creator":
-                return {"longName":"CREATOR"};
+                return {"longName":"Creator","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "date":
-                return {"longName":"DATE"};
+                return {"longName":"Date","sortIndexOrder":1000,"type":"UNIX_TIME_MSEC","unit":"NO_UNIT"};
             case "description":
-                return {"longName":"DESCRIPTION"};
+                return {"longName":"Description","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "format":
-                return {"longName":"FORMAT"};
+                return {"longName":"MIME Type","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "identifier":
-                return {"longName":"IDENTIFIER"};
+                return {"longName":"Identifier","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "language":
-                return {"longName":"LANGUAGE"};
+                return {"longName":"Language","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "publisher":
-                return {"longName":"PUBLISHER"};
+                return {"longName":"Publisher","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "relation":
-                return {"longName":"RELATION"};
+                return {"longName":"Relation","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "rights":
-                return {"longName":"RIGHTS"};
+                return {"longName":"Rights","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "source":
-                return {"longName":"SOURCE"};
+                return {"longName":"Source","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "subject":
-                return {"longName":"SUBJECT"};
+                return {"longName":"Subject","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "title":
-                return {"longName":"TITLE"};
+                return {"longName":"Title","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "type":
-                return {"longName":"TYPE"};
+                return {"longName":"Type","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"DC"};
+        return {"longName":"Dublin Core","sortIndexOrder":1,"kind":"BIBLIOGRAPHIC_RECORD"};
     }
 
     public contributor(): MetadataThesaurusEntry {

@@ -16,12 +16,16 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.UNIX_TIME_MSEC;
+
 /**
  * @see https://github.com/adobe/XMP-Toolkit-SDK/blob/main/docs/XMPSpecificationPart1.pdf
  */
-@MetadataThesaurusClassifier(value = "xmp")
+@MetadataThesaurusClassifier(value = "xmp", longname = "XMP", kind = BIBLIOGRAPHIC_RECORD)
 public interface MtdThesaurusDefXMP {
 
+    @MetadataThesaurusEntryAttribute(type = UNIX_TIME_MSEC)
     MetadataThesaurusEntry createDate();
 
     MetadataThesaurusEntry creatorTool();
@@ -30,8 +34,10 @@ public interface MtdThesaurusDefXMP {
 
     MetadataThesaurusEntry label();
 
+    @MetadataThesaurusEntryAttribute(type = UNIX_TIME_MSEC)
     MetadataThesaurusEntry metadataDate();
 
+    @MetadataThesaurusEntryAttribute(type = UNIX_TIME_MSEC)
     MetadataThesaurusEntry modifyDate();
 
     MetadataThesaurusEntry rating();

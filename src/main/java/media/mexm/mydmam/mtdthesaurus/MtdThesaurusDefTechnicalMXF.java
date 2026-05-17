@@ -16,19 +16,27 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "technical:mxf")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID;
+
+@MetadataThesaurusClassifier(value = "technical:mxf", longname = "MXF (technical)", kind = TECHNICAL_ATTRIBUTE)
 public interface MtdThesaurusDefTechnicalMXF {
 
+    @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
     MetadataThesaurusEntry operationalPatternUL();
 
+    @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
     MetadataThesaurusEntry uid();
 
+    @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
     MetadataThesaurusEntry generationUID();
 
+    @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
     MetadataThesaurusEntry materialPackageUMID();
 
     MetadataThesaurusEntry trackName();
 
+    @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
     MetadataThesaurusEntry filePackageUMID();
 
     MetadataThesaurusEntry filePackageName();

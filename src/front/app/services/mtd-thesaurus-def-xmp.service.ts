@@ -19,26 +19,26 @@ export class MtdThesaurusDefXMP extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "create-date":
-                return {"longName":"CREATE-DATE"};
+                return {"longName":"Create date","sortIndexOrder":1000,"type":"UNIX_TIME_MSEC","unit":"NO_UNIT"};
             case "creator-tool":
-                return {"longName":"CREATOR-TOOL"};
+                return {"longName":"Creator tool","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "identifier":
-                return {"longName":"IDENTIFIER"};
+                return {"longName":"Identifier","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "label":
-                return {"longName":"LABEL"};
+                return {"longName":"Label","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             case "metadata-date":
-                return {"longName":"METADATA-DATE"};
+                return {"longName":"Metadata date","sortIndexOrder":1000,"type":"UNIX_TIME_MSEC","unit":"NO_UNIT"};
             case "modify-date":
-                return {"longName":"MODIFY-DATE"};
+                return {"longName":"Modify date","sortIndexOrder":1000,"type":"UNIX_TIME_MSEC","unit":"NO_UNIT"};
             case "rating":
-                return {"longName":"RATING"};
+                return {"longName":"Rating","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"XMP"};
+        return {"longName":"XMP","sortIndexOrder":3,"kind":"BIBLIOGRAPHIC_RECORD"};
     }
 
     public createDate(): MetadataThesaurusEntry {

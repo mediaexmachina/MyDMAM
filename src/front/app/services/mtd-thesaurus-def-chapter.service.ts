@@ -19,18 +19,18 @@ export class MtdThesaurusDefChapter extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "end-time":
-                return {"longName":"END-TIME"};
+                return {"longName":"End time","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"MILLISECONDS"};
             case "start-time":
-                return {"longName":"START-TIME"};
+                return {"longName":"Start time","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"MILLISECONDS"};
             case "title":
-                return {"longName":"TITLE"};
+                return {"longName":"Title","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"CHAPTER"};
+        return {"longName":"Chapter","sortIndexOrder":6,"kind":"BIBLIOGRAPHIC_RECORD"};
     }
 
     public endTime(): MetadataThesaurusEntry {

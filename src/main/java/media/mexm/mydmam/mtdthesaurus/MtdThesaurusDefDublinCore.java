@@ -16,7 +16,10 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
-@MetadataThesaurusClassifier(value = "dc")
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.UNIX_TIME_MSEC;
+
+@MetadataThesaurusClassifier(value = "dc", longname = "Dublin Core", kind = BIBLIOGRAPHIC_RECORD)
 public interface MtdThesaurusDefDublinCore {
 
     MetadataThesaurusEntry contributor();
@@ -25,6 +28,7 @@ public interface MtdThesaurusDefDublinCore {
 
     MetadataThesaurusEntry creator();
 
+    @MetadataThesaurusEntryAttribute(type = UNIX_TIME_MSEC)
     MetadataThesaurusEntry date();
 
     MetadataThesaurusEntry description();
@@ -32,6 +36,7 @@ public interface MtdThesaurusDefDublinCore {
     /**
      * mime-type
      */
+    @MetadataThesaurusEntryAttribute(longname = "MIME Type")
     MetadataThesaurusEntry format();
 
     MetadataThesaurusEntry identifier();
