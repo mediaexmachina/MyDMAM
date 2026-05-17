@@ -53,6 +53,10 @@ export class MtdThesaurusDefTechnicalImage {
         return { key: "pixelformat", classifier: this.classifier };
     }
 
+    public referenceId(): MetadataThesaurusEntry {
+        return { key: "reference-id", classifier: this.classifier };
+    }
+
     public sampleAspectRatio(): MetadataThesaurusEntry {
         return { key: "sample-aspect-ratio", classifier: this.classifier };
     }

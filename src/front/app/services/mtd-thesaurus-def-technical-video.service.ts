@@ -24,4 +24,8 @@ export class MtdThesaurusDefTechnicalVideo {
     public frameRate(): MetadataThesaurusEntry {
         return { key: "frame-rate", classifier: this.classifier };
     }
+
+    public referenceId(): MetadataThesaurusEntry {
+        return { key: "reference-id", classifier: this.classifier };
+    }
 }

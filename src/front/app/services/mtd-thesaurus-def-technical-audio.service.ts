@@ -21,6 +21,10 @@ export class MtdThesaurusDefTechnicalAudio {
         return { key: "channels-count", classifier: this.classifier };
     }
 
+    public referenceId(): MetadataThesaurusEntry {
+        return { key: "reference-id", classifier: this.classifier };
+    }
+
     public sampleFormat(): MetadataThesaurusEntry {
         return { key: "sample-format", classifier: this.classifier };
     }

@@ -25,6 +25,10 @@ export class MtdThesaurusDefTechnicalStream {
         return { key: "codec-name", classifier: this.classifier };
     }
 
+    public disposition(): MetadataThesaurusEntry {
+        return { key: "disposition", classifier: this.classifier };
+    }
+
     public isSecondary(): MetadataThesaurusEntry {
         return { key: "is-secondary", classifier: this.classifier };
     }
