@@ -35,6 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import lombok.extern.slf4j.Slf4j;
+import media.mexm.mydmam.dto.MtdThesaurusDefClassifierSignature;
+import media.mexm.mydmam.dto.MtdThesaurusDefEntrySignature;
 
 /**
  * Thread safe
@@ -64,11 +66,14 @@ public class MetadataThesaurusLogic {
         return registerDefinitions;
     }
 
-    public record MtdRegisterMethodDefinition(String methodName, String keyName) {
+    public record MtdRegisterMethodDefinition(String methodName, String keyName,
+                                              MtdThesaurusDefEntrySignature signature) {
     }
 
-    public record MtdRegisterDefinition(String className, String classifier,
-                                        List<MtdRegisterMethodDefinition> methods) {
+    public record MtdRegisterDefinition(String className,
+                                        String classifier,
+                                        List<MtdRegisterMethodDefinition> methods,
+                                        MtdThesaurusDefClassifierSignature signature) {
     }
 
     /**
@@ -87,12 +92,14 @@ public class MetadataThesaurusLogic {
                             .map(method -> {
                                 final var methodName = method.getName();
                                 final var keyName = instanceDef.getKeyNameByMethod(method);
-                                return new MtdRegisterMethodDefinition(methodName, keyName);
+                                return new MtdRegisterMethodDefinition(methodName, keyName,
+                                        new MtdThesaurusDefEntrySignature(keyName.toUpperCase()));// XXX
                             })
                             .sorted((l, r) -> l.methodName.compareTo(r.methodName))
                             .toList();
 
-                    return new MtdRegisterDefinition(className, classifier, methodsDefs);
+                    return new MtdRegisterDefinition(className, classifier, methodsDefs,
+                            new MtdThesaurusDefClassifierSignature(classifier.toUpperCase())); // XXX
                 })
                 .sorted((l, r) -> l.className.compareTo(r.className))
                 .toList();

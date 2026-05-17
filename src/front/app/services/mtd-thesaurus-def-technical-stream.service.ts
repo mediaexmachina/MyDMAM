@@ -5,13 +5,51 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefTechnicalStream {
+export class MtdThesaurusDefTechnicalStream extends MtdThesaurusDef {
 
     public readonly classifier = "technical:stream";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "bitrate":
+                return {"longName":"BITRATE"};
+            case "codec":
+                return {"longName":"CODEC"};
+            case "codec-name":
+                return {"longName":"CODEC-NAME"};
+            case "disposition":
+                return {"longName":"DISPOSITION"};
+            case "is-secondary":
+                return {"longName":"IS-SECONDARY"};
+            case "level":
+                return {"longName":"LEVEL"};
+            case "profile":
+                return {"longName":"PROFILE"};
+            case "program-id":
+                return {"longName":"PROGRAM-ID"};
+            case "reference-id":
+                return {"longName":"REFERENCE-ID"};
+            case "start-time":
+                return {"longName":"START-TIME"};
+            case "time-base":
+                return {"longName":"TIME-BASE"};
+            case "type":
+                return {"longName":"TYPE"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"TECHNICAL:STREAM"};
+    }
 
     public bitrate(): MetadataThesaurusEntry {
         return { key: "bitrate", classifier: this.classifier };

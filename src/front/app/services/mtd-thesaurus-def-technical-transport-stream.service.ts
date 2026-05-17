@@ -5,13 +5,37 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefTechnicalTransportStream {
+export class MtdThesaurusDefTechnicalTransportStream extends MtdThesaurusDef {
 
     public readonly classifier = "technical:transportstream";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "pcr-pid":
+                return {"longName":"PCR-PID"};
+            case "pmt-pid":
+                return {"longName":"PMT-PID"};
+            case "program-num":
+                return {"longName":"PROGRAM-NUM"};
+            case "service-name":
+                return {"longName":"SERVICE-NAME"};
+            case "service-provider":
+                return {"longName":"SERVICE-PROVIDER"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"TECHNICAL:TRANSPORTSTREAM"};
+    }
 
     public pcrPid(): MetadataThesaurusEntry {
         return { key: "pcr-pid", classifier: this.classifier };

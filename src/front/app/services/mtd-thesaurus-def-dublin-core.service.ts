@@ -5,13 +5,57 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefDublinCore {
+export class MtdThesaurusDefDublinCore extends MtdThesaurusDef {
 
     public readonly classifier = "dc";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "contributor":
+                return {"longName":"CONTRIBUTOR"};
+            case "coverage":
+                return {"longName":"COVERAGE"};
+            case "creator":
+                return {"longName":"CREATOR"};
+            case "date":
+                return {"longName":"DATE"};
+            case "description":
+                return {"longName":"DESCRIPTION"};
+            case "format":
+                return {"longName":"FORMAT"};
+            case "identifier":
+                return {"longName":"IDENTIFIER"};
+            case "language":
+                return {"longName":"LANGUAGE"};
+            case "publisher":
+                return {"longName":"PUBLISHER"};
+            case "relation":
+                return {"longName":"RELATION"};
+            case "rights":
+                return {"longName":"RIGHTS"};
+            case "source":
+                return {"longName":"SOURCE"};
+            case "subject":
+                return {"longName":"SUBJECT"};
+            case "title":
+                return {"longName":"TITLE"};
+            case "type":
+                return {"longName":"TYPE"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"DC"};
+    }
 
     public contributor(): MetadataThesaurusEntry {
         return { key: "contributor", classifier: this.classifier };

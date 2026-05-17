@@ -5,13 +5,29 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefTechnical {
+export class MtdThesaurusDefTechnical extends MtdThesaurusDef {
 
     public readonly classifier = "technical";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "type":
+                return {"longName":"TYPE"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"TECHNICAL"};
+    }
 
     public type(): MetadataThesaurusEntry {
         return { key: "type", classifier: this.classifier };

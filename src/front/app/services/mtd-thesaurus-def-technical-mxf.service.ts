@@ -5,13 +5,41 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefTechnicalMXF {
+export class MtdThesaurusDefTechnicalMXF extends MtdThesaurusDef {
 
     public readonly classifier = "technical:mxf";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "file-package-name":
+                return {"longName":"FILE-PACKAGE-NAME"};
+            case "file-package-umid":
+                return {"longName":"FILE-PACKAGE-UMID"};
+            case "generation-uid":
+                return {"longName":"GENERATION-UID"};
+            case "material-package-umid":
+                return {"longName":"MATERIAL-PACKAGE-UMID"};
+            case "operational-pattern-ul":
+                return {"longName":"OPERATIONAL-PATTERN-UL"};
+            case "track-name":
+                return {"longName":"TRACK-NAME"};
+            case "uid":
+                return {"longName":"UID"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"TECHNICAL:MXF"};
+    }
 
     public filePackageName(): MetadataThesaurusEntry {
         return { key: "file-package-name", classifier: this.classifier };

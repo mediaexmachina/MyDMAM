@@ -40,7 +40,7 @@ public class App {
             new DTORecordToAngularInterfaceConverter(appDir).parseDTOs();
 
             try {
-                new MetadataThesaurusToAngularClasses().make(appDir);
+                new MetadataThesaurusToAngularClasses(appDir).make();
             } catch (final IOException e) {
                 throw new UncheckedIOException(e);
             }

@@ -5,13 +5,41 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefXMP {
+export class MtdThesaurusDefXMP extends MtdThesaurusDef {
 
     public readonly classifier = "xmp";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "create-date":
+                return {"longName":"CREATE-DATE"};
+            case "creator-tool":
+                return {"longName":"CREATOR-TOOL"};
+            case "identifier":
+                return {"longName":"IDENTIFIER"};
+            case "label":
+                return {"longName":"LABEL"};
+            case "metadata-date":
+                return {"longName":"METADATA-DATE"};
+            case "modify-date":
+                return {"longName":"MODIFY-DATE"};
+            case "rating":
+                return {"longName":"RATING"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"XMP"};
+    }
 
     public createDate(): MetadataThesaurusEntry {
         return { key: "create-date", classifier: this.classifier };

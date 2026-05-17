@@ -5,13 +5,107 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefDCMI {
+export class MtdThesaurusDefDCMI extends MtdThesaurusDef {
 
     public readonly classifier = "dc:mi";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "abstract":
+                return {"longName":"ABSTRACT"};
+            case "access-rights":
+                return {"longName":"ACCESS-RIGHTS"};
+            case "accrual-method":
+                return {"longName":"ACCRUAL-METHOD"};
+            case "accrual-periodicity":
+                return {"longName":"ACCRUAL-PERIODICITY"};
+            case "accrual-policy":
+                return {"longName":"ACCRUAL-POLICY"};
+            case "alternative":
+                return {"longName":"ALTERNATIVE"};
+            case "audience":
+                return {"longName":"AUDIENCE"};
+            case "available":
+                return {"longName":"AVAILABLE"};
+            case "bibliographic-citation":
+                return {"longName":"BIBLIOGRAPHIC-CITATION"};
+            case "conforms-to":
+                return {"longName":"CONFORMS-TO"};
+            case "created":
+                return {"longName":"CREATED"};
+            case "date-accepted":
+                return {"longName":"DATE-ACCEPTED"};
+            case "date-copyrighted":
+                return {"longName":"DATE-COPYRIGHTED"};
+            case "date-submitted":
+                return {"longName":"DATE-SUBMITTED"};
+            case "education-level":
+                return {"longName":"EDUCATION-LEVEL"};
+            case "extent":
+                return {"longName":"EXTENT"};
+            case "has-format":
+                return {"longName":"HAS-FORMAT"};
+            case "has-part":
+                return {"longName":"HAS-PART"};
+            case "has-version":
+                return {"longName":"HAS-VERSION"};
+            case "instructional-method":
+                return {"longName":"INSTRUCTIONAL-METHOD"};
+            case "is-format-of":
+                return {"longName":"IS-FORMAT-OF"};
+            case "is-part-of":
+                return {"longName":"IS-PART-OF"};
+            case "is-referenced-by":
+                return {"longName":"IS-REFERENCED-BY"};
+            case "is-replaced-by":
+                return {"longName":"IS-REPLACED-BY"};
+            case "is-required-by":
+                return {"longName":"IS-REQUIRED-BY"};
+            case "is-version-of":
+                return {"longName":"IS-VERSION-OF"};
+            case "issued":
+                return {"longName":"ISSUED"};
+            case "license":
+                return {"longName":"LICENSE"};
+            case "mediator":
+                return {"longName":"MEDIATOR"};
+            case "medium":
+                return {"longName":"MEDIUM"};
+            case "modified":
+                return {"longName":"MODIFIED"};
+            case "provenance":
+                return {"longName":"PROVENANCE"};
+            case "references":
+                return {"longName":"REFERENCES"};
+            case "replaces":
+                return {"longName":"REPLACES"};
+            case "requires":
+                return {"longName":"REQUIRES"};
+            case "rights-holder":
+                return {"longName":"RIGHTS-HOLDER"};
+            case "spatial":
+                return {"longName":"SPATIAL"};
+            case "table-of-contents":
+                return {"longName":"TABLE-OF-CONTENTS"};
+            case "temporal":
+                return {"longName":"TEMPORAL"};
+            case "valid":
+                return {"longName":"VALID"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"DC:MI"};
+    }
 
     public _abstract(): MetadataThesaurusEntry {
         return { key: "abstract", classifier: this.classifier };

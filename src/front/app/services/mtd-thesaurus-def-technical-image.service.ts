@@ -5,13 +5,53 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefTechnicalImage {
+export class MtdThesaurusDefTechnicalImage extends MtdThesaurusDef {
 
     public readonly classifier = "technical:image";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "aspect-ratio":
+                return {"longName":"ASPECT-RATIO"};
+            case "colorprimaries":
+                return {"longName":"COLORPRIMARIES"};
+            case "colorrange":
+                return {"longName":"COLORRANGE"};
+            case "colorspace":
+                return {"longName":"COLORSPACE"};
+            case "colortransfer":
+                return {"longName":"COLORTRANSFER"};
+            case "display-aspect-ratio":
+                return {"longName":"DISPLAY-ASPECT-RATIO"};
+            case "height":
+                return {"longName":"HEIGHT"};
+            case "image-aspect-format":
+                return {"longName":"IMAGE-ASPECT-FORMAT"};
+            case "orientation":
+                return {"longName":"ORIENTATION"};
+            case "pixelformat":
+                return {"longName":"PIXELFORMAT"};
+            case "reference-id":
+                return {"longName":"REFERENCE-ID"};
+            case "sample-aspect-ratio":
+                return {"longName":"SAMPLE-ASPECT-RATIO"};
+            case "width":
+                return {"longName":"WIDTH"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"TECHNICAL:IMAGE"};
+    }
 
     public aspectRatio(): MetadataThesaurusEntry {
         return { key: "aspect-ratio", classifier: this.classifier };

@@ -5,13 +5,35 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefTechnicalVideo {
+export class MtdThesaurusDefTechnicalVideo extends MtdThesaurusDef {
 
     public readonly classifier = "technical:video";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "average-frame-rate":
+                return {"longName":"AVERAGE-FRAME-RATE"};
+            case "field-order":
+                return {"longName":"FIELD-ORDER"};
+            case "frame-rate":
+                return {"longName":"FRAME-RATE"};
+            case "reference-id":
+                return {"longName":"REFERENCE-ID"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"TECHNICAL:VIDEO"};
+    }
 
     public averageFrameRate(): MetadataThesaurusEntry {
         return { key: "average-frame-rate", classifier: this.classifier };

@@ -5,13 +5,61 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefPDF {
+export class MtdThesaurusDefPDF extends MtdThesaurusDef {
 
     public readonly classifier = "pdf";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "encrypted":
+                return {"longName":"ENCRYPTED"};
+            case "form":
+                return {"longName":"FORM"};
+            case "javascript":
+                return {"longName":"JAVASCRIPT"};
+            case "keywords":
+                return {"longName":"KEYWORDS"};
+            case "optimized":
+                return {"longName":"OPTIMIZED"};
+            case "page-count":
+                return {"longName":"PAGE-COUNT"};
+            case "page-height-mm":
+                return {"longName":"PAGE-HEIGHT-MM"};
+            case "page-rotated":
+                return {"longName":"PAGE-ROTATED"};
+            case "page-width-mm":
+                return {"longName":"PAGE-WIDTH-MM"};
+            case "pdf-version":
+                return {"longName":"PDF-VERSION"};
+            case "permission-add-notes":
+                return {"longName":"PERMISSION-ADD-NOTES"};
+            case "permission-change":
+                return {"longName":"PERMISSION-CHANGE"};
+            case "permission-copy":
+                return {"longName":"PERMISSION-COPY"};
+            case "permission-print":
+                return {"longName":"PERMISSION-PRINT"};
+            case "producer":
+                return {"longName":"PRODUCER"};
+            case "same-pages-format":
+                return {"longName":"SAME-PAGES-FORMAT"};
+            case "tagged":
+                return {"longName":"TAGGED"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"PDF"};
+    }
 
     public encrypted(): MetadataThesaurusEntry {
         return { key: "encrypted", classifier: this.classifier };

@@ -5,13 +5,37 @@
 */
 import { Injectable } from '@angular/core'
 import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interface';
+import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
+import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
+import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
 
 @Injectable({
     providedIn: 'root'
 })
-export class MtdThesaurusDefTechnicalAudio {
+export class MtdThesaurusDefTechnicalAudio extends MtdThesaurusDef {
 
     public readonly classifier = "technical:audio";
+
+    public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
+        switch (keyName) {
+            case "channel-layout":
+                return {"longName":"CHANNEL-LAYOUT"};
+            case "channels-count":
+                return {"longName":"CHANNELS-COUNT"};
+            case "reference-id":
+                return {"longName":"REFERENCE-ID"};
+            case "sample-format":
+                return {"longName":"SAMPLE-FORMAT"};
+            case "sample-rate":
+                return {"longName":"SAMPLE-RATE"};
+            default:
+                return null;
+        }
+    }
+
+    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
+        return {"longName":"TECHNICAL:AUDIO"};
+    }
 
     public channelLayout(): MetadataThesaurusEntry {
         return { key: "channel-layout", classifier: this.classifier };
