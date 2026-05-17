@@ -8,6 +8,9 @@ import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interfac
 import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
 import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
 import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
+import { MetadataThesaurusEntryType } from '../dto/metadata-thesaurus-entry-type.enum';
+import { MetadataThesaurusEntryNumericalUnit } from '../dto/metadata-thesaurus-entry-numerical-unit.enum';
+import { MetadataThesaurusClassifierKind } from '../dto/metadata-thesaurus-classifier-kind.enum';
 
 @Injectable({
     providedIn: 'root'
@@ -19,36 +22,36 @@ export class MtdThesaurusDefTechnicalStream extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "reference-id":
-                return {"longName":"Reference id","sortIndexOrder":1,"type":"IDENTIFIER_OR_SERIAL_ID","unit":"NO_UNIT"};
+                return {"longName":"Reference id","sortIndexOrder":1,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "program-id":
-                return {"longName":"Program id","sortIndexOrder":2,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Program id","sortIndexOrder":2,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "type":
-                return {"longName":"Type","sortIndexOrder":3,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Type","sortIndexOrder":3,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "is-secondary":
-                return {"longName":"Is secondary","sortIndexOrder":4,"type":"BOOLEAN","unit":"NO_UNIT"};
+                return {"longName":"Is secondary","sortIndexOrder":4,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "codec":
-                return {"longName":"Codec","sortIndexOrder":5,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Codec","sortIndexOrder":5,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "codec-name":
-                return {"longName":"Codec name","sortIndexOrder":6,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Codec name","sortIndexOrder":6,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "bitrate":
-                return {"longName":"Bitrate","sortIndexOrder":7,"type":"DISPLAYED_AS_IT","unit":"BITS_PER_SECONDS"};
+                return {"longName":"Bitrate","sortIndexOrder":7,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.BITS_PER_SECONDS};
             case "level":
-                return {"longName":"Level","sortIndexOrder":8,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Level","sortIndexOrder":8,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "profile":
-                return {"longName":"Profile","sortIndexOrder":9,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Profile","sortIndexOrder":9,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "time-base":
-                return {"longName":"Time base","sortIndexOrder":10,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Time base","sortIndexOrder":10,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "start-time":
-                return {"longName":"Start time","sortIndexOrder":11,"type":"DISPLAYED_AS_IT","unit":"MILLISECONDS"};
+                return {"longName":"Start time","sortIndexOrder":11,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLISECONDS};
             case "disposition":
-                return {"longName":"Disposition","sortIndexOrder":12,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Disposition","sortIndexOrder":12,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"Stream from media container (technical)","sortIndexOrder":8,"kind":"TECHNICAL_ATTRIBUTE"};
+        return {"longName":"Stream from media container (technical)","sortIndexOrder":8,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
     }
 
     public referenceId(): MetadataThesaurusEntry {

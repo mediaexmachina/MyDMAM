@@ -8,6 +8,9 @@ import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interfac
 import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
 import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
 import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
+import { MetadataThesaurusEntryType } from '../dto/metadata-thesaurus-entry-type.enum';
+import { MetadataThesaurusEntryNumericalUnit } from '../dto/metadata-thesaurus-entry-numerical-unit.enum';
+import { MetadataThesaurusClassifierKind } from '../dto/metadata-thesaurus-classifier-kind.enum';
 
 @Injectable({
     providedIn: 'root'
@@ -19,26 +22,26 @@ export class MtdThesaurusDefXMP extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "create-date":
-                return {"longName":"Create date","sortIndexOrder":1000,"type":"UNIX_TIME_MSEC","unit":"NO_UNIT"};
+                return {"longName":"Create date","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.UNIX_TIME_MSEC,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "creator-tool":
-                return {"longName":"Creator tool","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Creator tool","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "identifier":
-                return {"longName":"Identifier","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Identifier","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "label":
-                return {"longName":"Label","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Label","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "metadata-date":
-                return {"longName":"Metadata date","sortIndexOrder":1000,"type":"UNIX_TIME_MSEC","unit":"NO_UNIT"};
+                return {"longName":"Metadata date","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.UNIX_TIME_MSEC,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "modify-date":
-                return {"longName":"Modify date","sortIndexOrder":1000,"type":"UNIX_TIME_MSEC","unit":"NO_UNIT"};
+                return {"longName":"Modify date","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.UNIX_TIME_MSEC,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "rating":
-                return {"longName":"Rating","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Rating","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"XMP","sortIndexOrder":3,"kind":"BIBLIOGRAPHIC_RECORD"};
+        return {"longName":"XMP","sortIndexOrder":3,"kind":MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD};
     }
 
     public createDate(): MetadataThesaurusEntry {

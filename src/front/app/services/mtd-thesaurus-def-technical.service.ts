@@ -8,6 +8,9 @@ import { MetadataThesaurusEntry } from '../dto/metadata-thesaurus-entry.interfac
 import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
 import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
 import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
+import { MetadataThesaurusEntryType } from '../dto/metadata-thesaurus-entry-type.enum';
+import { MetadataThesaurusEntryNumericalUnit } from '../dto/metadata-thesaurus-entry-numerical-unit.enum';
+import { MetadataThesaurusClassifierKind } from '../dto/metadata-thesaurus-classifier-kind.enum';
 
 @Injectable({
     providedIn: 'root'
@@ -19,14 +22,14 @@ export class MtdThesaurusDefTechnical extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "type":
-                return {"longName":"Type","sortIndexOrder":1000,"type":"DISPLAYED_AS_IT","unit":"NO_UNIT"};
+                return {"longName":"Type","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"Technical","sortIndexOrder":5,"kind":"TECHNICAL_ATTRIBUTE"};
+        return {"longName":"Technical","sortIndexOrder":5,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
     }
 
     public type(): MetadataThesaurusEntry {

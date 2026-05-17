@@ -37,14 +37,14 @@ public @interface MetadataThesaurusEntryAttribute {
 }
 /*
 TODO add @
-                                           |Annotation|Use/Impl|Read annotation|To Signature|Front Displayed|
+                                           |Front Displayed|
 Entry:
- - long name                               |    y     |   y    |      y        |     y      |               |
- - Type=Identifier                         |    y     |   y    |      y        |     y      |               |
- - Type=UnixTimeMsec                       |    y     |   y    |      y        |     y      |               |
- - Type=Boolean                            |    y     |   y    |      y        |     y      |               |
- - NumericalUnit                           |    y     |   y    |      y        |     y      |               |
- - MetadataThesaurusSortIndexOrder         |    y     |   y    |      y        |     y      |               |
+ - long name                               |               |
+ - Type=Identifier                         |               |
+ - Type=UnixTimeMsec                       |               |
+ - Type=Boolean                            |               |
+ - NumericalUnit                           |               |
+ - MetadataThesaurusSortIndexOrder         |               |
 
 TODO check UNIX_TIME_MSEC and BOOLEAN during write
  * */

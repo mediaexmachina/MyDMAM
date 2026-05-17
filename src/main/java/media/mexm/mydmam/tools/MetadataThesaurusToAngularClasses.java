@@ -28,13 +28,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.dto.MtdThesaurusDefClassifierSignature;
 import media.mexm.mydmam.dto.MtdThesaurusDefEntrySignature;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntry;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.MtdRegisterDefinition;
 
@@ -157,6 +162,12 @@ public class MetadataThesaurusToAngularClasses {
         content.add("import { " + MTHES_ENTRY_CN + " } from '../dto/"
                     + nameFormatter(MTHES_ENTRY_CN) + ".interface';");
         classImports(content);
+        content.add(
+                "import { MetadataThesaurusEntryType } from '../dto/metadata-thesaurus-entry-type.enum';");
+        content.add(
+                "import { MetadataThesaurusEntryNumericalUnit } from '../dto/metadata-thesaurus-entry-numerical-unit.enum';");
+        content.add(
+                "import { MetadataThesaurusClassifierKind } from '../dto/metadata-thesaurus-classifier-kind.enum';");
         content.add("");
 
         content.add("@Injectable({");
@@ -175,7 +186,7 @@ public class MetadataThesaurusToAngularClasses {
         for (final var methodEntry : implementDefinition.methods()) {
             final var keyName = methodEntry.keyName();
             content.add("            case \"" + keyName + "\":");
-            content.add("                return " + objectMapper.writeValueAsString(methodEntry.signature()) + ";");
+            content.add("                return " + toJsonAngularEnumsWithPatch(methodEntry.signature()) + ";");
         }
         content.add("            default:");
         content.add("                return null;");
@@ -184,7 +195,7 @@ public class MetadataThesaurusToAngularClasses {
 
         content.add("");
         content.add("    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {");
-        content.add("        return " + objectMapper.writeValueAsString(implementDefinition.signature()) + ";");
+        content.add("        return " + toJsonAngularEnumsWithPatch(implementDefinition.signature()) + ";");
         content.add("    }");
 
         for (final var methodEntry : implementDefinition.methods()) {
@@ -201,6 +212,50 @@ public class MetadataThesaurusToAngularClasses {
         log.info("Save {}", className);
         write(new File(angularServiceDirectory, nameFormatter(className) + ".service.ts"),
                 content.stream().collect(joining("\n")), UTF_8);
+    }
+
+    private String toJsonAngularEnumsWithPatch(final Object object) throws JsonProcessingException {
+        var rawJson = objectMapper.writeValueAsString(object);
+
+        final var enumList = List.of(
+                MetadataThesaurusEntryType.class,
+                MetadataThesaurusEntryNumericalUnit.class,
+                MetadataThesaurusClassifierKind.class);
+
+        final var allEnumNames = enumList.stream()
+                .map(Class::getEnumConstants)
+                .flatMap(Stream::of)
+                .map(Enum::name)
+                .toList();
+        if (allEnumNames.size() != allEnumNames.stream().distinct().count()) {
+            throw new IllegalCallerException("There are multiple entries on all enums for " + enumList);
+        }
+
+        for (final var enumClass : enumList) {
+            for (final var value : enumClass.getEnumConstants()) {
+                final var name = value.name();
+                rawJson = rawJson.replace("\"" + name + "\"", enumClass.getSimpleName() + "." + name);
+            }
+
+        }
+
+        /*for (final var value : MetadataThesaurusEntryType.values()) {
+            final var name = value.name();
+            rawJson = rawJson.replace("\"" + name + "\"",
+                    MetadataThesaurusEntryType.class.getSimpleName() + "." + name);
+        }
+        for (final var value : MetadataThesaurusEntryNumericalUnit.values()) {
+            final var name = value.name();
+            rawJson = rawJson.replace("\"" + name + "\"",
+                    MetadataThesaurusEntryNumericalUnit.class.getSimpleName() + "." + name);
+        }
+        for (final var value : MetadataThesaurusClassifierKind.values()) {
+            final var name = value.name();
+            rawJson = rawJson.replace("\"" + name + "\"",
+                    MetadataThesaurusClassifierKind.class.getSimpleName() + "." + name);
+        }*/
+
+        return rawJson;
     }
 
     private void createDtoMetadataThesaurusEntry() throws IOException {
