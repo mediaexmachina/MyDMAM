@@ -1,6 +1,3 @@
-import { MtdThesaurusDefClassifierSignature } from "../dto/mtd-thesaurus-def-classifier-signature.interface";
-import { MtdThesaurusDefEntrySignature } from "../dto/mtd-thesaurus-def-entry-signature.interface";
-
 /*
  * This file is part of MyDMAM.
  * 
@@ -17,6 +14,10 @@ import { MtdThesaurusDefEntrySignature } from "../dto/mtd-thesaurus-def-entry-si
  * Copyright (C) Media ex Machina 2026
  * 
  */
+
+import { MtdThesaurusDefClassifierSignature } from "../dto/mtd-thesaurus-def-classifier-signature.interface";
+import { MtdThesaurusDefEntrySignature } from "../dto/mtd-thesaurus-def-entry-signature.interface";
+
 export abstract class MtdThesaurusDef {
 
     public abstract getEntrySignatureByKeyName(keyName:string): MtdThesaurusDefEntrySignature|null;
