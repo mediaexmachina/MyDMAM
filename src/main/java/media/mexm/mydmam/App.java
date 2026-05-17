@@ -37,7 +37,7 @@ public class App {
     public static void main(final String[] args) {
         if (args != null && args.length == 1 && args[0].equals("export-dto-angular")) {
             final var appDir = new File("src/front/app");
-            new DTORecordToAngularInterfaceConverter("media.mexm.mydmam.dto", appDir).parseDTOs();
+            new DTORecordToAngularInterfaceConverter(appDir).parseDTOs();
 
             try {
                 new MetadataThesaurusToAngularClasses().make(appDir);

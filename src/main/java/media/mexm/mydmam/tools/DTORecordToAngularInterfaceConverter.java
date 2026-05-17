@@ -49,6 +49,7 @@ import media.mexm.mydmam.configuration.SiteConf;
 @Slf4j
 public class DTORecordToAngularInterfaceConverter {
 
+    private static final String DTO_PACKAGE_NAME = "media.mexm.mydmam.dto";
     private static final String ENUM = "enum";
     private static final String INTERFACE = "interface";
     private static final String STRING = "string";
@@ -58,7 +59,7 @@ public class DTORecordToAngularInterfaceConverter {
     private final File angularDtoDirectory;
     private final Set<Class<?>> dtoClasses;
 
-    public DTORecordToAngularInterfaceConverter(final String dtoPackageName, final File angularProjectDestination) {
+    public DTORecordToAngularInterfaceConverter(final File angularProjectDestination) {
         defaultClassConverter = new HashMap<>();
         defaultClassConverter.put(String.class, STRING);
         defaultClassConverter.put(int.class, NUMBER);
@@ -93,14 +94,14 @@ public class DTORecordToAngularInterfaceConverter {
          * https://www.baeldung.com/java-find-all-classes-in-package
          */
         final var stream = ClassLoader.getSystemClassLoader()
-                .getResourceAsStream(dtoPackageName.replaceAll("[.]", "/"));
+                .getResourceAsStream(DTO_PACKAGE_NAME.replaceAll("[.]", "/"));
 
         try (final var reader = new BufferedReader(new InputStreamReader(stream))) {
             dtoClasses = reader.lines()
                     .filter(line -> line.endsWith(".class"))
                     .map(className -> {
                         try {
-                            return Class.forName(dtoPackageName + "."
+                            return Class.forName(DTO_PACKAGE_NAME + "."
                                                  + className.substring(0, className.lastIndexOf('.')));
                         } catch (final ClassNotFoundException e) {// NOSONAR S108
                         }
@@ -113,7 +114,7 @@ public class DTORecordToAngularInterfaceConverter {
         }
 
         if (dtoClasses.isEmpty()) {
-            throw new IllegalArgumentException("Can't found DTO classes in " + dtoPackageName);
+            throw new IllegalArgumentException("Can't found DTO classes in " + DTO_PACKAGE_NAME);
         }
 
         dtoClasses.add(SiteConf.class);
