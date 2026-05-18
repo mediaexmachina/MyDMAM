@@ -130,7 +130,7 @@ export class FileMetadataTableComponent {
             .forEach(cN => classifiersNames.push(cN));
         Utils.distinct(classifiersNames);
 
-        return classifiersNames.map(classifierName => {
+        const result = classifiersNames.map(classifierName => {
             const currentClassifierDbEntries = allDbEntries.filter(entry => entry.classifierName === classifierName);
             const indexes = Utils.distinct(currentClassifierDbEntries.map(entry => entry.index));
             const keys: Array<FileMetadataKey> = [];
@@ -155,6 +155,15 @@ export class FileMetadataTableComponent {
                 });
             });
 
+            keys.sort((l,r) => {
+                if (l.signature != null && r.signature != null) {
+                    const lsort = l.signature.sortIndexOrder;
+                    const rsort = r.signature.sortIndexOrder;
+                    return lsort == rsort ? 0 : (lsort > rsort ? 1 : (lsort < rsort ? -1 : 0));
+                }
+                return l.track.localeCompare(r.track);
+            });
+
             return {
                 name: classifierName.replaceAll(":", " • "),
                 signature: this.mtdThesaurusResolver.getClassifierSignature(classifierName),
@@ -163,6 +172,17 @@ export class FileMetadataTableComponent {
                 track: classifierName
             };
         });
+
+        result.sort((l,r) => {
+            if (l.signature != null && r.signature != null) {
+                const lsort = l.signature.sortIndexOrder;
+                const rsort = r.signature.sortIndexOrder;
+                return lsort == rsort ? 0 : (lsort > rsort ? 1 : (lsort < rsort ? -1 : 0));
+            }
+            return l.track.localeCompare(r.track);
+        });
+
+        return result;
     }
 
 }
