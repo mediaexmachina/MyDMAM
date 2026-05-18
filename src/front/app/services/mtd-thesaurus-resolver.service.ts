@@ -7,67 +7,67 @@ import { inject, Injectable } from '@angular/core'
 import { MtdThesaurusDef } from '../interfaces/mtd-thesaurus-def';
 import { MtdThesaurusDefEntrySignature } from '../dto/mtd-thesaurus-def-entry-signature.interface';
 import { MtdThesaurusDefClassifierSignature } from '../dto/mtd-thesaurus-def-classifier-signature.interface';
-import { MtdThesaurusDefChapter } from './mtd-thesaurus-def-chapter.service';
-import { MtdThesaurusDefDCMI } from './mtd-thesaurus-def-dcmi.service';
 import { MtdThesaurusDefDublinCore } from './mtd-thesaurus-def-dublin-core.service';
+import { MtdThesaurusDefDCMI } from './mtd-thesaurus-def-dcmi.service';
+import { MtdThesaurusDefXMP } from './mtd-thesaurus-def-xmp.service';
 import { MtdThesaurusDefPDF } from './mtd-thesaurus-def-pdf.service';
 import { MtdThesaurusDefTechnical } from './mtd-thesaurus-def-technical.service';
-import { MtdThesaurusDefTechnicalAudio } from './mtd-thesaurus-def-technical-audio.service';
+import { MtdThesaurusDefChapter } from './mtd-thesaurus-def-chapter.service';
 import { MtdThesaurusDefTechnicalContainer } from './mtd-thesaurus-def-technical-container.service';
-import { MtdThesaurusDefTechnicalImage } from './mtd-thesaurus-def-technical-image.service';
-import { MtdThesaurusDefTechnicalMXF } from './mtd-thesaurus-def-technical-mxf.service';
 import { MtdThesaurusDefTechnicalStream } from './mtd-thesaurus-def-technical-stream.service';
-import { MtdThesaurusDefTechnicalTransportStream } from './mtd-thesaurus-def-technical-transport-stream.service';
+import { MtdThesaurusDefTechnicalImage } from './mtd-thesaurus-def-technical-image.service';
 import { MtdThesaurusDefTechnicalVideo } from './mtd-thesaurus-def-technical-video.service';
-import { MtdThesaurusDefXMP } from './mtd-thesaurus-def-xmp.service';
+import { MtdThesaurusDefTechnicalAudio } from './mtd-thesaurus-def-technical-audio.service';
+import { MtdThesaurusDefTechnicalMXF } from './mtd-thesaurus-def-technical-mxf.service';
+import { MtdThesaurusDefTechnicalTransportStream } from './mtd-thesaurus-def-technical-transport-stream.service';
 
 @Injectable({
     providedIn: 'root'
 })
 export class MtdThesaurusResolver {
 
-    private readonly mtdThesaurusDefChapter = inject(MtdThesaurusDefChapter);
-    private readonly mtdThesaurusDefDCMI = inject(MtdThesaurusDefDCMI);
     private readonly mtdThesaurusDefDublinCore = inject(MtdThesaurusDefDublinCore);
+    private readonly mtdThesaurusDefDCMI = inject(MtdThesaurusDefDCMI);
+    private readonly mtdThesaurusDefXMP = inject(MtdThesaurusDefXMP);
     private readonly mtdThesaurusDefPDF = inject(MtdThesaurusDefPDF);
     private readonly mtdThesaurusDefTechnical = inject(MtdThesaurusDefTechnical);
-    private readonly mtdThesaurusDefTechnicalAudio = inject(MtdThesaurusDefTechnicalAudio);
+    private readonly mtdThesaurusDefChapter = inject(MtdThesaurusDefChapter);
     private readonly mtdThesaurusDefTechnicalContainer = inject(MtdThesaurusDefTechnicalContainer);
-    private readonly mtdThesaurusDefTechnicalImage = inject(MtdThesaurusDefTechnicalImage);
-    private readonly mtdThesaurusDefTechnicalMXF = inject(MtdThesaurusDefTechnicalMXF);
     private readonly mtdThesaurusDefTechnicalStream = inject(MtdThesaurusDefTechnicalStream);
-    private readonly mtdThesaurusDefTechnicalTransportStream = inject(MtdThesaurusDefTechnicalTransportStream);
+    private readonly mtdThesaurusDefTechnicalImage = inject(MtdThesaurusDefTechnicalImage);
     private readonly mtdThesaurusDefTechnicalVideo = inject(MtdThesaurusDefTechnicalVideo);
-    private readonly mtdThesaurusDefXMP = inject(MtdThesaurusDefXMP);
+    private readonly mtdThesaurusDefTechnicalAudio = inject(MtdThesaurusDefTechnicalAudio);
+    private readonly mtdThesaurusDefTechnicalMXF = inject(MtdThesaurusDefTechnicalMXF);
+    private readonly mtdThesaurusDefTechnicalTransportStream = inject(MtdThesaurusDefTechnicalTransportStream);
 
     private getDef(classifier:string): MtdThesaurusDef|null {
         switch (classifier) {
-            case "chapter":
-                return this.mtdThesaurusDefChapter;
-            case "dc:mi":
-                return this.mtdThesaurusDefDCMI;
             case "dc":
                 return this.mtdThesaurusDefDublinCore;
+            case "dc:mi":
+                return this.mtdThesaurusDefDCMI;
+            case "xmp":
+                return this.mtdThesaurusDefXMP;
             case "pdf":
                 return this.mtdThesaurusDefPDF;
             case "technical":
                 return this.mtdThesaurusDefTechnical;
-            case "technical:audio":
-                return this.mtdThesaurusDefTechnicalAudio;
+            case "chapter":
+                return this.mtdThesaurusDefChapter;
             case "technical:container":
                 return this.mtdThesaurusDefTechnicalContainer;
-            case "technical:image":
-                return this.mtdThesaurusDefTechnicalImage;
-            case "technical:mxf":
-                return this.mtdThesaurusDefTechnicalMXF;
             case "technical:stream":
                 return this.mtdThesaurusDefTechnicalStream;
-            case "technical:transportstream":
-                return this.mtdThesaurusDefTechnicalTransportStream;
+            case "technical:image":
+                return this.mtdThesaurusDefTechnicalImage;
             case "technical:video":
                 return this.mtdThesaurusDefTechnicalVideo;
-            case "xmp":
-                return this.mtdThesaurusDefXMP;
+            case "technical:audio":
+                return this.mtdThesaurusDefTechnicalAudio;
+            case "technical:mxf":
+                return this.mtdThesaurusDefTechnicalMXF;
+            case "technical:transportstream":
+                return this.mtdThesaurusDefTechnicalTransportStream;
             default:
                 return null;
         }

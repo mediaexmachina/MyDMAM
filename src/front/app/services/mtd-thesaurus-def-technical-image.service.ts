@@ -21,43 +21,43 @@ export class MtdThesaurusDefTechnicalImage extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "reference-id":
-                return {"longName":"Reference id","sortIndexOrder":1,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "width":
-                return {"longName":"Width","sortIndexOrder":2,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.PIXELS};
-            case "height":
-                return {"longName":"Height","sortIndexOrder":3,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.PIXELS};
-            case "aspect-ratio":
-                return {"longName":"Aspect ratio","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "colorprimaries":
-                return {"longName":"Colorprimaries","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "colorrange":
-                return {"longName":"Colorrange","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "colorspace":
-                return {"longName":"Colorspace","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "colortransfer":
-                return {"longName":"Colortransfer","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "display-aspect-ratio":
-                return {"longName":"Display aspect ratio","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "image-aspect-format":
-                return {"longName":"Image aspect format","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "orientation":
-                return {"longName":"Orientation","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Colorprimaries","sortIndexOrder":8004,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "width":
+                return {"longName":"Width","sortIndexOrder":8001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.PIXELS};
+            case "height":
+                return {"longName":"Height","sortIndexOrder":8002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.PIXELS};
+            case "reference-id":
+                return {"longName":"Reference id","sortIndexOrder":8000,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "pixelformat":
-                return {"longName":"Pixelformat","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Pixelformat","sortIndexOrder":8011,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "colorrange":
+                return {"longName":"Colorrange","sortIndexOrder":8005,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "orientation":
+                return {"longName":"Orientation","sortIndexOrder":8010,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "aspect-ratio":
+                return {"longName":"Aspect ratio","sortIndexOrder":8003,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "display-aspect-ratio":
+                return {"longName":"Display aspect ratio","sortIndexOrder":8008,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "image-aspect-format":
+                return {"longName":"Image aspect format","sortIndexOrder":8009,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "colortransfer":
+                return {"longName":"Colortransfer","sortIndexOrder":8007,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "sample-aspect-ratio":
-                return {"longName":"Sample aspect ratio","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Sample aspect ratio","sortIndexOrder":8012,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "colorspace":
+                return {"longName":"Colorspace","sortIndexOrder":8006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"Image (technical)","sortIndexOrder":9,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
+        return {"longName":"Image (technical)","sortIndexOrder":8,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
     }
 
-    public referenceId(): MetadataThesaurusEntry {
-        return { key: "reference-id", classifier: this.classifier };
+    public colorprimaries(): MetadataThesaurusEntry {
+        return { key: "colorprimaries", classifier: this.classifier };
     }
 
     public width(): MetadataThesaurusEntry {
@@ -68,24 +68,24 @@ export class MtdThesaurusDefTechnicalImage extends MtdThesaurusDef {
         return { key: "height", classifier: this.classifier };
     }
 
-    public aspectRatio(): MetadataThesaurusEntry {
-        return { key: "aspect-ratio", classifier: this.classifier };
+    public referenceId(): MetadataThesaurusEntry {
+        return { key: "reference-id", classifier: this.classifier };
     }
 
-    public colorprimaries(): MetadataThesaurusEntry {
-        return { key: "colorprimaries", classifier: this.classifier };
+    public pixelformat(): MetadataThesaurusEntry {
+        return { key: "pixelformat", classifier: this.classifier };
     }
 
     public colorrange(): MetadataThesaurusEntry {
         return { key: "colorrange", classifier: this.classifier };
     }
 
-    public colorspace(): MetadataThesaurusEntry {
-        return { key: "colorspace", classifier: this.classifier };
+    public orientation(): MetadataThesaurusEntry {
+        return { key: "orientation", classifier: this.classifier };
     }
 
-    public colortransfer(): MetadataThesaurusEntry {
-        return { key: "colortransfer", classifier: this.classifier };
+    public aspectRatio(): MetadataThesaurusEntry {
+        return { key: "aspect-ratio", classifier: this.classifier };
     }
 
     public displayAspectRatio(): MetadataThesaurusEntry {
@@ -96,15 +96,15 @@ export class MtdThesaurusDefTechnicalImage extends MtdThesaurusDef {
         return { key: "image-aspect-format", classifier: this.classifier };
     }
 
-    public orientation(): MetadataThesaurusEntry {
-        return { key: "orientation", classifier: this.classifier };
-    }
-
-    public pixelformat(): MetadataThesaurusEntry {
-        return { key: "pixelformat", classifier: this.classifier };
+    public colortransfer(): MetadataThesaurusEntry {
+        return { key: "colortransfer", classifier: this.classifier };
     }
 
     public sampleAspectRatio(): MetadataThesaurusEntry {
         return { key: "sample-aspect-ratio", classifier: this.classifier };
+    }
+
+    public colorspace(): MetadataThesaurusEntry {
+        return { key: "colorspace", classifier: this.classifier };
     }
 }

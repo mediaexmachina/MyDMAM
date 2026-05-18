@@ -21,23 +21,19 @@ export class MtdThesaurusDefChapter extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "end-time":
-                return {"longName":"End time","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLISECONDS};
             case "start-time":
-                return {"longName":"Start time","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLISECONDS};
+                return {"longName":"Start time","sortIndexOrder":5001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLISECONDS};
             case "title":
-                return {"longName":"Title","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Title","sortIndexOrder":5002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "end-time":
+                return {"longName":"End time","sortIndexOrder":5000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLISECONDS};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"Chapter","sortIndexOrder":6,"kind":MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD};
-    }
-
-    public endTime(): MetadataThesaurusEntry {
-        return { key: "end-time", classifier: this.classifier };
+        return {"longName":"Chapter","sortIndexOrder":5,"kind":MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD};
     }
 
     public startTime(): MetadataThesaurusEntry {
@@ -46,5 +42,9 @@ export class MtdThesaurusDefChapter extends MtdThesaurusDef {
 
     public title(): MetadataThesaurusEntry {
         return { key: "title", classifier: this.classifier };
+    }
+
+    public endTime(): MetadataThesaurusEntry {
+        return { key: "end-time", classifier: this.classifier };
     }
 }

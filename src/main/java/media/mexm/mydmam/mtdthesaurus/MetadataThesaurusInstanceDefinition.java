@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
+import static java.lang.Integer.compare;
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.lang.reflect.Modifier.isInterface;
 import static java.util.Objects.requireNonNull;
@@ -126,16 +127,28 @@ class MetadataThesaurusInstanceDefinition {
     /**
      * Sorted
      */
-    List<MtdRegisterMethodDefinition> extractAllMethodDefinitions() { // TODO test
+    List<MtdRegisterMethodDefinition> extractAllMethodDefinitions(final int classifierSortIndexOrder) { // TODO test
+        final var sortIndexOrderByMethod = entries.keySet().stream()
+                .collect(toUnmodifiableMap(
+                        identity(),
+                        method -> Optional.ofNullable(method.getAnnotation(
+                                MetadataThesaurusSortIndexOrder.class))
+                                .map(MetadataThesaurusSortIndexOrder::value)
+                                .orElse(DEFAULT_VALUE)));
+        final var orderedMethods = entries.keySet().stream()
+                .sorted((l, r) -> {
+                    final var compare = compare(sortIndexOrderByMethod.get(l),
+                            sortIndexOrderByMethod.get(r));
+                    if (compare == 0) {
+                        return l.getName().compareTo(r.getName());
+                    }
+                    return compare;
+                })
+                .toList();
+
         return entries.entrySet().stream()
                 .map(entry -> {
                     final var method = entry.getKey();
-
-                    final var sortIndexOrder = Optional.ofNullable(method.getAnnotation(
-                            MetadataThesaurusSortIndexOrder.class))
-                            .map(MetadataThesaurusSortIndexOrder::value)
-                            .orElse(DEFAULT_VALUE);
-
                     final var keyName = entry.getValue();
                     final var oAttribute = Optional.ofNullable(method.getAnnotation(
                             MetadataThesaurusEntryAttribute.class));
@@ -150,11 +163,10 @@ class MetadataThesaurusInstanceDefinition {
                             keyName,
                             new MtdThesaurusDefEntrySignature(
                                     longname,
-                                    sortIndexOrder,
+                                    classifierSortIndexOrder * 1000 + orderedMethods.indexOf(method),
                                     type,
                                     unit));
                 })
-                .sorted()
                 .toList();
     }
 

@@ -20,6 +20,7 @@ import static java.lang.Integer.compare;
 import static java.lang.reflect.Proxy.newProxyInstance;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
+import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.checkInterfaceClass;
@@ -96,16 +97,29 @@ public class MetadataThesaurusLogic {
      * Sorted
      */
     public List<MtdRegisterDefinition> getImplementsFromRegister() {
-        return registerDefinitions.entrySet()
-                .stream()
-                .map(entry -> {
-                    final var thesaurusDefinitionMethod = entry.getKey();
-                    final var sortIndexOrder = Optional.ofNullable(thesaurusDefinitionMethod.getAnnotation(
-                            MetadataThesaurusSortIndexOrder.class))
-                            .map(MetadataThesaurusSortIndexOrder::value)
-                            .orElse(DEFAULT_VALUE);
+        final var sortIndexOrderByDefinition = registerDefinitions.keySet().stream().collect(toUnmodifiableMap(
+                identity(),
+                thesaurusDefinitionMethod -> Optional.ofNullable(thesaurusDefinitionMethod.getAnnotation(
+                        MetadataThesaurusSortIndexOrder.class))
+                        .map(MetadataThesaurusSortIndexOrder::value)
+                        .orElse(DEFAULT_VALUE)));
 
-                    final var thesaurusDefinitionClass = entry.getValue();
+        final var orderedDefinitions = registerDefinitions.entrySet().stream()
+                .sorted((l, r) -> {
+                    final var compare = compare(sortIndexOrderByDefinition.get(l.getKey()),
+                            sortIndexOrderByDefinition.get(r.getKey()));
+                    if (compare == 0) {
+                        return l.getValue().getSimpleName().compareTo(r.getValue().getSimpleName());
+                    }
+                    return compare;
+                })
+                .map(Entry::getKey)
+                .toList();
+
+        return orderedDefinitions.stream()
+                .map(thesaurusDefinitionMethod -> {
+                    final var sortIndexOrder = orderedDefinitions.indexOf(thesaurusDefinitionMethod);
+                    final var thesaurusDefinitionClass = registerDefinitions.get(thesaurusDefinitionMethod);
                     final var className = thesaurusDefinitionClass.getSimpleName();
                     final var instanceDef = new MetadataThesaurusInstanceDefinition(thesaurusDefinitionClass);
                     final var classifier = instanceDef.getClassifier();
@@ -113,13 +127,12 @@ public class MetadataThesaurusLogic {
                     return new MtdRegisterDefinition(
                             className,
                             classifier,
-                            instanceDef.extractAllMethodDefinitions(),
+                            instanceDef.extractAllMethodDefinitions(sortIndexOrder),
                             new MtdThesaurusDefClassifierSignature(
                                     instanceDef.getLongName(),
                                     sortIndexOrder,
                                     instanceDef.getKind()));
                 })
-                .sorted((l, r) -> l.className.compareTo(r.className))
                 .toList();
     }
 

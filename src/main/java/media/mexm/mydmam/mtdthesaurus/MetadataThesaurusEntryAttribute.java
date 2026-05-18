@@ -43,7 +43,7 @@ Entry:
  - Type=Identifier                         |      x        |
  - Type=UnixTimeMsec                       |      x        |
  - Type=Boolean                            |      x        |
- - NumericalUnit                           |               |
+ - NumericalUnit                           |      x        |
  - MetadataThesaurusSortIndexOrder         |               |
 
 TODO check UNIX_TIME_MSEC and BOOLEAN during write

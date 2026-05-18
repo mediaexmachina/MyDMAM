@@ -21,48 +21,48 @@ export class MtdThesaurusDefTechnicalContainer extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "duration":
-                return {"longName":"Duration","sortIndexOrder":1,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLISECONDS};
             case "timecode":
-                return {"longName":"Timecode","sortIndexOrder":2,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "format":
-                return {"longName":"Format","sortIndexOrder":3,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Timecode","sortIndexOrder":6001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "duration":
+                return {"longName":"Duration","sortIndexOrder":6000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLISECONDS};
             case "format-name":
-                return {"longName":"Format name","sortIndexOrder":4,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "bitrate":
-                return {"longName":"Bitrate","sortIndexOrder":5,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.BITS_PER_SECONDS};
+                return {"longName":"Format name","sortIndexOrder":6003,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "format":
+                return {"longName":"Format","sortIndexOrder":6002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "start-time":
-                return {"longName":"Start time","sortIndexOrder":6,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLISECONDS};
+                return {"longName":"Start time","sortIndexOrder":6005,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLISECONDS};
+            case "bitrate":
+                return {"longName":"Bitrate","sortIndexOrder":6004,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.BITS_PER_SECONDS};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"Media container (technical)","sortIndexOrder":7,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
-    }
-
-    public duration(): MetadataThesaurusEntry {
-        return { key: "duration", classifier: this.classifier };
+        return {"longName":"Media container (technical)","sortIndexOrder":6,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
     }
 
     public timecode(): MetadataThesaurusEntry {
         return { key: "timecode", classifier: this.classifier };
     }
 
-    public format(): MetadataThesaurusEntry {
-        return { key: "format", classifier: this.classifier };
+    public duration(): MetadataThesaurusEntry {
+        return { key: "duration", classifier: this.classifier };
     }
 
     public formatName(): MetadataThesaurusEntry {
         return { key: "format-name", classifier: this.classifier };
     }
 
-    public bitrate(): MetadataThesaurusEntry {
-        return { key: "bitrate", classifier: this.classifier };
+    public format(): MetadataThesaurusEntry {
+        return { key: "format", classifier: this.classifier };
     }
 
     public startTime(): MetadataThesaurusEntry {
         return { key: "start-time", classifier: this.classifier };
+    }
+
+    public bitrate(): MetadataThesaurusEntry {
+        return { key: "bitrate", classifier: this.classifier };
     }
 }

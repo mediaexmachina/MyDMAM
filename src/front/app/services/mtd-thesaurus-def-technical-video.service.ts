@@ -21,25 +21,21 @@ export class MtdThesaurusDefTechnicalVideo extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "average-frame-rate":
-                return {"longName":"Average frame rate","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.FRAMES_PER_SECONDS};
             case "field-order":
-                return {"longName":"Field order","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Field order","sortIndexOrder":9001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "frame-rate":
-                return {"longName":"Frame rate","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.FRAMES_PER_SECONDS};
+                return {"longName":"Frame rate","sortIndexOrder":9002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.FRAMES_PER_SECONDS};
             case "reference-id":
-                return {"longName":"Reference id","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Reference id","sortIndexOrder":9003,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "average-frame-rate":
+                return {"longName":"Average frame rate","sortIndexOrder":9000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.FRAMES_PER_SECONDS};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"Video (technical)","sortIndexOrder":10,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
-    }
-
-    public averageFrameRate(): MetadataThesaurusEntry {
-        return { key: "average-frame-rate", classifier: this.classifier };
+        return {"longName":"Video (technical)","sortIndexOrder":9,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
     }
 
     public fieldOrder(): MetadataThesaurusEntry {
@@ -52,5 +48,9 @@ export class MtdThesaurusDefTechnicalVideo extends MtdThesaurusDef {
 
     public referenceId(): MetadataThesaurusEntry {
         return { key: "reference-id", classifier: this.classifier };
+    }
+
+    public averageFrameRate(): MetadataThesaurusEntry {
+        return { key: "average-frame-rate", classifier: this.classifier };
     }
 }

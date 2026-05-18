@@ -21,23 +21,31 @@ export class MtdThesaurusDefTechnicalAudio extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "reference-id":
-                return {"longName":"Reference id","sortIndexOrder":0,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "channel-layout":
-                return {"longName":"Channel layout","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "channels-count":
-                return {"longName":"Channels count","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.TRACKS};
-            case "sample-format":
-                return {"longName":"Sample format","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "sample-rate":
-                return {"longName":"Sample rate","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.HERTZ};
+                return {"longName":"Sample rate","sortIndexOrder":10004,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.HERTZ};
+            case "channels-count":
+                return {"longName":"Channels count","sortIndexOrder":10002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.TRACKS};
+            case "reference-id":
+                return {"longName":"Reference id","sortIndexOrder":10000,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "channel-layout":
+                return {"longName":"Channel layout","sortIndexOrder":10001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "sample-format":
+                return {"longName":"Sample format","sortIndexOrder":10003,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"Audio (technical)","sortIndexOrder":11,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
+        return {"longName":"Audio (technical)","sortIndexOrder":10,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
+    }
+
+    public sampleRate(): MetadataThesaurusEntry {
+        return { key: "sample-rate", classifier: this.classifier };
+    }
+
+    public channelsCount(): MetadataThesaurusEntry {
+        return { key: "channels-count", classifier: this.classifier };
     }
 
     public referenceId(): MetadataThesaurusEntry {
@@ -48,15 +56,7 @@ export class MtdThesaurusDefTechnicalAudio extends MtdThesaurusDef {
         return { key: "channel-layout", classifier: this.classifier };
     }
 
-    public channelsCount(): MetadataThesaurusEntry {
-        return { key: "channels-count", classifier: this.classifier };
-    }
-
     public sampleFormat(): MetadataThesaurusEntry {
         return { key: "sample-format", classifier: this.classifier };
-    }
-
-    public sampleRate(): MetadataThesaurusEntry {
-        return { key: "sample-rate", classifier: this.classifier };
     }
 }

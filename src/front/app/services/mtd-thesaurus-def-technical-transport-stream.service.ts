@@ -21,27 +21,23 @@ export class MtdThesaurusDefTechnicalTransportStream extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "pcr-pid":
-                return {"longName":"Pcr pid","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "pmt-pid":
-                return {"longName":"Pmt pid","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Pmt pid","sortIndexOrder":12001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "program-num":
-                return {"longName":"Program num","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "service-name":
-                return {"longName":"Service name","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Program num","sortIndexOrder":12002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "service-provider":
-                return {"longName":"Service provider","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Service provider","sortIndexOrder":12004,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "pcr-pid":
+                return {"longName":"Pcr pid","sortIndexOrder":12000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "service-name":
+                return {"longName":"Service name","sortIndexOrder":12003,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"MPEG TS (technical)","sortIndexOrder":13,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
-    }
-
-    public pcrPid(): MetadataThesaurusEntry {
-        return { key: "pcr-pid", classifier: this.classifier };
+        return {"longName":"MPEG TS (technical)","sortIndexOrder":12,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
     }
 
     public pmtPid(): MetadataThesaurusEntry {
@@ -52,11 +48,15 @@ export class MtdThesaurusDefTechnicalTransportStream extends MtdThesaurusDef {
         return { key: "program-num", classifier: this.classifier };
     }
 
-    public serviceName(): MetadataThesaurusEntry {
-        return { key: "service-name", classifier: this.classifier };
-    }
-
     public serviceProvider(): MetadataThesaurusEntry {
         return { key: "service-provider", classifier: this.classifier };
+    }
+
+    public pcrPid(): MetadataThesaurusEntry {
+        return { key: "pcr-pid", classifier: this.classifier };
+    }
+
+    public serviceName(): MetadataThesaurusEntry {
+        return { key: "service-name", classifier: this.classifier };
     }
 }

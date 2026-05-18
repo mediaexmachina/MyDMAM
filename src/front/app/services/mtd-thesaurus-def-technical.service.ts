@@ -22,14 +22,14 @@ export class MtdThesaurusDefTechnical extends MtdThesaurusDef {
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
             case "type":
-                return {"longName":"Type","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+                return {"longName":"Type","sortIndexOrder":4000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
     }
 
     public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {
-        return {"longName":"Technical","sortIndexOrder":5,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
+        return {"longName":"Technical","sortIndexOrder":4,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
     }
 
     public type(): MetadataThesaurusEntry {
