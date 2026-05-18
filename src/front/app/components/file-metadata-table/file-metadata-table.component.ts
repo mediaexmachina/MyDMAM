@@ -33,37 +33,63 @@ import { SpanDateTimeComponent } from '../toolkit/span-date-time.component';
 })
 export class FileMetadataTableComponent {
 
+
     readonly mtdThesaurusResolver = inject(MtdThesaurusResolver);
     readonly assetResponse = input.required<AssetResponse>();
     readonly classifiers = computed(this.getClassifiers.bind(this));
     readonly numberFormat = new window.Intl.NumberFormat();
 
-    getValueByIndex(index: number, key: FileMetadataKey): string {
-        const value = this.getRawValueByIndex(index, key);
-
-        if (value == "" || value.startsWith("0x")) {
-            return value;
-        }
-
-        const valueNumber = Number(value);
-        if (Number.isNaN(valueNumber) == false) {
-            return this.numberFormat.format(valueNumber);
-        }
-
-        /*
-        let unit = "";
-        switch (key.signature?.unit) {
-            case "BITS_PER_SECONDS":
-                unit = " bps";
-                break;
-        }
-        */
-
-        return value;
-    }
-
     getRawValueByIndex(index: number, key: FileMetadataKey): string {
         return key.valueByIndex.filter(vi => vi.index == index).map(vi => vi.value).at(0) || "";
+    }
+
+    getValueByIndex(index: number, key: FileMetadataKey): string {
+        const numberFormat = this.numberFormat;
+        const value = this.getRawValueByIndex(index, key);
+
+        const toNumber = function(unit:string|null, unitPlurial:string|null):string {
+            if (value == "" || value.startsWith("0x")) {
+                return value;
+            }
+            const valueNumber = Number(value);
+            if (Number.isNaN(valueNumber) == false) {
+                if (unit == "bps") {
+                    return Utils.bpsToEngNotation(valueNumber);
+                } else if (unit == "ms") {
+                    return Utils.msToHMS(valueNumber);
+                } else if (unitPlurial != null && valueNumber > 1) {
+                    return numberFormat.format(valueNumber) + " " + unitPlurial;
+                } else if (unit != null) {
+                    return numberFormat.format(valueNumber) + " " + unit;
+                }
+                return numberFormat.format(valueNumber);
+            }
+            return value;
+        };
+
+        switch (key.signature?.unit) {
+            case "MILLISECONDS":
+                return toNumber("ms", null);
+            case "MILLIMETERS":
+                return toNumber("mm", null);
+            case "DEGREES":
+                return toNumber("°", null);
+            case "TRACKS":
+                return toNumber("track", "tracks");
+            case "HERTZ":
+                return toNumber("Hz", null);
+            case "BITS_PER_SECONDS":
+                return toNumber("bps", null);
+            case "FRAMES_PER_SECONDS":
+                return toNumber("fps", null);
+            case "PIXELS":
+                return toNumber("pixel", "pixels");
+            case "NO_UNIT":
+                return toNumber(null, null);
+            default:
+                console.warn("Please update front code from backend, not managed:", key.signature?.unit);
+                return toNumber(null, null);
+        }
     }
 
     getNumberValueByIndex(index: number, key: FileMetadataKey): number {

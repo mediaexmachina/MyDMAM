@@ -23,4 +23,44 @@ export abstract class Utils {
         return list;
     }
 
+    public static msToHMS(durationMs: number):string {
+        const sign = durationMs < 0 ? "-" : "";
+        const durationSecond = Math.abs(durationMs) / 1000;
+        const secondOnlyValue = Math.floor(durationSecond);
+        const msecondOnlyValue = Math.round((durationSecond - secondOnlyValue) * 1000);
+
+        if (secondOnlyValue == 0) {
+            return sign + msecondOnlyValue + " ms";
+        }
+
+        const msecond = msecondOnlyValue == 0 ? "" : " " + msecondOnlyValue + " ms";
+        if (secondOnlyValue < 60) {
+            return sign + secondOnlyValue + " sec" + msecond;
+        }
+
+        const durationMinute = secondOnlyValue / 60;
+        const minuteOnlyValue = Math.floor(durationMinute);
+        const lastSeconds = Math.round((durationMinute - minuteOnlyValue) * 60);
+
+        if (durationMinute < 60) {
+            return sign + minuteOnlyValue + " min " + lastSeconds + " sec" + msecond;
+        }
+
+        const durationHour = minuteOnlyValue / 60;
+        const hourOnlyValue = Math.floor(durationHour);
+        const lastMinutes = Math.round((durationHour - hourOnlyValue) * 60);
+
+        return durationMs + "ms >> " + sign + hourOnlyValue + " hr " + lastMinutes + " min " + lastSeconds + " sec" + msecond;
+    }
+
+    public static bpsToEngNotation(valueBps: number):string {
+        if (valueBps < 1000) {
+            return valueBps + " bits/sec";
+        } else if (valueBps < 1_000_000) {
+            return Math.round(valueBps / 1000) + " kbits/sec";
+        } else if (valueBps < 1_000_000_000) {
+            return Math.round(valueBps / 1_000_000) + " Mbits/sec";
+        }
+        return Math.round(valueBps / 1_000_000_000) + " Gbits/sec";
+    }
 }
