@@ -39,9 +39,3 @@ public @interface MetadataThesaurusClassifier {
     public MetadataThesaurusClassifierKind kind();
 
 }
-
-/*
-TODO add @
-                                           |Front Displayed|
-MetadataThesaurusSortIndexOrder            |               |
- * */

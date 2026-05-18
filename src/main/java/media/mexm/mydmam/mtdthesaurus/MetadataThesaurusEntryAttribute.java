@@ -36,15 +36,5 @@ public @interface MetadataThesaurusEntryAttribute {
 
 }
 /*
-TODO add @
-                                           |Front Displayed|
-Entry:
- - long name                               |      x        |
- - Type=Identifier                         |      x        |
- - Type=UnixTimeMsec                       |      x        |
- - Type=Boolean                            |      x        |
- - NumericalUnit                           |      x        |
- - MetadataThesaurusSortIndexOrder         |               |
-
 TODO check UNIX_TIME_MSEC and BOOLEAN during write
- * */
+*/
