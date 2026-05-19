@@ -94,7 +94,7 @@ public class ImageAspectRatioDetectionActivity implements ActivityHandler {
         final var technicalImage = thesaurus.technicalImage();
 
         final var heightbyLayer = technicalImage.height().getAll();
-        final var widthbyLayer = technicalImage.height().getAll();
+        final var widthbyLayer = technicalImage.width().getAll();
 
         union(heightbyLayer.keySet(), widthbyLayer.keySet())
                 .forEach(layer -> {
