@@ -242,8 +242,8 @@ public class PDFHandler implements ActivityHandler {
                           final int forcePage) {
         final var page = forcePage > -1 ? forcePage : pageInfo.page();
         defPdf.pageRotated().set(page, pageInfo.rotated());
-        defPdf.pageWidthMm().set(page, pageInfo.getWMm());
-        defPdf.pageHeightMm().set(page, pageInfo.getHMm());
+        defPdf.pageWidth().set(page, pageInfo.getWMm());
+        defPdf.pageHeight().set(page, pageInfo.getHMm());
     }
 
 }

@@ -335,8 +335,8 @@ class PDFHandlerTest {
 
             if (samePages) {
                 assertThesaurus.pdf().pageRotated().set(pageInfoRotated);
-                assertThesaurus.pdf().pageWidthMm().set(ptsToMm(pageInfoW));
-                assertThesaurus.pdf().pageHeightMm().set(ptsToMm(pageInfoH));
+                assertThesaurus.pdf().pageWidth().set(ptsToMm(pageInfoW));
+                assertThesaurus.pdf().pageHeight().set(ptsToMm(pageInfoH));
             }
 
             assertThesaurus.xmp().createDate().set(createDate * 1000);
@@ -379,8 +379,8 @@ class PDFHandlerTest {
                 final var defPdf = assertThesaurus.pdf();
                 pagesFormats.forEach(pageInfo -> {
                     defPdf.pageRotated().set(pageInfo.page(), pageInfo.rotated());
-                    defPdf.pageWidthMm().set(pageInfo.page(), pageInfo.getWMm());
-                    defPdf.pageHeightMm().set(pageInfo.page(), pageInfo.getHMm());
+                    defPdf.pageWidth().set(pageInfo.page(), pageInfo.getWMm());
+                    defPdf.pageHeight().set(pageInfo.page(), pageInfo.getHMm());
                 });
             }
 

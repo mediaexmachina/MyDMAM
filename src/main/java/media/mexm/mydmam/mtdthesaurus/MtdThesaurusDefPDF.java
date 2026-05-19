@@ -42,11 +42,11 @@ public interface MtdThesaurusDefPDF {
 
     @MetadataThesaurusSortIndexOrder(6)
     @MetadataThesaurusEntryAttribute(unit = MILLIMETERS)
-    MetadataThesaurusEntry pageWidthMm();// TODO remove Mm
+    MetadataThesaurusEntry pageWidth();
 
     @MetadataThesaurusSortIndexOrder(7)
     @MetadataThesaurusEntryAttribute(unit = MILLIMETERS)
-    MetadataThesaurusEntry pageHeightMm();// TODO remove Mm
+    MetadataThesaurusEntry pageHeight();
 
     @MetadataThesaurusSortIndexOrder(8)
     @MetadataThesaurusEntryAttribute(unit = DEGREES)
