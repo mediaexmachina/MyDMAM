@@ -31,10 +31,10 @@ export class MtdThesaurusDefPDF extends MtdThesaurusDef {
                 return {"longName":"Javascript","sortIndexOrder":3003,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "keywords":
                 return {"longName":"Keywords","sortIndexOrder":3004,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "page-width-mm":
-                return {"longName":"Page width mm","sortIndexOrder":3005,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLIMETERS};
-            case "page-height-mm":
-                return {"longName":"Page height mm","sortIndexOrder":3006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLIMETERS};
+            case "page-width":
+                return {"longName":"Page width","sortIndexOrder":3005,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLIMETERS};
+            case "page-height":
+                return {"longName":"Page height","sortIndexOrder":3006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLIMETERS};
             case "page-rotated":
                 return {"longName":"Page rotated","sortIndexOrder":3007,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.DEGREES};
             case "same-pages-format":
@@ -84,12 +84,12 @@ export class MtdThesaurusDefPDF extends MtdThesaurusDef {
         return { key: "keywords", classifier: this.classifier };
     }
 
-    public pageWidthMm(): MetadataThesaurusEntry {
-        return { key: "page-width-mm", classifier: this.classifier };
+    public pageWidth(): MetadataThesaurusEntry {
+        return { key: "page-width", classifier: this.classifier };
     }
 
-    public pageHeightMm(): MetadataThesaurusEntry {
-        return { key: "page-height-mm", classifier: this.classifier };
+    public pageHeight(): MetadataThesaurusEntry {
+        return { key: "page-height", classifier: this.classifier };
     }
 
     public pageRotated(): MetadataThesaurusEntry {
