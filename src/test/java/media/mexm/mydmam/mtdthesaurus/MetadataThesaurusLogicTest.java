@@ -18,6 +18,8 @@ package media.mexm.mydmam.mtdthesaurus;
 
 import static java.time.Instant.now;
 import static java.util.Optional.empty;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.NO_UNIT;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.DISPLAYED_AS_IT;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.EQUALS;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.HASH_CODE;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.TO_STRING;
@@ -49,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.MethodEntryDefinition;
 import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.MtdRegisterDefinition;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
@@ -60,6 +63,8 @@ class MetadataThesaurusLogicTest {
     MetadataThesaurusEntryIOProvider provider;
     @Mock
     Method method;
+    @Mock
+    MethodEntryDefinition methodDefinition;
 
     String classifier = "dc";
     String key = "format";
@@ -77,6 +82,8 @@ class MetadataThesaurusLogicTest {
     int defaultInt;
     @Fake
     int regularInt;
+    @Fake
+    int presetOrder;
 
     MetadataThesaurusLogic mtl;
 
@@ -89,6 +96,15 @@ class MetadataThesaurusLogicTest {
         final var nowDate = now();
         now = nowDate.toString();
         nowUnixtime = nowDate.toEpochMilli();
+
+        when(methodDefinition.instanceClassName()).thenReturn(Object.class.getSimpleName());
+        when(methodDefinition.classifier()).thenReturn(classifier);
+        when(methodDefinition.method()).thenReturn(method);
+        when(methodDefinition.keyName()).thenReturn(key);
+        when(methodDefinition.longname()).thenReturn(key.toUpperCase());
+        when(methodDefinition.type()).thenReturn(DISPLAYED_AS_IT);
+        when(methodDefinition.unit()).thenReturn(NO_UNIT);
+        when(methodDefinition.presetOrder()).thenReturn(presetOrder);
     }
 
     @Test
@@ -158,71 +174,81 @@ class MetadataThesaurusLogicTest {
     @Test
     void testOnEntryCall() {
         assertThrows(UnsupportedOperationException.class,
-                () -> mtl.onEntryCall(provider, classifier, key, EQUALS, null));
+                () -> mtl.onEntryCall(provider, classifier, methodDefinition, EQUALS, null));
         assertThrows(UnsupportedOperationException.class,
-                () -> mtl.onEntryCall(provider, classifier, key, HASH_CODE, null));
-        assertThat(mtl.onEntryCall(provider, classifier, key, TO_STRING, null))
+                () -> mtl.onEntryCall(provider, classifier, methodDefinition, HASH_CODE, null));
+        assertThat(mtl.onEntryCall(provider, classifier, methodDefinition, TO_STRING, null))
                 .isEqualTo(classifier + "." + key);
-        assertThat(mtl.onEntryCall(provider, classifier, key, "classifier", null))
+        assertThat(mtl.onEntryCall(provider, classifier, methodDefinition, "classifier", null))
                 .isEqualTo(classifier);
-        assertThat(mtl.onEntryCall(provider, classifier, key, "key", null))
+        assertThat(mtl.onEntryCall(provider, classifier, methodDefinition, "key", null))
                 .isEqualTo(key);
 
-        mtl.onEntryCall(provider, classifier, key, "set", args(value));
+        mtl.onEntryCall(provider, classifier, methodDefinition, "set", args(value));
         verify(provider, times(1)).setValueToDatabase(classifier, key, 0, value);
 
-        mtl.onEntryCall(provider, classifier, key, "set", args(layer, value));
+        mtl.onEntryCall(provider, classifier, methodDefinition, "set", args(layer, value));
         verify(provider, times(1)).setValueToDatabase(classifier, key, layer, value);
 
-        mtl.onEntryCall(provider, classifier, key, "setDateISO8601", args(Optional.ofNullable(now)));
+        mtl.onEntryCall(provider, classifier, methodDefinition, "setDateISO8601", args(Optional.ofNullable(now)));
         verify(provider, times(1)).setValueToDatabase(classifier, key, 0, String.valueOf(nowUnixtime));
 
-        mtl.onEntryCall(provider, classifier, key, "setDateISO8601", args(layer, Optional.ofNullable(now)));
+        mtl.onEntryCall(provider, classifier, methodDefinition, "setDateISO8601", args(layer, Optional.ofNullable(
+                now)));
         verify(provider, times(1)).setValueToDatabase(classifier, key, layer, String.valueOf(nowUnixtime));
 
         when(provider.getValueFromDatabase(classifier, key, 0)).thenReturn(Optional.ofNullable(value));
-        var result = (Optional<String>) mtl.onEntryCall(provider, classifier, key, "get", args());
+        var result = (Optional<String>) mtl.onEntryCall(provider, classifier, methodDefinition, "get", args());
         assertThat(result).contains(value);
         verify(provider, times(1)).getValueFromDatabase(classifier, key, 0);
 
         when(provider.getValueFromDatabase(classifier, key, layer)).thenReturn(Optional.ofNullable(value));
-        result = (Optional<String>) mtl.onEntryCall(provider, classifier, key, "get", args(layer));
+        result = (Optional<String>) mtl.onEntryCall(provider, classifier, methodDefinition, "get", args(layer));
         assertThat(result).contains(value);
         verify(provider, times(1)).getValueFromDatabase(classifier, key, layer);
 
         key = key + "-int";
+        when(methodDefinition.keyName()).thenReturn(key);
         when(provider.getValueFromDatabase(classifier, key, 0))
                 .thenReturn(Optional.ofNullable(String.valueOf(regularInt)));
-        var resultInt = (int) mtl.onEntryCall(provider, classifier, key, "getAsInt", args(defaultInt));
+        var resultInt = (int) mtl.onEntryCall(provider, classifier, methodDefinition, "getAsInt", args(defaultInt));
         assertThat(resultInt).isEqualTo(regularInt);
         verify(provider, times(1)).getValueFromDatabase(classifier, key, 0);
 
         when(provider.getValueFromDatabase(classifier, key, layer))
                 .thenReturn(Optional.ofNullable(String.valueOf(regularInt)));
-        resultInt = (int) mtl.onEntryCall(provider, classifier, key, "getAsInt", args(layer, defaultInt));
+        resultInt = (int) mtl.onEntryCall(provider, classifier, methodDefinition, "getAsInt", args(layer, defaultInt));
         assertThat(resultInt).isEqualTo(regularInt);
         verify(provider, times(1)).getValueFromDatabase(classifier, key, layer);
 
         key = key + "NOPE";
-        resultInt = (int) mtl.onEntryCall(provider, classifier, key, "getAsInt", args(defaultInt));
+        when(methodDefinition.keyName()).thenReturn(key);
+        resultInt = (int) mtl.onEntryCall(provider, classifier, methodDefinition, "getAsInt", args(defaultInt));
         assertThat(resultInt).isEqualTo(defaultInt);
         verify(provider, times(1)).getValueFromDatabase(classifier, key, 0);
 
-        resultInt = (int) mtl.onEntryCall(provider, classifier, key, "getAsInt", args(layer, defaultInt));
+        resultInt = (int) mtl.onEntryCall(provider, classifier, methodDefinition, "getAsInt", args(layer, defaultInt));
         assertThat(resultInt).isEqualTo(defaultInt);
         verify(provider, times(1)).getValueFromDatabase(classifier, key, layer);
 
         when(provider.getValueLayerFromDatabase(classifier, key)).thenReturn(Map.of(layer, value));
-        final var resultMapString = (Map<Integer, String>) mtl.onEntryCall(provider, classifier, key, "getAll", args());
+        final var resultMapString = (Map<Integer, String>) mtl.onEntryCall(provider, classifier, methodDefinition,
+                "getAll", args());
         assertThat(resultMapString).isEqualTo(Map.of(layer, value));
         verify(provider, times(1)).getValueLayerFromDatabase(classifier, key);
 
         when(provider.getValueLayerFromDatabase(classifier, key)).thenReturn(Map.of(layer, String.valueOf(regularInt)));
         final var resultMapInt = (Map<Integer, Integer>) mtl
-                .onEntryCall(provider, classifier, key, "getAllInt", args());
+                .onEntryCall(provider, classifier, methodDefinition, "getAllInt", args());
         assertThat(resultMapInt).isEqualTo(Map.of(layer, regularInt));
         verify(provider, times(2)).getValueLayerFromDatabase(classifier, key);
 
+        verify(methodDefinition, atLeastOnce()).keyName();
+        verify(methodDefinition, atLeastOnce()).type();
+        verify(methodDefinition, atLeastOnce()).unit();
+        verify(methodDefinition, atLeastOnce()).method();
+        verify(methodDefinition, atLeastOnce()).instanceClassName();
+        verify(method, atLeastOnce()).getName();
     }
 
     static Object[] args(final Object... args) {
@@ -234,24 +260,37 @@ class MetadataThesaurusLogicTest {
 
     @Test
     void testSetDateISO8601() {
-        assertThat(setDateISO8601(Optional.ofNullable(now))).contains(String.valueOf(nowUnixtime));
-        assertThat(setDateISO8601(Optional.ofNullable(value))).isEmpty();
-        assertThat(setDateISO8601(empty())).isEmpty();
+        assertThat(setDateISO8601(methodDefinition, Optional.ofNullable(now))).contains(String.valueOf(nowUnixtime));
+        assertThat(setDateISO8601(methodDefinition, Optional.ofNullable(value))).isEmpty();
+        assertThat(setDateISO8601(methodDefinition, empty())).isEmpty();
+
+        verify(methodDefinition, atLeastOnce()).type();
+        verify(methodDefinition, atLeastOnce()).unit();
+        verify(methodDefinition, atLeastOnce()).method();
+        verify(methodDefinition, atLeastOnce()).instanceClassName();
+        verify(method, atLeastOnce()).getName();
     }
 
     @Test
     void testSet() {
-        assertThat(set(value)).contains(value);
-        assertThat(set(null)).isEmpty();
-        assertThat(set(" ")).isEmpty();
-        assertThat(set(Duration.ofMillis(nowUnixtime))).contains(String.valueOf(nowUnixtime));
-        assertThat(set(regularInt)).contains(String.valueOf(regularInt));
+        assertThat(set(methodDefinition, value)).contains(value);
+        assertThat(set(methodDefinition, null)).isEmpty();
+        assertThat(set(methodDefinition, " ")).isEmpty();
+        assertThat(set(methodDefinition, Duration.ofMillis(nowUnixtime))).contains(String.valueOf(nowUnixtime));
+        assertThat(set(methodDefinition, regularInt)).contains(String.valueOf(regularInt));
 
-        assertThat(set(Optional.ofNullable(value))).contains(value);
-        assertThat(set(empty())).isEmpty();
-        assertThat(set(Optional.ofNullable(" "))).isEmpty();
-        assertThat(set(Optional.ofNullable(Duration.ofMillis(nowUnixtime)))).contains(String.valueOf(nowUnixtime));
-        assertThat(set(Optional.ofNullable(regularInt))).contains(String.valueOf(regularInt));
+        assertThat(set(methodDefinition, Optional.ofNullable(value))).contains(value);
+        assertThat(set(methodDefinition, empty())).isEmpty();
+        assertThat(set(methodDefinition, Optional.ofNullable(" "))).isEmpty();
+        assertThat(set(methodDefinition, Optional.ofNullable(Duration.ofMillis(nowUnixtime)))).contains(String.valueOf(
+                nowUnixtime));
+        assertThat(set(methodDefinition, Optional.ofNullable(regularInt))).contains(String.valueOf(regularInt));
+
+        verify(methodDefinition, atLeastOnce()).type();
+        verify(methodDefinition, atLeastOnce()).unit();
+        verify(methodDefinition, atLeastOnce()).method();
+        verify(methodDefinition, atLeastOnce()).instanceClassName();
+        verify(method, atLeastOnce()).getName();
     }
 
     @Test

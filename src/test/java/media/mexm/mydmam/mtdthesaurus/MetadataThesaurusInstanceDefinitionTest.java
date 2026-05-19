@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.mtdthesaurus;
 
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.checkInterfaceClass;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.extractClassifier;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,11 +34,11 @@ class MetadataThesaurusInstanceDefinitionTest {
     interface NoClassifier {
     }
 
-    @MetadataThesaurusClassifier("")
+    @MetadataThesaurusClassifier(value = "", longname = "ln", kind = BIBLIOGRAPHIC_RECORD)
     interface EmptyClassifier {
     }
 
-    @MetadataThesaurusClassifier("a.b")
+    @MetadataThesaurusClassifier(value = "a.b", longname = "ln", kind = BIBLIOGRAPHIC_RECORD)
     interface DotClassifier {
     }
 
@@ -66,7 +67,7 @@ class MetadataThesaurusInstanceDefinitionTest {
         assertEquals("dc", mtid.getClassifier());
     }
 
-    @MetadataThesaurusClassifier("cls")
+    @MetadataThesaurusClassifier(value = "cls", longname = "ln", kind = BIBLIOGRAPHIC_RECORD)
     interface NotAbstractClassifier {
     }
 
@@ -79,7 +80,7 @@ class MetadataThesaurusInstanceDefinitionTest {
         checkInterfaceClass(instanceClass, methodList);
     }
 
-    @MetadataThesaurusClassifier("cls")
+    @MetadataThesaurusClassifier(value = "cls", longname = "ln", kind = BIBLIOGRAPHIC_RECORD)
     interface WithDefaultClassifier {
         default void aa() {
         }
@@ -94,7 +95,7 @@ class MetadataThesaurusInstanceDefinitionTest {
         assertThrows(IllegalArgumentException.class, () -> checkInterfaceClass(instanceClass, methodList));
     }
 
-    @MetadataThesaurusClassifier("cls")
+    @MetadataThesaurusClassifier(value = "cls", longname = "ln", kind = BIBLIOGRAPHIC_RECORD)
     class NotAnInterface {
     }
 

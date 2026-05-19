@@ -298,7 +298,7 @@ public class MetadataThesaurusLogic {
     }
 
     private static void makeLogWarnInvalidEntryType(final MethodEntryDefinition methodDefinition) {
-        log.warn("Invalid @{}.{} on {}#{}()",
+        log.warn("Implementation warn, you should not set @{}.{} on {}#{}()",
                 MetadataThesaurusEntryType.class.getSimpleName(),
                 methodDefinition.type(),
                 methodDefinition.instanceClassName(),
@@ -306,7 +306,7 @@ public class MetadataThesaurusLogic {
     }
 
     private static void makeLogWarnInvalidNumericalUnit(final MethodEntryDefinition methodDefinition) {
-        log.warn("Invalid @{}.{} on {}#{}()",
+        log.warn("Implementation warn, you should not set @{}.{} on {}#{}()",
                 MetadataThesaurusEntryNumericalUnit.class.getSimpleName(),
                 methodDefinition.unit(),
                 methodDefinition.instanceClassName(),
