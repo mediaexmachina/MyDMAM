@@ -22,11 +22,14 @@ import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit
 @MetadataThesaurusClassifier(value = "chapter", longname = "Chapter", kind = BIBLIOGRAPHIC_RECORD)
 public interface MtdThesaurusDefChapter {
 
+    @MetadataThesaurusSortIndexOrder(1)
     MetadataThesaurusEntry title();
 
+    @MetadataThesaurusSortIndexOrder(2)
     @MetadataThesaurusEntryAttribute(unit = MILLISECONDS)
     MetadataThesaurusEntry startTime();
 
+    @MetadataThesaurusSortIndexOrder(3)
     @MetadataThesaurusEntryAttribute(unit = MILLISECONDS)
     MetadataThesaurusEntry endTime();
 

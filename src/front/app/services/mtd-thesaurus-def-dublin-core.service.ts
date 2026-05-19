@@ -21,36 +21,36 @@ export class MtdThesaurusDefDublinCore extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "source":
-                return {"longName":"Source","sortIndexOrder":11,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "subject":
-                return {"longName":"Subject","sortIndexOrder":12,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "type":
-                return {"longName":"Type","sortIndexOrder":14,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "language":
-                return {"longName":"Language","sortIndexOrder":7,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "identifier":
-                return {"longName":"Identifier","sortIndexOrder":6,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "contributor":
+                return {"longName":"Contributor","sortIndexOrder":0,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "coverage":
+                return {"longName":"Coverage","sortIndexOrder":1,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "creator":
+                return {"longName":"Creator","sortIndexOrder":2,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "date":
+                return {"longName":"Date","sortIndexOrder":3,"type":MetadataThesaurusEntryType.UNIX_TIME_MSEC,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "description":
+                return {"longName":"Description","sortIndexOrder":4,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "format":
                 return {"longName":"MIME Type","sortIndexOrder":5,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "rights":
-                return {"longName":"Rights","sortIndexOrder":10,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "identifier":
+                return {"longName":"Identifier","sortIndexOrder":6,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "language":
+                return {"longName":"Language","sortIndexOrder":7,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "publisher":
                 return {"longName":"Publisher","sortIndexOrder":8,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "relation":
                 return {"longName":"Relation","sortIndexOrder":9,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "rights":
+                return {"longName":"Rights","sortIndexOrder":10,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "source":
+                return {"longName":"Source","sortIndexOrder":11,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "subject":
+                return {"longName":"Subject","sortIndexOrder":12,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "title":
                 return {"longName":"Title","sortIndexOrder":13,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "contributor":
-                return {"longName":"Contributor","sortIndexOrder":0,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "creator":
-                return {"longName":"Creator","sortIndexOrder":2,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "coverage":
-                return {"longName":"Coverage","sortIndexOrder":1,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "description":
-                return {"longName":"Description","sortIndexOrder":4,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "date":
-                return {"longName":"Date","sortIndexOrder":3,"type":MetadataThesaurusEntryType.UNIX_TIME_MSEC,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "type":
+                return {"longName":"Type","sortIndexOrder":14,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
@@ -60,32 +60,36 @@ export class MtdThesaurusDefDublinCore extends MtdThesaurusDef {
         return {"longName":"Dublin Core","sortIndexOrder":0,"kind":MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD};
     }
 
-    public source(): MetadataThesaurusEntry {
-        return { key: "source", classifier: this.classifier };
+    public contributor(): MetadataThesaurusEntry {
+        return { key: "contributor", classifier: this.classifier };
     }
 
-    public subject(): MetadataThesaurusEntry {
-        return { key: "subject", classifier: this.classifier };
+    public coverage(): MetadataThesaurusEntry {
+        return { key: "coverage", classifier: this.classifier };
     }
 
-    public type(): MetadataThesaurusEntry {
-        return { key: "type", classifier: this.classifier };
+    public creator(): MetadataThesaurusEntry {
+        return { key: "creator", classifier: this.classifier };
     }
 
-    public language(): MetadataThesaurusEntry {
-        return { key: "language", classifier: this.classifier };
+    public date(): MetadataThesaurusEntry {
+        return { key: "date", classifier: this.classifier };
     }
 
-    public identifier(): MetadataThesaurusEntry {
-        return { key: "identifier", classifier: this.classifier };
+    public description(): MetadataThesaurusEntry {
+        return { key: "description", classifier: this.classifier };
     }
 
     public format(): MetadataThesaurusEntry {
         return { key: "format", classifier: this.classifier };
     }
 
-    public rights(): MetadataThesaurusEntry {
-        return { key: "rights", classifier: this.classifier };
+    public identifier(): MetadataThesaurusEntry {
+        return { key: "identifier", classifier: this.classifier };
+    }
+
+    public language(): MetadataThesaurusEntry {
+        return { key: "language", classifier: this.classifier };
     }
 
     public publisher(): MetadataThesaurusEntry {
@@ -96,27 +100,23 @@ export class MtdThesaurusDefDublinCore extends MtdThesaurusDef {
         return { key: "relation", classifier: this.classifier };
     }
 
+    public rights(): MetadataThesaurusEntry {
+        return { key: "rights", classifier: this.classifier };
+    }
+
+    public source(): MetadataThesaurusEntry {
+        return { key: "source", classifier: this.classifier };
+    }
+
+    public subject(): MetadataThesaurusEntry {
+        return { key: "subject", classifier: this.classifier };
+    }
+
     public title(): MetadataThesaurusEntry {
         return { key: "title", classifier: this.classifier };
     }
 
-    public contributor(): MetadataThesaurusEntry {
-        return { key: "contributor", classifier: this.classifier };
-    }
-
-    public creator(): MetadataThesaurusEntry {
-        return { key: "creator", classifier: this.classifier };
-    }
-
-    public coverage(): MetadataThesaurusEntry {
-        return { key: "coverage", classifier: this.classifier };
-    }
-
-    public description(): MetadataThesaurusEntry {
-        return { key: "description", classifier: this.classifier };
-    }
-
-    public date(): MetadataThesaurusEntry {
-        return { key: "date", classifier: this.classifier };
+    public type(): MetadataThesaurusEntry {
+        return { key: "type", classifier: this.classifier };
     }
 }

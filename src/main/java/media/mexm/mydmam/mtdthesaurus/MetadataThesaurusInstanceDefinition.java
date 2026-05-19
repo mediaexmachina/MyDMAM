@@ -31,6 +31,7 @@ import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusSortIndexOrder.DEF
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -42,7 +43,7 @@ class MetadataThesaurusInstanceDefinition {
     static final String ANNOTATION_CLASSIFIER = MetadataThesaurusClassifier.class.getSimpleName();
 
     private final String instanceName;
-    private final Map<Method, String> entries;
+    private final Map<Method, MethodEntryDefinition> entries;
     @Getter
     private final String classifier;
     @Getter
@@ -97,7 +98,17 @@ class MetadataThesaurusInstanceDefinition {
         }
     }
 
-    private String methodToKeyName(final Method method) {
+    record MethodEntryDefinition(String instanceClassName,
+                                 String classifier,
+                                 Method method,
+                                 String keyName,
+                                 String longname,
+                                 MetadataThesaurusEntryType type,
+                                 MetadataThesaurusEntryNumericalUnit unit,
+                                 int presetOrder) {
+    }
+
+    private MethodEntryDefinition methodToKeyName(final Method method) {
         final var name = method.getName();
         if (method.getParameterCount() > 0) {
             throw new IllegalArgumentException(
@@ -113,10 +124,39 @@ class MetadataThesaurusInstanceDefinition {
                                                + " (on " + instanceName + "." + name
                                                + ")");
         }
-        return nameFormatter(name);
+
+        final var keyName = nameFormatter(name);
+        final var oAttribute = Optional.ofNullable(method.getAnnotation(
+                MetadataThesaurusEntryAttribute.class));
+        final var longname = oAttribute.map(MetadataThesaurusEntryAttribute::longname)
+                .filter(not(String::isBlank))
+                .orElseGet(() -> prettifyMethodKeyName(keyName));
+        final var type = oAttribute.map(MetadataThesaurusEntryAttribute::type).orElse(DISPLAYED_AS_IT);
+        final var unit = oAttribute.map(MetadataThesaurusEntryAttribute::unit).orElse(NO_UNIT);
+        final var presetOrder = Optional.ofNullable(method.getAnnotation(
+                MetadataThesaurusSortIndexOrder.class))
+                .map(MetadataThesaurusSortIndexOrder::value)
+                .orElse(DEFAULT_VALUE);
+
+        return new MethodEntryDefinition(
+                instanceName,
+                classifier,
+                method,
+                keyName,
+                longname,
+                type,
+                unit,
+                presetOrder);
     }
 
-    public static String prettifyMethodKeyName(final String keyName) {// TODO test
+    MethodEntryDefinition getEntryDefinitionByMethod(final Method method) {
+        if (entries.containsKey(method) == false) {
+            throw new IllegalArgumentException("Can't use " + instanceName + "." + method + ", it's non-accessible.");
+        }
+        return entries.get(method);
+    }
+
+    static String prettifyMethodKeyName(final String keyName) {// TODO test
         if (keyName.length() < 2) {
             return keyName;
         }
@@ -128,52 +168,36 @@ class MetadataThesaurusInstanceDefinition {
      * Sorted
      */
     List<MtdRegisterMethodDefinition> extractAllMethodDefinitions(final int classifierSortIndexOrder) { // TODO test
-        final var sortIndexOrderByMethod = entries.keySet().stream()
-                .collect(toUnmodifiableMap(
-                        identity(),
-                        method -> Optional.ofNullable(method.getAnnotation(
-                                MetadataThesaurusSortIndexOrder.class))
-                                .map(MetadataThesaurusSortIndexOrder::value)
-                                .orElse(DEFAULT_VALUE)));
-        final var orderedMethods = entries.keySet().stream()
-                .sorted((l, r) -> {
-                    final var compare = compare(sortIndexOrderByMethod.get(l),
-                            sortIndexOrderByMethod.get(r));
+        final var orderedMethods = entries.entrySet().stream()
+                .sorted((lEntry, rEntry) -> {
+                    final var compare = compare(
+                            lEntry.getValue().presetOrder(),
+                            rEntry.getValue().presetOrder());
                     if (compare == 0) {
-                        return l.getName().compareTo(r.getName());
+                        return lEntry.getKey().getName()
+                                .compareTo(rEntry.getKey().getName());
                     }
                     return compare;
                 })
+                .map(Entry::getKey)
                 .toList();
 
         return entries.entrySet().stream()
                 .map(entry -> {
                     final var method = entry.getKey();
-                    final var keyName = entry.getValue();
-                    final var oAttribute = Optional.ofNullable(method.getAnnotation(
-                            MetadataThesaurusEntryAttribute.class));
-                    final var longname = oAttribute.map(MetadataThesaurusEntryAttribute::longname)
-                            .filter(not(String::isBlank))
-                            .orElseGet(() -> prettifyMethodKeyName(keyName));
-                    final var type = oAttribute.map(MetadataThesaurusEntryAttribute::type).orElse(DISPLAYED_AS_IT);
-                    final var unit = oAttribute.map(MetadataThesaurusEntryAttribute::unit).orElse(NO_UNIT);
+                    final var methodEntryDefinition = entry.getValue();
 
                     return new MtdRegisterMethodDefinition(
                             method.getName(),
-                            keyName,
+                            methodEntryDefinition.keyName(),
                             new MtdThesaurusDefEntrySignature(
-                                    longname,
+                                    methodEntryDefinition.longname(),
                                     classifierSortIndexOrder * 1000 + orderedMethods.indexOf(method),
-                                    type,
-                                    unit));
+                                    methodEntryDefinition.type(),
+                                    methodEntryDefinition.unit()));
                 })
+                .sorted((l, r) -> compare(l.signature().sortIndexOrder(), r.signature().sortIndexOrder()))
                 .toList();
     }
 
-    String getKeyNameByMethod(final Method method) {
-        if (entries.containsKey(method) == false) {
-            throw new IllegalArgumentException("Can't use " + instanceName + "." + method + ", it's non-accessible.");
-        }
-        return entries.get(method);
-    }
 }

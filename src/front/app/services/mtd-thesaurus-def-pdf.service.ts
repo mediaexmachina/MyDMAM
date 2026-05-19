@@ -21,40 +21,40 @@ export class MtdThesaurusDefPDF extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "permission-print":
-                return {"longName":"Permission print","sortIndexOrder":3009,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "permission-add-notes":
-                return {"longName":"Permission add notes","sortIndexOrder":3012,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "tagged":
-                return {"longName":"Tagged","sortIndexOrder":3016,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "page-count":
+                return {"longName":"Page count","sortIndexOrder":3000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "encrypted":
                 return {"longName":"Encrypted","sortIndexOrder":3001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "producer":
-                return {"longName":"Producer","sortIndexOrder":3015,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "keywords":
-                return {"longName":"Keywords","sortIndexOrder":3004,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "pdf-version":
+                return {"longName":"Pdf version","sortIndexOrder":3002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "javascript":
                 return {"longName":"Javascript","sortIndexOrder":3003,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "keywords":
+                return {"longName":"Keywords","sortIndexOrder":3004,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "page-width-mm":
+                return {"longName":"Page width mm","sortIndexOrder":3005,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLIMETERS};
+            case "page-height-mm":
+                return {"longName":"Page height mm","sortIndexOrder":3006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLIMETERS};
+            case "page-rotated":
+                return {"longName":"Page rotated","sortIndexOrder":3007,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.DEGREES};
+            case "same-pages-format":
+                return {"longName":"Same pages format","sortIndexOrder":3008,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "permission-print":
+                return {"longName":"Permission print","sortIndexOrder":3009,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "permission-copy":
                 return {"longName":"Permission copy","sortIndexOrder":3010,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "permission-change":
                 return {"longName":"Permission change","sortIndexOrder":3011,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "page-height-mm":
-                return {"longName":"Page height mm","sortIndexOrder":3006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLIMETERS};
-            case "pdf-version":
-                return {"longName":"Pdf version","sortIndexOrder":3002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "permission-add-notes":
+                return {"longName":"Permission add notes","sortIndexOrder":3012,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "form":
                 return {"longName":"Form","sortIndexOrder":3013,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "page-width-mm":
-                return {"longName":"Page width mm","sortIndexOrder":3005,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.MILLIMETERS};
-            case "page-rotated":
-                return {"longName":"Page rotated","sortIndexOrder":3007,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.DEGREES};
             case "optimized":
                 return {"longName":"Optimized","sortIndexOrder":3014,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "same-pages-format":
-                return {"longName":"Same pages format","sortIndexOrder":3008,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "page-count":
-                return {"longName":"Page count","sortIndexOrder":3000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "producer":
+                return {"longName":"Producer","sortIndexOrder":3015,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "tagged":
+                return {"longName":"Tagged","sortIndexOrder":3016,"type":MetadataThesaurusEntryType.BOOLEAN,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
@@ -64,32 +64,44 @@ export class MtdThesaurusDefPDF extends MtdThesaurusDef {
         return {"longName":"PDF","sortIndexOrder":3,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
     }
 
-    public permissionPrint(): MetadataThesaurusEntry {
-        return { key: "permission-print", classifier: this.classifier };
-    }
-
-    public permissionAddNotes(): MetadataThesaurusEntry {
-        return { key: "permission-add-notes", classifier: this.classifier };
-    }
-
-    public tagged(): MetadataThesaurusEntry {
-        return { key: "tagged", classifier: this.classifier };
+    public pageCount(): MetadataThesaurusEntry {
+        return { key: "page-count", classifier: this.classifier };
     }
 
     public encrypted(): MetadataThesaurusEntry {
         return { key: "encrypted", classifier: this.classifier };
     }
 
-    public producer(): MetadataThesaurusEntry {
-        return { key: "producer", classifier: this.classifier };
+    public pdfVersion(): MetadataThesaurusEntry {
+        return { key: "pdf-version", classifier: this.classifier };
+    }
+
+    public javascript(): MetadataThesaurusEntry {
+        return { key: "javascript", classifier: this.classifier };
     }
 
     public keywords(): MetadataThesaurusEntry {
         return { key: "keywords", classifier: this.classifier };
     }
 
-    public javascript(): MetadataThesaurusEntry {
-        return { key: "javascript", classifier: this.classifier };
+    public pageWidthMm(): MetadataThesaurusEntry {
+        return { key: "page-width-mm", classifier: this.classifier };
+    }
+
+    public pageHeightMm(): MetadataThesaurusEntry {
+        return { key: "page-height-mm", classifier: this.classifier };
+    }
+
+    public pageRotated(): MetadataThesaurusEntry {
+        return { key: "page-rotated", classifier: this.classifier };
+    }
+
+    public samePagesFormat(): MetadataThesaurusEntry {
+        return { key: "same-pages-format", classifier: this.classifier };
+    }
+
+    public permissionPrint(): MetadataThesaurusEntry {
+        return { key: "permission-print", classifier: this.classifier };
     }
 
     public permissionCopy(): MetadataThesaurusEntry {
@@ -100,35 +112,23 @@ export class MtdThesaurusDefPDF extends MtdThesaurusDef {
         return { key: "permission-change", classifier: this.classifier };
     }
 
-    public pageHeightMm(): MetadataThesaurusEntry {
-        return { key: "page-height-mm", classifier: this.classifier };
-    }
-
-    public pdfVersion(): MetadataThesaurusEntry {
-        return { key: "pdf-version", classifier: this.classifier };
+    public permissionAddNotes(): MetadataThesaurusEntry {
+        return { key: "permission-add-notes", classifier: this.classifier };
     }
 
     public form(): MetadataThesaurusEntry {
         return { key: "form", classifier: this.classifier };
     }
 
-    public pageWidthMm(): MetadataThesaurusEntry {
-        return { key: "page-width-mm", classifier: this.classifier };
-    }
-
-    public pageRotated(): MetadataThesaurusEntry {
-        return { key: "page-rotated", classifier: this.classifier };
-    }
-
     public optimized(): MetadataThesaurusEntry {
         return { key: "optimized", classifier: this.classifier };
     }
 
-    public samePagesFormat(): MetadataThesaurusEntry {
-        return { key: "same-pages-format", classifier: this.classifier };
+    public producer(): MetadataThesaurusEntry {
+        return { key: "producer", classifier: this.classifier };
     }
 
-    public pageCount(): MetadataThesaurusEntry {
-        return { key: "page-count", classifier: this.classifier };
+    public tagged(): MetadataThesaurusEntry {
+        return { key: "tagged", classifier: this.classifier };
     }
 }

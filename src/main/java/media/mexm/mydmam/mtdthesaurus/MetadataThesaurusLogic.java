@@ -23,6 +23,9 @@ import static java.util.Optional.empty;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.BOOLEAN;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.DISPLAYED_AS_IT;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.checkInterfaceClass;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusSortIndexOrder.DEFAULT_VALUE;
 
@@ -34,12 +37,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import lombok.extern.slf4j.Slf4j;
 import media.mexm.mydmam.dto.MtdThesaurusDefClassifierSignature;
 import media.mexm.mydmam.dto.MtdThesaurusDefEntrySignature;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.MethodEntryDefinition;
 
 /**
  * Thread safe
@@ -200,12 +205,13 @@ public class MetadataThesaurusLogic {
                     final var definition = definitions.computeIfAbsent(fromClass,
                             MetadataThesaurusInstanceDefinition::new);
                     final var classifier = definition.getClassifier();
-                    final var key = definition.getKeyNameByMethod(method);
+                    final var methodDefinition = definition.getEntryDefinitionByMethod(method);
 
                     return (MetadataThesaurusEntry) newProxyInstance(
                             classLoader,
                             new Class[] { MetadataThesaurusEntry.class },
-                            (_, subMethod, args) -> onEntryCall(provider, classifier, key, subMethod.getName(), args));
+                            (_, subMethod, args) -> onEntryCall(provider, classifier, methodDefinition, subMethod
+                                    .getName(), args));
                 });
     }
 
@@ -215,9 +221,10 @@ public class MetadataThesaurusLogic {
     @SuppressWarnings("unchecked")
     Object onEntryCall(final MetadataThesaurusEntryIOProvider provider,
                        final String classifier,
-                       final String key,
+                       final MethodEntryDefinition methodDefinition,
                        final String methodName,
                        final Object[] args) {
+        final var key = methodDefinition.keyName();
         return switch (methodName) {
         case HASH_CODE -> throw new UnsupportedOperationException("hashCode is not avaliable from this proxy");
         case EQUALS -> throw new UnsupportedOperationException("equals is not avaliable from this proxy");
@@ -226,13 +233,13 @@ public class MetadataThesaurusLogic {
         case "key" -> key;
         case "set" -> {
             if (args.length == 2) {
-                set(args[1]).ifPresent(v -> provider.setValueToDatabase(
+                set(methodDefinition, args[1]).ifPresent(v -> provider.setValueToDatabase(
                         classifier,
                         key,
                         (int) args[0],
                         v));
             } else if (args.length == 1) {
-                set(args[0]).ifPresent(v -> provider.setValueToDatabase(
+                set(methodDefinition, args[0]).ifPresent(v -> provider.setValueToDatabase(
                         classifier,
                         key,
                         0,
@@ -242,14 +249,14 @@ public class MetadataThesaurusLogic {
         }
         case "setDateISO8601" -> {
             if (args.length == 2) {
-                setDateISO8601((Optional<String>) args[1])
+                setDateISO8601(methodDefinition, (Optional<String>) args[1])
                         .ifPresent(v -> provider.setValueToDatabase(
                                 classifier,
                                 key,
                                 (int) args[0],
                                 v));
             } else if (args.length == 1) {
-                setDateISO8601((Optional<String>) args[0])
+                setDateISO8601(methodDefinition, (Optional<String>) args[0])
                         .ifPresent(v -> provider.setValueToDatabase(
                                 classifier,
                                 key,
@@ -287,10 +294,62 @@ public class MetadataThesaurusLogic {
         };
     }
 
-    static Optional<String> setDateISO8601(final Optional<String> oValue) {
+    private static void makeLogWarnInvalidEntryType(final MethodEntryDefinition methodDefinition) {
+        log.warn("Invalid @{}.{} on {}#{}()",
+                MetadataThesaurusEntryType.class.getSimpleName(),
+                methodDefinition.type(),
+                methodDefinition.instanceClassName(),
+                methodDefinition.method().getName());
+    }
+
+    private static void makeLogWarnInvalidNumericalUnit(final MethodEntryDefinition methodDefinition) {
+        log.warn("Invalid @{}.{} on {}#{}()",
+                MetadataThesaurusEntryNumericalUnit.class.getSimpleName(),
+                methodDefinition.unit(),
+                methodDefinition.instanceClassName(),
+                methodDefinition.method().getName());
+    }
+
+    static Optional<String> set(final MethodEntryDefinition methodDefinition, final Object value) {
+        if (value == null) {
+            return empty();
+        } else if (value instanceof final Optional<?> o) {
+            if (o.isPresent()) {
+                return set(methodDefinition, o.get());
+            } else {
+                return empty();
+            }
+        }
+
+        if (value instanceof final String s) {
+            if (s.isBlank()) {
+                return empty();
+            }
+            // XXX add check String
+            return Optional.ofNullable(s);
+        } else if (value instanceof final Duration d) {
+            // XXX add check Duration
+            return set(methodDefinition, String.valueOf(d.toMillis()));
+        } else {
+            return set(methodDefinition, String.valueOf(value));
+        }
+
+        // XXX add check numerical / MetadataThesaurusEntryNumericalUnit
+        // XXX add check Date + Instant
+        // XXX add check boolean
+    }
+
+    static Optional<String> setDateISO8601(final MethodEntryDefinition methodDefinition,
+                                           final Optional<String> oValue) {// XXX add check
         requireNonNull(oValue);
         if (oValue.isEmpty()) {
             return empty();
+        }
+
+        if (Set.of(BOOLEAN, DISPLAYED_AS_IT, IDENTIFIER_OR_SERIAL_ID).contains(methodDefinition.type())) {
+            makeLogWarnInvalidEntryType(methodDefinition);
+        } else if (MetadataThesaurusEntryNumericalUnit.NO_UNIT.equals(methodDefinition.unit()) == false) {
+            makeLogWarnInvalidNumericalUnit(methodDefinition);
         }
 
         try {
@@ -303,27 +362,6 @@ public class MetadataThesaurusLogic {
         } catch (final DateTimeParseException e) {
             log.warn("Can't parse date: \"{}\"", oValue.orElse(""));
             return empty();
-        }
-    }
-
-    static Optional<String> set(final Object value) {
-        if (value == null) {
-            return empty();
-        } else if (value instanceof final String s) {
-            if (s.isBlank()) {
-                return empty();
-            }
-            return Optional.ofNullable(s);
-        } else if (value instanceof final Duration d) {
-            return set(String.valueOf(d.toMillis()));
-        } else if (value instanceof final Optional<?> o) {
-            if (o.isPresent()) {
-                return set(o.get());
-            } else {
-                return empty();
-            }
-        } else {
-            return set(String.valueOf(value));
         }
     }
 

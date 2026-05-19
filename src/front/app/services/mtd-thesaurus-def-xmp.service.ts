@@ -21,20 +21,20 @@ export class MtdThesaurusDefXMP extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "identifier":
-                return {"longName":"Identifier","sortIndexOrder":2002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "metadata-date":
-                return {"longName":"Metadata date","sortIndexOrder":2004,"type":MetadataThesaurusEntryType.UNIX_TIME_MSEC,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "label":
-                return {"longName":"Label","sortIndexOrder":2003,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "rating":
-                return {"longName":"Rating","sortIndexOrder":2006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "create-date":
                 return {"longName":"Create date","sortIndexOrder":2000,"type":MetadataThesaurusEntryType.UNIX_TIME_MSEC,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "modify-date":
-                return {"longName":"Modify date","sortIndexOrder":2005,"type":MetadataThesaurusEntryType.UNIX_TIME_MSEC,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "creator-tool":
                 return {"longName":"Creator tool","sortIndexOrder":2001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "identifier":
+                return {"longName":"Identifier","sortIndexOrder":2002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "label":
+                return {"longName":"Label","sortIndexOrder":2003,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "metadata-date":
+                return {"longName":"Metadata date","sortIndexOrder":2004,"type":MetadataThesaurusEntryType.UNIX_TIME_MSEC,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "modify-date":
+                return {"longName":"Modify date","sortIndexOrder":2005,"type":MetadataThesaurusEntryType.UNIX_TIME_MSEC,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "rating":
+                return {"longName":"Rating","sortIndexOrder":2006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
@@ -44,31 +44,31 @@ export class MtdThesaurusDefXMP extends MtdThesaurusDef {
         return {"longName":"XMP","sortIndexOrder":2,"kind":MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD};
     }
 
-    public identifier(): MetadataThesaurusEntry {
-        return { key: "identifier", classifier: this.classifier };
+    public createDate(): MetadataThesaurusEntry {
+        return { key: "create-date", classifier: this.classifier };
     }
 
-    public metadataDate(): MetadataThesaurusEntry {
-        return { key: "metadata-date", classifier: this.classifier };
+    public creatorTool(): MetadataThesaurusEntry {
+        return { key: "creator-tool", classifier: this.classifier };
+    }
+
+    public identifier(): MetadataThesaurusEntry {
+        return { key: "identifier", classifier: this.classifier };
     }
 
     public label(): MetadataThesaurusEntry {
         return { key: "label", classifier: this.classifier };
     }
 
-    public rating(): MetadataThesaurusEntry {
-        return { key: "rating", classifier: this.classifier };
-    }
-
-    public createDate(): MetadataThesaurusEntry {
-        return { key: "create-date", classifier: this.classifier };
+    public metadataDate(): MetadataThesaurusEntry {
+        return { key: "metadata-date", classifier: this.classifier };
     }
 
     public modifyDate(): MetadataThesaurusEntry {
         return { key: "modify-date", classifier: this.classifier };
     }
 
-    public creatorTool(): MetadataThesaurusEntry {
-        return { key: "creator-tool", classifier: this.classifier };
+    public rating(): MetadataThesaurusEntry {
+        return { key: "rating", classifier: this.classifier };
     }
 }

@@ -21,86 +21,86 @@ export class MtdThesaurusDefDCMI extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "date-accepted":
-                return {"longName":"Date accepted","sortIndexOrder":1011,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "is-required-by":
-                return {"longName":"Is required by","sortIndexOrder":1024,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "replaces":
-                return {"longName":"Replaces","sortIndexOrder":1033,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "instructional-method":
-                return {"longName":"Instructional method","sortIndexOrder":1019,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "created":
-                return {"longName":"Created","sortIndexOrder":1010,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "references":
-                return {"longName":"References","sortIndexOrder":1032,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "accrual-periodicity":
-                return {"longName":"Accrual periodicity","sortIndexOrder":1003,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "spatial":
-                return {"longName":"Spatial","sortIndexOrder":1036,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "accrual-method":
-                return {"longName":"Accrual method","sortIndexOrder":1002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "has-version":
-                return {"longName":"Has version","sortIndexOrder":1018,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "date-submitted":
-                return {"longName":"Date submitted","sortIndexOrder":1013,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "valid":
-                return {"longName":"Valid","sortIndexOrder":1039,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "available":
-                return {"longName":"Available","sortIndexOrder":1007,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "temporal":
-                return {"longName":"Temporal","sortIndexOrder":1038,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "is-replaced-by":
-                return {"longName":"Is replaced by","sortIndexOrder":1023,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "table-of-contents":
-                return {"longName":"Table of contents","sortIndexOrder":1037,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "access-rights":
-                return {"longName":"Access rights","sortIndexOrder":1001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "issued":
-                return {"longName":"Issued","sortIndexOrder":1026,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "mediator":
-                return {"longName":"Mediator","sortIndexOrder":1028,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "is-version-of":
-                return {"longName":"Is version of","sortIndexOrder":1025,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "medium":
-                return {"longName":"Medium","sortIndexOrder":1029,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "audience":
-                return {"longName":"Audience","sortIndexOrder":1006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "rights-holder":
-                return {"longName":"Rights holder","sortIndexOrder":1035,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "provenance":
-                return {"longName":"Provenance","sortIndexOrder":1031,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "education-level":
-                return {"longName":"Education level","sortIndexOrder":1014,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "conforms-to":
-                return {"longName":"Conforms to","sortIndexOrder":1009,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "date-copyrighted":
-                return {"longName":"Date copyrighted","sortIndexOrder":1012,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "is-format-of":
-                return {"longName":"Is format of","sortIndexOrder":1020,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "license":
-                return {"longName":"License","sortIndexOrder":1027,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "is-part-of":
-                return {"longName":"Is part of","sortIndexOrder":1021,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "abstract":
                 return {"longName":"Abstract","sortIndexOrder":1000,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "has-format":
-                return {"longName":"Has format","sortIndexOrder":1016,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "access-rights":
+                return {"longName":"Access rights","sortIndexOrder":1001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "accrual-method":
+                return {"longName":"Accrual method","sortIndexOrder":1002,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "accrual-periodicity":
+                return {"longName":"Accrual periodicity","sortIndexOrder":1003,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "accrual-policy":
                 return {"longName":"Accrual policy","sortIndexOrder":1004,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "requires":
-                return {"longName":"Requires","sortIndexOrder":1034,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "alternative":
                 return {"longName":"Alternative","sortIndexOrder":1005,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "has-part":
-                return {"longName":"Has part","sortIndexOrder":1017,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "is-referenced-by":
-                return {"longName":"Is referenced by","sortIndexOrder":1022,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "extent":
-                return {"longName":"Extent","sortIndexOrder":1015,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "modified":
-                return {"longName":"Modified","sortIndexOrder":1030,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "audience":
+                return {"longName":"Audience","sortIndexOrder":1006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "available":
+                return {"longName":"Available","sortIndexOrder":1007,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "bibliographic-citation":
                 return {"longName":"Bibliographic citation","sortIndexOrder":1008,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "conforms-to":
+                return {"longName":"Conforms to","sortIndexOrder":1009,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "created":
+                return {"longName":"Created","sortIndexOrder":1010,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "date-accepted":
+                return {"longName":"Date accepted","sortIndexOrder":1011,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "date-copyrighted":
+                return {"longName":"Date copyrighted","sortIndexOrder":1012,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "date-submitted":
+                return {"longName":"Date submitted","sortIndexOrder":1013,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "education-level":
+                return {"longName":"Education level","sortIndexOrder":1014,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "extent":
+                return {"longName":"Extent","sortIndexOrder":1015,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "has-format":
+                return {"longName":"Has format","sortIndexOrder":1016,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "has-part":
+                return {"longName":"Has part","sortIndexOrder":1017,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "has-version":
+                return {"longName":"Has version","sortIndexOrder":1018,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "instructional-method":
+                return {"longName":"Instructional method","sortIndexOrder":1019,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "is-format-of":
+                return {"longName":"Is format of","sortIndexOrder":1020,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "is-part-of":
+                return {"longName":"Is part of","sortIndexOrder":1021,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "is-referenced-by":
+                return {"longName":"Is referenced by","sortIndexOrder":1022,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "is-replaced-by":
+                return {"longName":"Is replaced by","sortIndexOrder":1023,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "is-required-by":
+                return {"longName":"Is required by","sortIndexOrder":1024,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "is-version-of":
+                return {"longName":"Is version of","sortIndexOrder":1025,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "issued":
+                return {"longName":"Issued","sortIndexOrder":1026,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "license":
+                return {"longName":"License","sortIndexOrder":1027,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "mediator":
+                return {"longName":"Mediator","sortIndexOrder":1028,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "medium":
+                return {"longName":"Medium","sortIndexOrder":1029,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "modified":
+                return {"longName":"Modified","sortIndexOrder":1030,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "provenance":
+                return {"longName":"Provenance","sortIndexOrder":1031,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "references":
+                return {"longName":"References","sortIndexOrder":1032,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "replaces":
+                return {"longName":"Replaces","sortIndexOrder":1033,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "requires":
+                return {"longName":"Requires","sortIndexOrder":1034,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "rights-holder":
+                return {"longName":"Rights holder","sortIndexOrder":1035,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "spatial":
+                return {"longName":"Spatial","sortIndexOrder":1036,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "table-of-contents":
+                return {"longName":"Table of contents","sortIndexOrder":1037,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "temporal":
+                return {"longName":"Temporal","sortIndexOrder":1038,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "valid":
+                return {"longName":"Valid","sortIndexOrder":1039,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
@@ -110,163 +110,163 @@ export class MtdThesaurusDefDCMI extends MtdThesaurusDef {
         return {"longName":"Qualified Dublin Core","sortIndexOrder":1,"kind":MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD};
     }
 
-    public dateAccepted(): MetadataThesaurusEntry {
-        return { key: "date-accepted", classifier: this.classifier };
-    }
-
-    public isRequiredBy(): MetadataThesaurusEntry {
-        return { key: "is-required-by", classifier: this.classifier };
-    }
-
-    public replaces(): MetadataThesaurusEntry {
-        return { key: "replaces", classifier: this.classifier };
-    }
-
-    public instructionalMethod(): MetadataThesaurusEntry {
-        return { key: "instructional-method", classifier: this.classifier };
-    }
-
-    public created(): MetadataThesaurusEntry {
-        return { key: "created", classifier: this.classifier };
-    }
-
-    public references(): MetadataThesaurusEntry {
-        return { key: "references", classifier: this.classifier };
-    }
-
-    public accrualPeriodicity(): MetadataThesaurusEntry {
-        return { key: "accrual-periodicity", classifier: this.classifier };
-    }
-
-    public spatial(): MetadataThesaurusEntry {
-        return { key: "spatial", classifier: this.classifier };
-    }
-
-    public accrualMethod(): MetadataThesaurusEntry {
-        return { key: "accrual-method", classifier: this.classifier };
-    }
-
-    public hasVersion(): MetadataThesaurusEntry {
-        return { key: "has-version", classifier: this.classifier };
-    }
-
-    public dateSubmitted(): MetadataThesaurusEntry {
-        return { key: "date-submitted", classifier: this.classifier };
-    }
-
-    public valid(): MetadataThesaurusEntry {
-        return { key: "valid", classifier: this.classifier };
-    }
-
-    public available(): MetadataThesaurusEntry {
-        return { key: "available", classifier: this.classifier };
-    }
-
-    public temporal(): MetadataThesaurusEntry {
-        return { key: "temporal", classifier: this.classifier };
-    }
-
-    public isReplacedBy(): MetadataThesaurusEntry {
-        return { key: "is-replaced-by", classifier: this.classifier };
-    }
-
-    public tableOfContents(): MetadataThesaurusEntry {
-        return { key: "table-of-contents", classifier: this.classifier };
+    public _abstract(): MetadataThesaurusEntry {
+        return { key: "abstract", classifier: this.classifier };
     }
 
     public accessRights(): MetadataThesaurusEntry {
         return { key: "access-rights", classifier: this.classifier };
     }
 
-    public issued(): MetadataThesaurusEntry {
-        return { key: "issued", classifier: this.classifier };
+    public accrualMethod(): MetadataThesaurusEntry {
+        return { key: "accrual-method", classifier: this.classifier };
     }
 
-    public mediator(): MetadataThesaurusEntry {
-        return { key: "mediator", classifier: this.classifier };
-    }
-
-    public isVersionOf(): MetadataThesaurusEntry {
-        return { key: "is-version-of", classifier: this.classifier };
-    }
-
-    public medium(): MetadataThesaurusEntry {
-        return { key: "medium", classifier: this.classifier };
-    }
-
-    public audience(): MetadataThesaurusEntry {
-        return { key: "audience", classifier: this.classifier };
-    }
-
-    public rightsHolder(): MetadataThesaurusEntry {
-        return { key: "rights-holder", classifier: this.classifier };
-    }
-
-    public provenance(): MetadataThesaurusEntry {
-        return { key: "provenance", classifier: this.classifier };
-    }
-
-    public educationLevel(): MetadataThesaurusEntry {
-        return { key: "education-level", classifier: this.classifier };
-    }
-
-    public conformsTo(): MetadataThesaurusEntry {
-        return { key: "conforms-to", classifier: this.classifier };
-    }
-
-    public dateCopyrighted(): MetadataThesaurusEntry {
-        return { key: "date-copyrighted", classifier: this.classifier };
-    }
-
-    public isFormatOf(): MetadataThesaurusEntry {
-        return { key: "is-format-of", classifier: this.classifier };
-    }
-
-    public license(): MetadataThesaurusEntry {
-        return { key: "license", classifier: this.classifier };
-    }
-
-    public isPartOf(): MetadataThesaurusEntry {
-        return { key: "is-part-of", classifier: this.classifier };
-    }
-
-    public _abstract(): MetadataThesaurusEntry {
-        return { key: "abstract", classifier: this.classifier };
-    }
-
-    public hasFormat(): MetadataThesaurusEntry {
-        return { key: "has-format", classifier: this.classifier };
+    public accrualPeriodicity(): MetadataThesaurusEntry {
+        return { key: "accrual-periodicity", classifier: this.classifier };
     }
 
     public accrualPolicy(): MetadataThesaurusEntry {
         return { key: "accrual-policy", classifier: this.classifier };
     }
 
-    public requires(): MetadataThesaurusEntry {
-        return { key: "requires", classifier: this.classifier };
-    }
-
     public alternative(): MetadataThesaurusEntry {
         return { key: "alternative", classifier: this.classifier };
     }
 
-    public hasPart(): MetadataThesaurusEntry {
-        return { key: "has-part", classifier: this.classifier };
+    public audience(): MetadataThesaurusEntry {
+        return { key: "audience", classifier: this.classifier };
     }
 
-    public isReferencedBy(): MetadataThesaurusEntry {
-        return { key: "is-referenced-by", classifier: this.classifier };
+    public available(): MetadataThesaurusEntry {
+        return { key: "available", classifier: this.classifier };
+    }
+
+    public bibliographicCitation(): MetadataThesaurusEntry {
+        return { key: "bibliographic-citation", classifier: this.classifier };
+    }
+
+    public conformsTo(): MetadataThesaurusEntry {
+        return { key: "conforms-to", classifier: this.classifier };
+    }
+
+    public created(): MetadataThesaurusEntry {
+        return { key: "created", classifier: this.classifier };
+    }
+
+    public dateAccepted(): MetadataThesaurusEntry {
+        return { key: "date-accepted", classifier: this.classifier };
+    }
+
+    public dateCopyrighted(): MetadataThesaurusEntry {
+        return { key: "date-copyrighted", classifier: this.classifier };
+    }
+
+    public dateSubmitted(): MetadataThesaurusEntry {
+        return { key: "date-submitted", classifier: this.classifier };
+    }
+
+    public educationLevel(): MetadataThesaurusEntry {
+        return { key: "education-level", classifier: this.classifier };
     }
 
     public extent(): MetadataThesaurusEntry {
         return { key: "extent", classifier: this.classifier };
     }
 
+    public hasFormat(): MetadataThesaurusEntry {
+        return { key: "has-format", classifier: this.classifier };
+    }
+
+    public hasPart(): MetadataThesaurusEntry {
+        return { key: "has-part", classifier: this.classifier };
+    }
+
+    public hasVersion(): MetadataThesaurusEntry {
+        return { key: "has-version", classifier: this.classifier };
+    }
+
+    public instructionalMethod(): MetadataThesaurusEntry {
+        return { key: "instructional-method", classifier: this.classifier };
+    }
+
+    public isFormatOf(): MetadataThesaurusEntry {
+        return { key: "is-format-of", classifier: this.classifier };
+    }
+
+    public isPartOf(): MetadataThesaurusEntry {
+        return { key: "is-part-of", classifier: this.classifier };
+    }
+
+    public isReferencedBy(): MetadataThesaurusEntry {
+        return { key: "is-referenced-by", classifier: this.classifier };
+    }
+
+    public isReplacedBy(): MetadataThesaurusEntry {
+        return { key: "is-replaced-by", classifier: this.classifier };
+    }
+
+    public isRequiredBy(): MetadataThesaurusEntry {
+        return { key: "is-required-by", classifier: this.classifier };
+    }
+
+    public isVersionOf(): MetadataThesaurusEntry {
+        return { key: "is-version-of", classifier: this.classifier };
+    }
+
+    public issued(): MetadataThesaurusEntry {
+        return { key: "issued", classifier: this.classifier };
+    }
+
+    public license(): MetadataThesaurusEntry {
+        return { key: "license", classifier: this.classifier };
+    }
+
+    public mediator(): MetadataThesaurusEntry {
+        return { key: "mediator", classifier: this.classifier };
+    }
+
+    public medium(): MetadataThesaurusEntry {
+        return { key: "medium", classifier: this.classifier };
+    }
+
     public modified(): MetadataThesaurusEntry {
         return { key: "modified", classifier: this.classifier };
     }
 
-    public bibliographicCitation(): MetadataThesaurusEntry {
-        return { key: "bibliographic-citation", classifier: this.classifier };
+    public provenance(): MetadataThesaurusEntry {
+        return { key: "provenance", classifier: this.classifier };
+    }
+
+    public references(): MetadataThesaurusEntry {
+        return { key: "references", classifier: this.classifier };
+    }
+
+    public replaces(): MetadataThesaurusEntry {
+        return { key: "replaces", classifier: this.classifier };
+    }
+
+    public requires(): MetadataThesaurusEntry {
+        return { key: "requires", classifier: this.classifier };
+    }
+
+    public rightsHolder(): MetadataThesaurusEntry {
+        return { key: "rights-holder", classifier: this.classifier };
+    }
+
+    public spatial(): MetadataThesaurusEntry {
+        return { key: "spatial", classifier: this.classifier };
+    }
+
+    public tableOfContents(): MetadataThesaurusEntry {
+        return { key: "table-of-contents", classifier: this.classifier };
+    }
+
+    public temporal(): MetadataThesaurusEntry {
+        return { key: "temporal", classifier: this.classifier };
+    }
+
+    public valid(): MetadataThesaurusEntry {
+        return { key: "valid", classifier: this.classifier };
     }
 }

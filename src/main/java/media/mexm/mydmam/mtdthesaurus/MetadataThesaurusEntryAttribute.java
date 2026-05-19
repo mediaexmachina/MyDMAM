@@ -36,5 +36,5 @@ public @interface MetadataThesaurusEntryAttribute {
 
 }
 /*
-TODO check UNIX_TIME_MSEC and BOOLEAN during write
+TODO check UNIX_TIME_MSEC and BOOLEAN during write + if UNIT == numerical
 */

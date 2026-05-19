@@ -21,22 +21,22 @@ export class MtdThesaurusDefTechnicalMXF extends MtdThesaurusDef {
 
     public override getEntrySignatureByKeyName(keyName: string): MtdThesaurusDefEntrySignature | null {
         switch (keyName) {
-            case "generation-uid":
-                return {"longName":"Generation uid","sortIndexOrder":11003,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "operational-pattern-ul":
-                return {"longName":"Operational pattern ul","sortIndexOrder":11005,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "file-package-name":
-                return {"longName":"File package name","sortIndexOrder":11001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "track-name":
-                return {"longName":"Track name","sortIndexOrder":11006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "track-index":
                 return {"longName":"Track index","sortIndexOrder":11000,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "uid":
-                return {"longName":"Uid","sortIndexOrder":11007,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
-            case "material-package-umid":
-                return {"longName":"Material package umid","sortIndexOrder":11004,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "file-package-name":
+                return {"longName":"File package name","sortIndexOrder":11001,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             case "file-package-umid":
                 return {"longName":"File package umid","sortIndexOrder":11002,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "generation-uid":
+                return {"longName":"Generation uid","sortIndexOrder":11003,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "material-package-umid":
+                return {"longName":"Material package umid","sortIndexOrder":11004,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "operational-pattern-ul":
+                return {"longName":"Operational pattern ul","sortIndexOrder":11005,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "track-name":
+                return {"longName":"Track name","sortIndexOrder":11006,"type":MetadataThesaurusEntryType.DISPLAYED_AS_IT,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
+            case "uid":
+                return {"longName":"Uid","sortIndexOrder":11007,"type":MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID,"unit":MetadataThesaurusEntryNumericalUnit.NO_UNIT};
             default:
                 return null;
         }
@@ -46,35 +46,35 @@ export class MtdThesaurusDefTechnicalMXF extends MtdThesaurusDef {
         return {"longName":"MXF (technical)","sortIndexOrder":11,"kind":MetadataThesaurusClassifierKind.TECHNICAL_ATTRIBUTE};
     }
 
-    public generationUID(): MetadataThesaurusEntry {
-        return { key: "generation-uid", classifier: this.classifier };
-    }
-
-    public operationalPatternUL(): MetadataThesaurusEntry {
-        return { key: "operational-pattern-ul", classifier: this.classifier };
+    public trackIndex(): MetadataThesaurusEntry {
+        return { key: "track-index", classifier: this.classifier };
     }
 
     public filePackageName(): MetadataThesaurusEntry {
         return { key: "file-package-name", classifier: this.classifier };
     }
 
-    public trackName(): MetadataThesaurusEntry {
-        return { key: "track-name", classifier: this.classifier };
+    public filePackageUMID(): MetadataThesaurusEntry {
+        return { key: "file-package-umid", classifier: this.classifier };
     }
 
-    public trackIndex(): MetadataThesaurusEntry {
-        return { key: "track-index", classifier: this.classifier };
-    }
-
-    public uid(): MetadataThesaurusEntry {
-        return { key: "uid", classifier: this.classifier };
+    public generationUID(): MetadataThesaurusEntry {
+        return { key: "generation-uid", classifier: this.classifier };
     }
 
     public materialPackageUMID(): MetadataThesaurusEntry {
         return { key: "material-package-umid", classifier: this.classifier };
     }
 
-    public filePackageUMID(): MetadataThesaurusEntry {
-        return { key: "file-package-umid", classifier: this.classifier };
+    public operationalPatternUL(): MetadataThesaurusEntry {
+        return { key: "operational-pattern-ul", classifier: this.classifier };
+    }
+
+    public trackName(): MetadataThesaurusEntry {
+        return { key: "track-name", classifier: this.classifier };
+    }
+
+    public uid(): MetadataThesaurusEntry {
+        return { key: "uid", classifier: this.classifier };
     }
 }
