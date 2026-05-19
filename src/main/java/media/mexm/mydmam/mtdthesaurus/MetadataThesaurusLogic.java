@@ -23,6 +23,8 @@ import static java.util.Optional.empty;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.MILLISECONDS;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.NO_UNIT;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.BOOLEAN;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.DISPLAYED_AS_IT;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID;
@@ -33,6 +35,7 @@ import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -322,25 +325,60 @@ public class MetadataThesaurusLogic {
         }
 
         if (value instanceof final String s) {
+            if (BOOLEAN.equals(methodDefinition.type())) {
+                makeLogWarnInvalidEntryType(methodDefinition);
+            }
+            if (NO_UNIT.equals(methodDefinition.unit()) == false) {
+                makeLogWarnInvalidNumericalUnit(methodDefinition);
+            }
             if (s.isBlank()) {
                 return empty();
             }
-            // XXX add check String
             return Optional.ofNullable(s);
         } else if (value instanceof final Duration d) {
-            // XXX add check Duration
-            return set(methodDefinition, String.valueOf(d.toMillis()));
+            if (DISPLAYED_AS_IT.equals(methodDefinition.type()) == false) {
+                makeLogWarnInvalidEntryType(methodDefinition);
+            }
+            if (MILLISECONDS.equals(methodDefinition.unit()) == false) {
+                makeLogWarnInvalidNumericalUnit(methodDefinition);
+            }
+            return Optional.ofNullable(String.valueOf(d.toMillis()));
+        } else if (value instanceof final Date d) {// TODO test
+            if (Set.of(BOOLEAN, DISPLAYED_AS_IT, IDENTIFIER_OR_SERIAL_ID).contains(methodDefinition.type())) {
+                makeLogWarnInvalidEntryType(methodDefinition);
+            }
+            if (NO_UNIT.equals(methodDefinition.unit()) == false) {
+                makeLogWarnInvalidNumericalUnit(methodDefinition);
+            }
+            return Optional.ofNullable(String.valueOf(d.getTime()));
+        } else if (value instanceof final Instant d) {// TODO test
+            if (Set.of(BOOLEAN, DISPLAYED_AS_IT, IDENTIFIER_OR_SERIAL_ID).contains(methodDefinition.type())) {
+                makeLogWarnInvalidEntryType(methodDefinition);
+            }
+            if (NO_UNIT.equals(methodDefinition.unit()) == false) {
+                makeLogWarnInvalidNumericalUnit(methodDefinition);
+            }
+            return Optional.ofNullable(String.valueOf(d.toEpochMilli()));
+        } else if (value instanceof final Boolean d) {// TODO test
+            if (BOOLEAN.equals(methodDefinition.type()) == false) {
+                makeLogWarnInvalidEntryType(methodDefinition);
+            }
+            if (NO_UNIT.equals(methodDefinition.unit()) == false) {
+                makeLogWarnInvalidNumericalUnit(methodDefinition);
+            }
+            return Optional.ofNullable(String.valueOf(d));
+        } else if (value instanceof final Number d) {// TODO test
+            if (BOOLEAN.equals(methodDefinition.type())) {
+                makeLogWarnInvalidEntryType(methodDefinition);
+            }
+            return Optional.ofNullable(String.valueOf(d));
         } else {
-            return set(methodDefinition, String.valueOf(value));
+            return Optional.ofNullable(String.valueOf(value));
         }
-
-        // XXX add check numerical / MetadataThesaurusEntryNumericalUnit
-        // XXX add check Date + Instant
-        // XXX add check boolean
     }
 
     static Optional<String> setDateISO8601(final MethodEntryDefinition methodDefinition,
-                                           final Optional<String> oValue) {// XXX add check
+                                           final Optional<String> oValue) {
         requireNonNull(oValue);
         if (oValue.isEmpty()) {
             return empty();
@@ -348,7 +386,8 @@ public class MetadataThesaurusLogic {
 
         if (Set.of(BOOLEAN, DISPLAYED_AS_IT, IDENTIFIER_OR_SERIAL_ID).contains(methodDefinition.type())) {
             makeLogWarnInvalidEntryType(methodDefinition);
-        } else if (MetadataThesaurusEntryNumericalUnit.NO_UNIT.equals(methodDefinition.unit()) == false) {
+        }
+        if (NO_UNIT.equals(methodDefinition.unit()) == false) {
             makeLogWarnInvalidNumericalUnit(methodDefinition);
         }
 

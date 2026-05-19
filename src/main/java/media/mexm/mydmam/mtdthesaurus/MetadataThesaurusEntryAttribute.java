@@ -35,6 +35,3 @@ public @interface MetadataThesaurusEntryAttribute {
     public MetadataThesaurusEntryNumericalUnit unit() default NO_UNIT;
 
 }
-/*
-TODO check UNIX_TIME_MSEC and BOOLEAN during write + if UNIT == numerical
-*/
