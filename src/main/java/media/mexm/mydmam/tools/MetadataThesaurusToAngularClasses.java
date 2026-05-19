@@ -51,6 +51,11 @@ public class MetadataThesaurusToAngularClasses {
     private static final String MTHES_DEF_CLASSIFIER_SIGN_CN = MtdThesaurusDefClassifierSignature.class.getSimpleName();
     private static final String MTHES_DEF_ENTRY_SIGN_CN = MtdThesaurusDefEntrySignature.class.getSimpleName();
 
+    private static final String SPC4 = "    ";
+    private static final String SPACES_8 = SPC4 + SPC4;
+    private static final String SPACES_TO_12 = SPC4 + SPC4 + SPC4;
+    private static final String SPACES_LRG_TO_16 = SPC4 + SPC4 + SPC4 + SPC4;
+
     private final ObjectMapper objectMapper;
     private final MetadataThesaurusLogic logic;
     private final List<String> header;
@@ -82,31 +87,76 @@ public class MetadataThesaurusToAngularClasses {
         createResolverService(implementDefinitionList);
     }
 
+    /**
+     * Add import { what, what, what } from 'from'
+     * From is cleaned "'"
+     */
+    private static void addImport(final ArrayList<String> on, final String from, final String... what) {
+        final var allWhat = Stream.of(what)
+                .map(w -> w.startsWith("'") ? w.substring(1) : w)
+                .map(w -> w.endsWith("'") ? w.substring(0, w.length() - 1) : w)
+                .collect(joining(" "));
+        on.add("import { " + allWhat + " } from '" + from + "';");
+    }
+
     private static void classImports(final ArrayList<String> content) {
-        content.add(
-                "import { " + MTHES_DEF_CN + " } from '../interfaces/mtd-thesaurus-def';");
-        content.add(
-                "import { " + MTHES_DEF_ENTRY_SIGN_CN
-                    + " } from '../dto/mtd-thesaurus-def-entry-signature.interface';");
-        content.add(
-                "import { " + MTHES_DEF_CLASSIFIER_SIGN_CN
-                    + " } from '../dto/mtd-thesaurus-def-classifier-signature.interface';");
+        addImport(content, "../interfaces/mtd-thesaurus-def", MTHES_DEF_CN);
+        addImport(content, "../dto/mtd-thesaurus-def-entry-signature.interface", MTHES_DEF_ENTRY_SIGN_CN);
+        addImport(content, "../dto/mtd-thesaurus-def-classifier-signature.interface", MTHES_DEF_CLASSIFIER_SIGN_CN);
+    }
+
+    private static void openFunction(final ArrayList<String> content,
+                                     final String name,
+                                     final List<String> paramAndType,
+                                     final List<String> returnType,
+                                     final boolean override) {
+        final var sb = new StringBuilder(SPC4);
+        sb.append("public");
+        sb.append(" ");
+        if (override) {
+            sb.append("override ");
+        }
+        sb.append(name);
+        sb.append("(");
+        sb.append(paramAndType.stream().collect(joining(", ")));
+        sb.append(")");
+        if (returnType.isEmpty() == false) {
+            sb.append(": ");
+            sb.append(returnType.stream().collect(joining(" | ")));
+        }
+        sb.append(" {");
+        content.add(sb.toString());
+    }
+
+    private static void openFunction(final ArrayList<String> content,
+                                     final String name,
+                                     final List<String> paramAndType,
+                                     final List<String> returnType) {
+        openFunction(content, name, paramAndType, returnType, false);
+    }
+
+    private static void openOverrideFunction(final ArrayList<String> content,
+                                             final String name,
+                                             final List<String> paramAndType,
+                                             final List<String> returnType) {
+        openFunction(content, name, paramAndType, returnType, true);
     }
 
     private void createResolverService(final List<MtdRegisterDefinition> implementDefinitionList) throws IOException {
         final var className = "MtdThesaurusResolver";
         final var content = new ArrayList<>(header);
-        content.add("import { inject, Injectable } from '@angular/core'");
+        addImport(content, "@angular/core", "inject", "Injectable");
+
         classImports(content);
 
         implementDefinitionList.forEach(implementDefinition -> {
             final var dtoClassName = implementDefinition.className();
-            content.add("import { " + dtoClassName + " } from './" + nameFormatter(dtoClassName) + ".service';");
+            addImport(content, "./" + nameFormatter(dtoClassName) + ".service", dtoClassName);
         });
 
         content.add("");
         content.add("@Injectable({");
-        content.add("    providedIn: 'root'");
+        content.add(SPC4 + "providedIn: 'root'");
         content.add("})");
         content.add("export class " + className + " {");
         content.add("");
@@ -125,28 +175,35 @@ public class MetadataThesaurusToAngularClasses {
         });
         content.add("");
 
-        content.add("    private getDef(classifier:string): MtdThesaurusDef|null {");
-        content.add("        switch (classifier) {");
+        content.add(SPC4 + "private getDef(classifier:string): MtdThesaurusDef|null {");
+        content.add(SPACES_8 + "switch (classifier) {");
         implementDefinitionList.forEach(implementDefinition -> {
-            content.add("            case \"" + implementDefinition.classifier() + "\":");
-            content.add("                return this." + definitionToVarName.get(implementDefinition) + ";");
+            content.add(SPACES_TO_12 + "case \"" + implementDefinition.classifier() + "\":");
+            content.add(SPACES_LRG_TO_16 + "return this." + definitionToVarName.get(implementDefinition) + ";");
         });
-        content.add("            default:");
-        content.add("                return null;");
-        content.add("        }");
-        content.add("    }");
+        content.add(SPACES_TO_12 + "default:");
+        content.add(SPACES_LRG_TO_16 + "return null;");
+        content.add(SPACES_8 + "}");
+        content.add(SPC4 + "}");
 
         content.add("");
+        openFunction(
+                content,
+                "getEntrySignatureByKeyName",
+                List.of("classifier:string", "keyName:string"),
+                List.of(MTHES_DEF_ENTRY_SIGN_CN, "null"));
 
-        content.add("    public getEntrySignatureByKeyName(classifier:string, keyName:string): "
-                    + MTHES_DEF_ENTRY_SIGN_CN + " | null {");
-        content.add("        return this.getDef(classifier)?.getEntrySignatureByKeyName(keyName) || null;");
-        content.add("    }");
+        content.add(SPACES_8 + "return this.getDef(classifier)?.getEntrySignatureByKeyName(keyName) || null;");
+        content.add(SPC4 + "}");
         content.add("");
-        content.add("    public getClassifierSignature(classifier:string): "
-                    + MTHES_DEF_CLASSIFIER_SIGN_CN + " | null {");
-        content.add("        return this.getDef(classifier)?.getClassifierSignature() || null;");
-        content.add("    }");
+
+        openFunction(
+                content,
+                "getClassifierSignature",
+                List.of("classifier:string"),
+                List.of(MTHES_DEF_CLASSIFIER_SIGN_CN, "null"));
+        content.add(SPACES_8 + "return this.getDef(classifier)?.getClassifierSignature() || null;");
+        content.add(SPC4 + "}");
         content.add("}");
 
         log.info("Save {}", className);
@@ -158,53 +215,58 @@ public class MetadataThesaurusToAngularClasses {
         final var className = implementDefinition.className();
 
         final var content = new ArrayList<>(header);
-        content.add("import { Injectable } from '@angular/core'");
-        content.add("import { " + MTHES_ENTRY_CN + " } from '../dto/"
-                    + nameFormatter(MTHES_ENTRY_CN) + ".interface';");
+        addImport(content, "@angular/core", "Injectable");
+        addImport(content, "../dto/" + nameFormatter(MTHES_ENTRY_CN) + ".interface", MTHES_ENTRY_CN);
         classImports(content);
-        content.add(
-                "import { MetadataThesaurusEntryType } from '../dto/metadata-thesaurus-entry-type.enum';");
-        content.add(
-                "import { MetadataThesaurusEntryNumericalUnit } from '../dto/metadata-thesaurus-entry-numerical-unit.enum';");
-        content.add(
-                "import { MetadataThesaurusClassifierKind } from '../dto/metadata-thesaurus-classifier-kind.enum';");
-        content.add("");
+        addImport(content, "../dto/metadata-thesaurus-entry-type.enum", "MetadataThesaurusEntryType");
+        addImport(content, "../dto/metadata-thesaurus-entry-numerical-unit.enum",
+                "MetadataThesaurusEntryNumericalUnit");
+        addImport(content, "../dto/metadata-thesaurus-classifier-kind.enum", "MetadataThesaurusClassifierKind");
 
         content.add("@Injectable({");
-        content.add("    providedIn: 'root'");
+        content.add(SPC4 + "providedIn: 'root'");
         content.add("})");
 
         content.add("export class " + className + " extends " + MTHES_DEF_CN + " {");
         content.add("");
 
-        content.add("    public readonly classifier = \"" + implementDefinition.classifier() + "\";");
+        content.add(SPC4 + "public readonly classifier = \"" + implementDefinition.classifier() + "\";");
 
         content.add("");
-        content.add("    public override getEntrySignatureByKeyName(keyName: string): "
-                    + MTHES_DEF_ENTRY_SIGN_CN + " | null {");
-        content.add("        switch (keyName) {");
+
+        openOverrideFunction(content,
+                "getEntrySignatureByKeyName",
+                List.of("keyName: string"),
+                List.of(MTHES_DEF_ENTRY_SIGN_CN, "null"));
+
+        content.add(SPACES_8 + "switch (keyName) {");
         for (final var methodEntry : implementDefinition.methods()) {
             final var keyName = methodEntry.keyName();
-            content.add("            case \"" + keyName + "\":");
-            content.add("                return " + toJsonAngularEnumsWithPatch(methodEntry.signature()) + ";");
+            content.add(SPACES_TO_12 + "case \"" + keyName + "\":");
+            content.add(SPACES_LRG_TO_16 + "return " + toJsonAngularEnumsWithPatch(methodEntry.signature()) + ";");
         }
-        content.add("            default:");
-        content.add("                return null;");
-        content.add("        }");
-        content.add("    }");
+        content.add(SPACES_TO_12 + "default:");
+        content.add(SPACES_LRG_TO_16 + "return null;");
+        content.add(SPACES_8 + "}");
+        content.add(SPC4 + "}");
 
         content.add("");
-        content.add("    public override getClassifierSignature(): MtdThesaurusDefClassifierSignature {");
-        content.add("        return " + toJsonAngularEnumsWithPatch(implementDefinition.signature()) + ";");
-        content.add("    }");
+
+        openOverrideFunction(content,
+                "getClassifierSignature",
+                List.of(),
+                List.of("MtdThesaurusDefClassifierSignature"));
+
+        content.add(SPACES_8 + "return " + toJsonAngularEnumsWithPatch(implementDefinition.signature()) + ";");
+        content.add(SPC4 + "}");
 
         for (final var methodEntry : implementDefinition.methods()) {
             final var methodName = methodEntry.methodName();
             final var keyName = methodEntry.keyName();
             content.add("");
-            content.add("    public " + methodName + "(): " + MTHES_ENTRY_CN + " {");
-            content.add("        return { key: \"" + keyName + "\", classifier: this.classifier };");
-            content.add("    }");
+            content.add(SPC4 + "public " + methodName + "(): " + MTHES_ENTRY_CN + " {");
+            content.add(SPACES_8 + "return { key: \"" + keyName + "\", classifier: this.classifier };");
+            content.add(SPC4 + "}");
         }
 
         content.add("}");
@@ -245,8 +307,8 @@ public class MetadataThesaurusToAngularClasses {
     private void createDtoMetadataThesaurusEntry() throws IOException {
         final var dtoContent = new ArrayList<>(header);
         dtoContent.add("export interface " + MTHES_ENTRY_CN + " {");
-        dtoContent.add("    classifier: string;");
-        dtoContent.add("    key: string;");
+        dtoContent.add(SPC4 + "classifier: string;");
+        dtoContent.add(SPC4 + "key: string;");
         dtoContent.add("}");
 
         log.info("Save special DTO {}", MTHES_ENTRY_CN);
