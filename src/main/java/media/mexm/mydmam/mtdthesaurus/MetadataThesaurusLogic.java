@@ -297,20 +297,25 @@ public class MetadataThesaurusLogic {
         };
     }
 
-    private static void makeLogWarnInvalidEntryType(final MethodEntryDefinition methodDefinition) {
-        log.warn("Implementation warn, you should not set @{}.{} on {}#{}()",
+    private static void makeLogWarnInvalidEntryType(final MethodEntryDefinition methodDefinition, final Object value) {
+        log.warn("Implementation warn, you should not set @{}.{} on {}.{}() = {} [{}]",
                 MetadataThesaurusEntryType.class.getSimpleName(),
                 methodDefinition.type(),
                 methodDefinition.instanceClassName(),
-                methodDefinition.method().getName());
+                methodDefinition.method().getName(),
+                value,
+                value.getClass().getSimpleName());
     }
 
-    private static void makeLogWarnInvalidNumericalUnit(final MethodEntryDefinition methodDefinition) {
-        log.warn("Implementation warn, you should not set @{}.{} on {}#{}()",
+    private static void makeLogWarnInvalidNumericalUnit(final MethodEntryDefinition methodDefinition,
+                                                        final Object value) {
+        log.warn("Implementation warn, you should not set @{}.{} on {}.{}() = {} [{}]",
                 MetadataThesaurusEntryNumericalUnit.class.getSimpleName(),
                 methodDefinition.unit(),
                 methodDefinition.instanceClassName(),
-                methodDefinition.method().getName());
+                methodDefinition.method().getName(),
+                value,
+                value.getClass().getSimpleName());
     }
 
     static Optional<String> set(final MethodEntryDefinition methodDefinition, final Object value) {
@@ -326,10 +331,10 @@ public class MetadataThesaurusLogic {
 
         if (value instanceof final String s) {
             if (BOOLEAN.equals(methodDefinition.type())) {
-                makeLogWarnInvalidEntryType(methodDefinition);
+                makeLogWarnInvalidEntryType(methodDefinition, value);
             }
             if (NO_UNIT.equals(methodDefinition.unit()) == false) {
-                makeLogWarnInvalidNumericalUnit(methodDefinition);
+                makeLogWarnInvalidNumericalUnit(methodDefinition, value);
             }
             if (s.isBlank()) {
                 return empty();
@@ -337,39 +342,39 @@ public class MetadataThesaurusLogic {
             return Optional.ofNullable(s);
         } else if (value instanceof final Duration d) {
             if (DISPLAYED_AS_IT.equals(methodDefinition.type()) == false) {
-                makeLogWarnInvalidEntryType(methodDefinition);
+                makeLogWarnInvalidEntryType(methodDefinition, value);
             }
             if (MILLISECONDS.equals(methodDefinition.unit()) == false) {
-                makeLogWarnInvalidNumericalUnit(methodDefinition);
+                makeLogWarnInvalidNumericalUnit(methodDefinition, value);
             }
             return Optional.ofNullable(String.valueOf(d.toMillis()));
         } else if (value instanceof final Date d) {// TODO test
             if (Set.of(BOOLEAN, DISPLAYED_AS_IT, IDENTIFIER_OR_SERIAL_ID).contains(methodDefinition.type())) {
-                makeLogWarnInvalidEntryType(methodDefinition);
+                makeLogWarnInvalidEntryType(methodDefinition, value);
             }
             if (NO_UNIT.equals(methodDefinition.unit()) == false) {
-                makeLogWarnInvalidNumericalUnit(methodDefinition);
+                makeLogWarnInvalidNumericalUnit(methodDefinition, value);
             }
             return Optional.ofNullable(String.valueOf(d.getTime()));
         } else if (value instanceof final Instant d) {// TODO test
             if (Set.of(BOOLEAN, DISPLAYED_AS_IT, IDENTIFIER_OR_SERIAL_ID).contains(methodDefinition.type())) {
-                makeLogWarnInvalidEntryType(methodDefinition);
+                makeLogWarnInvalidEntryType(methodDefinition, value);
             }
             if (NO_UNIT.equals(methodDefinition.unit()) == false) {
-                makeLogWarnInvalidNumericalUnit(methodDefinition);
+                makeLogWarnInvalidNumericalUnit(methodDefinition, value);
             }
             return Optional.ofNullable(String.valueOf(d.toEpochMilli()));
         } else if (value instanceof final Boolean d) {// TODO test
             if (BOOLEAN.equals(methodDefinition.type()) == false) {
-                makeLogWarnInvalidEntryType(methodDefinition);
+                makeLogWarnInvalidEntryType(methodDefinition, value);
             }
             if (NO_UNIT.equals(methodDefinition.unit()) == false) {
-                makeLogWarnInvalidNumericalUnit(methodDefinition);
+                makeLogWarnInvalidNumericalUnit(methodDefinition, value);
             }
             return Optional.ofNullable(String.valueOf(d));
         } else if (value instanceof final Number d) {// TODO test
             if (BOOLEAN.equals(methodDefinition.type())) {
-                makeLogWarnInvalidEntryType(methodDefinition);
+                makeLogWarnInvalidEntryType(methodDefinition, value);
             }
             return Optional.ofNullable(String.valueOf(d));
         } else {
@@ -385,10 +390,10 @@ public class MetadataThesaurusLogic {
         }
 
         if (Set.of(BOOLEAN, DISPLAYED_AS_IT, IDENTIFIER_OR_SERIAL_ID).contains(methodDefinition.type())) {
-            makeLogWarnInvalidEntryType(methodDefinition);
+            makeLogWarnInvalidEntryType(methodDefinition, oValue.get());
         }
         if (NO_UNIT.equals(methodDefinition.unit()) == false) {
-            makeLogWarnInvalidNumericalUnit(methodDefinition);
+            makeLogWarnInvalidNumericalUnit(methodDefinition, oValue.get());
         }
 
         try {

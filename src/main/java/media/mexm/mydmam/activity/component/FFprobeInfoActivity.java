@@ -60,7 +60,7 @@ import tv.hd3g.ffprobejaxb.data.FFProbeKeyValue;
 
 @Slf4j
 @Component
-public class FFprobeInfoActivity implements ActivityHandler { // TODO test
+public class FFprobeInfoActivity implements ActivityHandler {
 
     private static final String AUDIO_SLASH = "audio/";
     private static final String VIDEO_SLASH = "video/";
@@ -142,6 +142,7 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                 technicalStream.startTime().set(layer, mediaStream.startTime());
                 technicalStream.disposition()
                         .set(layer, mediaStream.disposition().resumeDispositions().collect(joining(", ")));
+                technicalStream.bitrate().set(layer, mediaStream.bitRate() == 0 ? null : mediaStream.bitRate());
             } else {
                 final var disposition = mediaStream.disposition();
                 if (disposition.attachedPic()) {
@@ -155,7 +156,6 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
 
             technicalStream.referenceId().set(layer, mediaStream.id());
             technicalStream.programId().set(layer, programIdByMediaStreamIndex.get(mediaStream.index()));
-            technicalStream.bitrate().set(layer, mediaStream.bitRate());
             technicalStream.profile().set(layer, mediaStream.profile());
             technicalStream.codec().set(layer, mediaStream.codecName());
             technicalStream.isSecondary().set(layer, mediaStream.isSecondary());
@@ -210,6 +210,9 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
                 if (mediaStream.isSecondary() == false) {
                     final var technicalVideo = thesaurus.technicalVideo();
                     technicalVideo.fieldOrder().set(layer, mediaStream.fieldOrder());
+                    // XXX
+                    // r_frame_rate="25/1"
+                    // avg_frame_rate="0/0"
                     technicalVideo.frameRate().set(layer, mediaStream.rFrameRate());
                     technicalVideo.averageFrameRate().set(layer, mediaStream.avgFrameRate());
                     technicalVideo.referenceId().set(layer, mediaStream.id());
@@ -259,6 +262,18 @@ public class FFprobeInfoActivity implements ActivityHandler { // TODO test
             technicalMXF.generationUID().set(layer, getTagByName(format.tags(), "generation_uid"));
             technicalMXF.materialPackageUMID().set(layer, getTagByName(format.tags(), "material_package_umid"));
             dublinCore.language().set(layer, getTagByName(format.tags(), "language"));
+
+            /*
+            TODO add MXF/XMP
+            SET_STR_METADATA(pb, "company_name", str);
+            SET_STR_METADATA(pb, "product_name", str);
+            SET_VERSION_METADATA(pb, "product_version_num", major, minor, tertiary, patch, release, str);
+            SET_STR_METADATA(pb, "product_version", str);
+            SET_UID_METADATA(pb, "product_uid", uid, str);
+            SET_VERSION_METADATA(pb, "toolkit_version_num", major, minor, tertiary, patch, release, str);
+            SET_STR_METADATA(pb, "application_platform", str);
+            */
+
         });
 
         final var validVideoStreams = ffprobeJAXB.getVideoStreams().toList();

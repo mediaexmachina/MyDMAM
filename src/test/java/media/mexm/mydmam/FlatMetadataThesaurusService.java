@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -177,6 +178,10 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
         actualMimeType = mimeType;
     }
 
+    public void presetMimeType(final String mimeType) {// TODO test
+        actualMimeType = mimeType;
+    }
+
     /**
      * To check writed values.
      */
@@ -200,11 +205,15 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
                         .isNotEmpty();
                 oItem.ifPresent(addedDuringTest::remove);
 
-                final var addedValue = oItem.map(ThesaurusDbEntry::value).orElseThrow();
-                assertThat(value)
-                        .withFailMessage("Expected \"%s\", set \"%s\", for: %s.%s[%s]",
-                                value, addedValue, classifier, key, layer)
-                        .isEqualTo(addedValue);
+                final var addedValue = oItem.map(ThesaurusDbEntry::value).orElseThrow()
+                        .lines()
+                        .collect(joining("\n"));
+                assertThat(value
+                        .lines()
+                        .collect(joining("\n")))
+                                .withFailMessage("Expected \"%s\", set \"%s\", for: %s.%s[%s]",
+                                        value, addedValue, classifier, key, layer)
+                                .isEqualTo(addedValue);
             }
 
             @Override
