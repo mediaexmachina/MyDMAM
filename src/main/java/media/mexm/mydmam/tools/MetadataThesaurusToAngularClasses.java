@@ -95,7 +95,7 @@ public class MetadataThesaurusToAngularClasses {
         final var allWhat = Stream.of(what)
                 .map(w -> w.startsWith("'") ? w.substring(1) : w)
                 .map(w -> w.endsWith("'") ? w.substring(0, w.length() - 1) : w)
-                .collect(joining(" "));
+                .collect(joining(", "));
         on.add("import { " + allWhat + " } from '" + from + "';");
     }
 
