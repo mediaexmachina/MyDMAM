@@ -224,9 +224,9 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalImage().pixelformat().set(0, "yuv420p");
         assertThesaurus.technicalImage().referenceId().set(0, "0x1");
         assertThesaurus.technicalImage().sampleAspectRatio().set(0, "1:1");
-        assertThesaurus.technicalVideo().averageFrameRate().set(0, "25/1");
+        assertThesaurus.technicalVideo().averageFrameRate().set(0, "25");
         assertThesaurus.technicalVideo().fieldOrder().set(0, "progressive");
-        assertThesaurus.technicalVideo().frameRate().set(0, "25/1");
+        assertThesaurus.technicalVideo().frameRate().set(0, "25");
         assertThesaurus.technicalVideo().referenceId().set(0, "0x1");
         assertThesaurus.technicalStream().level().set(0, "123");
         assertThesaurus.technicalImage().displayAspectRatio().set(0, "11:9");
@@ -258,7 +258,7 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalStream().codec().set(3, "prores");
         assertThesaurus.technicalImage().width().set(3, 720);
         assertThesaurus.technicalImage().height().set(3, 576);
-        assertThesaurus.technicalStream().codecName().set(3, "Apple ProRes (iCodec Pro)");
+        assertThesaurus.technicalStream().codecName().set(3, "Apple ProRes 422");
         assertThesaurus.technicalStream().isSecondary().set(3, true);
         assertThesaurus.technicalStream().profile().set(3, "Standard");
         assertThesaurus.technicalStream().type().set(3, "attached-pic");
@@ -314,6 +314,21 @@ class FFprobeInfoActivityTest {
                                         <tag key="track_name" value="Picture Track"/>
                                     </tags>
                                 </stream>
+                                <stream index="1" codec_name="pcm_s16le" codec_long_name="PCM signed 16-bit little-endian" codec_type="audio" codec_tag_string="[0][0][0][0]" codec_tag="0x0000" sample_fmt="s16" sample_rate="48000" channels="1" bits_per_sample="16" initial_padding="0" r_frame_rate="0/0" avg_frame_rate="0/0" time_base="1/48000" start_pts="0" start_time="0.000000" duration_ts="48000" duration="1.000000" bit_rate="768000">
+                                    <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0" timed_thumbnails="0" non_diegetic="0" captions="0" descriptions="0" metadata="0" dependent="0" still_image="0" multilayer="0" />
+                                    <tags>
+                                        <tag key="file_package_umid" value="0x060A2B340101010101010F00130000000000036C135ECB89060E2B347F7F2A80" />
+                                        <tag key="reel_umid" value="0x060A2B340101010101010F00130000000000036C0E7DCB89060E2B347F7F2A80" />
+                                        <tag key="reel_name" value="avid_dvcam_mxf" />
+                                    </tags>
+                                </stream>
+                                <stream index="2" codec_type="data" codec_tag_string="[0][0][0][0]" codec_tag="0x0000" r_frame_rate="0/0" avg_frame_rate="0/0" time_base="1/90000" start_pts="0" start_time="0.000000" duration_ts="90000" duration="1.000000">
+                                    <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0" timed_thumbnails="0" non_diegetic="0" captions="0" descriptions="0" metadata="0" dependent="0" still_image="0" multilayer="0" />
+                                    <tags>
+                                        <tag key="file_package_umid" value="0x060A2B340101010101010F00130000000000036C13AECB89060E2B347F7F2A80" />
+                                        <tag key="data_type" value="audio" />
+                                    </tags>
+                                </stream>
                             </streams>
                             <format filename="DCP_Video.mxf" nb_streams="1" nb_programs="0" nb_stream_groups="0" format_name="mxf" format_long_name="MXF (Material eXchange Format)" start_time="0.000000" duration="1.000000" size="13094022" bit_rate="104752176" probe_score="100">
                                 <tags>
@@ -345,13 +360,9 @@ class FFprobeInfoActivityTest {
         final var assertThesaurus = metadataThesaurusService.getAssertThesaurus();
 
         assertThesaurus.technical().type().set("""
-                QuickTime / MOV, 00:00:05, TCIN: 00:00:00:01, 1 chapter, 10 Mbps
-                video: ffv1 352×288 L123 @ 25 fps [8568 kbps] yuv420p/colTransfer:UNKNOWN default
-                audio: pcm_s16le stereo @ 48 kHz default
-                data: tmcd (Time Code Media Handler)
-                attached picture (prores 720×576)
-                still image (prores 1×2)
-                timed thumbnails (prores 3×4)
+                MXF (Material eXchange Format), 00:00:01, 105 Mbps
+                video: jpeg2000 1920×1080 JPEG 2000 digital cinema 2K @ 25 fps xyz12le
+                audio: pcm_s16le mono @ 48 kHz
                 """);
 
         // TODO check mxf...

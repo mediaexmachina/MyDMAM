@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.activity.component;
 
+import static java.lang.Float.parseFloat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.empty;
@@ -62,6 +63,7 @@ import tv.hd3g.ffprobejaxb.data.FFProbeKeyValue;
 @Component
 public class FFprobeInfoActivity implements ActivityHandler {
 
+    private static final String LOG_INVALID_FRAME_RATE = "Invalid frameRate: {}";
     private static final String AUDIO_SLASH = "audio/";
     private static final String VIDEO_SLASH = "video/";
     @Autowired
@@ -161,7 +163,7 @@ public class FFprobeInfoActivity implements ActivityHandler {
             technicalStream.isSecondary().set(layer, mediaStream.isSecondary());
 
             final var codecLongName = WELL_KNOWN_CODECS_NAMES.getOrDefault(
-                    mediaStream.codecName(),
+                    Optional.ofNullable(mediaStream.codecTagString()).orElse(""),
                     mediaStream.codecLongName());
             technicalStream.codecName().set(layer, codecLongName);
 
@@ -210,11 +212,8 @@ public class FFprobeInfoActivity implements ActivityHandler {
                 if (mediaStream.isSecondary() == false) {
                     final var technicalVideo = thesaurus.technicalVideo();
                     technicalVideo.fieldOrder().set(layer, mediaStream.fieldOrder());
-                    // XXX
-                    // r_frame_rate="25/1"
-                    // avg_frame_rate="0/0"
-                    technicalVideo.frameRate().set(layer, mediaStream.rFrameRate());
-                    technicalVideo.averageFrameRate().set(layer, mediaStream.avgFrameRate());
+                    technicalVideo.frameRate().set(layer, parseFrameRate(mediaStream.rFrameRate()));
+                    technicalVideo.averageFrameRate().set(layer, parseFrameRate(mediaStream.avgFrameRate()));
                     technicalVideo.referenceId().set(layer, mediaStream.id());
                 }
             }
@@ -282,6 +281,49 @@ public class FFprobeInfoActivity implements ActivityHandler {
         final var haveAudio = ffprobeJAXB.getAudioStreams().count() > 0l;
 
         patchInvalidAVMimeTypes(fileEntity, currentMimeType, haveVideo, haveAudio);
+    }
+
+    /**
+     * @return can be null
+     */
+    static Object parseFrameRate(final String rawValue) {
+        // TODO fix with ffprobeJAXB... https://github.com/hdsdi3g/medialib/issues/129
+        if (rawValue == null
+            || rawValue.isBlank()
+            || rawValue.equals("0/0")
+            || rawValue.equals("0")
+            || rawValue.equals("0.0")) {
+            return null;
+        }
+
+        if (rawValue.contains("/")) {
+            final var parts = rawValue.split("/");
+            if (parts.length != 2) {
+                log.warn(LOG_INVALID_FRAME_RATE, rawValue);
+                return null;
+            }
+            try {
+                final var numerator = Integer.parseInt(parts[0]);
+                final var denominator = Integer.parseInt(parts[1]);
+                if (denominator == 0) {
+                    return numerator;
+                } else if (numerator == 0) {
+                    return null;
+                }
+
+                return numerator / denominator;
+            } catch (final NumberFormatException e) {
+                log.warn(LOG_INVALID_FRAME_RATE, rawValue);
+                return null;
+            }
+        }
+
+        try {
+            return parseFloat(rawValue);
+        } catch (final NumberFormatException e) {
+            log.warn(LOG_INVALID_FRAME_RATE, rawValue);
+            return null;
+        }
     }
 
     static Map<Integer, Integer> getPrograms(final FFprobeJAXB ffprobeJAXB,
