@@ -40,7 +40,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -114,11 +113,6 @@ class FFprobeSupplierTest {
         }
 
         ffps = new FFprobeSupplierForMock();
-    }
-
-    @AfterEach
-    void ends() {
-
     }
 
     @Test
