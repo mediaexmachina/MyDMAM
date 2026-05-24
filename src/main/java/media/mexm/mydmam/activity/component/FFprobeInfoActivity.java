@@ -250,6 +250,9 @@ public class FFprobeInfoActivity implements ActivityHandler {
             final var creatorTool = new StringBuilder();
             getTagByName(format.tags(), "product_name").ifPresent(creatorTool::append);
             getTagByName(format.tags(), "product_version").ifPresent(v -> creatorTool.append(" v" + v));
+            getTagByName(format.tags(), "application_platform")
+                    .map(String::toUpperCase)
+                    .ifPresent(cn -> creatorTool.append(" on " + cn));
             getTagByName(format.tags(), "company_name").ifPresent(cn -> creatorTool.append(" (" + cn + ")"));
             xmp.creatorTool().set(creatorTool.toString().trim());
 
@@ -261,26 +264,13 @@ public class FFprobeInfoActivity implements ActivityHandler {
             technicalMXF.generationUID().set(layer, getTagByName(format.tags(), "generation_uid"));
             technicalMXF.materialPackageUMID().set(layer, getTagByName(format.tags(), "material_package_umid"));
             dublinCore.language().set(layer, getTagByName(format.tags(), "language"));
-
-            /*
-            TODO add MXF/XMP
-            SET_STR_METADATA(pb, "company_name", str);
-            SET_STR_METADATA(pb, "product_name", str);
-            SET_VERSION_METADATA(pb, "product_version_num", major, minor, tertiary, patch, release, str);
-            SET_STR_METADATA(pb, "product_version", str);
-            SET_UID_METADATA(pb, "product_uid", uid, str);
-            SET_VERSION_METADATA(pb, "toolkit_version_num", major, minor, tertiary, patch, release, str);
-            SET_STR_METADATA(pb, "application_platform", str);
-            */
-
         });
 
         final var validVideoStreams = ffprobeJAXB.getVideoStreams().toList();
-        final var currentMimeType = metadataThesaurusService.getMimeType(fileEntity).orElseThrow();
         final var haveVideo = validVideoStreams.isEmpty() == false;
         final var haveAudio = ffprobeJAXB.getAudioStreams().count() > 0l;
 
-        patchInvalidAVMimeTypes(fileEntity, currentMimeType, haveVideo, haveAudio);
+        patchInvalidAVMimeTypes(fileEntity, haveVideo, haveAudio);
     }
 
     /**
@@ -326,15 +316,10 @@ public class FFprobeInfoActivity implements ActivityHandler {
         }
     }
 
-    static Map<Integer, Integer> getPrograms(final FFprobeJAXB ffprobeJAXB,
-                                             final MtdThesaurusDefTechnicalTransportStream tsWriter) {
+    private static Map<Integer, Integer> getPrograms(final FFprobeJAXB ffprobeJAXB,
+                                                     final MtdThesaurusDefTechnicalTransportStream tsWriter) {
         final var result = new HashMap<Integer, Integer>();
-        final var programs = ffprobeJAXB.getPrograms();
-        if (programs.isEmpty() == false) {
-            return Map.of();
-        }
-
-        programs.forEach(program -> {
+        ffprobeJAXB.getPrograms().forEach(program -> {
             final var layer = program.programId();
             tsWriter.programNum().set(layer, program.programNum());
             tsWriter.pcrPid().set(layer, program.pcrPid());
@@ -348,8 +333,8 @@ public class FFprobeInfoActivity implements ActivityHandler {
         return unmodifiableMap(result);
     }
 
-    static void setChapters(final FFprobeJAXB ffprobeJAXB,
-                            final MtdThesaurusDefChapter chapterMtd) {
+    private static void setChapters(final FFprobeJAXB ffprobeJAXB,
+                                    final MtdThesaurusDefChapter chapterMtd) {
         final var chapters = ffprobeJAXB.getChapters();
         if (chapters.isEmpty()) {
             return;
@@ -363,23 +348,23 @@ public class FFprobeInfoActivity implements ActivityHandler {
         }
     }
 
-    static Optional<String> removeUnknown(final String value) {
+    private static Optional<String> removeUnknown(final String value) {
         if ("unknown".equalsIgnoreCase(value)) {
             return empty();
         }
         return Optional.ofNullable(value);
     }
 
-    static Optional<String> getTagByName(final List<FFProbeKeyValue> tags, final String name) {
+    private static Optional<String> getTagByName(final List<FFProbeKeyValue> tags, final String name) {
         return tags.stream()
                 .filter(t -> name.equalsIgnoreCase(t.key()))
                 .findFirst()
                 .map(FFProbeKeyValue::value);
     }
 
-    void saveFFprobeXMLFile(final FileEntity fileEntity,
-                            final RealmStorageConfiguredEnv storedOn,
-                            final FFprobeJAXB ffprobeJAXB) throws IOException {
+    private void saveFFprobeXMLFile(final FileEntity fileEntity,
+                                    final RealmStorageConfiguredEnv storedOn,
+                                    final FFprobeJAXB ffprobeJAXB) throws IOException {
         if (storedOn.haveWorkingDir()
             && storedOn.haveRenderedDir()
             && storedOn.getActivityLimitPolicy().isLevelLowerThan(BASE_PREVIEW) == false) {
@@ -393,9 +378,12 @@ public class FFprobeInfoActivity implements ActivityHandler {
     }
 
     void patchInvalidAVMimeTypes(final FileEntity fileEntity,
-                                 final String currentMimeType,
                                  final boolean haveVideo,
                                  final boolean haveAudio) {
+        final var currentMimeType = metadataThesaurusService.getMimeType(fileEntity).orElseThrow();
+        if (currentMimeType.equals("video/mp2t")) {
+            return;
+        }
         if (currentMimeType.startsWith(VIDEO_SLASH) && haveVideo == false && haveAudio) {
             metadataThesaurusService.setMimeType(this, fileEntity, currentMimeType.replace(VIDEO_SLASH, AUDIO_SLASH));
         } else if (currentMimeType.startsWith(AUDIO_SLASH) && haveVideo == true) {
@@ -403,14 +391,13 @@ public class FFprobeInfoActivity implements ActivityHandler {
         }
     }
 
-    static void setMediaSummary(final FFprobeJAXB ffprobeJAXB,
-                                final MtdThesaurusDefTechnical writer) {
+    private static void setMediaSummary(final FFprobeJAXB ffprobeJAXB,
+                                        final MtdThesaurusDefTechnical writer) {
         final var mediaSummary = ffprobeJAXB.getMediaSummary();
         final var mediaSummaryStr = Stream.concat(
                 Optional.ofNullable(mediaSummary.format()).stream(),
                 mediaSummary.streams().stream())
                 .collect(Collectors.joining("\n"));
-
         writer.type().set(mediaSummaryStr);
     }
 
@@ -479,7 +466,7 @@ public class FFprobeInfoActivity implements ActivityHandler {
             "speex",
             "vorbis");
 
-    boolean isCanBeUsedInMasterAsPreview(final String mimeType, final FFprobeJAXB ffprobeJAXB) {
+    boolean isCanBeUsedInMasterAsPreview(final String mimeType, final FFprobeJAXB ffprobeJAXB) {// TODO test
         if (MASTER_AS_PREVIEW_MIME_TYPES.contains(mimeType) == false) {
             return false;
         }

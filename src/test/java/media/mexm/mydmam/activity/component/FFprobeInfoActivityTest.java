@@ -16,12 +16,17 @@
  */
 package media.mexm.mydmam.activity.component;
 
+import static java.io.File.createTempFile;
+import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
 import static media.mexm.mydmam.component.FFprobeSupplier.ALL_MIME_TYPES;
 import static media.mexm.mydmam.component.FFprobeSupplier.FFPROBE;
+import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -29,13 +34,17 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +57,7 @@ import media.mexm.mydmam.activity.ActivityEventType;
 import media.mexm.mydmam.component.FFprobeSupplier;
 import media.mexm.mydmam.entity.FileEntity;
 import media.mexm.mydmam.pathindexing.RealmStorageConfiguredEnv;
+import media.mexm.mydmam.service.MediaAssetService;
 import tv.hd3g.commons.testtools.Fake;
 import tv.hd3g.commons.testtools.MockToolsExtendsJunit;
 import tv.hd3g.fflauncher.FFprobe;
@@ -63,6 +73,8 @@ class FFprobeInfoActivityTest {
 
     @MockitoBean
     FFprobeSupplier ffprobeSupplier;
+    @MockitoBean
+    MediaAssetService mediaAssetService;
 
     @Mock
     FileEntity fileEntity;
@@ -74,7 +86,7 @@ class FFprobeInfoActivityTest {
     ProcessingToolResult<FFSourceDefinition, FFprobe, FFprobeJAXB, KeepStdoutAndErrToLogWatcher> ffprobeSupplierResult;
 
     @Fake
-    String assetFilePath;
+    String lowerMimeType;
 
     @Autowired
     FlatMetadataThesaurusService metadataThesaurusService;
@@ -82,20 +94,25 @@ class FFprobeInfoActivityTest {
     FFprobeInfoActivity ffia;
 
     File assetFile;
+    File workingFile;
 
     @BeforeEach
-    void init() {
+    void init() throws IOException {
         metadataThesaurusService.reset();
 
-        assetFile = new File(assetFilePath);
+        assetFile = createTempFile("mydmam-" + getClass().getSimpleName(), "assetFile");
+        deleteQuietly(assetFile);
         when(storedOn.getLocalInternalFile(fileEntity)).thenReturn(assetFile);
         when(ffprobeSupplier.processSimpleContainerAnalysis(assetFile)).thenReturn(ffprobeSupplierResult);
+
+        workingFile = createTempFile("mydmam-" + getClass().getSimpleName(), "workingFile");
+        deleteQuietly(workingFile);
     }
 
     @AfterEach
     void ends() {
         metadataThesaurusService.check();
-        verifyNoMoreInteractions(ffprobeSupplier);
+        verifyNoMoreInteractions(ffprobeSupplier, mediaAssetService);
     }
 
     @ParameterizedTest
@@ -209,7 +226,7 @@ class FFprobeInfoActivityTest {
         assertThesaurus.chapter().endTime().set(1, 3000);
 
         assertThesaurus.technicalStream().referenceId().set(0, "0x1");
-        assertThesaurus.technicalStream().startTime().set(0, "0.0");
+        assertThesaurus.technicalStream().startTime().set(0, 0.0);
         assertThesaurus.technicalStream().timeBase().set(0, "1/12800");
         assertThesaurus.technicalStream().type().set(0, "video");
         assertThesaurus.technicalStream().bitrate().set(0, 8568404);
@@ -224,9 +241,9 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalImage().pixelformat().set(0, "yuv420p");
         assertThesaurus.technicalImage().referenceId().set(0, "0x1");
         assertThesaurus.technicalImage().sampleAspectRatio().set(0, "1:1");
-        assertThesaurus.technicalVideo().averageFrameRate().set(0, "25");
+        assertThesaurus.technicalVideo().averageFrameRate().set(0, 25);
         assertThesaurus.technicalVideo().fieldOrder().set(0, "progressive");
-        assertThesaurus.technicalVideo().frameRate().set(0, "25");
+        assertThesaurus.technicalVideo().frameRate().set(0, 25);
         assertThesaurus.technicalVideo().referenceId().set(0, "0x1");
         assertThesaurus.technicalStream().level().set(0, "123");
         assertThesaurus.technicalImage().displayAspectRatio().set(0, "11:9");
@@ -237,14 +254,14 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalStream().disposition().set(1, "default");
         assertThesaurus.technicalStream().isSecondary().set(1, false);
         assertThesaurus.technicalStream().referenceId().set(1, "0x2");
-        assertThesaurus.technicalStream().startTime().set(1, "0.0");
+        assertThesaurus.technicalStream().startTime().set(1, 0.0);
         assertThesaurus.technicalStream().timeBase().set(1, "1/48000");
         assertThesaurus.technicalStream().type().set(1, "audio");
         assertThesaurus.technicalAudio().channelLayout().set(1, "stereo");
         assertThesaurus.technicalAudio().channelsCount().set(1, 2);
         assertThesaurus.technicalAudio().referenceId().set(1, "0x2");
         assertThesaurus.technicalAudio().sampleFormat().set(1, "s16");
-        assertThesaurus.technicalAudio().sampleRate().set(1, "48000");
+        assertThesaurus.technicalAudio().sampleRate().set(1, 48000);
 
         assertThesaurus.technicalImage().aspectRatio().set(3, 1.25);
         assertThesaurus.technicalImage().colorprimaries().set(3, "bt470bg");
@@ -353,7 +370,7 @@ class FFprobeInfoActivityTest {
 
         when(ffprobeSupplierResult.getResult()).thenReturn(ffprobeJAXB);
         when(storedOn.haveWorkingDir()).thenReturn(false);
-        metadataThesaurusService.presetMimeType("nope/nope");
+        metadataThesaurusService.presetMimeType("application/mxf");
 
         ffia.handle(fileEntity, eventType, storedOn);
 
@@ -361,46 +378,279 @@ class FFprobeInfoActivityTest {
 
         assertThesaurus.technical().type().set("""
                 MXF (Material eXchange Format), 00:00:01, 105 Mbps
-                video: jpeg2000 1920×1080 JPEG 2000 digital cinema 2K @ 25 fps xyz12le
+                video: jpeg2000 1920×1080 JPEG 2000 digital cinema 2K @ NaN fps xyz12le
                 audio: pcm_s16le mono @ 48 kHz
+                data: [0][0][0][0]
                 """);
 
-        // TODO check mxf...
+        assertThesaurus.dublinCore().date().setDateISO8601(Optional.ofNullable("2014-03-18T14:48:35.000000Z"));
+        assertThesaurus.xmp().creatorTool().set("OpenDCP v0.29.0 on OSX (OpenDCP)");
+        assertThesaurus.xmp().modifyDate().setDateISO8601(Optional.ofNullable("2014-03-18T14:48:35.000000Z"));
+
+        assertThesaurus.technicalStream().bitrate().set(1, 768000);
+        assertThesaurus.technicalStream().codec().set(0, "jpeg2000");
+        assertThesaurus.technicalStream().codec().set(1, "pcm_s16le");
+        assertThesaurus.technicalStream().codecName().set(0, "JPEG 2000");
+        assertThesaurus.technicalStream().codecName().set(1, "PCM signed 16-bit little-endian");
+        assertThesaurus.technicalStream().isSecondary().set(0, false);
+        assertThesaurus.technicalStream().isSecondary().set(1, false);
+        assertThesaurus.technicalStream().isSecondary().set(2, false);
+
+        assertThesaurus.technicalStream().profile().set(0, "JPEG 2000 digital cinema 2K");
+        assertThesaurus.technicalStream().startTime().set(0, 0.0);
+        assertThesaurus.technicalStream().startTime().set(1, 0.0);
+        assertThesaurus.technicalStream().startTime().set(2, 0.0);
+
+        assertThesaurus.technicalStream().timeBase().set(0, "1/25");
+        assertThesaurus.technicalStream().timeBase().set(1, "1/48000");
+        assertThesaurus.technicalStream().timeBase().set(2, "1/90000");
+        assertThesaurus.technicalStream().type().set(0, "video");
+        assertThesaurus.technicalStream().type().set(1, "audio");
+        assertThesaurus.technicalStream().type().set(2, "data");
+
+        assertThesaurus.technicalImage().aspectRatio().set(0, 1.778);
+        assertThesaurus.technicalImage().width().set(0, 1920);
+        assertThesaurus.technicalImage().height().set(0, 1080);
+        assertThesaurus.technicalImage().imageAspectFormat().set(0, "LANDSCAPE");
+        assertThesaurus.technicalImage().displayAspectRatio().set(0, "16:9");
+        assertThesaurus.technicalImage().pixelformat().set(0, "xyz12le");
+        assertThesaurus.technicalImage().referenceId().set(0, 0);
+        assertThesaurus.technicalImage().sampleAspectRatio().set(0, "1:1");
+
+        assertThesaurus.technicalVideo().fieldOrder().set(0, "progressive");
+        assertThesaurus.technicalVideo().frameRate().set(0, 25);
+
+        assertThesaurus.technicalAudio().channelsCount().set(1, 1);
+        assertThesaurus.technicalAudio().referenceId().set(1, 1);
+        assertThesaurus.technicalAudio().sampleFormat().set(1, "s16");
+        assertThesaurus.technicalAudio().sampleRate().set(1, 48000);
+
+        assertThesaurus.technicalContainer().bitrate().set(0, 104752176);
+        assertThesaurus.technicalContainer().duration().set(0, 1000);
+        assertThesaurus.technicalContainer().format().set(0, "mxf");
+        assertThesaurus.technicalContainer().formatName().set(0, "MXF (Material eXchange Format)");
+        assertThesaurus.technicalContainer().startTime().set(0, 0.0);
+        assertThesaurus.technicalContainer().timecode().set(0, "00:00:00:00");
+
+        assertThesaurus.technicalMXF().filePackageName().set(0,
+                "File Package: SMPTE 429-4 frame wrapping of JPEG 2000 codestreams");
+        assertThesaurus.technicalMXF().filePackageUMID().set(0,
+                "0x060A2B340101010501010F2013000000AFC6F609516F4B23B9F9BD16727A2909");
+        assertThesaurus.technicalMXF().filePackageUMID().set(1,
+                "0x060A2B340101010101010F00130000000000036C135ECB89060E2B347F7F2A80");
+        assertThesaurus.technicalMXF().filePackageUMID().set(2,
+                "0x060A2B340101010101010F00130000000000036C13AECB89060E2B347F7F2A80");
+        assertThesaurus.technicalMXF().generationUID().set(-1,
+                "dae0add6-a5fd-438e-b986-3c9a9e9d6213");
+        assertThesaurus.technicalMXF().materialPackageUMID().set(-1,
+                "0x060A2B340101010501010F201300000042D11DC1C87E4E418511A40FF94544DE");
+        assertThesaurus.technicalMXF().operationalPatternUL().set(-1, "060e2b34.04010102.0d010201.10000000");
+        assertThesaurus.technicalMXF().trackIndex().set(0, 0);
+        assertThesaurus.technicalMXF().trackIndex().set(1, 1);
+        assertThesaurus.technicalMXF().trackIndex().set(-1, "container");
+        assertThesaurus.technicalMXF().trackIndex().set(2, 2);
+        assertThesaurus.technicalMXF().trackName().set(0, "Picture Track");
+        assertThesaurus.technicalMXF().uid().set(-1, "01558a4a-fef9-40cb-af1b-a1ab0f7022c3");
+
+        metadataThesaurusService.assertMimeTypeEquals("application/mxf");
+        metadataThesaurusService.check(ffia).check(fileEntity);
+
+        verify(storedOn, times(1)).getLocalInternalFile(fileEntity);
+        verify(storedOn, times(1)).haveWorkingDir();
+        verify(ffprobeSupplier, times(1)).processSimpleContainerAnalysis(assetFile);
+        verify(ffprobeSupplierResult, times(1)).getResult();
     }
 
     @Test
-    void testGetPrograms() {
+    void testHandle_ts() throws Exception {
+        final var ffprobeJAXB = FFprobeJAXB.load(
+                """
+                        <?xml version="1.0" encoding="UTF-8"?>
+                        <ffprobe>
+                            <programs>
+                                <program program_id="1" program_num="1" nb_streams="1" pmt_pid="4096" pcr_pid="256">
+                                    <tags>
+                                        <tag key="service_name" value="Demo render"/>
+                                        <tag key="service_provider" value="Media ex Machina"/>
+                                    </tags>
+                                    <streams>
+                                        <stream index="0" />
+                                    </streams>
+                                </program>
+                            </programs>
 
+                            <streams>
+                                <stream index="0" codec_name="mp2" codec_long_name="MP2 (MPEG audio layer 2)" codec_type="audio" codec_tag_string="[3][0][0][0]" codec_tag="0x0003" mime_codec_string="mp4a.40.33" sample_fmt="fltp" sample_rate="48000" channels="2" channel_layout="stereo" bits_per_sample="0" initial_padding="0" ts_id="1" ts_packetsize="188" id="0x101" r_frame_rate="0/0" avg_frame_rate="0/0" time_base="1/90000" start_pts="128698" start_time="1.429978" duration_ts="449280" duration="4.992000" bit_rate="256000">
+                                    <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0" timed_thumbnails="0" non_diegetic="0" captions="0" descriptions="0" metadata="0" dependent="0" still_image="0" multilayer="0"/>
+                                </stream>
+                            </streams>
+
+                            <format filename="../.demo-media-files/test-mpeg2.ts" nb_streams="2" nb_programs="1" nb_stream_groups="0" format_name="mpegts" format_long_name="MPEG-TS (MPEG-2 Transport Stream)" start_time="1.429978" duration="5.010022" size="2674676" bit_rate="4270920" probe_score="50"/>
+                        </ffprobe>
+                        """);
+
+        when(ffprobeSupplierResult.getResult()).thenReturn(ffprobeJAXB);
+        when(storedOn.haveWorkingDir()).thenReturn(false);
+        metadataThesaurusService.presetMimeType("video/mp2t");
+
+        ffia.handle(fileEntity, eventType, storedOn);
+
+        final var assertThesaurus = metadataThesaurusService.getAssertThesaurus();
+
+        assertThesaurus.technical().type().set("""
+                MPEG-TS (MPEG-2 Transport Stream), 00:00:05, 1 program, 4271 kbps
+                audio: mp2 stereo @ 48 kHz [256 kbps]
+                """);
+
+        assertThesaurus.technicalStream().startTime().set(0, 1.429978);
+        assertThesaurus.technicalStream().bitrate().set(0, 256000);
+        assertThesaurus.technicalStream().codecName().set(0, "MP2 (MPEG audio layer 2)");
+        assertThesaurus.technicalStream().type().set(0, "audio");
+        assertThesaurus.technicalStream().codec().set(0, "mp2");
+        assertThesaurus.technicalStream().isSecondary().set(0, false);
+        assertThesaurus.technicalStream().timeBase().set(0, "1/90000");
+        assertThesaurus.technicalStream().referenceId().set(0, "0x101");
+        assertThesaurus.technicalStream().programId().set(0, 1);
+
+        assertThesaurus.technicalTransportStream().programNum().set(1, 1);
+        assertThesaurus.technicalTransportStream().serviceName().set(1, "Demo render");
+        assertThesaurus.technicalTransportStream().serviceProvider().set(1, "Media ex Machina");
+        assertThesaurus.technicalTransportStream().pmtPid().set(1, 4096);
+        assertThesaurus.technicalTransportStream().pcrPid().set(1, 256);
+
+        assertThesaurus.technicalAudio().sampleFormat().set(0, "fltp");
+        assertThesaurus.technicalAudio().referenceId().set(0, "0x101");
+        assertThesaurus.technicalAudio().channelLayout().set(0, "stereo");
+        assertThesaurus.technicalAudio().sampleRate().set(0, 48000);
+        assertThesaurus.technicalAudio().channelsCount().set(0, 2);
+
+        assertThesaurus.technicalContainer().duration().set(0, 5010);
+        assertThesaurus.technicalContainer().formatName().set(0, "MPEG-TS (MPEG-2 Transport Stream)");
+        assertThesaurus.technicalContainer().startTime().set(0, 1.429978);
+        assertThesaurus.technicalContainer().bitrate().set(0, 4270920);
+        assertThesaurus.technicalContainer().format().set(0, "mpegts");
+
+        metadataThesaurusService.assertMimeTypeEquals("video/mp2t");
+        metadataThesaurusService.check(ffia).check(fileEntity);
+
+        verify(storedOn, times(1)).getLocalInternalFile(fileEntity);
+        verify(storedOn, times(1)).haveWorkingDir();
+        verify(ffprobeSupplier, times(1)).processSimpleContainerAnalysis(assetFile);
+        verify(ffprobeSupplierResult, times(1)).getResult();
     }
 
     @Test
-    void testSetChapters() {
+    void testHandle_save() throws Exception {
+        final var ffprobeJAXB = FFprobeJAXB.load(
+                """
+                        <?xml version="1.0" encoding="UTF-8"?>
+                        <ffprobe>
+                            <streams>
+                                <stream index="0" codec_name="aac" codec_long_name="AAC (Advanced Audio Coding)" profile="LC" codec_type="audio" codec_tag_string="[0][0][0][0]" codec_tag="0x0000" mime_codec_string="mp4a.40.2" sample_fmt="fltp" sample_rate="48000" channels="2" channel_layout="stereo" bits_per_sample="0" initial_padding="1024" r_frame_rate="0/0" avg_frame_rate="0/0" time_base="1/1000" start_pts="0" start_time="0.000000" extradata_size="5">
+                                    <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0" timed_thumbnails="0" non_diegetic="0" captions="0" descriptions="0" metadata="0" dependent="0" still_image="0" multilayer="0"/>
+                                </stream>
+                            </streams>
 
+                            <format filename="../.demo-media-files/test-vp8.mkv" nb_streams="2" nb_programs="0" nb_stream_groups="0" format_name="matroska,webm" format_long_name="Matroska / WebM" start_time="0.000000" duration="5.021000" size="243933" bit_rate="388660" probe_score="100">
+                            </format>
+                        </ffprobe>
+                        """);
+
+        when(ffprobeSupplierResult.getResult()).thenReturn(ffprobeJAXB);
+        when(storedOn.haveWorkingDir()).thenReturn(true);
+        when(storedOn.haveRenderedDir()).thenReturn(true);
+        when(storedOn.getActivityLimitPolicy()).thenReturn(BASE_PREVIEW);
+        when(storedOn.makeWorkingFile(any(), eq(fileEntity))).thenReturn(workingFile);
+        when(storedOn.getLocalInternalFile(fileEntity)).thenReturn(assetFile);
+
+        metadataThesaurusService.presetMimeType("foo/bar");
+
+        ffia.handle(fileEntity, eventType, storedOn);
+
+        verify(mediaAssetService, times(1))
+                .declareRenderedStaticFile(fileEntity, workingFile, "ffprobe.xml", true, 0, "ffprobe-base");
+
+        final var assertThesaurus = metadataThesaurusService.getAssertThesaurus();
+        assertThesaurus.technical().type().set("""
+                Matroska / WebM, 00:00:05, 389 kbps
+                audio: aac LC stereo @ 48 kHz
+                """);
+
+        assertThesaurus.technicalAudio().channelLayout().set(0, "stereo");
+        assertThesaurus.technicalAudio().channelsCount().set(0, 2);
+        assertThesaurus.technicalAudio().sampleFormat().set(0, "fltp");
+        assertThesaurus.technicalAudio().sampleRate().set(0, 48000);
+
+        assertThesaurus.technicalContainer().duration().set(0, 5021);
+        assertThesaurus.technicalContainer().formatName().set(0, "Matroska / WebM");
+        assertThesaurus.technicalContainer().startTime().set(0, 0.0);
+        assertThesaurus.technicalContainer().bitrate().set(0, 388660);
+        assertThesaurus.technicalContainer().format().set(0, "matroska,webm");
+
+        assertThesaurus.technicalStream().startTime().set(0, 0.0);
+        assertThesaurus.technicalStream().type().set(0, "audio");
+        assertThesaurus.technicalStream().codec().set(0, "aac");
+        assertThesaurus.technicalStream().codecName().set(0, "AAC (Advanced Audio Coding)");
+        assertThesaurus.technicalStream().profile().set(0, "LC");
+        assertThesaurus.technicalStream().isSecondary().set(0, false);
+        assertThesaurus.technicalStream().timeBase().set(0, "1/1000");
+
+        metadataThesaurusService.assertMimeTypeEquals("foo/bar");
+        metadataThesaurusService.check(ffia).check(fileEntity);
+
+        verify(storedOn, times(1)).getLocalInternalFile(fileEntity);
+        verify(storedOn, times(1)).haveWorkingDir();
+        verify(storedOn, times(1)).haveRenderedDir();
+        verify(storedOn, times(1)).getActivityLimitPolicy();
+        verify(storedOn, times(1)).makeWorkingFile(any(), eq(fileEntity));
+        verify(ffprobeSupplier, times(1)).processSimpleContainerAnalysis(assetFile);
+        verify(ffprobeSupplierResult, times(1)).getResult();
+
+        assertThat(workingFile).exists().isFile().isNotEmpty();
     }
 
-    @Test
-    void testRemoveUnknown() {
-
+    private static Stream<Arguments> provideDoubleBooleans() {
+        return Stream.of(
+                Arguments.of(false, false),
+                Arguments.of(false, true),
+                Arguments.of(true, false),
+                Arguments.of(true, true));
     }
 
-    @Test
-    void testGetTagByName() {
-
+    @ParameterizedTest
+    @MethodSource("provideDoubleBooleans")
+    void testPatchInvalidAVMimeTypes_mpeg2ts(final boolean haveVideo, final boolean haveAudio) {
+        metadataThesaurusService.presetMimeType("video/mp2t");
+        ffia.patchInvalidAVMimeTypes(fileEntity, haveVideo, haveAudio);
+        metadataThesaurusService.check(fileEntity);
     }
 
-    @Test
-    void testSaveFFprobeXMLFile() {
+    @ParameterizedTest
+    @MethodSource("provideDoubleBooleans")
+    void testPatchInvalidAVMimeTypes_videoMime(final boolean haveVideo, final boolean haveAudio) {
+        metadataThesaurusService.presetMimeType("video/" + lowerMimeType);
+        ffia.patchInvalidAVMimeTypes(fileEntity, haveVideo, haveAudio);
 
+        if (haveVideo == false && haveAudio) {
+            metadataThesaurusService.assertMimeTypeEquals("audio/" + lowerMimeType);
+            metadataThesaurusService.check(ffia);
+        }
+
+        metadataThesaurusService.check(fileEntity);
     }
 
-    @Test
-    void testPatchInvalidAVMimeTypes() {
+    @ParameterizedTest
+    @MethodSource("provideDoubleBooleans")
+    void testPatchInvalidAVMimeTypes_audioMime(final boolean haveVideo, final boolean haveAudio) {
+        metadataThesaurusService.presetMimeType("audio/" + lowerMimeType);
+        ffia.patchInvalidAVMimeTypes(fileEntity, haveVideo, haveAudio);
 
-    }
+        if (haveVideo) {
+            metadataThesaurusService.assertMimeTypeEquals("video/" + lowerMimeType);
+            metadataThesaurusService.check(ffia);
+        }
 
-    @Test
-    void testSetMediaSummary() {
-
+        metadataThesaurusService.check(fileEntity);
     }
 
     @Test

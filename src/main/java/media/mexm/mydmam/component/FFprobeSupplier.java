@@ -45,9 +45,8 @@ import tv.hd3g.processlauncher.processingtool.ProcessingToolResult;
 @Component
 public class FFprobeSupplier implements InternalService { // TODO test
 
-    private static final String START_FFPROBE_ON = "Start ffprobe on {}";
-
     public static final String FFPROBE = "ffprobe";
+    private static final String START_FFPROBE_ON = "Start ffprobe on {}";
 
     private final ExternalExecCapabilities externalExecCapabilities;
     private final ExecutableFinder executableFinder;
@@ -73,34 +72,11 @@ public class FFprobeSupplier implements InternalService { // TODO test
         return FFPROBE;
     }
 
-    private void checkEnabled() {
-        if (enabled == false) {
-            throw new IllegalStateException(FFPROBE + " is disabled");
-        }
-    }
-
-    public final ProcessingToolResult<FFSourceDefinition, FFprobe, FFprobeJAXB, KeepStdoutAndErrToLogWatcher> processSimpleContainerAnalysis(final File source) {
-        checkEnabled();
-        final var probeMedia = new ProbeMedia(FFPROBE, maxExecTimeScheduler);
-        probeMedia.setExecutableFinder(executableFinder);
-
-        final var maxExecTime = configuration.tools().ffprobeSimpleContainerAnalysisMaxExecTime();
-        probeMedia.setMaxExecutionTime(maxExecTime, maxExecTimeScheduler);
-        try {
-            probeMedia.setWorkingDirectory(source.getParentFile());
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Can't set workingDirectory", e);
-        }
-        log.debug(START_FFPROBE_ON, source.getAbsolutePath());
-        return probeMedia.process(source.getName());
-    }
-
     @Override
     public void internalServiceStart() throws Exception {
-        final var run = "run";
         externalExecCapabilities.addPlaybook(
                 FFPROBE,
-                run,
+                "run",
                 bulk("-version"),
                 evaluator -> {
                     if (evaluator.haveReturnCode(0) == false
@@ -114,10 +90,36 @@ public class FFprobeSupplier implements InternalService { // TODO test
                 });
 
         externalExecCapabilities.tearDown(FFPROBE);
-        enabled = externalExecCapabilities.getPassingPlaybookNames(FFPROBE).contains(run);
+        enabled = externalExecCapabilities.getPassingPlaybookNames(FFPROBE).contains("run");
     }
 
-    public static final Map<String, String> WELL_KNOWN_CODECS_NAMES = Map.ofEntries(
+    private void checkEnabled() {
+        if (enabled == false) {
+            throw new IllegalStateException(FFPROBE + " is disabled");
+        }
+    }
+
+    protected ProbeMedia makeProbeMedia() {
+        return new ProbeMedia(FFPROBE, maxExecTimeScheduler);
+    }
+
+    public final ProcessingToolResult<FFSourceDefinition, FFprobe, FFprobeJAXB, KeepStdoutAndErrToLogWatcher> processSimpleContainerAnalysis(final File source) {
+        checkEnabled();
+        final var probeMedia = makeProbeMedia();
+        probeMedia.setExecutableFinder(executableFinder);
+
+        final var maxExecTime = configuration.tools().ffprobeSimpleContainerAnalysisMaxExecTime();
+        probeMedia.setMaxExecutionTime(maxExecTime, maxExecTimeScheduler);
+        try {
+            probeMedia.setWorkingDirectory(source.getParentFile());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Can't set workingDirectory", e);
+        }
+        log.debug(START_FFPROBE_ON, source.getAbsolutePath());
+        return probeMedia.process(source.getName());
+    }
+
+    public static final Map<String, String> WELL_KNOWN_CODECS_NAMES = Map.ofEntries(// XXX to FFprobeJAXB
             Map.entry("dvvideo", "DV"),
             Map.entry("dvcp", "DV/DVCPro"),
             Map.entry("dv5p", "DVCPro 50"),
