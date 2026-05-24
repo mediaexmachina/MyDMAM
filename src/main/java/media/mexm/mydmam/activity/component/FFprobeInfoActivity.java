@@ -466,7 +466,7 @@ public class FFprobeInfoActivity implements ActivityHandler {
             "speex",
             "vorbis");
 
-    boolean isCanBeUsedInMasterAsPreview(final String mimeType, final FFprobeJAXB ffprobeJAXB) {// TODO test
+    boolean isCanBeUsedInMasterAsPreview(final String mimeType, final FFprobeJAXB ffprobeJAXB) {// TODO test isCanBeUsedInMasterAsPreview
         if (MASTER_AS_PREVIEW_MIME_TYPES.contains(mimeType) == false) {
             return false;
         }

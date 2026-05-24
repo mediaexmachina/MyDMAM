@@ -43,7 +43,7 @@ import tv.hd3g.processlauncher.processingtool.ProcessingToolResult;
 
 @Slf4j
 @Component
-public class FFprobeSupplier implements InternalService { // TODO test
+public class FFprobeSupplier implements InternalService {
 
     public static final String FFPROBE = "ffprobe";
     private static final String START_FFPROBE_ON = "Start ffprobe on {}";
