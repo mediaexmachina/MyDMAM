@@ -21,6 +21,7 @@ import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableMap;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 import static java.util.stream.Stream.empty;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.apache.commons.io.FileUtils.forceDelete;
@@ -248,30 +249,29 @@ public class XPDF implements InternalService {
                             final var entry = StringUtils.split(sub, ":");
                             if (entry.length != 2) {
                                 log.warn("Can't parse sub: \"{}\" (can't found colon), on \"{}\"", sub, p);
-                                return empty();
+                                return Stream.empty();
                             }
                             final var rawValue = entry[1];
-                            final String value;
                             if (rawValue.equalsIgnoreCase("yes")) {
-                                value = "true";
+                                return Stream.of(entry[0].toLowerCase());
                             } else if (rawValue.equalsIgnoreCase("no")) {
-                                value = "false";
+                                return Stream.empty();
                             } else {
-                                value = rawValue;
+                                log.warn("Can't manage XPDF permission: {}", rawValue);
+                                return Stream.empty();
                             }
-                            return Stream.of(Map.entry(entry[0].toLowerCase(), value));
                         })
-                        .collect(toUnmodifiableMap(Entry::getKey, Entry::getValue)))
+                        .collect(toUnmodifiableSet()))
                 .ifPresentOrElse(permission -> {
-                    pdfWriter.permissionPrint().set(Optional.ofNullable(permission.get("print")));
-                    pdfWriter.permissionCopy().set(Optional.ofNullable(permission.get("copy")));
-                    pdfWriter.permissionChange().set(Optional.ofNullable(permission.get("change")));
-                    pdfWriter.permissionAddNotes().set(Optional.ofNullable(permission.get("addnotes")));
+                    pdfWriter.permissionPrint().set(permission.contains("print"));
+                    pdfWriter.permissionCopy().set(permission.contains("copy"));
+                    pdfWriter.permissionChange().set(permission.contains("change"));
+                    pdfWriter.permissionAddNotes().set(permission.contains("addnotes"));
                 }, () -> {
-                    pdfWriter.permissionPrint().set("true");
-                    pdfWriter.permissionCopy().set("true");
-                    pdfWriter.permissionChange().set("true");
-                    pdfWriter.permissionAddNotes().set("true");
+                    pdfWriter.permissionPrint().set(true);
+                    pdfWriter.permissionCopy().set(true);
+                    pdfWriter.permissionChange().set(true);
+                    pdfWriter.permissionAddNotes().set(true);
                 });
     }
 

@@ -133,7 +133,12 @@ public class FFprobeSupplier implements InternalService {
             Map.entry("apcs", "Apple ProRes 422 LT"),
             Map.entry("apco", "Apple ProRes 422 Proxy"),
             Map.entry("ap4h", "Apple ProRes 4444"),
-            Map.entry("mp2", "MPEG/L2"));
+            Map.entry("mp2", "MPEG/L2"),
+            Map.entry("ac3", "Dolby Digital/AC-3"),
+            Map.entry("pcm_s16le", "PCM 16 bits"),
+            Map.entry("pcm_s16be", "PCM 16 bits (be)"),
+            Map.entry("pcm_s24le", "PCM 24 bits"),
+            Map.entry("pcm_s24be", "PCM 24 bits (be)"));
 
     public static final Set<String> VIDEO_MIME_TYPES = Set.of(
             "application/gxf",

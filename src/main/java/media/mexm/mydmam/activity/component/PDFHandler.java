@@ -16,6 +16,7 @@
  */
 package media.mexm.mydmam.activity.component;
 
+import static java.lang.Float.parseFloat;
 import static java.lang.Math.min;
 import static java.util.function.Predicate.not;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
@@ -242,8 +243,8 @@ public class PDFHandler implements ActivityHandler {
                           final int forcePage) {
         final var page = forcePage > -1 ? forcePage : pageInfo.page();
         defPdf.pageRotated().set(page, pageInfo.rotated());
-        defPdf.pageWidth().set(page, pageInfo.getWMm());
-        defPdf.pageHeight().set(page, pageInfo.getHMm());
+        defPdf.pageWidth().set(page, parseFloat(pageInfo.getWMm()));
+        defPdf.pageHeight().set(page, parseFloat(pageInfo.getHMm()));
     }
 
 }

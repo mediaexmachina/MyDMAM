@@ -29,6 +29,7 @@ import static media.mexm.mydmam.component.FFprobeSupplier.ALL_MIME_TYPES;
 import static media.mexm.mydmam.component.FFprobeSupplier.FFPROBE;
 import static media.mexm.mydmam.component.FFprobeSupplier.WELL_KNOWN_CODECS_NAMES;
 import static org.apache.commons.io.FileUtils.write;
+import static org.apache.commons.io.FilenameUtils.getExtension;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -98,6 +99,7 @@ public class FFprobeInfoActivity implements ActivityHandler {
                              final ActivityEventType eventType,
                              final RealmStorageConfiguredEnv storedOn) {
         return storedOn.isDAS()
+               && getExtension(fileEntity.getName()).equalsIgnoreCase("aaf") == false /// XXX test
                && metadataThesaurusService.getMimeType(fileEntity)
                        .map(ALL_MIME_TYPES::contains)
                        .orElse(false);
@@ -163,7 +165,10 @@ public class FFprobeInfoActivity implements ActivityHandler {
             technicalStream.isSecondary().set(layer, mediaStream.isSecondary());
 
             final var codecLongName = WELL_KNOWN_CODECS_NAMES.getOrDefault(
-                    Optional.ofNullable(mediaStream.codecTagString()).orElse(""),
+                    Optional.ofNullable(mediaStream.codecTagString())
+                            .filter(c -> c.equals("[0][0][0][0]") == false)// XXX remove this
+                            .or(() -> Optional.ofNullable(mediaStream.codecName()))
+                            .orElse(""),
                     mediaStream.codecLongName());
             technicalStream.codecName().set(layer, codecLongName);
 
