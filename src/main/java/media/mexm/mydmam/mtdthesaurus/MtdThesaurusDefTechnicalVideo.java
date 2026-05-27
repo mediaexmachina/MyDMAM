@@ -31,6 +31,7 @@ public interface MtdThesaurusDefTechnicalVideo {
     @MetadataThesaurusEntryAttribute(unit = FRAMES_PER_SECONDS)
     MetadataThesaurusEntry averageFrameRate();
 
+    @MetadataThesaurusSortIndexOrder(1)
     @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
     MetadataThesaurusEntry referenceId();
 

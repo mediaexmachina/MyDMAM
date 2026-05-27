@@ -22,7 +22,6 @@ import static tv.hd3g.processlauncher.cmdline.Parameters.bulk;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
@@ -118,27 +117,6 @@ public class FFprobeSupplier implements InternalService {
         log.debug(START_FFPROBE_ON, source.getAbsolutePath());
         return probeMedia.process(source.getName());
     }
-
-    public static final Map<String, String> WELL_KNOWN_CODECS_NAMES = Map.ofEntries(// XXX to FFprobeJAXB
-            Map.entry("dvvideo", "DV"),
-            Map.entry("dvcp", "DV/DVCPro"),
-            Map.entry("dv5p", "DVCPro 50"),
-            Map.entry("avc1", "h264"),
-            Map.entry("mpeg2video", "MPEG2"),
-            Map.entry("mx5p", "MPEG2/4:2:2"),
-            Map.entry("wmv3", "WMV9"),
-            Map.entry("wmav2", "WMA9"),
-            Map.entry("apch", "Apple ProRes 422 HQ"),
-            Map.entry("apcn", "Apple ProRes 422"),
-            Map.entry("apcs", "Apple ProRes 422 LT"),
-            Map.entry("apco", "Apple ProRes 422 Proxy"),
-            Map.entry("ap4h", "Apple ProRes 4444"),
-            Map.entry("mp2", "MPEG/L2"),
-            Map.entry("ac3", "Dolby Digital/AC-3"),
-            Map.entry("pcm_s16le", "PCM 16 bits"),
-            Map.entry("pcm_s16be", "PCM 16 bits (be)"),
-            Map.entry("pcm_s24le", "PCM 24 bits"),
-            Map.entry("pcm_s24be", "PCM 24 bits (be)"));
 
     public static final Set<String> VIDEO_MIME_TYPES = Set.of(
             "application/gxf",

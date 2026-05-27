@@ -16,7 +16,6 @@
  */
 package media.mexm.mydmam.activity.component;
 
-import static java.lang.Float.parseFloat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.empty;
@@ -27,9 +26,12 @@ import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActi
 import static media.mexm.mydmam.activity.component.ImageAspectRatioDetectionActivity.getPageOrientation;
 import static media.mexm.mydmam.component.FFprobeSupplier.ALL_MIME_TYPES;
 import static media.mexm.mydmam.component.FFprobeSupplier.FFPROBE;
-import static media.mexm.mydmam.component.FFprobeSupplier.WELL_KNOWN_CODECS_NAMES;
 import static org.apache.commons.io.FileUtils.write;
 import static org.apache.commons.io.FilenameUtils.getExtension;
+import static tv.hd3g.ffprobejaxb.MediaSummary.getChannelLayout;
+import static tv.hd3g.ffprobejaxb.MediaSummary.getCodecLongName;
+import static tv.hd3g.ffprobejaxb.MediaSummary.removeParenthesisContent;
+import static tv.hd3g.ffprobejaxb.MediaSummary.upperCase1st;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -64,7 +66,6 @@ import tv.hd3g.ffprobejaxb.data.FFProbeKeyValue;
 @Component
 public class FFprobeInfoActivity implements ActivityHandler {
 
-    private static final String LOG_INVALID_FRAME_RATE = "Invalid frameRate: {}";
     private static final String AUDIO_SLASH = "audio/";
     private static final String VIDEO_SLASH = "video/";
     @Autowired
@@ -163,14 +164,7 @@ public class FFprobeInfoActivity implements ActivityHandler {
             technicalStream.profile().set(layer, mediaStream.profile());
             technicalStream.codec().set(layer, mediaStream.codecName());
             technicalStream.isSecondary().set(layer, mediaStream.isSecondary());
-
-            final var codecLongName = WELL_KNOWN_CODECS_NAMES.getOrDefault(
-                    Optional.ofNullable(mediaStream.codecTagString())
-                            .filter(c -> c.equals("[0][0][0][0]") == false)// XXX remove this
-                            .or(() -> Optional.ofNullable(mediaStream.codecName()))
-                            .orElse(""),
-                    mediaStream.codecLongName());
-            technicalStream.codecName().set(layer, codecLongName);
+            technicalStream.codecName().set(layer, upperCase1st(getCodecLongName(mediaStream)));
 
             final var level = mediaStream.level();
             if (level > 0 && mediaStream.isSecondary() == false) {
@@ -179,7 +173,7 @@ public class FFprobeInfoActivity implements ActivityHandler {
 
             if (codecType.equals("audio") && mediaStream.isSecondary() == false) {
                 final var technicalAudio = thesaurus.technicalAudio();
-                technicalAudio.channelLayout().set(layer, mediaStream.channelLayout());
+                technicalAudio.channelLayout().set(layer, getChannelLayout(mediaStream.channelLayout()));
                 technicalAudio.channelsCount().set(layer, mediaStream.channels());
                 technicalAudio.sampleRate().set(layer, mediaStream.sampleRate());
                 technicalAudio.sampleFormat().set(layer, mediaStream.sampleFmt());
@@ -217,8 +211,8 @@ public class FFprobeInfoActivity implements ActivityHandler {
                 if (mediaStream.isSecondary() == false) {
                     final var technicalVideo = thesaurus.technicalVideo();
                     technicalVideo.fieldOrder().set(layer, mediaStream.fieldOrder());
-                    technicalVideo.frameRate().set(layer, parseFrameRate(mediaStream.rFrameRate()));
-                    technicalVideo.averageFrameRate().set(layer, parseFrameRate(mediaStream.avgFrameRate()));
+                    technicalVideo.frameRate().set(layer, mediaStream.getComputedRFrameRate());
+                    technicalVideo.averageFrameRate().set(layer, mediaStream.getComputedAvgFrameRate());
                     technicalVideo.referenceId().set(layer, mediaStream.id());
                 }
             }
@@ -242,7 +236,7 @@ public class FFprobeInfoActivity implements ActivityHandler {
             technicalContainer.duration().set(ffprobeJAXB.getDuration());
             technicalContainer.bitrate().set(format.bitRate());
             technicalContainer.format().set(format.formatName());
-            technicalContainer.formatName().set(format.formatLongName());
+            technicalContainer.formatName().set(upperCase1st(removeParenthesisContent(format.formatLongName())));
             technicalContainer.startTime().set(format.startTime());
 
             final var oModificationDate = getTagByName(format.tags(), "modification_date");
@@ -276,49 +270,6 @@ public class FFprobeInfoActivity implements ActivityHandler {
         final var haveAudio = ffprobeJAXB.getAudioStreams().count() > 0l;
 
         patchInvalidAVMimeTypes(fileEntity, haveVideo, haveAudio);
-    }
-
-    /**
-     * @return can be null
-     */
-    static Object parseFrameRate(final String rawValue) {
-        // TODO fix with ffprobeJAXB... https://github.com/hdsdi3g/medialib/issues/129
-        if (rawValue == null
-            || rawValue.isBlank()
-            || rawValue.equals("0/0")
-            || rawValue.equals("0")
-            || rawValue.equals("0.0")) {
-            return null;
-        }
-
-        if (rawValue.contains("/")) {
-            final var parts = rawValue.split("/");
-            if (parts.length != 2) {
-                log.warn(LOG_INVALID_FRAME_RATE, rawValue);
-                return null;
-            }
-            try {
-                final var numerator = Integer.parseInt(parts[0]);
-                final var denominator = Integer.parseInt(parts[1]);
-                if (denominator == 0) {
-                    return numerator;
-                } else if (numerator == 0) {
-                    return null;
-                }
-
-                return numerator / denominator;
-            } catch (final NumberFormatException e) {
-                log.warn(LOG_INVALID_FRAME_RATE, rawValue);
-                return null;
-            }
-        }
-
-        try {
-            return parseFloat(rawValue);
-        } catch (final NumberFormatException e) {
-            log.warn(LOG_INVALID_FRAME_RATE, rawValue);
-            return null;
-        }
     }
 
     private static Map<Integer, Integer> getPrograms(final FFprobeJAXB ffprobeJAXB,
