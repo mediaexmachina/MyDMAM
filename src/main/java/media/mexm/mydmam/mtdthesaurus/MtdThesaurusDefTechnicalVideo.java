@@ -23,16 +23,19 @@ import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.IDENTIFI
 @MetadataThesaurusClassifier(value = "technical:video", longname = "Video (technical)", kind = TECHNICAL_ATTRIBUTE)
 public interface MtdThesaurusDefTechnicalVideo {
 
-    MetadataThesaurusEntry fieldOrder();
-
-    @MetadataThesaurusEntryAttribute(unit = FRAMES_PER_SECONDS)
-    MetadataThesaurusEntry frameRate();
-
-    @MetadataThesaurusEntryAttribute(unit = FRAMES_PER_SECONDS)
-    MetadataThesaurusEntry averageFrameRate();
-
     @MetadataThesaurusSortIndexOrder(1)
     @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID)
     MetadataThesaurusEntry referenceId();
+
+    @MetadataThesaurusSortIndexOrder(2)
+    @MetadataThesaurusEntryAttribute(unit = FRAMES_PER_SECONDS)
+    MetadataThesaurusEntry averageFrameRate();
+
+    @MetadataThesaurusSortIndexOrder(3)
+    @MetadataThesaurusEntryAttribute(unit = FRAMES_PER_SECONDS)
+    MetadataThesaurusEntry frameRate();
+
+    @MetadataThesaurusSortIndexOrder(4)
+    MetadataThesaurusEntry fieldOrder();
 
 }
