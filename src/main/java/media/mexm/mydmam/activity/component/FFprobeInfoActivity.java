@@ -18,7 +18,6 @@ package media.mexm.mydmam.activity.component;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableMap;
-import static java.util.Optional.empty;
 import static java.util.stream.Collectors.joining;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.BASE_PREVIEW;
 import static media.mexm.mydmam.activity.ActivityLimitPolicy.FILE_INFORMATION;
@@ -133,7 +132,11 @@ public class FFprobeInfoActivity implements ActivityHandler {
             /**
              * Quicktime timecode track
              */
-            if ("tmcd".equals(mediaStream.codecTagString())) {
+            if ("tmcd".equals(mediaStream.codecTagString())
+                /**
+                 * Special "data" MXF empty tracks
+                 */
+                || mediaStream.codecName() == null) {
                 return;
             }
             final var isMXF = ffprobeJAXB.getFormat().map(FFProbeFormat::formatName).orElse("").equalsIgnoreCase("mxf");
@@ -198,10 +201,10 @@ public class FFprobeInfoActivity implements ActivityHandler {
                 }
 
                 technicalImage.pixelformat().set(layer, mediaStream.pixFmt());
-                technicalImage.colorspace().set(layer, removeUnknown(mediaStream.colorSpace()));
-                technicalImage.colorrange().set(layer, removeUnknown(mediaStream.colorRange()));
-                technicalImage.colorprimaries().set(layer, removeUnknown(mediaStream.colorPrimaries()));
-                technicalImage.colortransfer().set(layer, removeUnknown(mediaStream.colorTransfer()));
+                technicalImage.colorspace().set(layer, mediaStream.colorSpace());
+                technicalImage.colorrange().set(layer, mediaStream.colorRange());
+                technicalImage.colorprimaries().set(layer, mediaStream.colorPrimaries());
+                technicalImage.colortransfer().set(layer, mediaStream.colorTransfer());
 
                 technicalImage.sampleAspectRatio().set(layer, mediaStream.sampleAspectRatio());
                 technicalImage.displayAspectRatio().set(layer, mediaStream.displayAspectRatio());
@@ -302,13 +305,6 @@ public class FFprobeInfoActivity implements ActivityHandler {
             chapterMtd.startTime().set(pos + 1, Math.round(chapter.startTime() * 1000));
             chapterMtd.endTime().set(pos + 1, Math.round(chapter.endTime() * 1000));
         }
-    }
-
-    private static Optional<String> removeUnknown(final String value) {
-        if ("unknown".equalsIgnoreCase(value)) {
-            return empty();
-        }
-        return Optional.ofNullable(value);
     }
 
     private static Optional<String> getTagByName(final List<FFProbeKeyValue> tags, final String name) {
