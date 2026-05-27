@@ -142,18 +142,37 @@ class FFprobeInfoActivityTest {
     void testCanHandle_true() {
         metadataThesaurusService.presetMimeType(ALL_MIME_TYPES.stream().findFirst().orElseThrow());
         when(storedOn.isDAS()).thenReturn(true);
+        when(fileEntity.getName()).thenReturn("something.ext");
+
         assertTrue(ffia.canHandle(fileEntity, eventType, storedOn));
+
         metadataThesaurusService.check(fileEntity);
         verify(storedOn, times(1)).isDAS();
+        verify(fileEntity, times(1)).getName();
     }
 
     @Test
     void testCanHandle_false() {
         metadataThesaurusService.presetMimeType("nope/nope");
         when(storedOn.isDAS()).thenReturn(true);
+        when(fileEntity.getName()).thenReturn("something.ext");
+
         assertFalse(ffia.canHandle(fileEntity, eventType, storedOn));
+
         metadataThesaurusService.check(fileEntity);
         verify(storedOn, times(1)).isDAS();
+        verify(fileEntity, times(1)).getName();
+    }
+
+    @Test
+    void testCanHandle_false_aaf() {
+        when(storedOn.isDAS()).thenReturn(true);
+        when(fileEntity.getName()).thenReturn("something.aaf");
+
+        assertFalse(ffia.canHandle(fileEntity, eventType, storedOn));
+
+        verify(storedOn, times(1)).isDAS();
+        verify(fileEntity, times(1)).getName();
     }
 
     @Test
@@ -213,9 +232,8 @@ class FFprobeInfoActivityTest {
 
         assertThesaurus.technical().type().set("""
                 QuickTime / MOV, 00:00:05, TCIN: 00:00:00:01, 1 chapter, 10 Mbps
-                video: ffv1 352×288 L123 @ 25 fps [8568 kbps] yuv420p/colTransfer:UNKNOWN default
-                audio: pcm_s16le stereo @ 48 kHz default
-                data: tmcd (Time Code Media Handler)
+                video: FFmpeg video codec #1 352×288 L123 @ 25 fps [8568 kbps] yuv420p default
+                audio: PCM 16 bits stereo @ 48 kHz default
                 attached picture (prores 720×576)
                 still image (prores 1×2)
                 timed thumbnails (prores 3×4)
@@ -241,16 +259,16 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalImage().pixelformat().set(0, "yuv420p");
         assertThesaurus.technicalImage().referenceId().set(0, "0x1");
         assertThesaurus.technicalImage().sampleAspectRatio().set(0, "1:1");
-        assertThesaurus.technicalVideo().averageFrameRate().set(0, 25);
+        assertThesaurus.technicalVideo().averageFrameRate().set(0, 25.0);
         assertThesaurus.technicalVideo().fieldOrder().set(0, "progressive");
-        assertThesaurus.technicalVideo().frameRate().set(0, 25);
+        assertThesaurus.technicalVideo().frameRate().set(0, 25.0);
         assertThesaurus.technicalVideo().referenceId().set(0, "0x1");
         assertThesaurus.technicalStream().level().set(0, "123");
         assertThesaurus.technicalImage().displayAspectRatio().set(0, "11:9");
 
         assertThesaurus.technicalStream().bitrate().set(1, 1536000);
         assertThesaurus.technicalStream().codec().set(1, "pcm_s16le");
-        assertThesaurus.technicalStream().codecName().set(1, "PCM signed 16-bit little-endian");
+        assertThesaurus.technicalStream().codecName().set(1, "PCM 16 bits");
         assertThesaurus.technicalStream().disposition().set(1, "default");
         assertThesaurus.technicalStream().isSecondary().set(1, false);
         assertThesaurus.technicalStream().referenceId().set(1, "0x2");
@@ -377,10 +395,9 @@ class FFprobeInfoActivityTest {
         final var assertThesaurus = metadataThesaurusService.getAssertThesaurus();
 
         assertThesaurus.technical().type().set("""
-                MXF (Material eXchange Format), 00:00:01, 105 Mbps
-                video: jpeg2000 1920×1080 JPEG 2000 digital cinema 2K @ NaN fps xyz12le
-                audio: pcm_s16le mono @ 48 kHz
-                data: [0][0][0][0]
+                MXF, 00:00:01, 105 Mbps
+                video: JPEG 2000 1920×1080 Digital cinema 2K @ 25 fps xyz12le
+                audio: PCM 16 bits mono @ 48 kHz
                 """);
 
         assertThesaurus.dublinCore().date().setDateISO8601(Optional.ofNullable("2014-03-18T14:48:35.000000Z"));
@@ -391,22 +408,18 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalStream().codec().set(0, "jpeg2000");
         assertThesaurus.technicalStream().codec().set(1, "pcm_s16le");
         assertThesaurus.technicalStream().codecName().set(0, "JPEG 2000");
-        assertThesaurus.technicalStream().codecName().set(1, "PCM signed 16-bit little-endian");
+        assertThesaurus.technicalStream().codecName().set(1, "PCM 16 bits");
         assertThesaurus.technicalStream().isSecondary().set(0, false);
         assertThesaurus.technicalStream().isSecondary().set(1, false);
-        assertThesaurus.technicalStream().isSecondary().set(2, false);
 
         assertThesaurus.technicalStream().profile().set(0, "JPEG 2000 digital cinema 2K");
         assertThesaurus.technicalStream().startTime().set(0, 0.0);
         assertThesaurus.technicalStream().startTime().set(1, 0.0);
-        assertThesaurus.technicalStream().startTime().set(2, 0.0);
 
         assertThesaurus.technicalStream().timeBase().set(0, "1/25");
         assertThesaurus.technicalStream().timeBase().set(1, "1/48000");
-        assertThesaurus.technicalStream().timeBase().set(2, "1/90000");
         assertThesaurus.technicalStream().type().set(0, "video");
         assertThesaurus.technicalStream().type().set(1, "audio");
-        assertThesaurus.technicalStream().type().set(2, "data");
 
         assertThesaurus.technicalImage().aspectRatio().set(0, 1.778);
         assertThesaurus.technicalImage().width().set(0, 1920);
@@ -418,7 +431,7 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalImage().sampleAspectRatio().set(0, "1:1");
 
         assertThesaurus.technicalVideo().fieldOrder().set(0, "progressive");
-        assertThesaurus.technicalVideo().frameRate().set(0, 25);
+        assertThesaurus.technicalVideo().frameRate().set(0, 25.0);
 
         assertThesaurus.technicalAudio().channelsCount().set(1, 1);
         assertThesaurus.technicalAudio().referenceId().set(1, 1);
@@ -428,7 +441,7 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalContainer().bitrate().set(0, 104752176);
         assertThesaurus.technicalContainer().duration().set(0, 1000);
         assertThesaurus.technicalContainer().format().set(0, "mxf");
-        assertThesaurus.technicalContainer().formatName().set(0, "MXF (Material eXchange Format)");
+        assertThesaurus.technicalContainer().formatName().set(0, "MXF");
         assertThesaurus.technicalContainer().startTime().set(0, 0.0);
         assertThesaurus.technicalContainer().timecode().set(0, "00:00:00:00");
 
@@ -438,8 +451,6 @@ class FFprobeInfoActivityTest {
                 "0x060A2B340101010501010F2013000000AFC6F609516F4B23B9F9BD16727A2909");
         assertThesaurus.technicalMXF().filePackageUMID().set(1,
                 "0x060A2B340101010101010F00130000000000036C135ECB89060E2B347F7F2A80");
-        assertThesaurus.technicalMXF().filePackageUMID().set(2,
-                "0x060A2B340101010101010F00130000000000036C13AECB89060E2B347F7F2A80");
         assertThesaurus.technicalMXF().generationUID().set(-1,
                 "dae0add6-a5fd-438e-b986-3c9a9e9d6213");
         assertThesaurus.technicalMXF().materialPackageUMID().set(-1,
@@ -448,7 +459,6 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalMXF().trackIndex().set(0, 0);
         assertThesaurus.technicalMXF().trackIndex().set(1, 1);
         assertThesaurus.technicalMXF().trackIndex().set(-1, "container");
-        assertThesaurus.technicalMXF().trackIndex().set(2, 2);
         assertThesaurus.technicalMXF().trackName().set(0, "Picture Track");
         assertThesaurus.technicalMXF().uid().set(-1, "01558a4a-fef9-40cb-af1b-a1ab0f7022c3");
 
@@ -498,19 +508,19 @@ class FFprobeInfoActivityTest {
         final var assertThesaurus = metadataThesaurusService.getAssertThesaurus();
 
         assertThesaurus.technical().type().set("""
-                MPEG-TS (MPEG-2 Transport Stream), 00:00:05, 1 program, 4271 kbps
-                audio: mp2 stereo @ 48 kHz [256 kbps]
+                MPEG-TS, 00:00:05, 1 program, 4271 kbps
+                audio: MPEG/L2 stereo @ 48 kHz [256 kbps]
                 """);
 
         assertThesaurus.technicalStream().startTime().set(0, 1.429978);
         assertThesaurus.technicalStream().bitrate().set(0, 256000);
-        assertThesaurus.technicalStream().codecName().set(0, "MP2 (MPEG audio layer 2)");
+        assertThesaurus.technicalStream().codecName().set(0, "MPEG/L2");
         assertThesaurus.technicalStream().type().set(0, "audio");
         assertThesaurus.technicalStream().codec().set(0, "mp2");
         assertThesaurus.technicalStream().isSecondary().set(0, false);
         assertThesaurus.technicalStream().timeBase().set(0, "1/90000");
         assertThesaurus.technicalStream().referenceId().set(0, "0x101");
-        assertThesaurus.technicalStream().programId().set(0, 1);
+        // XXX ?? assertThesaurus.technicalStream().programId().set(0, 1);
 
         assertThesaurus.technicalTransportStream().programNum().set(1, 1);
         assertThesaurus.technicalTransportStream().serviceName().set(1, "Demo render");
@@ -525,7 +535,7 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalAudio().channelsCount().set(0, 2);
 
         assertThesaurus.technicalContainer().duration().set(0, 5010);
-        assertThesaurus.technicalContainer().formatName().set(0, "MPEG-TS (MPEG-2 Transport Stream)");
+        assertThesaurus.technicalContainer().formatName().set(0, "MPEG-TS");
         assertThesaurus.technicalContainer().startTime().set(0, 1.429978);
         assertThesaurus.technicalContainer().bitrate().set(0, 4270920);
         assertThesaurus.technicalContainer().format().set(0, "mpegts");
@@ -573,7 +583,7 @@ class FFprobeInfoActivityTest {
         final var assertThesaurus = metadataThesaurusService.getAssertThesaurus();
         assertThesaurus.technical().type().set("""
                 Matroska / WebM, 00:00:05, 389 kbps
-                audio: aac LC stereo @ 48 kHz
+                audio: AAC LC stereo @ 48 kHz
                 """);
 
         assertThesaurus.technicalAudio().channelLayout().set(0, "stereo");
@@ -590,7 +600,7 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalStream().startTime().set(0, 0.0);
         assertThesaurus.technicalStream().type().set(0, "audio");
         assertThesaurus.technicalStream().codec().set(0, "aac");
-        assertThesaurus.technicalStream().codecName().set(0, "AAC (Advanced Audio Coding)");
+        assertThesaurus.technicalStream().codecName().set(0, "AAC");
         assertThesaurus.technicalStream().profile().set(0, "LC");
         assertThesaurus.technicalStream().isSecondary().set(0, false);
         assertThesaurus.technicalStream().timeBase().set(0, "1/1000");

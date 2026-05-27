@@ -99,7 +99,7 @@ public class FFprobeInfoActivity implements ActivityHandler {
                              final ActivityEventType eventType,
                              final RealmStorageConfiguredEnv storedOn) {
         return storedOn.isDAS()
-               && getExtension(fileEntity.getName()).equalsIgnoreCase("aaf") == false /// XXX test
+               && getExtension(fileEntity.getName()).equalsIgnoreCase("aaf") == false
                && metadataThesaurusService.getMimeType(fileEntity)
                        .map(ALL_MIME_TYPES::contains)
                        .orElse(false);
