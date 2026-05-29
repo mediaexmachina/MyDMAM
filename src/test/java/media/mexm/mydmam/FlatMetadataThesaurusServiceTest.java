@@ -163,4 +163,14 @@ class FlatMetadataThesaurusServiceTest {
         metadataThesaurusService.assertMimeTypeEquals(mimeType);
         assertThrows(AssertionFailedError.class, () -> metadataThesaurusService.assertMimeTypeEquals(badValue));
     }
+
+    @Test
+    void testPresetMimeType() {
+        metadataThesaurusService.presetMimeType(mimeType);
+        metadataThesaurusService.check();
+
+        assertThat(metadataThesaurusService.getMimeType(fileEntity)).contains(mimeType);
+        metadataThesaurusService.check(fileEntity).check();
+    }
+
 }

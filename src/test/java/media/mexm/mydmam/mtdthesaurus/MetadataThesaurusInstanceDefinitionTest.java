@@ -17,8 +17,13 @@
 package media.mexm.mydmam.mtdthesaurus;
 
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusClassifierKind.BIBLIOGRAPHIC_RECORD;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.BITS_PER_SECONDS;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryNumericalUnit.NO_UNIT;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.DISPLAYED_AS_IT;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusEntryType.IDENTIFIER_OR_SERIAL_ID;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.checkInterfaceClass;
 import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.extractClassifier;
+import static media.mexm.mydmam.mtdthesaurus.MetadataThesaurusInstanceDefinition.prettifyMethodKeyName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,10 +31,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import media.mexm.mydmam.dto.MtdThesaurusDefEntrySignature;
+import media.mexm.mydmam.mtdthesaurus.MetadataThesaurusLogic.MtdRegisterMethodDefinition;
+
 class MetadataThesaurusInstanceDefinitionTest {
+
+    MetadataThesaurusInstanceDefinition mtid;
 
     interface NoClassifier {
     }
@@ -55,15 +64,9 @@ class MetadataThesaurusInstanceDefinitionTest {
                 () -> extractClassifier(DotClassifier.class));
     }
 
-    MetadataThesaurusInstanceDefinition mtid;
-
-    @BeforeEach
-    void init() {
-        mtid = new MetadataThesaurusInstanceDefinition(MtdThesaurusDefDublinCore.class);
-    }
-
     @Test
     void testGetClassifier() {
+        mtid = new MetadataThesaurusInstanceDefinition(MtdThesaurusDefDublinCore.class);
         assertEquals("dc", mtid.getClassifier());
     }
 
@@ -106,23 +109,79 @@ class MetadataThesaurusInstanceDefinitionTest {
                 () -> checkInterfaceClass(instanceClass, List.of()));
     }
 
-    /*
     @Test
-    void testGetAllMethods() {
-        assertThat(mtid.getAllMethods()).hasSize(15);
-        assertTrue(mtid.getAllMethods().stream()
-                .anyMatch(f -> f.getName().equals("format")));
+    void testPrettifyMethodKeyName() {
+        assertThat(prettifyMethodKeyName("")).isEmpty();
+        assertThat(prettifyMethodKeyName("a")).isEqualTo("a");
+        assertThat(prettifyMethodKeyName("A")).isEqualTo("A");
+        assertThat(prettifyMethodKeyName("keyName")).isEqualTo("KeyName");
+        assertThat(prettifyMethodKeyName("key-Name")).isEqualTo("Key Name");
+    }
+
+    @MetadataThesaurusClassifier(value = "cls", longname = "Test classifier", kind = BIBLIOGRAPHIC_RECORD)
+    public interface FullClassifier {
+        /**
+         * 1
+         */
+        MetadataThesaurusEntry a1();
+
+        /**
+         * 4
+         */
+        @MetadataThesaurusEntryAttribute(unit = BITS_PER_SECONDS)
+        MetadataThesaurusEntry b2();
+
+        /**
+         * 2
+         */
+        MetadataThesaurusEntry aaaBbb2();
+
+        /**
+         * 0
+         */
+        @MetadataThesaurusSortIndexOrder(1)
+        MetadataThesaurusEntry b0();
+
+        /**
+         * 3
+         */
+        @MetadataThesaurusEntryAttribute(type = IDENTIFIER_OR_SERIAL_ID, longname = "LongName !")
+        MetadataThesaurusEntry b1();
+
     }
 
     @Test
-    void testGetKeyNameByMethod() {
-        final var methods = mtid.getAllMethods();
-        final var aMethod = methods.stream().findFirst().orElseThrow();
-        assertEquals(aMethod.getName(), mtid.getKeyNameByMethod(aMethod));
-    
-        final var anotherMethod = getClass().getMethods()[0];
-        assertThrows(IllegalArgumentException.class,
-                () -> mtid.getKeyNameByMethod(anotherMethod));
+    void testExtractAllMethodDefinitions() {
+        mtid = new MetadataThesaurusInstanceDefinition(FullClassifier.class);
+        final var def = mtid.extractAllMethodDefinitions(10);
+
+        assertThat(def).hasSize(5);
+
+        assertThat(def.get(0))
+                .isEqualTo(new MtdRegisterMethodDefinition(
+                        "b0",
+                        "b0",
+                        new MtdThesaurusDefEntrySignature("B0", 10000, DISPLAYED_AS_IT, NO_UNIT)));
+        assertThat(def.get(1))
+                .isEqualTo(new MtdRegisterMethodDefinition(
+                        "a1",
+                        "a1",
+                        new MtdThesaurusDefEntrySignature("A1", 10001, DISPLAYED_AS_IT, NO_UNIT)));
+        assertThat(def.get(2))
+                .isEqualTo(new MtdRegisterMethodDefinition(
+                        "aaaBbb2",
+                        "aaa-bbb2",
+                        new MtdThesaurusDefEntrySignature("Aaa bbb2", 10002, DISPLAYED_AS_IT, NO_UNIT)));
+        assertThat(def.get(3))
+                .isEqualTo(new MtdRegisterMethodDefinition(
+                        "b1",
+                        "b1",
+                        new MtdThesaurusDefEntrySignature("LongName !", 10003, IDENTIFIER_OR_SERIAL_ID, NO_UNIT)));
+        assertThat(def.get(4))
+                .isEqualTo(new MtdRegisterMethodDefinition(
+                        "b2",
+                        "b2",
+                        new MtdThesaurusDefEntrySignature("B2", 10004, DISPLAYED_AS_IT, BITS_PER_SECONDS)));
     }
-    */
+
 }

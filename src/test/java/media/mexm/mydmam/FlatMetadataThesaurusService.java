@@ -178,7 +178,7 @@ public class FlatMetadataThesaurusService implements MetadataThesaurusService {
         actualMimeType = mimeType;
     }
 
-    public void presetMimeType(final String mimeType) {// TODO test
+    public void presetMimeType(final String mimeType) {
         actualMimeType = mimeType;
     }
 

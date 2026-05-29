@@ -156,7 +156,7 @@ class MetadataThesaurusInstanceDefinition {
         return entries.get(method);
     }
 
-    static String prettifyMethodKeyName(final String keyName) {// TODO test
+    static String prettifyMethodKeyName(final String keyName) {
         if (keyName.length() < 2) {
             return keyName;
         }
@@ -167,7 +167,7 @@ class MetadataThesaurusInstanceDefinition {
     /**
      * Sorted
      */
-    List<MtdRegisterMethodDefinition> extractAllMethodDefinitions(final int classifierSortIndexOrder) { // TODO test
+    List<MtdRegisterMethodDefinition> extractAllMethodDefinitions(final int classifierSortIndexOrder) {
         final var orderedMethods = entries.entrySet().stream()
                 .sorted((lEntry, rEntry) -> {
                     final var compare = compare(
