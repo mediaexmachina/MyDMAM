@@ -486,7 +486,7 @@ class FFprobeInfoActivityTest {
                                         <tag key="service_provider" value="Media ex Machina"/>
                                     </tags>
                                     <streams>
-                                        <stream index="0" />
+                                        <stream index="0" codec_name="mp2" codec_type="audio" />
                                     </streams>
                                 </program>
                             </programs>
@@ -522,7 +522,7 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalStream().isSecondary().set(0, false);
         assertThesaurus.technicalStream().timeBase().set(0, "1/90000");
         assertThesaurus.technicalStream().referenceId().set(0, "0x101");
-        // XXX ?? assertThesaurus.technicalStream().programId().set(0, 1);
+        assertThesaurus.technicalStream().programId().set(0, 1);
 
         assertThesaurus.technicalTransportStream().programNum().set(1, 1);
         assertThesaurus.technicalTransportStream().serviceName().set(1, "Demo render");
