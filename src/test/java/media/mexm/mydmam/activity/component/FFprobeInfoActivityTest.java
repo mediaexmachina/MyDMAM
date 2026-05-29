@@ -304,6 +304,7 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalImage().height().set(4, 2);
         assertThesaurus.technicalImage().imageAspectFormat().set(4, "PORTRAIT");
         assertThesaurus.technicalStream().codec().set(4, "prores");
+        assertThesaurus.technicalStream().codecName().set(4, "Prores");
         assertThesaurus.technicalStream().isSecondary().set(4, true);
         assertThesaurus.technicalStream().type().set(4, "still-image");
 
@@ -312,6 +313,7 @@ class FFprobeInfoActivityTest {
         assertThesaurus.technicalImage().height().set(5, 4);
         assertThesaurus.technicalImage().imageAspectFormat().set(5, "PORTRAIT");
         assertThesaurus.technicalStream().codec().set(5, "prores");
+        assertThesaurus.technicalStream().codecName().set(5, "Prores");
         assertThesaurus.technicalStream().isSecondary().set(5, true);
         assertThesaurus.technicalStream().type().set(5, "timed-thumbnails");
 
